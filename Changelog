@@ -1,0 +1,15 @@
+================
+ Change history
+================
+
+.. contents::
+    :local:
+
+0.1.0
+=====
+:release-date: 2010-07-22 03:02 P.M CEST
+
+* Initial release
+
+* All unittest runs on with elasticsearch from my repository branch (Added RegexQuery)
+

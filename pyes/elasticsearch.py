@@ -17,6 +17,7 @@ from random import randint
 import copy
 from datetime import date, datetime
 from query import Query
+from pprint import pprint 
 
 class ESJsonEncoder(json.JSONEncoder):
     def default(self, value):
@@ -52,7 +53,9 @@ class ElasticSearch(object):
 
         """
         self.timeout = timeout
-        
+        self.cluster = None
+        self.cluster_name = "undefined"
+        self.connection_pool = {}
         if isinstance(server, (str, unicode)):
             self.servers = [server]
         else:
@@ -68,13 +71,16 @@ class ElasticSearch(object):
             self.logger.setLevel(logging.WARNING)
             
         self._init_connections()
-    
+        
     def _init_connections(self):
         """
         Create initial connection pool
         """
-        self.connection_pool = []
+        live_servers = []
         for server in self.servers:
+            live_servers.append(server)
+            if server in self.connection_pool:
+                continue
             scheme, netloc, path, query, fragment = urlsplit(server)
             netloc = netloc.split(':')
             host = netloc[0]
@@ -82,7 +88,25 @@ class ElasticSearch(object):
                 host, port = netloc[0], None
             else:
                 host, port = netloc
-            self.connection_pool.append((server, urllib3.HTTPConnectionPool(host, port)))
+            self.connection_pool[server] = urllib3.HTTPConnectionPool(host, port)
+        #dead connections
+        toremove = set(self.connection_pool.keys()) - set(live_servers)
+        if toremove:
+            for server in toremove:
+                del self.connection_pool[server]
+        
+    def _discovery(self):
+        """
+        Find other servers asking nodes to given server
+        """
+        data = self.cluster_nodes()
+        self.cluster_name = data["cluster_name"]
+        for nodename, nodedata in data["nodes"].items():
+            server = nodedata['http_address'].replace("]", "").replace("inet[", "http:/")
+            if server not in self.servers:
+                self.servers.append(server)
+        self._init_connections()
+        return self.servers
 
     def get_connection(self):
         """
@@ -90,8 +114,11 @@ class ElasticSearch(object):
         """
         num = len(self.connection_pool)
         if num==1:
-            return self.connection_pool[0]
-        return self.connection_pool[randint(0,num)]
+            key = self.connection_pool.keys()[0]
+        else:
+            key = self.connection_pool.keys()[randint(0,num)]
+            
+        return key, self.connection_pool[key]
 
     def _send_request(self, method, path, body="", querystring_args={}):
         if not path.startswith("/"):
@@ -103,7 +130,7 @@ class ElasticSearch(object):
             body = self._prep_request(body)
         conn = self.get_connection()
         self.logger.debug("making %s request to path: %s%s with body: %s" % (method, conn[0], path, body))
-        print "curl -X%s %s%s -d '%s'" % (method, conn[0], path, body)
+#        print "curl -X%s %s%s -d '%s'" % (method, conn[0], path, body)
         response = conn[1].urlopen(method, path, body)
         http_status = response.status
         self.logger.debug("response status: %s" % http_status)

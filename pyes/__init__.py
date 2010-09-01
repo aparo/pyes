@@ -26,3 +26,9 @@ def version_with_meta():
 from elasticsearch import ElasticSearch
 from query import *
 from objectid import ObjectId
+
+try:
+    #useful for additional query extra features
+    from query_extra import *
+except ImportError:
+    pass

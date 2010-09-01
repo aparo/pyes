@@ -9,7 +9,13 @@ class HighLighter:
         """
         Add a field to Highlinghter
         """
-        self.fields[name] = {"fragment_size" : fragment_size, "number_of_fragments" : number_of_fragments}
+        data = {}
+        if fragment_size:
+            data['fragment_size'] = fragment_size
+        if number_of_fragments:
+            data['number_of_fragments'] = number_of_fragments
+            
+        self.fields[name] = data
 
     def serialize(self):
         res = {}
@@ -28,7 +34,7 @@ class Query(object):
                  return_fields = None,
                  start = 0,
                  size=None,
-                 highlight=False,
+                 highlight=None,
                  sort = None):
         
         self.return_fields = return_fields
@@ -51,6 +57,15 @@ class Query(object):
         if self.sort:
             res['sort'] = self.sort
         return res
+
+    def add_highlight(self, field, fragment_size=None, number_of_fragments=None):
+        """
+        Add an highlight field
+        """
+        if self.highlight is None:
+            self.highlight = HighLighter("<b>", "</b>")
+        self.highlight.add_field(field, fragment_size, number_of_fragments)
+        
 
     def count(self):
         return self.serialize()
@@ -681,7 +696,7 @@ class SpanFirstQuery(TermQuery):
     _internal_name = "span_first"
 
     def __init__(self, field=None, value=None, end=3):
-        super(SpanTermQuery, self).__init__(**kwargs)
+        super(SpanFirstQuery, self).__init__(**kwargs)
         self._values = {}
         self.end = end
         if field is not None and value is not None:

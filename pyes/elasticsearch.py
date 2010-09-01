@@ -18,6 +18,21 @@ import copy
 from datetime import date, datetime
 from query import Query
 from pprint import pprint 
+import base64
+
+#---- Errors
+class QueryError(Exception):
+
+    def __init__(self, message): # pylint: disable-msg=W0231
+        self.message = message
+
+    def __str__(self):
+        return self.message
+
+def file_to_attachment(filename):
+    return {'_name':filename,
+            'content':base64.standard_b64encode(open(filename, 'rb').read())
+            }
 
 class ESJsonEncoder(json.JSONEncoder):
     def default(self, value):
@@ -54,6 +69,7 @@ class ElasticSearch(object):
         """
         self.timeout = timeout
         self.cluster = None
+        self.debug_dump = False
         self.cluster_name = "undefined"
         self.connection_pool = {}
         if isinstance(server, (str, unicode)):
@@ -129,11 +145,17 @@ class ElasticSearch(object):
         if body:
             body = self._prep_request(body)
         conn = self.get_connection()
-        self.logger.debug("making %s request to path: %s%s with body: %s" % (method, conn[0], path, body))
-#        print "curl -X%s %s%s -d '%s'" % (method, conn[0], path, body)
+        self.logger.debug("making %s request to path: %s%s with body: %s" % (method, conn[0].rstrip("/"), path, body))
+        if self.debug_dump:
+            print "curl -X%s %s%s -d '%s'" % (method, conn[0].rstrip("/"), path, body)
         response = conn[1].urlopen(method, path, body)
         http_status = response.status
         self.logger.debug("response status: %s" % http_status)
+        if http_status!=200:
+            msg = "%s:%s"%(http_status, response.data)
+            raise QueryError(msg)
+        if self.debug_dump:
+            print "response.status: %s" % response.status
         #self.logger .debug("got response %s" % response.data)
         return self._prep_response(response.data)
     
@@ -157,7 +179,11 @@ class ElasticSearch(object):
         """
         Parses json to a native python object.
         """
-        return json.loads(response)
+        response = json.loads(response)
+        if self.debug_dump:
+            print "response.data"
+            pprint(response)
+        return response
         
     def _query_call(self, query_type, query, indexes=['_all'], doc_types=[], **query_params):
         """
@@ -193,11 +219,18 @@ class ElasticSearch(object):
         """
         return self._send_request('PUT', index, settings)
         
-    def delete_index(self, index):
+    def delete_index(self, index, safe_call=True):
         """
         Deletes an index.
+        safe_call: if true does not raise an error on missing index
         """
-        return self._send_request('DELETE', index)
+        try:
+            res = self._send_request('DELETE', index)
+        except RuntimeError, e:
+            if not safe_call:
+                raise e
+            res = {}
+        return res
         
     def flush(self, indexes=None, refresh=None):
         """
@@ -248,7 +281,18 @@ class ElasticSearch(object):
         if indexes is None:
             indexes = ['_all']
         path = self._make_path([','.join(indexes), doc_type,"_mapping"])
+        if doc_type not in mapping:
+            mapping = {doc_type:mapping}
         return self._send_request('PUT', path, mapping)
+
+    def get_mapping(self, doc_type, indexes=None):
+        """
+        Register specific mapping definition for a specific type against one or more indices.
+        """
+        if indexes is None:
+            indexes = ['_all']
+        path = self._make_path([','.join(indexes), doc_type,"_mapping"])
+        return self._send_request('GET', path)
 
     #--- cluster
     def cluster_health(self, indexes=None, level="cluster", wait_for_status=None, 
@@ -314,6 +358,27 @@ class ElasticSearch(object):
             request_method = 'PUT'
         path = self._make_path([index, doc_type, id])
         return self._send_request(request_method, path, doc, querystring_args)
+
+    def put_file(self, filename, index, doc_type, id=None):
+        """
+        Store a file in a index
+        """
+        querystring_args = {}
+            
+        if id is None:
+            request_method = 'POST'
+        else:
+            request_method = 'PUT'
+        path = self._make_path([index, doc_type, id])
+        doc = file_to_attachment(filename)
+        return self._send_request(request_method, path, doc, querystring_args)
+
+    def get_file(self, index, doc_type, id=None):
+        """
+        Return the filename and memory data stream
+        """
+        data = self.get(index, doc_type, id)
+        return data["_source"]['_name'], base64.standard_b64decode(data["_source"]['content'])
         
     def delete(self, index, doc_type, id):
         """

@@ -1,0 +1,24 @@
+(pyes)MBPAlbertoParo:tests alberto$ python generate_dataset.py 10000
+samples.shelve generated with 10000 samples
+
+Urllib
+------
+
+(pyes)MBPAlbertoParo:tests alberto$ python performance.py 
+time: 0:00:08.652321
+(pyes)MBPAlbertoParo:tests alberto$ python performance.py 
+time: 0:00:08.282428
+(pyes)MBPAlbertoParo:tests alberto$ python performance.py 
+time: 0:00:08.889818
+(pyes)MBPAlbertoParo:tests alberto$ 
+
+
+Thrift
+
+(pyes)MBPAlbertoParo:tests alberto$ python performance.py 
+time: 0:00:04.448639
+(pyes)MBPAlbertoParo:tests alberto$ python performance.py 
+time: 0:00:04.812295
+(pyes)MBPAlbertoParo:tests alberto$ python performance.py 
+time: 0:00:04.301892
+(pyes)MBPAlbertoParo:tests alberto$

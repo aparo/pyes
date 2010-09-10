@@ -1,6 +1,6 @@
 __author__ = 'Alberto Paro, Robert Eanes, Matt Dennewitz'
 __all__ = ['ElasticSearch']
-__version__ = (0, 0, 4)
+__version__ = (0, 0, 8)
 
 try:
     # For Python < 2.6 or people using a newer version of simplejson
@@ -8,8 +8,7 @@ try:
 except ImportError:
     # For Python >= 2.6
     import json
-    
-import urllib3
+
 from urlparse import urlsplit
 from urllib import urlencode
 import logging
@@ -19,16 +18,21 @@ from datetime import date, datetime
 from query import Query
 from pprint import pprint 
 import base64
+from thrift.transport import TTransport
+from thrift.transport import TSocket
+from thrift.transport import THttpClient
+from thrift.protocol import TBinaryProtocol
+from pyesthrift import Rest
+from pyesthrift.ttypes import *
 
 #---- Errors
 class QueryError(Exception):
-
-    def __init__(self, message): # pylint: disable-msg=W0231
-        self.message = message
-
-    def __str__(self):
-        return self.message
-
+    def _get_message(self): 
+        return self._message
+    def _set_message(self, message): 
+        self._message = message
+    message = property(_get_message, _set_message)
+    
 def file_to_attachment(filename):
     return {'_name':filename,
             'content':base64.standard_b64encode(open(filename, 'rb').read())
@@ -76,14 +80,11 @@ class ElasticSearch(object):
             self.servers = [server]
         else:
             self.servers = server
-        self.logger = None
+        self.logger = logging.getLogger("elasticsearch")
         if debug:
             self.debug = debug
-            self.tracefile = tracefile
-            self.logger = logging.getLogger("elasticsearch")
             self.logger.setLevel(logging.DEBUG)
         else:
-            self.logger = logging.getLogger("elasticsearch")
             self.logger.setLevel(logging.WARNING)
             
         self._init_connections()
@@ -104,7 +105,14 @@ class ElasticSearch(object):
                 host, port = netloc[0], None
             else:
                 host, port = netloc
-            self.connection_pool[server] = urllib3.HTTPConnectionPool(host, port)
+            port = 9500
+            socket = TSocket.TSocket(host, port)
+            transport = TTransport.TBufferedTransport(socket)
+            protocol = TBinaryProtocol.TBinaryProtocol(transport)
+            client = Rest.Client(protocol)
+            transport.open()
+
+            self.connection_pool[server] = (client, transport)
         #dead connections
         toremove = set(self.connection_pool.keys()) - set(live_servers)
         if toremove:
@@ -136,28 +144,27 @@ class ElasticSearch(object):
             
         return key, self.connection_pool[key]
 
-    def _send_request(self, method, path, body="", querystring_args={}):
+    def _send_request(self, method, path, body={}, params={}):
         if not path.startswith("/"):
             path = "/"+path
-        if querystring_args:
-            path = "?".join([path, urlencode(querystring_args)])
-
-        if body:
-            body = self._prep_request(body)
-        conn = self.get_connection()
-        self.logger.debug("making %s request to path: %s%s with body: %s" % (method, conn[0].rstrip("/"), path, body))
-        if self.debug_dump:
-            print "curl -X%s %s%s -d '%s'" % (method, conn[0].rstrip("/"), path, body)
-        response = conn[1].urlopen(method, path, body)
-        http_status = response.status
-        self.logger.debug("response status: %s" % http_status)
-        if http_status!=200:
-            msg = "%s:%s"%(http_status, response.data)
-            raise QueryError(msg)
-        if self.debug_dump:
-            print "response.status: %s" % response.status
+        conn = self.get_connection()[1][0]
+#        self.logger.debug("making %s request to path: %s%s with body: %s" % (method, conn[0].rstrip("/"), path, body))
+#        if self.debug_dump:
+#            print "curl -X%s %s%s -d '%s'" % (method, conn[0].rstrip("/"), path, body)
+        
+        #method=None, uri=None, params=None, headers=None, body=None,
+        request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()], uri=path, params=params, headers={}, body=json.dumps(body, cls=ESJsonEncoder))
+        response = conn.execute(request)
+#        http_status = response.status
+#        self.logger.debug("response status: %s" % http_status)
+#        if http_status!=200:
+#            msg = "%s:%s"%(http_status, response.data)
+#            raise QueryError(msg)
+#        if self.debug_dump:
+#            print "response.status: %s" % response.status
         #self.logger .debug("got response %s" % response.data)
-        return self._prep_response(response.data)
+#        print response
+        return response.body
     
     def _make_path(self, path_components):
         """
@@ -169,21 +176,21 @@ class ElasticSearch(object):
             path = '/'+path
         return path
     
-    def _prep_request(self, body):
-        """
-        Encodes body as json.
-        """
-        return json.dumps(body, cls=ESJsonEncoder)
-        
-    def _prep_response(self, response):
-        """
-        Parses json to a native python object.
-        """
-        response = json.loads(response)
-        if self.debug_dump:
-            print "response.data"
-            pprint(response)
-        return response
+#    def _prep_request(self, body):
+#        """
+#        Encodes body as json.
+#        """
+#        return json.dumps(body, cls=ESJsonEncoder)
+#        
+#    def _prep_response(self, response):
+#        """
+#        Parses json to a native python object.
+#        """
+#        response = json.loads(response)
+#        if self.debug_dump:
+#            print "response.data"
+#            pprint(response)
+#        return response
         
     def _query_call(self, query_type, query, indexes=['_all'], doc_types=[], **query_params):
         """
@@ -226,7 +233,7 @@ class ElasticSearch(object):
         """
         try:
             res = self._send_request('DELETE', index)
-        except RuntimeError, e:
+        except QueryError, e:
             if not safe_call:
                 raise e
             res = {}

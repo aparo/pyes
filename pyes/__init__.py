@@ -4,7 +4,7 @@
 import logging
 logger = logging.getLogger(__name__)
 
-VERSION = (0, 1, 0)
+VERSION = (0, 10, 0)
 
 __version__ = ".".join(map(str, VERSION[0:3])) + "".join(VERSION[3:])
 __author__ = "Alberto Paro"
@@ -23,6 +23,7 @@ def version_with_meta():
     return "%s (%s)" % (__version__,
                         is_stable_release() and "stable" or "unstable")
 
+from pycassa.connection import *
 from elasticsearch import ElasticSearch
 from query import *
 from objectid import ObjectId

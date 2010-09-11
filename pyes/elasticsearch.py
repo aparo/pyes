@@ -1,6 +1,9 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 __author__ = 'Alberto Paro, Robert Eanes, Matt Dennewitz'
 __all__ = ['ElasticSearch']
-__version__ = (0, 0, 8)
+__version__ = (0, 0, 10)
 
 try:
     # For Python < 2.6 or people using a newer version of simplejson

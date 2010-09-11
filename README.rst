@@ -14,6 +14,44 @@ pyes is a connector to use elasticsearch from python.
 
 For now it is in alpha state, but working.
 
+Connecting
+==========
+
+These function are taken from pycassa.
+
+Import the module:
+
+    >>> import pyes
+
+For a single connection (which is _not_ thread-safe), pass a list of servers.
+
+    >>> client = pyes.connect() # Defaults to connecting to the server at '127.0.0.1:9500'
+    >>> client = pyes.connect(['127.0.0.1:9500'])
+
+Framed transport is the default. You may disable it by passing framed_transport=False.
+
+    >>> client = pyes.connect(framed_transport=False)
+
+Thread-local connections opens a connection for every thread that calls an ElasticSearch function. It also automatically balances the number of connections between servers, unless round_robin=False.
+
+    >>> client = pyes.connect_thread_local() # Defaults to connecting to the server at '127.0.0.1:9500'
+    >>> client = pyes.connect_thread_local(['127.0.0.1:9500', 'other_server:9500']) # Round robin connections
+    >>> client = pyes.connect_thread_local(['127.0.0.1:9500', 'other_server:9500'], round_robin=False) # Connect in list order
+
+Connections are robust to server failures. Upon a disconnection, it will attempt to connect to each server in the list in turn. If no server is available, it will raise a NoServerAvailable exception.
+
+Timeouts are also supported and should be used in production to prevent a thread from freezing while waiting for Cassandra to return.
+
+    >>> client = pyes.connect(timeout=3.5) # 3.5 second timeout
+    (Make some pyes calls and the connection to the server suddenly becomes unresponsive.)
+
+    Traceback (most recent call last):
+    ...
+    pyes.connection.NoServerAvailable
+
+Note that this only handles socket timeouts. 
+
+
 Usage
 =====
 

@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 class HighLighter:
     def __init__(self, pre_tags = None, post_tags = None, fields = None):

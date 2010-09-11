@@ -15,7 +15,7 @@ except:
   fastbinary = None
 
 
-class Iface:
+class Iface(object):
   def execute(self, request):
     """
     Parameters:
@@ -97,7 +97,7 @@ class Processor(Iface, TProcessor):
 
 # HELPER FUNCTIONS AND STRUCTURES
 
-class execute_args:
+class execute_args(object):
   """
   Attributes:
    - request
@@ -154,7 +154,7 @@ class execute_args:
   def __ne__(self, other):
     return not (self == other)
 
-class execute_result:
+class execute_result(object):
   """
   Attributes:
    - success

@@ -14,7 +14,7 @@ except:
   fastbinary = None
 
 
-class Method:
+class Method(object):
   GET = 0
   PUT = 1
   POST = 2
@@ -40,7 +40,7 @@ class Method:
     "OPTIONS": 5,
   }
 
-class Status:
+class Status(object):
   CONTINUE = 100
   SWITCHING_PROTOCOLS = 101
   OK = 200
@@ -180,7 +180,7 @@ class Status:
     "INSUFFICIENT_STORAGE": 506,
   }
 
-class RestRequest:
+class RestRequest(object):
   """
   Attributes:
    - method
@@ -304,7 +304,7 @@ class RestRequest:
   def __ne__(self, other):
     return not (self == other)
 
-class RestResponse:
+class RestResponse(object):
   """
   Attributes:
    - status

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-Unit tests for pyelasticsearch.  These require an elasticsearch server running on the default port (localhost:9200).
+Unit tests for pyelasticsearch.  These require an elasticsearch server with thrift plugin running on the default port (localhost:9500).
 """
 import unittest
 from elasticsearch import ElasticSearch
@@ -10,7 +10,7 @@ from pprint import pprint
 
 class ElasticSearchTestCase(unittest.TestCase):
     def setUp(self):
-        self.conn = ElasticSearch('http://127.0.0.1:9200/')
+        self.conn = ElasticSearch('127.0.0.1:9500')
         self.conn.delete_index("test-index")
         
     def tearDown(self):

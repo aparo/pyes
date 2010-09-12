@@ -23,7 +23,7 @@ def version_with_meta():
     return "%s (%s)" % (__version__,
                         is_stable_release() and "stable" or "unstable")
 
-from pycassa.connection import *
+from pyes.connection import *
 from elasticsearch import ElasticSearch
 from query import *
 from objectid import ObjectId

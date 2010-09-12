@@ -1,7 +1,7 @@
 from pyes import ElasticSearch
 from datetime import datetime
 import shelve
-conn = ElasticSearch('http://127.0.0.1:9200/')
+conn = ElasticSearch('127.0.0.1:9500')
 try:
     conn.delete_index("test-index")
 except:

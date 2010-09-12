@@ -49,7 +49,7 @@ else:
 setup(
     name='pyes',
     version=distmeta.__version__,
-    description=distmeta.__doc__,
+    description="Python Elastic Search driver",
     author=distmeta.__author__,
     author_email=distmeta.__contact__,
     url=distmeta.__homepage__,

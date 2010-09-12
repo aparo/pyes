@@ -10,10 +10,9 @@ time: 0:00:08.652321
 time: 0:00:08.282428
 (pyes)MBPAlbertoParo:tests alberto$ python performance.py 
 time: 0:00:08.889818
-(pyes)MBPAlbertoParo:tests alberto$ 
-
 
 Thrift
+------
 
 (pyes)MBPAlbertoParo:tests alberto$ python performance.py 
 time: 0:00:04.448639
@@ -21,4 +20,14 @@ time: 0:00:04.448639
 time: 0:00:04.812295
 (pyes)MBPAlbertoParo:tests alberto$ python performance.py 
 time: 0:00:04.301892
-(pyes)MBPAlbertoParo:tests alberto$
+
+
+Thrift with connection pool
+---------------------------
+
+(brainaetic)MBPAlbertoParo:performance alberto$ python performance.py 
+time: 0:00:03.845026
+(brainaetic)MBPAlbertoParo:performance alberto$ python performance.py 
+time: 0:00:03.628078
+(brainaetic)MBPAlbertoParo:performance alberto$ python performance.py 
+time: 0:00:03.775564

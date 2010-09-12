@@ -5,6 +5,7 @@ __author__ = 'Alberto Paro, Robert Eanes, Matt Dennewitz'
 __all__ = ['ElasticSearch']
 __version__ = (0, 0, 10)
 
+import logging
 try:
     # For Python < 2.6 or people using a newer version of simplejson
     import simplejson as json
@@ -27,6 +28,9 @@ from thrift.transport import THttpClient
 from thrift.protocol import TBinaryProtocol
 from pyesthrift import Rest
 from pyesthrift.ttypes import *
+from connection import *
+
+log = logging.getLogger('pyes')
 
 #---- Errors
 class QueryError(Exception):
@@ -64,7 +68,7 @@ class ElasticSearch(object):
     ElasticSearch connection object.
     """
     
-    def __init__(self, server, debug=False, tracefile=None, timeout=5.0):
+    def __init__(self, server, timeout=5.0):
         """
         Init a elasticsearch object
         
@@ -78,49 +82,18 @@ class ElasticSearch(object):
         self.cluster = None
         self.debug_dump = False
         self.cluster_name = "undefined"
-        self.connection_pool = {}
+        self.connection = None
         if isinstance(server, (str, unicode)):
             self.servers = [server]
         else:
             self.servers = server
-        self.logger = logging.getLogger("elasticsearch")
-        if debug:
-            self.debug = debug
-            self.logger.setLevel(logging.DEBUG)
-        else:
-            self.logger.setLevel(logging.WARNING)
-            
-        self._init_connections()
+        self._init_connection()
         
-    def _init_connections(self):
+    def _init_connection(self):
         """
         Create initial connection pool
         """
-        live_servers = []
-        for server in self.servers:
-            live_servers.append(server)
-            if server in self.connection_pool:
-                continue
-            scheme, netloc, path, query, fragment = urlsplit(server)
-            netloc = netloc.split(':')
-            host = netloc[0]
-            if len(netloc) == 1:
-                host, port = netloc[0], None
-            else:
-                host, port = netloc
-            port = 9500
-            socket = TSocket.TSocket(host, port)
-            transport = TTransport.TBufferedTransport(socket)
-            protocol = TBinaryProtocol.TBinaryProtocol(transport)
-            client = Rest.Client(protocol)
-            transport.open()
-
-            self.connection_pool[server] = (client, transport)
-        #dead connections
-        toremove = set(self.connection_pool.keys()) - set(live_servers)
-        if toremove:
-            for server in toremove:
-                del self.connection_pool[server]
+        self.connection = connect(self.servers, timeout=self.timeout)
         
     def _discovery(self):
         """
@@ -132,41 +105,16 @@ class ElasticSearch(object):
             server = nodedata['http_address'].replace("]", "").replace("inet[", "http:/")
             if server not in self.servers:
                 self.servers.append(server)
-        self._init_connections()
+        self._init_connection()
         return self.servers
-
-    def get_connection(self):
-        """
-        Get a connection from a pool of connections
-        """
-        num = len(self.connection_pool)
-        if num==1:
-            key = self.connection_pool.keys()[0]
-        else:
-            key = self.connection_pool.keys()[randint(0,num)]
-            
-        return key, self.connection_pool[key]
 
     def _send_request(self, method, path, body={}, params={}):
         if not path.startswith("/"):
             path = "/"+path
-        conn = self.get_connection()[1][0]
-#        self.logger.debug("making %s request to path: %s%s with body: %s" % (method, conn[0].rstrip("/"), path, body))
-#        if self.debug_dump:
-#            print "curl -X%s %s%s -d '%s'" % (method, conn[0].rstrip("/"), path, body)
-        
-        #method=None, uri=None, params=None, headers=None, body=None,
+        if not self.connection:
+            self._init_connection()
         request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()], uri=path, params=params, headers={}, body=json.dumps(body, cls=ESJsonEncoder))
-        response = conn.execute(request)
-#        http_status = response.status
-#        self.logger.debug("response status: %s" % http_status)
-#        if http_status!=200:
-#            msg = "%s:%s"%(http_status, response.data)
-#            raise QueryError(msg)
-#        if self.debug_dump:
-#            print "response.status: %s" % response.status
-        #self.logger .debug("got response %s" % response.data)
-#        print response
+        response = self.connection.execute(request)
         return response.body
     
     def _make_path(self, path_components):
@@ -451,9 +399,3 @@ class ElasticSearch(object):
         path = self._make_path([index, doc_type, id, '_mlt'])
         query_params['fields'] = ','.join(fields)
         return self._send_request('GET', path, querystring_args=query_params)        
-
-    def get_query(self):
-        """
-        Return a Query Object
-        """
-        return Query(_conn=self)

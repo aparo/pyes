@@ -58,7 +58,7 @@ class ClientTransport(object):
             self.recycle = None
 
 
-def connect(servers=None, framed_transport=True, timeout=None,
+def connect(servers=None, framed_transport=False, timeout=None,
             retry_time=60, recycle=None, round_robin=None):
     """
     Constructs a single ElastiSearch connection. Connects to a randomly chosen
@@ -73,12 +73,10 @@ def connect(servers=None, framed_transport=True, timeout=None,
 
     Parameters
     ----------
-    keyspace: string
-              The keyspace to associate this connection with.
     servers : [server]
               List of ES servers with format: "hostname:port"
 
-              Default: ['127..0.0.1:8500']
+              Default: ['127.0.0.1:8500']
     framed_transport: bool
               If True, use a TFramedTransport instead of a TBufferedTransport
     timeout: float

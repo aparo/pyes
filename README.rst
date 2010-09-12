@@ -115,10 +115,16 @@ Execute a query
 For more examples looks at the tests.
 
 
+Changelog
+=========
+
+v. 0.10.1: added new connection pool system based on pycassa one.
+v. 0.10.0: initial working version.
+
+
 TODO
 ----
 
-- connection pool
 - multiprocess for indexing
 - API rewriting for indexing and mapping part
 - more docs

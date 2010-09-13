@@ -1,13 +1,12 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-Unit tests for pyelasticsearch.  These require an elasticsearch server with thrift plugin running on the default port (localhost:9500).
+Unit tests for pyes.  These require an elasticsearch server with thrift plugin running on the default port (localhost:9500).
 """
 import unittest
 from elasticsearch import ElasticSearch
 from query import *
 from pprint import pprint
-from pyes.query import FilteredQuery, MatchAllQuery
 
 class ElasticSearchTestCase(unittest.TestCase):
     def setUp(self):
@@ -22,19 +21,28 @@ class ElasticSearchTestCase(unittest.TestCase):
             self.assertEquals(value, result[key])
 
 class IndexingTestCase(ElasticSearchTestCase):
+    def setUp(self):
+        super(IndexingTestCase, self).setUp()
+        self.conn.create_index("test-index")
+
         
     def testIndexingWithID(self):
+        """
+        Testing an indexing given an ID
+        """
         result = self.conn.index({"name":"Joe Tester"}, "test-index", "test-type", 1)
         self.assertResultContains(result, {'_type': 'test-type', '_id': '1', 'ok': True, '_index': 'test-index'} )
 
     def testIndexingWithoutID(self):
+        """Testing an indexing given without ID"""
         result = self.conn.index({"name":"Joe Tester"}, "test-index", "test-type")
         self.assertResultContains(result, {'_type': 'test-type', 'ok': True, '_index': 'test-index'} )
         # should have an id of some value assigned.
         self.assertTrue(result.has_key('_id') and result['_id'])
         
     def testExplicitIndexCreate(self):
-        result = self.conn.create_index("test-index")
+        """Creazione indice"""
+        result = self.conn.create_index("test-index2")
         self.assertResultContains(result, {'acknowledged': True, 'ok': True})
     
     def testDeleteByID(self):
@@ -138,7 +146,7 @@ class TestFileSaveTestCase(ElasticSearchTestCase):
         self.conn.refresh(["test-index"])
         self.conn.get_mapping("test-type", ["test-index"])
 #        name = "/Users/alberto/Documents/workspace/elasticsearch/plugins/mapper/attachments/src/test/java/org/elasticsearch/index/mapper/xcontent/testXHTML.html"
-        name = "test.py"
+        name = "tests.py"
         content = open(name, "rb").read()
         self.conn.put_file(name, "test-index", "test-type", 1)
         self.conn.refresh(["test-index"])
@@ -390,5 +398,7 @@ class GeoQuerySearchTestCase(ElasticSearchTestCase):
 if __name__ == "__main__":
 #    unittest.main()
     suite = unittest.TestLoader().loadTestsFromTestCase(GeoQuerySearchTestCase)
+#    suite = unittest.TestLoader().loadTestsFromTestCase(IndexingTestCase)
+
     unittest.TextTestRunner(verbosity=2).run(suite)
     

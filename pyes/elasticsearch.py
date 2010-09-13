@@ -114,9 +114,11 @@ class ElasticSearch(object):
             self._init_connection()
         if isinstance(body, dict):
             body = json.dumps(body, cls=ESJsonEncoder)
+        if body is None:
+            body=""
         request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()], uri=path, params=params, headers={}, body=body)
         response = self.connection.execute(request)
-        return response.body
+        return json.loads(response.body)
     
     def _make_path(self, path_components):
         """
@@ -204,7 +206,7 @@ class ElasticSearch(object):
         args = {}
         if refresh is not None:
             args['refresh'] = refresh
-        return self._send_request('POST', path, querystring_args=args)
+        return self._send_request('POST', path, params=args)
 
     def refresh(self, indexes=None):
         """
@@ -222,7 +224,7 @@ class ElasticSearch(object):
         if indexes is None:
             indexes = ['_all']
         path = self._make_path([','.join(indexes), '_optimize'])
-        return self._send_request('POST', path, querystring_args=args)
+        return self._send_request('POST', path, params=args)
 
     def gateway_snapshot(self, indexes=None):
         """
@@ -396,7 +398,7 @@ class ElasticSearch(object):
             indexes = ['_all']
         path = self._make_path([','.join(indexes), "_terms"])
         query_params['fields'] = ','.join(fields)
-        return self._send_request('GET', path, querystring_args=query_params)
+        return self._send_request('GET', path, params=query_params)
     
     def morelikethis(self, index, doc_type, id, fields, **query_params):
         """
@@ -404,4 +406,4 @@ class ElasticSearch(object):
         """
         path = self._make_path([index, doc_type, id, '_mlt'])
         query_params['fields'] = ','.join(fields)
-        return self._send_request('GET', path, querystring_args=query_params)        
+        return self._send_request('GET', path, params=query_params)        

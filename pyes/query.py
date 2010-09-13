@@ -722,7 +722,7 @@ class SpanTermQuery(TermQuery):
 class SpanFirstQuery(TermQuery):
     _internal_name = "span_first"
 
-    def __init__(self, field=None, value=None, end=3):
+    def __init__(self, field=None, value=None, end=3, **kwargs):
         super(SpanFirstQuery, self).__init__(**kwargs)
         self._values = {}
         self.end = end
@@ -747,7 +747,8 @@ class GeoDistanceQuery(Query):
     """
     _internal_name = "geo_distance"
 
-    def __init__(self, field, location, distance, distance_type="arc"):
+    def __init__(self, field, location, distance, distance_type="arc", **kwargs):
+        super(GeoDistanceQuery, self).__init__(**kwargs)
         self.field = field
         self.location = location
         self.distance = distance
@@ -773,7 +774,8 @@ def GeoBoundingBoxQuery(Query):
     """
     _internal_name = "geo_bounding_box"
 
-    def __init__(self, field, location_tl, location_br):
+    def __init__(self, field, location_tl, location_br, **kwargs):
+        super(GeoBoundingBoxQuery, self).__init__(**kwargs)
         self.field = field
         self.location_tl = location_tl
         self.location_br = location_br
@@ -796,7 +798,8 @@ class GeoPolygonQuery(Query):
     """
     _internal_name = "geo_polygon"
 
-    def __init__(self, field, points):
+    def __init__(self, field, points, **kwargs):
+        super(GeoPolygonQuery, self).__init__(**kwargs)
         self.field = field
         self.points = points
     

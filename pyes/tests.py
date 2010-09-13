@@ -7,6 +7,7 @@ import unittest
 from elasticsearch import ElasticSearch
 from query import *
 from pprint import pprint
+from pyes.query import FilteredQuery, MatchAllQuery
 
 class ElasticSearchTestCase(unittest.TestCase):
     def setUp(self):
@@ -182,7 +183,7 @@ class QueryAttachmentTestCase(ElasticSearchTestCase):
 
     def test_TermQuery(self):
         q = TermQuery("uuid", "1")
-        result = self.conn.search(query = q)
+        result = self.conn.search(query = q, indexes=["test-index"])
         pprint(result)
         self.assertEquals(result['hits']['total'], 1)
 
@@ -220,66 +221,66 @@ class QuerySearchTestCase(ElasticSearchTestCase):
 
     def test_TermQuery(self):
         q = TermQuery("name", "joe")
-        result = self.conn.search(query = q)
+        result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
 
         q = TermQuery("name", "joe", 3)
-        result = self.conn.search(query = q)
+        result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
         
         q = TermQuery("name", "joe", "3")
-        result = self.conn.search(query = q)
+        result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
 
     def test_WildcardQuery(self):
         q = WildcardQuery("name", "jo*")
-        result = self.conn.search(query = q)
+        result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
 
         q = WildcardQuery("name", "jo*", 3)
-        result = self.conn.search(query = q)
+        result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
         
         q = WildcardQuery("name", "jo*", "3")
-        result = self.conn.search(query = q)
+        result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
 
     def test_PrefixQuery(self):
         q = PrefixQuery("name", "jo")
-        result = self.conn.search(query = q)
+        result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
 
         q = PrefixQuery("name", "jo", 3)
-        result = self.conn.search(query = q)
+        result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
         
         q = PrefixQuery("name", "jo", "3")
-        result = self.conn.search(query = q)
+        result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
         
         
     def test_MatchAllQuery(self):
         q = MatchAllQuery()
-        result = self.conn.search(query = q)
+        result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 2)
 
     def test_StringQuery(self):
         q = StringQuery("joe AND test")
-        result = self.conn.search(query = q)
+        result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 0)
 
         q = StringQuery("joe OR test")
-        result = self.conn.search(query = q)
+        result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 2)
 
         q1 = StringQuery("joe")
         q2 = StringQuery("test")
         q = BoolQuery(must=[q1, q2])
-        result = self.conn.search(query = q)
+        result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 0)
 
         q = BoolQuery(should=[q1, q2])
-        result = self.conn.search(query = q)
+        result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 2)
 
     def test_OR_AND_Filters(self):
@@ -288,27 +289,27 @@ class QuerySearchTestCase(ElasticSearchTestCase):
         andq = ANDFilterQuery([q1, q2])
         
         q = FilteredQuery(MatchAllQuery(), andq)
-        result = self.conn.search(query = q)
+        result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 0)
 
         orq = ORFilterQuery([q1, q2])
         q = FilteredQuery(MatchAllQuery(), orq)
-        result = self.conn.search(query = q)
+        result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 2)
         
     def test_FieldQuery(self):
         q = FieldQuery(FieldParameter("name", "+joe"))
-        result = self.conn.search(query = q)
+        result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
 
     def test_DisMaxQuery(self):
         q =  DisMaxQuery(FieldQuery(FieldParameter("name", "+joe")))
-        result = self.conn.search(query = q)
+        result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
         
     def test_RegexTermQuery(self):
         q = RegexTermQuery("name", "jo.")
-        result = self.conn.search(query = q)
+        result = self.conn.search(query = q, indexes=["test-index"])
 #        pprint(q.q)
 #        pprint(result)
         self.assertEquals(result['hits']['total'], 1)
@@ -316,8 +317,78 @@ class QuerySearchTestCase(ElasticSearchTestCase):
     def test_QueryHighlight(self):
         q = StringQuery("nice")
         q.add_highlight("parsedtext")
-        result = self.conn.search(query = q)
+        result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 2)
 
+#--- Geo Queries Test case
+class GeoQuerySearchTestCase(ElasticSearchTestCase):
+    def setUp(self):
+        super(GeoQuerySearchTestCase, self).setUp()
+        mapping ={
+                "pin" : {
+                    "properties" : {
+                        "location" : {
+                            "type" : "geo_point"
+                        }
+                    }
+                }
+            } 
+        self.conn.create_index("test-index")
+        self.conn.put_mapping("test-type", {'properties':mapping}, ["test-index"])
+        self.conn.index({
+                            "pin" : {
+                                "location" : {
+                                    "lat" : 40.12,
+                                    "lon" : -71.34
+                                }
+                            }
+                        }, "test-index", "test-type", 1)
+
+        self.conn.refresh(["test-index"])
+
+    def test_GeoDistanceQuery(self):
+        gq = GeoDistanceQuery("pin.location", {"lat" : 40, "lon" : -70}, "12km")
+        q = FilteredQuery(MatchAllQuery(), gq)
+        result = self.conn.search(query = q, indexes=["test-index"])
+        self.assertEquals(result['hits']['total'], 1)
+
+        gq = GeoDistanceQuery("pin.location", [40, -70], "12km")
+        q = FilteredQuery(MatchAllQuery(), gq)
+        result = self.conn.search(query = q, indexes=["test-index"])
+        self.assertEquals(result['hits']['total'], 1)
+
+    def test_GeoBoundingBoxQuery(self):
+        gq = GeoBoundingBoxQuery("pin.location", {"lat" : 40.73, "lon" : -74.1}, {"lat" : 40.717, "lon" : -73.99})
+        q = FilteredQuery(MatchAllQuery(), gq)
+        result = self.conn.search(query = q, indexes=["test-index"])
+        self.assertEquals(result['hits']['total'], 1)
+
+        gq = GeoBoundingBoxQuery("pin.location", [40.73, -74.1], [40.717, -73.99])
+        q = FilteredQuery(MatchAllQuery(), gq)
+        result = self.conn.search(query = q, indexes=["test-index"])
+        self.assertEquals(result['hits']['total'], 1)
+
+    def test_GeoPolygonQuery(self):
+        gq = GeoPolygonQuery("pin.location", [{"lat" : 40, "lon" : -70},
+                                                {"lat" : 30, "lon" : -80},
+                                                {"lat" : 20, "lon" : -90}]
+                                                )
+        q = FilteredQuery(MatchAllQuery(), gq)
+        result = self.conn.search(query = q, indexes=["test-index"])
+        self.assertEquals(result['hits']['total'], 1)
+
+        gq = GeoPolygonQuery("pin.location", [[ 40, -70],
+                                              [ 30, -80],
+                                              [ 20, -90]]
+                                                )
+        q = FilteredQuery(MatchAllQuery(), gq)
+        result = self.conn.search(query = q, indexes=["test-index"])
+        self.assertEquals(result['hits']['total'], 1)
+        
+
+
 if __name__ == "__main__":
-    unittest.main()
+#    unittest.main()
+    suite = unittest.TestLoader().loadTestsFromTestCase(GeoQuerySearchTestCase)
+    unittest.TextTestRunner(verbosity=2).run(suite)
+    

@@ -19,7 +19,6 @@ import logging
 from random import randint
 import copy
 from datetime import date, datetime
-from query import Query
 from pprint import pprint 
 import base64
 from thrift.transport import TTransport
@@ -108,12 +107,14 @@ class ElasticSearch(object):
         self._init_connection()
         return self.servers
 
-    def _send_request(self, method, path, body={}, params={}):
+    def _send_request(self, method, path, body=None, params={}):
         if not path.startswith("/"):
             path = "/"+path
         if not self.connection:
             self._init_connection()
-        request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()], uri=path, params=params, headers={}, body=json.dumps(body, cls=ESJsonEncoder))
+        if isinstance(body, dict):
+            body = json.dumps(body, cls=ESJsonEncoder)
+        request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()], uri=path, params=params, headers={}, body=body)
         response = self.connection.execute(request)
         return response.body
     
@@ -150,8 +151,8 @@ class ElasticSearch(object):
         """
         querystring_args = query_params
         body = query
-        if isinstance(query, Query):
-            body = query.q
+        if hasattr(query, "to_json"):
+            body = query.to_json()
         path = self._make_path([','.join(indexes), ','.join(doc_types),query_type])
         response = self._send_request('GET', path, body, querystring_args)
         return response
@@ -356,12 +357,17 @@ class ElasticSearch(object):
         """
         Execute a search query against one or more indices and get back search hits.
         query must be a dictionary or a Query object that will convert to Query DSL
-        TODO: better api to reflect that the query can be either 'query' or 'body' argument.
         """
         if indexes is None:
             indexes = ['_all']
         if doc_types is None:
             doc_types = []
+        if not isinstance(query, basestring):
+            if isinstance(query, dict):
+                query = json.dumps(body, cls=ESJsonEncoder)
+            elif hasattr(query, "to_json"):
+                query = query.to_json()
+                
 #        if body:
 #            body.update(query_params)
 #            query_params = {}

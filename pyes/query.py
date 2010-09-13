@@ -1,6 +1,27 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import logging
 
+import logging
+try:
+    # For Python < 2.6 or people using a newer version of simplejson
+    import simplejson as json
+except ImportError:
+    # For Python >= 2.6
+    import json
+
+from elasticsearch import ESJsonEncoder
+
+
+log = logging.getLogger('pyes')
+
+class QueryParameterError(Exception):
+    def _get_message(self): 
+        return self._message
+    def _set_message(self, message): 
+        self._message = message
+    message = property(_get_message, _set_message)
+    
 class HighLighter:
     def __init__(self, pre_tags = None, post_tags = None, fields = None):
         self.pre_tags = pre_tags
@@ -74,6 +95,10 @@ class Query(object):
 
     def __repr__(self):
         return str(self.q)
+
+    def to_json(self):
+        return json.dumps(self.q, cls=ESJsonEncoder)
+
 
 class AbstractFilter(Query):
     _internal_name = "undefined"
@@ -709,6 +734,82 @@ class SpanFirstQuery(TermQuery):
             raise RuntimeError("A least a field/value pair must be added")
         return {self._internal_name:{"match":{"span_first":self._values},
                                      "end":self.end}}
+
+#
+#--- Geo Queries
+#http://www.elasticsearch.com/blog/2010/08/16/geo_location_and_search.html
+
+class GeoDistanceQuery(Query):
+    """
+    
+    http://github.com/elasticsearch/elasticsearch/issues/279
+    
+    """
+    _internal_name = "geo_distance"
+
+    def __init__(self, field, location, distance, distance_type="arc"):
+        self.field = field
+        self.location = location
+        self.distance = distance
+        self.distance_type = distance_type
+    
+    def serialize(self):
+        if self.distance_type not in ["arc", "plane"]:
+            raise QueryParameterError("Invalid distance_type")
+        
+        params = {"distance":self.distance, self.field:self.location}
+        if self.distance_type!="arc":
+            params['distance_type'] = self.distance_type
+            
+        return {self._internal_name:params}
+
+
+
+def GeoBoundingBoxQuery(Query):
+    """
+    
+    http://github.com/elasticsearch/elasticsearch/issues/290
+    
+    """
+    _internal_name = "geo_bounding_box"
+
+    def __init__(self, field, location_tl, location_br):
+        self.field = field
+        self.location_tl = location_tl
+        self.location_br = location_br
+    
+    def serialize(self):
+        
+        return {self._internal_name:{
+                                     self.field:{
+                                                 "top_left":self.location_tl, 
+                                                 "bottom_right":self.location_br
+                                                 }
+                                     }
+        }
+
+class GeoPolygonQuery(Query):
+    """
+    
+    http://github.com/elasticsearch/elasticsearch/issues/294
+    
+    """
+    _internal_name = "geo_polygon"
+
+    def __init__(self, field, points):
+        self.field = field
+        self.points = points
+    
+    def serialize(self):
+        
+        return {self._internal_name:{
+                                     self.field:{
+                                                 "points":self.points, 
+                                                 }
+                                     }
+        }
+
+         
 
 #class SpanNearQuery(Query):
 #

@@ -1,24 +1,35 @@
-__author__ = 'Alberto Paro, Robert Eanes, Matt Dennewitz'
-__all__ = ['ElasticSearch']
-__version__ = (0, 0, 4)
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
+__author__ = 'Alberto Paro, Robert Eanes, Matt Dennewitz'
+__all__ = ['ES']
+__version__ = (0, 0, 10)
+
+import logging
 try:
     # For Python < 2.6 or people using a newer version of simplejson
     import simplejson as json
 except ImportError:
     # For Python >= 2.6
     import json
-    
-import urllib3
+
 from urlparse import urlsplit
 from urllib import urlencode
 import logging
 from random import randint
 import copy
 from datetime import date, datetime
-from query import Query
 from pprint import pprint 
 import base64
+from thrift.transport import TTransport
+from thrift.transport import TSocket
+from thrift.transport import THttpClient
+from thrift.protocol import TBinaryProtocol
+from pyesthrift import Rest
+from pyesthrift.ttypes import *
+from connection import *
+
+log = logging.getLogger('pyes')
 
 #---- Errors
 class QueryError(Exception):
@@ -50,19 +61,17 @@ class ESJsonEncoder(json.JSONEncoder):
         else:
             # use no special encoding and hope for the best
             return value
-        
-class ElasticSearch(object):
+
+class ES(object):
     """
-    ElasticSearch connection object.
+    ES connection object.
     """
     
-    def __init__(self, server, debug=False, tracefile=None, timeout=5.0):
+    def __init__(self, server, timeout=5.0, bulk_size = 400):
         """
-        Init a elasticsearch object
+        Init a es object
         
         server: the server name, it can be a list of servers
-        debug: if the calls must be debugged
-        tracefile: name of the log file
         timeout: timeout for a call
 
         """
@@ -70,45 +79,28 @@ class ElasticSearch(object):
         self.cluster = None
         self.debug_dump = False
         self.cluster_name = "undefined"
-        self.connection_pool = {}
+        self.connection = None
+        self.bulk_size = bulk_size
+        self.buckets = []
         if isinstance(server, (str, unicode)):
             self.servers = [server]
         else:
             self.servers = server
-        self.logger = None
-        if debug:
-            self.debug = debug
-            self.tracefile = tracefile
-            self.logger = logging.getLogger("elasticsearch")
-            self.logger.setLevel(logging.DEBUG)
-        else:
-            self.logger = logging.getLogger("elasticsearch")
-            self.logger.setLevel(logging.WARNING)
-            
-        self._init_connections()
-        
-    def _init_connections(self):
+        self._init_connection()
+
+
+    def __del__(self):
+        """
+        Destructor
+        """
+        if self.buckets:
+            self.flush()
+
+    def _init_connection(self):
         """
         Create initial connection pool
         """
-        live_servers = []
-        for server in self.servers:
-            live_servers.append(server)
-            if server in self.connection_pool:
-                continue
-            scheme, netloc, path, query, fragment = urlsplit(server)
-            netloc = netloc.split(':')
-            host = netloc[0]
-            if len(netloc) == 1:
-                host, port = netloc[0], None
-            else:
-                host, port = netloc
-            self.connection_pool[server] = urllib3.HTTPConnectionPool(host, port)
-        #dead connections
-        toremove = set(self.connection_pool.keys()) - set(live_servers)
-        if toremove:
-            for server in toremove:
-                del self.connection_pool[server]
+        self.connection = connect(self.servers, timeout=self.timeout)
         
     def _discovery(self):
         """
@@ -120,43 +112,26 @@ class ElasticSearch(object):
             server = nodedata['http_address'].replace("]", "").replace("inet[", "http:/")
             if server not in self.servers:
                 self.servers.append(server)
-        self._init_connections()
+        self._init_connection()
         return self.servers
-
-    def get_connection(self):
-        """
-        Get a connection from a pool of connections
-        """
-        num = len(self.connection_pool)
-        if num==1:
-            key = self.connection_pool.keys()[0]
-        else:
-            key = self.connection_pool.keys()[randint(0,num)]
-            
-        return key, self.connection_pool[key]
-
-    def _send_request(self, method, path, body="", querystring_args={}):
+    
+    def _send_request(self, method, path, body=None, params={}):
         if not path.startswith("/"):
             path = "/"+path
-        if querystring_args:
-            path = "?".join([path, urlencode(querystring_args)])
-
-        if body:
-            body = self._prep_request(body)
-        conn = self.get_connection()
-        self.logger.debug("making %s request to path: %s%s with body: %s" % (method, conn[0].rstrip("/"), path, body))
-        if self.debug_dump:
-            print "curl -X%s %s%s -d '%s'" % (method, conn[0].rstrip("/"), path, body)
-        response = conn[1].urlopen(method, path, body)
-        http_status = response.status
-        self.logger.debug("response status: %s" % http_status)
-        if http_status!=200:
-            msg = "%s:%s"%(http_status, response.data)
-            raise QueryError(msg)
-        if self.debug_dump:
-            print "response.status: %s" % response.status
-        #self.logger .debug("got response %s" % response.data)
-        return self._prep_response(response.data)
+        if not self.connection:
+            self._init_connection()
+        if isinstance(body, dict):
+            body = json.dumps(body, cls=ESJsonEncoder)
+        if body is None:
+            body=""
+        request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()], uri=path, params=params, headers={}, body=body)
+        response = self.connection.execute(request)
+        try:
+            decoded = json.loads(response.body)
+        except:
+            print response.body
+            decoded = {}
+        return  decoded
     
     def _make_path(self, path_components):
         """
@@ -168,21 +143,21 @@ class ElasticSearch(object):
             path = '/'+path
         return path
     
-    def _prep_request(self, body):
-        """
-        Encodes body as json.
-        """
-        return json.dumps(body, cls=ESJsonEncoder)
-        
-    def _prep_response(self, response):
-        """
-        Parses json to a native python object.
-        """
-        response = json.loads(response)
-        if self.debug_dump:
-            print "response.data"
-            pprint(response)
-        return response
+#    def _prep_request(self, body):
+#        """
+#        Encodes body as json.
+#        """
+#        return json.dumps(body, cls=ESJsonEncoder)
+#        
+#    def _prep_response(self, response):
+#        """
+#        Parses json to a native python object.
+#        """
+#        response = json.loads(response)
+#        if self.debug_dump:
+#            print "response.data"
+#            pprint(response)
+#        return response
         
     def _query_call(self, query_type, query, indexes=['_all'], doc_types=[], **query_params):
         """
@@ -191,8 +166,8 @@ class ElasticSearch(object):
         """
         querystring_args = query_params
         body = query
-        if isinstance(query, Query):
-            body = query.q
+        if hasattr(query, "to_json"):
+            body = query.to_json()
         path = self._make_path([','.join(indexes), ','.join(doc_types),query_type])
         response = self._send_request('GET', path, body, querystring_args)
         return response
@@ -235,6 +210,8 @@ class ElasticSearch(object):
         """
         Flushes one or more indices (clear memory)
         """
+        self.force_bulk()
+
         if indexes is None:
             indexes = ['_all']
         if isinstance(indexes, (str, unicode)):
@@ -244,7 +221,7 @@ class ElasticSearch(object):
         args = {}
         if refresh is not None:
             args['refresh'] = refresh
-        return self._send_request('POST', path, querystring_args=args)
+        return self._send_request('POST', path, params=args)
 
     def refresh(self, indexes=None):
         """
@@ -262,7 +239,7 @@ class ElasticSearch(object):
         if indexes is None:
             indexes = ['_all']
         path = self._make_path([','.join(indexes), '_optimize'])
-        return self._send_request('POST', path, querystring_args=args)
+        return self._send_request('POST', path, params=args)
 
     def gateway_snapshot(self, indexes=None):
         """
@@ -342,21 +319,52 @@ class ElasticSearch(object):
         path = self._make_path(parts)
         return self._send_request('GET', path)
 
-    def index(self, doc, index, doc_type, id=None, force_insert=False):
+    def index(self, doc, index, doc_type, id=None, force_insert=False, bulk=False):
         """
         Index a typed JSON document into a specific index and make it searchable.
         """
+        if bulk:
+            optype = "index"
+            if force_insert:
+                optype = "create"
+            cmd = { optype : { "index" : index, "type" : doc_type}}
+            if id:
+                cmd[optype]['id'] = id
+            self.buckets.append(json.dumps(cmd, cls=ESJsonEncoder))
+            self.buckets.append(json.dumps(doc, cls=ESJsonEncoder))
+            self.flush_bulk()
+            return
+            
+            
         if force_insert:
             querystring_args = {'opType':'create'}
         else:
             querystring_args = {}
-            
+
         if id is None:
             request_method = 'POST'
         else:
             request_method = 'PUT'
+        
         path = self._make_path([index, doc_type, id])
         return self._send_request(request_method, path, doc, querystring_args)
+
+    def flush_bulk(self, forced=False):
+        """
+        Wait to process all pending operations
+        """
+        if not forced and len(self.buckets)/2 < self.bulk_size: 
+            return
+        self.force_bulk()
+        
+    def force_bulk(self):
+        """
+        Force executing of all buckets
+        """
+        if len(self.buckets)==0:
+            return
+        self._send_request("POST", "/_bulk", '\n'.join(self.buckets)+"\n")
+        self.buckets = []
 
     def put_file(self, filename, index, doc_type, id=None):
         """
@@ -397,12 +405,17 @@ class ElasticSearch(object):
         """
         Execute a search query against one or more indices and get back search hits.
         query must be a dictionary or a Query object that will convert to Query DSL
-        TODO: better api to reflect that the query can be either 'query' or 'body' argument.
         """
         if indexes is None:
             indexes = ['_all']
         if doc_types is None:
             doc_types = []
+        if not isinstance(query, basestring):
+            if isinstance(query, dict):
+                query = json.dumps(body, cls=ESJsonEncoder)
+            elif hasattr(query, "to_json"):
+                query = query.to_json()
+                
 #        if body:
 #            body.update(query_params)
 #            query_params = {}
@@ -412,6 +425,7 @@ class ElasticSearch(object):
         """
         Execute a query against one or more indices and get hits count.
         """
+        from query import Query
         if indexes is None:
             indexes = ['_all']
         if doc_types is None:
@@ -431,7 +445,7 @@ class ElasticSearch(object):
             indexes = ['_all']
         path = self._make_path([','.join(indexes), "_terms"])
         query_params['fields'] = ','.join(fields)
-        return self._send_request('GET', path, querystring_args=query_params)
+        return self._send_request('GET', path, params=query_params)
     
     def morelikethis(self, index, doc_type, id, fields, **query_params):
         """
@@ -439,10 +453,4 @@ class ElasticSearch(object):
         """
         path = self._make_path([index, doc_type, id, '_mlt'])
         query_params['fields'] = ','.join(fields)
-        return self._send_request('GET', path, querystring_args=query_params)        
-
-    def get_query(self):
-        """
-        Return a Query Object
-        """
-        return Query(_conn=self)
+        return self._send_request('GET', path, params=query_params)        

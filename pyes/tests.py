@@ -1,16 +1,16 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-Unit tests for pyes.  These require an elasticsearch server with thrift plugin running on the default port (localhost:9500).
+Unit tests for pyes.  These require an es server with thrift plugin running on the default port (localhost:9500).
 """
 import unittest
-from elasticsearch import ElasticSearch
+from es import ES, 
 from query import *
 from pprint import pprint
 
-class ElasticSearchTestCase(unittest.TestCase):
+class ESTestCase(unittest.TestCase):
     def setUp(self):
-        self.conn = ElasticSearch('127.0.0.1:9500')
+        self.conn = ES('127.0.0.1:9500')
         self.conn.delete_index("test-index")
         
     def tearDown(self):
@@ -20,7 +20,7 @@ class ElasticSearchTestCase(unittest.TestCase):
         for (key, value) in expected.items():
             self.assertEquals(value, result[key])
 
-class IndexingTestCase(ElasticSearchTestCase):
+class IndexingTestCase(ESTestCase):
     def setUp(self):
         super(IndexingTestCase, self).setUp()
         self.conn.create_index("test-index")
@@ -93,7 +93,7 @@ class IndexingTestCase(ElasticSearchTestCase):
         self.assertResultContains(result, {'ok': True})
 
                 
-class SearchTestCase(ElasticSearchTestCase):
+class SearchTestCase(ESTestCase):
     def setUp(self):
         super(SearchTestCase, self).setUp()
         self.conn.index({"name":"Joe Tester"}, "test-index", "test-type", 1)
@@ -130,7 +130,7 @@ class SearchTestCase(ElasticSearchTestCase):
         result = self.conn.morelikethis("test-index", "test-type", 1, ['name'], min_term_freq=1, min_doc_freq=1)
         self.assertResultContains(result, {'hits': {'hits': [{'_type': 'test-type', '_id': '3', '_source': {'name': 'Joe Test'}, '_index': 'test-index'}], 'total': 1}})
 
-class TestFileSaveTestCase(ElasticSearchTestCase):
+class TestFileSaveTestCase(ESTestCase):
     def test_filesave(self):
         mapping = {
                    "my_attachment" : { "type" : "attachment", 
@@ -155,7 +155,7 @@ class TestFileSaveTestCase(ElasticSearchTestCase):
         self.assertEquals(name, nname)
         self.assertEquals(content, ncontent)
 
-class QueryAttachmentTestCase(ElasticSearchTestCase):
+class QueryAttachmentTestCase(ESTestCase):
     def setUp(self):
         super(QueryAttachmentTestCase, self).setUp()
         mapping = {
@@ -186,16 +186,14 @@ class QueryAttachmentTestCase(ElasticSearchTestCase):
 #                print str(pos+1)
 #                break
         self.conn.refresh(["test-index"])
-        print "-"*80, "After index"
         self.conn.get_mapping("test-type", ["test-index"])
 
     def test_TermQuery(self):
         q = TermQuery("uuid", "1")
         result = self.conn.search(query = q, indexes=["test-index"])
-        pprint(result)
         self.assertEquals(result['hits']['total'], 1)
 
-class QuerySearchTestCase(ElasticSearchTestCase):
+class QuerySearchTestCase(ESTestCase):
     def setUp(self):
         super(QuerySearchTestCase, self).setUp()
         mapping = { u'parsedtext': {'boost': 1.0,
@@ -223,8 +221,6 @@ class QuerySearchTestCase(ElasticSearchTestCase):
         self.conn.put_mapping("test-type", {'properties':mapping}, ["test-index"])
         self.conn.index({"name":"Joe Tester", "parsedtext":"Joe Testere nice guy", "uuid":"11111", "position":1}, "test-index", "test-type", 1)
         self.conn.index({"name":"Bill Baloney", "parsedtext":"Joe Testere nice guy", "uuid":"22222", "position":2}, "test-index", "test-type", 2)
-
-
         self.conn.refresh(["test-index"])
 
     def test_TermQuery(self):
@@ -265,7 +261,6 @@ class QuerySearchTestCase(ElasticSearchTestCase):
         q = PrefixQuery("name", "jo", "3")
         result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
-        
         
     def test_MatchAllQuery(self):
         q = MatchAllQuery()
@@ -329,7 +324,7 @@ class QuerySearchTestCase(ElasticSearchTestCase):
         self.assertEquals(result['hits']['total'], 2)
 
 #--- Geo Queries Test case
-class GeoQuerySearchTestCase(ElasticSearchTestCase):
+class GeoQuerySearchTestCase(ESTestCase):
     def setUp(self):
         super(GeoQuerySearchTestCase, self).setUp()
         mapping ={
@@ -351,54 +346,100 @@ class GeoQuerySearchTestCase(ElasticSearchTestCase):
                                 }
                             }
                         }, "test-index", "test-type", 1)
+        self.conn.index({
+                            "pin" : {
+                                "location" : {
+                                    "lat" : 40.12,
+                                    "lon" : 71.34
+                                }
+                            }
+                        }, "test-index", "test-type", 2)
 
         self.conn.refresh(["test-index"])
 
     def test_GeoDistanceQuery(self):
-        gq = GeoDistanceQuery("pin.location", {"lat" : 40, "lon" : -70}, "12km")
+        gq = GeoDistanceQuery("pin.location", {"lat" : 40, "lon" : -70}, "200km")
         q = FilteredQuery(MatchAllQuery(), gq)
         result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
 
-        gq = GeoDistanceQuery("pin.location", [40, -70], "12km")
+        gq = GeoDistanceQuery("pin.location", [40, -70], "200km")
         q = FilteredQuery(MatchAllQuery(), gq)
         result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
 
     def test_GeoBoundingBoxQuery(self):
-        gq = GeoBoundingBoxQuery("pin.location", {"lat" : 40.73, "lon" : -74.1}, {"lat" : 40.717, "lon" : -73.99})
+        gq = GeoBoundingBoxQuery("pin.location", location_tl = {"lat" : 40.717, "lon" : 70.99}, location_br = {"lat" : 40.03, "lon" : 72.0})
         q = FilteredQuery(MatchAllQuery(), gq)
         result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
 
-        gq = GeoBoundingBoxQuery("pin.location", [40.73, -74.1], [40.717, -73.99])
+        gq = GeoBoundingBoxQuery("pin.location",  [40.717, 70.99], [40.03, 74.1])
         q = FilteredQuery(MatchAllQuery(), gq)
         result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
 
     def test_GeoPolygonQuery(self):
-        gq = GeoPolygonQuery("pin.location", [{"lat" : 40, "lon" : -70},
+        gq = GeoPolygonQuery("pin.location", [{"lat" : 50, "lon" : -30},
                                                 {"lat" : 30, "lon" : -80},
-                                                {"lat" : 20, "lon" : -90}]
+                                                {"lat" : 80, "lon" : -90}]
                                                 )
         q = FilteredQuery(MatchAllQuery(), gq)
         result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
 
-        gq = GeoPolygonQuery("pin.location", [[ 40, -70],
+        gq = GeoPolygonQuery("pin.location", [[ 50, -30],
                                               [ 30, -80],
-                                              [ 20, -90]]
+                                              [ 80, -90]]
                                                 )
         q = FilteredQuery(MatchAllQuery(), gq)
         result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
-        
+
+class BulkTestCase(ESTestCase):
+    def setUp(self):
+        super(BulkTestCase, self).setUp()
+        mapping = { u'parsedtext': {'boost': 1.0,
+                         'index': 'analyzed',
+                         'store': 'yes',
+                         'type': u'string',
+                         "term_vector" : "with_positions_offsets"},
+                 u'name': {'boost': 1.0,
+                            'index': 'analyzed',
+                            'store': 'yes',
+                            'type': u'string',
+                            "term_vector" : "with_positions_offsets"},
+                 u'title': {'boost': 1.0,
+                            'index': 'analyzed',
+                            'store': 'yes',
+                            'type': u'string',
+                            "term_vector" : "with_positions_offsets"},
+                 u'pos': {'store': 'yes',
+                            'type': u'integer'},
+                 u'uuid': {'boost': 1.0,
+                           'index': 'not_analyzed',
+                           'store': 'yes',
+                           'type': u'string'}}
+        self.conn.create_index("test-index")
+        self.conn.put_mapping("test-type", {'properties':mapping}, ["test-index"])
+        self.conn.index({"name":"Joe Tester", "parsedtext":"Joe Testere nice guy", "uuid":"11111", "position":1}, "test-index", "test-type", 1, bulk=True)
+        self.conn.index({"name":"Bill Baloney", "parsedtext":"Bill Testere nice guy", "uuid":"22222", "position":2}, "test-index", "test-type", 2, bulk=True)
+        self.conn.index({"name":"Bill Clinton", "parsedtext":"""Bill is not 
+                nice guy""", "uuid":"33333", "position":3}, "test-index", "test-type", 3, bulk=True)
+        self.conn.force_bulk()
+        self.conn.refresh(["test-index"])
+
+    def test_TermQuery(self):
+        q = TermQuery("name", "bill")
+        result = self.conn.search(query = q, indexes=["test-index"])
+        self.assertEquals(result['hits']['total'], 2)
 
 
 if __name__ == "__main__":
-#    unittest.main()
-    suite = unittest.TestLoader().loadTestsFromTestCase(GeoQuerySearchTestCase)
+    unittest.main()
+#    suite = unittest.TestLoader().loadTestsFromTestCase(GeoQuerySearchTestCase)
 #    suite = unittest.TestLoader().loadTestsFromTestCase(IndexingTestCase)
+#    suite = unittest.TestLoader().loadTestsFromTestCase(BulkTestCase)
 
-    unittest.TextTestRunner(verbosity=2).run(suite)
+#    unittest.TextTestRunner(verbosity=2).run(suite)
     

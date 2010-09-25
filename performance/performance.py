@@ -1,7 +1,7 @@
-from pyes import ElasticSearch
+from pyes import ES
 from datetime import datetime
 import shelve
-conn = ElasticSearch('127.0.0.1:9500')
+conn = ES('127.0.0.1:9500')
 try:
     conn.delete_index("test-index")
 except:
@@ -29,7 +29,9 @@ conn.put_mapping("test-type", {'properties':mapping}, ["test-index"])
 
 start = datetime.now()
 for k, userdata in dataset.items():
-    conn.index(userdata, "test-index", "test-type", k)
+#    conn.index(userdata, "test-index", "test-type", k)
+    conn.index(userdata, "test-index", "test-type", k, bulk=True)
+conn.force_bulk()
 end = datetime.now()
 
 print "time:", end-start

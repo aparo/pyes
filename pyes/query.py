@@ -10,7 +10,7 @@ except ImportError:
     # For Python >= 2.6
     import json
 
-from elasticsearch import ESJsonEncoder
+from es import ESJsonEncoder
 
 
 log = logging.getLogger('pyes')
@@ -766,7 +766,7 @@ class GeoDistanceQuery(Query):
 
 
 
-def GeoBoundingBoxQuery(Query):
+class GeoBoundingBoxQuery(Query):
     """
     
     http://github.com/elasticsearch/elasticsearch/issues/290

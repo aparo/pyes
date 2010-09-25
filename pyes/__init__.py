@@ -4,7 +4,7 @@
 import logging
 logger = logging.getLogger(__name__)
 
-VERSION = (0, 10, 2)
+VERSION = (0, 10, 3)
 
 __version__ = ".".join(map(str, VERSION[0:3])) + "".join(VERSION[3:])
 __author__ = "Alberto Paro"
@@ -24,7 +24,7 @@ def version_with_meta():
                         is_stable_release() and "stable" or "unstable")
 
 from pyes.connection import *
-from elasticsearch import ElasticSearch
+from es import ES
 from query import *
 from objectid import ObjectId
 

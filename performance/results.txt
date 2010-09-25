@@ -31,3 +31,12 @@ time: 0:00:03.845026
 time: 0:00:03.628078
 (brainaetic)MBPAlbertoParo:performance alberto$ python performance.py 
 time: 0:00:03.775564
+
+
+
+Wikipedia imported
+------------------
+
+real    6653m46.436s
+user    321m24.880s
+sys     79m36.180s

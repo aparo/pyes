@@ -118,7 +118,9 @@ For more examples looks at the tests.
 Changelog
 =========
 
-v. 0.10.2: added new query type: 
+v. 0.10.3: added bulk insert, explain and facet. 
+
+v. 0.10.2: added new geo query type. 
 
 v. 0.10.1: added new connection pool system based on pycassa one.
 
@@ -128,7 +130,6 @@ v. 0.10.0: initial working version.
 TODO
 ----
 
-- multiprocess for indexing
 - API rewriting for indexing and mapping part
 - more docs
 - more tests

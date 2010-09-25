@@ -58,13 +58,15 @@ class Query(object):
                  start = 0,
                  size=None,
                  highlight=None,
-                 sort = None):
+                 sort = None,
+                 explain=False):
         
         self.return_fields = return_fields
         self.start = start
         self.size = size
         self.highlight=highlight
         self.sort = sort
+        self.explain = explain
     
     @property
     def q(self):
@@ -79,6 +81,8 @@ class Query(object):
             res['highlight'] = self.highlight.serialize()
         if self.sort:
             res['sort'] = self.sort
+        if self.explain:
+            res['explain'] = self.explain
         return res
 
     def add_highlight(self, field, fragment_size=None, number_of_fragments=None):

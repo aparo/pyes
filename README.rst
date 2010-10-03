@@ -58,7 +58,7 @@ Usage
 Creating a connection:
 
     >>> from pyes import *
-    >>> conn = ElasticSearch('http://127.0.0.1:9200/')
+    >>> conn = ES('127.0.0.1:9500')
 
 Deleting an index:
 

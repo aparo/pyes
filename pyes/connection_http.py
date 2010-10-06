@@ -7,54 +7,57 @@ Work taken from pycassa
 from exceptions import Exception
 import logging
 import random
-import socket
 import threading
 import time
-
-from thrift import Thrift
-from thrift.transport import TTransport
-from thrift.transport import TSocket
-from thrift.protocol import TBinaryProtocol
-from pyesthrift import Rest
-
 from errors import NoServerAvailable
+import urllib3
+from fakettypes import *
+import json
+import socket
+__all__ = ['connect', 'connect_thread_local']
 
-__all__ = ['connect', 'connect_thread_local', 'NoServerAvailable']
-
-DEFAULT_SERVER = '127.0.0.1:9500'
+DEFAULT_SERVER = '127.0.0.1:9200'
 #API_VERSION = VERSION.split('.')
 
 log = logging.getLogger('pyes')
+
+class ESJsonEncoder(json.JSONEncoder):
+    def default(self, value):
+        """Convert rogue and mysterious data types.
+        Conversion notes:
+        
+        - ``datetime.date`` and ``datetime.datetime`` objects are
+        converted into datetime strings.
+        """
+
+        if isinstance(value, datetime):
+            return value.strftime("%Y-%m-%dT%H:%M:%S")
+        elif isinstance(value, date):
+            dt = datetime(value.year, value.month, value.day, 0, 0, 0)
+            return dt.strftime("%Y-%m-%dT%H:%M:%S")
+        else:
+            # use no special encoding and hope for the best
+            return value
 
 class ClientTransport(object):
     """Encapsulation of a client session."""
 
     def __init__(self, server, framed_transport, timeout, recycle):
         host, port = server.split(":")
-        socket = TSocket.TSocket(host, int(port))
-        if timeout is not None:
-            socket.setTimeout(timeout*1000.0)
-        if framed_transport:
-            transport = TTransport.TFramedTransport(socket)
-        else:
-            transport = TTransport.TBufferedTransport(socket)
-        protocol = TBinaryProtocol.TBinaryProtocolAccelerated(transport)
-        client = Rest.Client(protocol)
-        transport.open()
 
-#        server_api_version = client.describe_version().split('.', 1)
-#        assert server_api_version[0] == API_VERSION[0], \
-#                "Thrift API version mismatch. " \
-#                 "(Client: %s, Server: %s)" % (API_VERSION[0], server_api_version[0])
-
-        self.client = client
-        self.transport = transport
-
+        self.client = urllib3.HTTPConnectionPool(host, port, timeout=timeout)
+        setattr(self.client, "execute", self.execute)
         if recycle:
             self.recycle = time.time() + recycle + random.uniform(0, recycle * 0.1)
         else:
             self.recycle = None
 
+    def execute(self, request):
+        """
+        Execute a request and return a response
+        """
+        response = self.client.urlopen(Method._VALUES_TO_NAMES[request.method], request.uri, body=request.body, headers=request.headers)    
+        return RestResponse(status=response.status, body=response.data, headers=response.headers)
 
 def connect(servers=None, framed_transport=False, timeout=None,
             retry_time=60, recycle=None, round_robin=None):
@@ -74,7 +77,7 @@ def connect(servers=None, framed_transport=False, timeout=None,
     servers : [server]
               List of ES servers with format: "hostname:port"
 
-              Default: ['127.0.0.1:8500']
+              Default: ['127.0.0.1:9200']
     framed_transport: bool
               If True, use a TFramedTransport instead of a TBufferedTransport
     timeout: float
@@ -147,7 +150,7 @@ class ThreadLocalConnection(object):
     def __init__(self, servers, framed_transport=False, timeout=None,
                  retry_time=10, recycle=None):
         self._servers = ServerSet(servers, retry_time)
-        self._framed_transport = framed_transport
+        self._framed_transport = framed_transport #not used in http
         self._timeout = timeout
         self._recycle = recycle
         self._local = threading.local()
@@ -157,7 +160,7 @@ class ThreadLocalConnection(object):
             try:
                 conn = self._ensure_connection()
                 return getattr(conn.client, attr)(*args, **kwargs)
-            except (Thrift.TException, socket.timeout, socket.error), exc:
+            except (socket.timeout, socket.error), exc:
                 log.exception('Client error: %s', exc)
                 self.close()
                 return _client_call(*args, **kwargs) # Retry
@@ -181,14 +184,14 @@ class ThreadLocalConnection(object):
                 log.debug('Connecting to %s', server)
                 self._local.conn = ClientTransport(server, self._framed_transport,
                                                    self._timeout, self._recycle)
-            except (Thrift.TException, socket.timeout, socket.error):
+            except (socket.timeout, socket.error):
                 log.warning('Connection to %s failed.', server)
                 self._servers.mark_dead(server)
                 return self.connect()
         return self._local.conn
 
     def close(self):
-        """If a connection is open, close its transport."""
-        if self._local.conn:
-            self._local.conn.transport.close()
+        """If a connection is open, close it."""
+#        if self._local.conn:
+#            self._local.conn.transport.close()
         self._local.conn = None

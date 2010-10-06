@@ -52,6 +52,34 @@ class HighLighter:
             res["fields"] = {"_all" : {}}
         return res
 
+#--- Facet
+class FacetFactory(object):
+    def __init__(self):
+        self.facets = []
+    
+    @property
+    def q(self):
+        res={}
+        for facet in facets:
+            res.update(facet.serialize())
+        return {"facets":res}
+
+class Facet(object):
+    def __init__(self, *args, **kwargs):
+        pass
+    
+class QueryFacet(Facet):
+    _internal_name = "query"
+
+    def __init__(self, query, **kwargs):
+        super(QueryFacet, self).__init__(**kwargs)
+        self.name = name
+        self.query = query
+        
+    def serialize(self):
+        return {self.name:{self._internal_name:self.query.serialize()}}
+        
+#--- Query
 class Query(object):
     def __init__(self, 
                  return_fields = None,

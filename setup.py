@@ -26,7 +26,7 @@ class QuickRunTests(TestCommand):
         TestCommand.run(self, *args, **kwargs)
 
 
-install_requires = ["urllib3"]
+install_requires = ["urllib3", "thrift"]
 
 try:
     import importlib

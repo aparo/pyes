@@ -4,7 +4,7 @@
 Unit tests for pyes.  These require an es server with thrift plugin running on the default port (localhost:9500).
 """
 import unittest
-from es import ES 
+from es import ES, file_to_attachment
 from query import *
 from time import sleep
 
@@ -465,10 +465,9 @@ class BulkTestCase(ESTestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+#    unittest.main()
 #    suite = unittest.TestLoader().loadTestsFromTestCase(GeoQuerySearchTestCase)
-#    suite = unittest.TestLoader().loadTestsFromTestCase(IndexingTestCase)
+    suite = unittest.TestLoader().loadTestsFromTestCase(IndexingTestCase)
 #    suite = unittest.TestLoader().loadTestsFromTestCase(BulkTestCase)
 
-#    unittest.TextTestRunner(verbosity=2).run(suite)
-    
+    unittest.TextTestRunner(verbosity=2).run(suite)

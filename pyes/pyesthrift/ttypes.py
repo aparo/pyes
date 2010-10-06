@@ -14,7 +14,7 @@ except:
   fastbinary = None
 
 
-class Method(object):
+class Method:
   GET = 0
   PUT = 1
   POST = 2
@@ -40,7 +40,7 @@ class Method(object):
     "OPTIONS": 5,
   }
 
-class Status(object):
+class Status:
   CONTINUE = 100
   SWITCHING_PROTOCOLS = 101
   OK = 200
@@ -180,12 +180,12 @@ class Status(object):
     "INSUFFICIENT_STORAGE": 506,
   }
 
-class RestRequest(object):
+class RestRequest:
   """
   Attributes:
    - method
    - uri
-   - params
+   - parameters
    - headers
    - body
   """
@@ -194,15 +194,15 @@ class RestRequest(object):
     None, # 0
     (1, TType.I32, 'method', None, None, ), # 1
     (2, TType.STRING, 'uri', None, None, ), # 2
-    (3, TType.MAP, 'params', (TType.STRING,None,TType.STRING,None), None, ), # 3
+    (3, TType.MAP, 'parameters', (TType.STRING,None,TType.STRING,None), None, ), # 3
     (4, TType.MAP, 'headers', (TType.STRING,None,TType.STRING,None), None, ), # 4
     (5, TType.STRING, 'body', None, None, ), # 5
   )
 
-  def __init__(self, method=None, uri=None, params=None, headers=None, body=None,):
+  def __init__(self, method=None, uri=None, parameters=None, headers=None, body=None,):
     self.method = method
     self.uri = uri
-    self.params = params
+    self.parameters = parameters
     self.headers = headers
     self.body = body
 
@@ -227,12 +227,12 @@ class RestRequest(object):
           iprot.skip(ftype)
       elif fid == 3:
         if ftype == TType.MAP:
-          self.params = {}
+          self.parameters = {}
           (_ktype1, _vtype2, _size0 ) = iprot.readMapBegin() 
           for _i4 in xrange(_size0):
             _key5 = iprot.readString();
             _val6 = iprot.readString();
-            self.params[_key5] = _val6
+            self.parameters[_key5] = _val6
           iprot.readMapEnd()
         else:
           iprot.skip(ftype)
@@ -270,10 +270,10 @@ class RestRequest(object):
       oprot.writeFieldBegin('uri', TType.STRING, 2)
       oprot.writeString(self.uri)
       oprot.writeFieldEnd()
-    if self.params != None:
-      oprot.writeFieldBegin('params', TType.MAP, 3)
-      oprot.writeMapBegin(TType.STRING, TType.STRING, len(self.params))
-      for kiter14,viter15 in self.params.items():
+    if self.parameters != None:
+      oprot.writeFieldBegin('parameters', TType.MAP, 3)
+      oprot.writeMapBegin(TType.STRING, TType.STRING, len(self.parameters))
+      for kiter14,viter15 in self.parameters.items():
         oprot.writeString(kiter14)
         oprot.writeString(viter15)
       oprot.writeMapEnd()
@@ -304,7 +304,7 @@ class RestRequest(object):
   def __ne__(self, other):
     return not (self == other)
 
-class RestResponse(object):
+class RestResponse:
   """
   Attributes:
    - status

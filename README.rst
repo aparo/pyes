@@ -2,7 +2,7 @@
  pyes - Python ElasticSearch
 =============================
 
-:Version: 0.1.0
+:Version: 0.12.0
 :Web: http://pypi.python.org/pypi/pyes/
 :Download: http://pypi.python.org/pypi/pyes/
 :Source: http://github.com/aparo/pyes/
@@ -23,12 +23,22 @@ Import the module:
 
     >>> import pyes
 
+pyes is able to use standard http or thrift protocol. If your port starts with "92" http protocol is used, otherwise thrift.
+
+
 For a single connection (which is _not_ thread-safe), pass a list of servers.
+
+For thrift:
 
     >>> client = pyes.connect() # Defaults to connecting to the server at '127.0.0.1:9500'
     >>> client = pyes.connect(['127.0.0.1:9500'])
 
-Framed transport is the default. You may disable it by passing framed_transport=False.
+For http:
+
+    >>> client = pyes.connect(['127.0.0.1:9200'])
+
+
+With thrift protocol, framed transport is the default. You may disable it by passing framed_transport=False.
 
     >>> client = pyes.connect(framed_transport=False)
 
@@ -38,9 +48,14 @@ Thread-local connections opens a connection for every thread that calls an Elast
     >>> client = pyes.connect_thread_local(['127.0.0.1:9500', 'other_server:9500']) # Round robin connections
     >>> client = pyes.connect_thread_local(['127.0.0.1:9500', 'other_server:9500'], round_robin=False) # Connect in list order
 
+With http protocol transport:
+
+    >>> client = pyes.connect_thread_local(['127.0.0.1:9200', 'other_server:9200']) # Round robin connections
+    >>> client = pyes.connect_thread_local(['127.0.0.1:9200', 'other_server:9200'], round_robin=False) # Connect in list order
+
 Connections are robust to server failures. Upon a disconnection, it will attempt to connect to each server in the list in turn. If no server is available, it will raise a NoServerAvailable exception.
 
-Timeouts are also supported and should be used in production to prevent a thread from freezing while waiting for Cassandra to return.
+Timeouts are also supported and should be used in production to prevent a thread from freezing while waiting for the server to return.
 
     >>> client = pyes.connect(timeout=3.5) # 3.5 second timeout
     (Make some pyes calls and the connection to the server suddenly becomes unresponsive.)
@@ -117,6 +132,8 @@ For more examples looks at the tests.
 
 Changelog
 =========
+
+v. 0.12.0: added http transport, added autodetect of transport, updated thrift interface. 
 
 v. 0.10.3: added bulk insert, explain and facet. 
 

@@ -21,23 +21,19 @@ import copy
 from datetime import date, datetime
 from pprint import pprint 
 import base64
-from thrift.transport import TTransport
-from thrift.transport import TSocket
-from thrift.transport import THttpClient
-from thrift.protocol import TBinaryProtocol
-from pyesthrift import Rest
-from pyesthrift.ttypes import *
-from connection import *
+try:
+    from connection import connect as thrift_connect
+    from pyesthrift.ttypes import *
+    thrift_enable = True
+except ImportError:
+    from fakettypes import *
+    thrift_enable = False
+from connection_http import connect as http_connect
 
 log = logging.getLogger('pyes')
 
 #---- Errors
-class QueryError(Exception):
-    def _get_message(self): 
-        return self._message
-    def _set_message(self, message): 
-        self._message = message
-    message = property(_get_message, _set_message)
+from errors import QueryError
     
 def file_to_attachment(filename):
     return {'_name':filename,
@@ -100,7 +96,14 @@ class ES(object):
         """
         Create initial connection pool
         """
-        self.connection = connect(self.servers, timeout=self.timeout)
+        #detect connectiontype
+        port = self.servers[0].split(":")[1]
+        if port.startswith("92"):
+            self.connection = http_connect(self.servers, timeout=self.timeout)
+            return
+        if not thrift_enable:
+            raise RuntimeError("If you want to use thrift, please install pythrift")
+        self.connection = thrift_connect(self.servers, timeout=self.timeout)
         
     def _discovery(self):
         """
@@ -124,7 +127,7 @@ class ES(object):
             body = json.dumps(body, cls=ESJsonEncoder)
         if body is None:
             body=""
-        request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()], uri=path, params=params, headers={}, body=body)
+        request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()], uri=path, parameters=params, headers={}, body=body)
         response = self.connection.execute(request)
         try:
             decoded = json.loads(response.body)
@@ -149,15 +152,6 @@ class ES(object):
 #        """
 #        return json.dumps(body, cls=ESJsonEncoder)
 #        
-#    def _prep_response(self, response):
-#        """
-#        Parses json to a native python object.
-#        """
-#        response = json.loads(response)
-#        if self.debug_dump:
-#            print "response.data"
-#            pprint(response)
-#        return response
         
     def _query_call(self, query_type, query, indexes=['_all'], doc_types=[], **query_params):
         """

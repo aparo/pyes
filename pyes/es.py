@@ -78,6 +78,7 @@ class ES(object):
         self.connection = None
         self.bulk_size = bulk_size
         self.buckets = []
+        self.info = {} #info about the current server
         if isinstance(server, (str, unicode)):
             self.servers = [server]
         else:
@@ -264,6 +265,17 @@ class ES(object):
         path = self._make_path([','.join(indexes), doc_type,"_mapping"])
         return self._send_request('GET', path)
 
+    def collect_info(self):
+        """
+        Collect info about the connection and fill the info dictionary
+        """
+        self.info = {}
+        res = self._send_request('GET', "/")
+        self.info['server'] = {}
+        self.info['server']['name'] = res['name']
+        self.info['server']['version'] = res['version']
+        return self.info
+        
     #--- cluster
     def cluster_health(self, indexes=None, level="cluster", wait_for_status=None, 
                wait_for_relocating_shards=None, timeout=30):
@@ -387,6 +399,7 @@ class ES(object):
         """
         path = self._make_path([index, doc_type, id])
         return self._send_request('DELETE', path)
+        
         
     def get(self, index, doc_type, id):
         """

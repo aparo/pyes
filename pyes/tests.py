@@ -25,6 +25,15 @@ class IndexingTestCase(ESTestCase):
         super(IndexingTestCase, self).setUp()
         self.conn.create_index("test-index")
 
+
+    def testCollectInfo(self):
+        """
+        Testing collecting server info
+        """
+        result = self.conn.collect_info()
+        self.assertTrue(result.has_key('server'))
+        self.assertTrue(result['server'].has_key('name'))
+        self.assertTrue(result['server'].has_key('version'))
         
     def testIndexingWithID(self):
         """

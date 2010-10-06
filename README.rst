@@ -73,7 +73,7 @@ Usage
 Creating a connection:
 
     >>> from pyes import *
-    >>> conn = ElasticSearch('http://127.0.0.1:9500/')
+    >>> conn = ElasticSearch('127.0.0.1:9500')
 
 Deleting an index:
 

@@ -133,6 +133,8 @@ For more examples looks at the tests.
 Changelog
 =========
 
+v. 0.12.1: added collecting server info. 
+
 v. 0.12.0: added http transport, added autodetect of transport, updated thrift interface. 
 
 v. 0.10.3: added bulk insert, explain and facet. 

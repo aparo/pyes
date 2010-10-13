@@ -2,12 +2,11 @@
 # -*- coding: utf-8 -*-
 import logging
 
-import logging
 try:
-    # For Python < 2.6 or people using a newer version of simplejson
+    # For Python >= 2.6
     import json
 except ImportError:
-    # For Python >= 2.6
+    # For Python < 2.6 or people using a newer version of simplejson
     import simplejson as json
 
 from es import ESJsonEncoder

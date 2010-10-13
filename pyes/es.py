@@ -229,6 +229,8 @@ class ES(object):
         """
         Refresh one or more indices
         """
+        self.force_bulk()
+
         if indexes is None:
             indexes = ['_all']
         path = self._make_path([','.join(indexes), '_refresh'])
@@ -340,9 +342,9 @@ class ES(object):
             optype = "index"
             if force_insert:
                 optype = "create"
-            cmd = { optype : { "index" : index, "type" : doc_type}}
+            cmd = { optype : { "_index" : index, "_type" : doc_type}}
             if id:
-                cmd[optype]['id'] = id
+                cmd[optype]['_id'] = id
             self.buckets.append(json.dumps(cmd, cls=self.encoder))
             self.buckets.append(json.dumps(doc, cls=self.encoder))
             self.flush_bulk()

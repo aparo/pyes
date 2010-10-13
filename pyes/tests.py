@@ -7,6 +7,7 @@ import unittest
 from es import ES, file_to_attachment
 from query import *
 from pprint import pprint
+import os
 
 class ESTestCase(unittest.TestCase):
     def setUp(self):
@@ -159,7 +160,7 @@ class TestFileSaveTestCase(ESTestCase):
         content = open(name, "rb").read()
         self.conn.put_file(name, "test-index", "test-type", 1)
         self.conn.refresh(["test-index"])
-        self.conn.get_mapping("test-type", ["test-index"])
+        mappings = self.conn.get_mapping("test-type", ["test-index"])
         nname, ncontent = self.conn.get_file("test-index", "test-type", 1)
         self.assertEquals(name, nname)
         self.assertEquals(content, ncontent)
@@ -168,38 +169,54 @@ class QueryAttachmentTestCase(ESTestCase):
     def setUp(self):
         super(QueryAttachmentTestCase, self).setUp()
         mapping = {
-                   "my_attachment" : { "type" : "attachment", 
+                   "attachment" : { "type" : "attachment", 
                                       'fields':{
                                         "file" : {'store' : "yes"},
                                         "date" : {'store' : "yes"},
                                         "author" : {'store': "yes"},
-                                        "title" : {'store': "yes"},}
+                                        "title" : {'store': "yes", "term_vector" : "with_positions_offsets"},
+                                        "attachment" : {'store': "yes"},
+                                        }
                                       },
                    'uuid': {'boost': 1.0,
                            'index': 'not_analyzed',
                            'store': 'yes',
                            'type': u'string'}
                    }
+#        mapping = {
+#            "test-type": {
+#                "_index": {"enabled": "yes"},
+#                "_id": {"store": "yes"},
+#                "properties": {
+#                    "attachment": {
+#                        "type": "attachment",
+#                        "fields": {
+#                            "title": {"store": "yes", "term_vector" : "with_positions_offsets"},
+#                            "attachment": {"store":"yes", "term_vector" : "with_positions_offsets"}
+#                        },
+#                        "store":"yes"
+#                        
+#                    },
+#                    "uuid": {"type": "string", "store": "yes", "index": "not_analyzed"}
+#                },
+#                "_all": {"store": "yes", "term_vector": "with_positions_offsets"}
+#            }
+#        }
         self.conn.debug_dump=True
         self.conn.create_index("test-index")
         self.conn.put_mapping("test-type", {"test-type":{'properties':mapping}}, ["test-index"])
+#        self.conn.put_mapping("test-type", mapping, ["test-index"])
         self.conn.refresh(["test-index"])
         self.conn.get_mapping("test-type", ["test-index"])
-#        self.conn.index({"my_attachment":file_to_attachment("/opt/brainaetic/rd2/brainaetic/data/mediatest/programma.doc"), "uuid":"1" }, "test-index", "test-type", 1)
-        self.conn.index({"my_attachment":file_to_attachment("/Users/alberto/Documents/workspace/elasticsearch/plugins/mapper/attachments/src/test/java/org/elasticsearch/index/mapper/xcontent/testXHTML.html"), "uuid":"1" }, "test-index", "test-type", 1)
-#        dirname = "/opt/brainaetic/data/mediatest/"
-#        for pos, filename in enumerate(os.listdir(dirname)):
-#            filename = os.path.join(dirname, filename)
-#            if os.path.isfile(filename):
-#                self.conn.index({"my_attachment":file_to_attachment(filename), "uuid":str(pos+1) }, "test-index", "test-type", pos+1)
-#                print str(pos+1)
-#                break
+        self.conn.index({"attachment":file_to_attachment(os.path.join("testdata", "testXHTML.html")), "uuid":"1" }, "test-index", "test-type", 1)
         self.conn.refresh(["test-index"])
-        self.conn.get_mapping("test-type", ["test-index"])
+#        mappings = self.conn.get_mapping("test-type", ["test-index"])
+#        object = self.conn.get("test-index", "test-type", 1)
 
     def test_TermQuery(self):
-        q = TermQuery("uuid", "1")
+        q = TermQuery("uuid", "1", fields=["*"])
         result = self.conn.search(query = q, indexes=["test-index"])
+        pprint(result)
         self.assertEquals(result['hits']['total'], 1)
 
 class QuerySearchTestCase(ESTestCase):
@@ -447,8 +464,9 @@ class BulkTestCase(ESTestCase):
 if __name__ == "__main__":
 #    unittest.main()
 #    suite = unittest.TestLoader().loadTestsFromTestCase(GeoQuerySearchTestCase)
-    suite = unittest.TestLoader().loadTestsFromTestCase(IndexingTestCase)
+#    suite = unittest.TestLoader().loadTestsFromTestCase(IndexingTestCase)
 #    suite = unittest.TestLoader().loadTestsFromTestCase(BulkTestCase)
+    suite = unittest.TestLoader().loadTestsFromTestCase(QueryAttachmentTestCase)
 
     unittest.TextTestRunner(verbosity=2).run(suite)
     

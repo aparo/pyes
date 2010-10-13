@@ -2,7 +2,6 @@
  pyes - Python ElasticSearch
 =============================
 
-:Version: 0.12.0
 :Web: http://pypi.python.org/pypi/pyes/
 :Download: http://pypi.python.org/pypi/pyes/
 :Source: http://github.com/aparo/pyes/
@@ -133,7 +132,7 @@ For more examples looks at the tests.
 Changelog
 =========
 
-v. 0.12.1: added collecting server info. 
+v. 0.12.1: added collecting server info, corrected use of attachement plugin. 
 
 v. 0.12.0: added http transport, added autodetect of transport, updated thrift interface. 
 
@@ -153,6 +152,7 @@ TODO
 - more docs
 - more tests
 - facets
+- rivers
 - cleanup
 
 

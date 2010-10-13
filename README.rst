@@ -135,6 +135,7 @@ Changelog
 v. 0.12.1: added collecting server info.
            Fixed attachment plugin. 
            Updated bulk insert to use new api. 
+           Add facet support (except geotypes). 
 
 v. 0.12.0: added http transport, added autodetect of transport, updated thrift interface. 
 

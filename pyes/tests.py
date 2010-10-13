@@ -462,11 +462,11 @@ class BulkTestCase(ESTestCase):
 
 
 if __name__ == "__main__":
-#    unittest.main()
+    unittest.main()
 #    suite = unittest.TestLoader().loadTestsFromTestCase(GeoQuerySearchTestCase)
 #    suite = unittest.TestLoader().loadTestsFromTestCase(IndexingTestCase)
 #    suite = unittest.TestLoader().loadTestsFromTestCase(BulkTestCase)
-    suite = unittest.TestLoader().loadTestsFromTestCase(QueryAttachmentTestCase)
+#    suite = unittest.TestLoader().loadTestsFromTestCase(QueryAttachmentTestCase)
 
-    unittest.TextTestRunner(verbosity=2).run(suite)
+#    unittest.TextTestRunner(verbosity=2).run(suite)
     

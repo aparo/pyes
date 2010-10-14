@@ -32,5 +32,13 @@ def generate_datafile(number_items=1000):
     print "%s generated with %d samples"%(filename, number_items)
     
 if __name__ == '__main__':
-    generate_datafile(int(sys.argv[1]))
-#    generate_datafile(1000)
+    """
+    Usage: 
+            python generate_dataset.py 60000
+
+    (Dataset size defaults to 1000 if not specified)
+    """
+    try:
+       generate_datafile(int(sys.argv[1]))
+    except IndexError:
+       generate_datafile()

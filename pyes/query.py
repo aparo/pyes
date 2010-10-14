@@ -3,14 +3,19 @@
 import logging
 
 try:
-    # For Python >= 2.6
     import json
 except ImportError:
-    # For Python < 2.6 or people using a newer version of simplejson
+    # For Python <= 2.5
     import simplejson as json
 
 from es import ESJsonEncoder
 
+# Characters that are part of Lucene query syntax must be stripped
+# from user input: + - && || ! ( ) { } [ ] ^ " ~ * ? : \
+# See: http://lucene.apache.org/java/3_0_2/queryparsersyntax.html#Escaping
+SPECIAL_CHARS = [33, 34, 38, 40, 41, 42, 58, 63, 91, 92, 93, 94, 123, 124, 125, 126]
+UNI_SPECIAL_CHARS = dict((c, None) for c in SPECIAL_CHARS)
+STR_SPECIAL_CHARS = ''.join([chr(c) for c in SPECIAL_CHARS])
 
 log = logging.getLogger('pyes')
 
@@ -19,6 +24,7 @@ class QueryParameterError(Exception):
         return self._message
     def _set_message(self, message): 
         self._message = message
+
     message = property(_get_message, _set_message)
     
 class HighLighter:
@@ -277,6 +283,14 @@ class Query(object):
         Returns the facet factory
         """
         return self.facet
+
+    def _clean_data(self, text):
+        """
+        Remove Lucene reserved words from query string
+        """
+        if isinstance(text, unicode):
+            return text.translate(UNI_SPECIAL_CHARS)
+        return text.translate(None, STR_SPECIAL_CHARS)
     
     @property
     def q(self):
@@ -548,7 +562,7 @@ class StringQuery(Query):
                 use_dis_max = True,
                 tie_breaker = 0, **kwargs):
         super(StringQuery, self).__init__(**kwargs)
-        self.text = query
+        self.text = self._clean_data(query)
         self.default_field = default_field
         self.default_operator = default_operator
         self.analyzer = analyzer

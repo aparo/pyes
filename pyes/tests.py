@@ -6,6 +6,7 @@ Unit tests for pyes.  These require an es server with thrift plugin running on t
 import unittest
 from es import ES, file_to_attachment
 from query import *
+from time import sleep
 from pprint import pprint
 import os
 
@@ -25,7 +26,11 @@ class IndexingTestCase(ESTestCase):
     def setUp(self):
         super(IndexingTestCase, self).setUp()
         self.conn.create_index("test-index")
+        self.conn.delete_index("test-index2")
 
+        #Sleep to allow ElasticSearch to set up 
+        #mapping and indices before running tests
+        sleep(0.5)
 
     def testCollectInfo(self):
         """
@@ -110,6 +115,10 @@ class SearchTestCase(ESTestCase):
         self.conn.index({"name":"Joe Tester"}, "test-index", "test-type", 1)
         self.conn.index({"name":"Bill Baloney"}, "test-index", "test-type", 2)
         self.conn.refresh(["test-index"])
+
+        #Sleep to allow ElasticSearch to set up 
+        #mapping and indices before running tests
+        sleep(0.5)
     
     def testGetByID(self):
         result = self.conn.get("test-index", "test-type", 1)
@@ -117,7 +126,6 @@ class SearchTestCase(ESTestCase):
 
     def testGetCountBySearch(self):
         q = TermQuery("name", "joe")
-        
         result = self.conn.count(q, indexes=["test-index"])
         self.assertResultContains(result, {'count': 1})
 
@@ -216,6 +224,10 @@ class QueryAttachmentTestCase(ESTestCase):
 #        mappings = self.conn.get_mapping("test-type", ["test-index"])
 #        object = self.conn.get("test-index", "test-type", 1)
 
+        #Sleep to allow ElasticSearch to set up 
+        #mapping and indices before running tests
+        sleep(0.5)
+
     def test_TermQuery(self):
         q = TermQuery("uuid", "1", fields=["*"])
         result = self.conn.search(query = q, indexes=["test-index"])
@@ -251,6 +263,10 @@ class QuerySearchTestCase(ESTestCase):
         self.conn.index({"name":"Joe Tester", "parsedtext":"Joe Testere nice guy", "uuid":"11111", "position":1}, "test-index", "test-type", 1)
         self.conn.index({"name":"Bill Baloney", "parsedtext":"Joe Testere nice guy", "uuid":"22222", "position":2}, "test-index", "test-type", 2)
         self.conn.refresh(["test-index"])
+
+        #Sleep to allow ElasticSearch to set up 
+        #mapping and indices before running tests
+        sleep(0.5)
 
     def test_TermQuery(self):
         q = TermQuery("name", "joe")
@@ -342,8 +358,6 @@ class QuerySearchTestCase(ESTestCase):
     def test_RegexTermQuery(self):
         q = RegexTermQuery("name", "jo.")
         result = self.conn.search(query = q, indexes=["test-index"])
-#        pprint(q.q)
-#        pprint(result)
         self.assertEquals(result['hits']['total'], 1)
 
     def test_QueryHighlight(self):
@@ -385,6 +399,10 @@ class GeoQuerySearchTestCase(ESTestCase):
                         }, "test-index", "test-type", 2)
 
         self.conn.refresh(["test-index"])
+        
+        #Sleep to allow ElasticSearch to set up 
+        #mapping and indices before running tests
+        sleep(0.5)
 
     def test_GeoDistanceQuery(self):
         gq = GeoDistanceQuery("pin.location", {"lat" : 40, "lon" : -70}, "200km")
@@ -458,6 +476,10 @@ class BulkTestCase(ESTestCase):
         self.conn.force_bulk()
         self.conn.refresh(["test-index"])
 
+        #Sleep to allow ElasticSearch to set up 
+        #mapping and indices before running tests
+        sleep(0.5)
+
     def test_TermQuery(self):
         q = TermQuery("name", "bill")
         result = self.conn.search(query = q, indexes=["test-index"])
@@ -465,12 +487,11 @@ class BulkTestCase(ESTestCase):
 
 
 if __name__ == "__main__":
-#    unittest.main()
+    unittest.main()
 #    suite = unittest.TestLoader().loadTestsFromTestCase(GeoQuerySearchTestCase)
 #    suite = unittest.TestLoader().loadTestsFromTestCase(IndexingTestCase)
 #    suite = unittest.TestLoader().loadTestsFromTestCase(BulkTestCase)
 #    suite = unittest.TestLoader().loadTestsFromTestCase(QueryAttachmentTestCase)
 #    suite = unittest.TestLoader().loadTestsFromTestCase(QuerySearchTestCase)
-    suite = unittest.TestLoader().loadTestsFromTestCase(SearchTestCase)
-    unittest.TextTestRunner(verbosity=2).run(suite)
-    
+#    suite = unittest.TestLoader().loadTestsFromTestCase(SearchTestCase)
+#    unittest.TextTestRunner(verbosity=2).run(suite)

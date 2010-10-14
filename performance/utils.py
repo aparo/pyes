@@ -2,20 +2,17 @@
 # -*- coding: utf-8 -*-
 #Brainaetic: http://www.thenetplanet.com
 #Copyright 2009-2010 - The Net Planet Europe S.R.L.  All Rights Reserved. 
+
 import random
 import os
-from datetime import datetime, timedelta
 from django.contrib.webdesign.lorem_ipsum import words as li_words
-from pprint import pprint
 import shelve
-import logging
-
+import codecs
 
 def get_names():
     """
     Return a list of names.
     """
-    import codecs
     return [n.strip() for n in codecs.open(os.path.join("data", "names.txt"),"rb",'utf8').readlines()]
 
 def generate_dataset(number_items=1000):

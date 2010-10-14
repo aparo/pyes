@@ -85,6 +85,7 @@ class ES(object):
         self.bulk_size = bulk_size
         self.buckets = []
         self.info = {} #info about the current server
+        self.mappings = None #track mapping
         self.encoder = encoder
         if self.encoder is None:
             self.encoder = ESJsonEncoder
@@ -264,12 +265,15 @@ class ES(object):
             mapping = {doc_type:mapping}
         return self._send_request('PUT', path, mapping)
 
-    def get_mapping(self, doc_type, indexes=None):
+    def get_mapping(self, doc_type=None, indexes=None):
         """
         Register specific mapping definition for a specific type against one or more indices.
         """
         indexes = indexes or self.default_indexes
-        path = self._make_path([','.join(indexes), doc_type,"_mapping"])
+        if doc_type:
+            path = self._make_path([','.join(indexes), doc_type,"_mapping"])
+        else:
+            path = self._make_path([','.join(indexes),"_mapping"])
         return self._send_request('GET', path)
 
     def collect_info(self):
@@ -281,6 +285,11 @@ class ES(object):
         self.info['server'] = {}
         self.info['server']['name'] = res['name']
         self.info['server']['version'] = res['version']
+        self.info['allinfo'] = res
+        self.info['status'] = self.status(["_all"])
+        #processing indexes
+        self.info['mappings'] = self.get_mapping()
+        self.mappings = None
         return self.info
         
     #--- cluster

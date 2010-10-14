@@ -289,7 +289,6 @@ class ES(object):
         self.info['status'] = self.status(["_all"])
         #processing indexes
         self.info['mappings'] = self.get_mapping()
-        self.mappings = None
         return self.info
         
     #--- cluster

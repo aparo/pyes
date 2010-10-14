@@ -155,7 +155,7 @@ v. 0.10.0: initial working version.
 TODO
 ----
 
-- API rewriting for indexing and mapping part
+- API rewriting for mapping
 - more docs
 - more tests
 - cleanup

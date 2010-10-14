@@ -24,8 +24,9 @@ def version_with_meta():
                         is_stable_release() and "stable" or "unstable")
 
 from pyes.connection import *
-from es import ES
+from es import ES, file_to_attachment
 from query import *
+from rivers import *
 from objectid import ObjectId
 
 try:

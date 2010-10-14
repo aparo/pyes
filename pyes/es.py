@@ -93,6 +93,7 @@ class ES(object):
             self.servers = [server]
         else:
             self.servers = server
+        self.default_indexes = ['_all']
         self._init_connection()
 
 
@@ -161,12 +162,15 @@ class ES(object):
             path = '/'+path
         return path
         
-    def _query_call(self, query_type, query, indexes=['_all'], doc_types=[], **query_params):
+    def _query_call(self, query_type, query, indexes=None, doc_types=None, **query_params):
         """
         This can be used for search and count calls.
         These are identical api calls, except for the type of query.
         """
         querystring_args = query_params
+        indexes = indexes or self.default_indexes
+        if doc_types is None:
+            doc_type = []
         body = query
         if hasattr(query, "to_json"):
             body = query.to_json()
@@ -179,8 +183,7 @@ class ES(object):
         """
         Retrieve the status of one or more indices
         """
-        if indexes is None:
-            indexes = ['_all']
+        indexes = indexes or self.default_indexes
         if isinstance(indexes, (str, unicode)):
             path = self._make_path([indexes, '_status'])
         else: 
@@ -214,8 +217,8 @@ class ES(object):
         """
         self.force_bulk()
 
-        if indexes is None:
-            indexes = ['_all']
+        indexes = indexes or self.default_indexes
+
         if isinstance(indexes, (str, unicode)):
             path = self._make_path([indexes, '_flush'])
         else: 
@@ -231,8 +234,7 @@ class ES(object):
         """
         self.force_bulk()
 
-        if indexes is None:
-            indexes = ['_all']
+        indexes = indexes or self.default_indexes
         path = self._make_path([','.join(indexes), '_refresh'])
         return self._send_request('POST', path)
         
@@ -240,8 +242,7 @@ class ES(object):
         """
         Optimize one ore more indices
         """
-        if indexes is None:
-            indexes = ['_all']
+        indexes = indexes or self.default_indexes
         path = self._make_path([','.join(indexes), '_optimize'])
         return self._send_request('POST', path, params=args)
 
@@ -249,8 +250,7 @@ class ES(object):
         """
         Gateway snapshot one or more indices
         """
-        if indexes is None:
-            indexes = ['_all']
+        indexes = indexes or self.default_indexes
         path = self._make_path([','.join(indexes), '_gateway', 'snapshot'])
         return self._send_request('POST', path)
 
@@ -258,8 +258,7 @@ class ES(object):
         """
         Register specific mapping definition for a specific type against one or more indices.
         """
-        if indexes is None:
-            indexes = ['_all']
+        indexes = indexes or self.default_indexes
         path = self._make_path([','.join(indexes), doc_type,"_mapping"])
         if doc_type not in mapping:
             mapping = {doc_type:mapping}
@@ -269,8 +268,7 @@ class ES(object):
         """
         Register specific mapping definition for a specific type against one or more indices.
         """
-        if indexes is None:
-            indexes = ['_all']
+        indexes = indexes or self.default_indexes
         path = self._make_path([','.join(indexes), doc_type,"_mapping"])
         return self._send_request('GET', path)
 
@@ -422,8 +420,7 @@ class ES(object):
         Execute a search query against one or more indices and get back search hits.
         query must be a dictionary or a Query object that will convert to Query DSL
         """
-        if indexes is None:
-            indexes = ['_all']
+        indexes = indexes or self.default_indexes
         if doc_types is None:
             doc_types = []
         if not isinstance(query, basestring):
@@ -432,9 +429,6 @@ class ES(object):
             elif hasattr(query, "to_json"):
                 query = query.to_json()
                 
-#        if body:
-#            body.update(query_params)
-#            query_params = {}
         return self._query_call("_search", query, indexes, doc_types, **query_params)
         
     def count(self, query, indexes=None, doc_types=None, **query_params):
@@ -442,31 +436,46 @@ class ES(object):
         Execute a query against one or more indices and get hits count.
         """
         from query import Query
-        if indexes is None:
-            indexes = ['_all']
+        indexes = indexes or self.default_indexes
         if doc_types is None:
             doc_types = []
         if isinstance(query, Query):
             query = query.count()
         return self._query_call("_count", query, indexes, doc_types, **query_params)
+
+    def create_river(self, river, river_name=None):
+        """
+        Create a river
+        """
+        if hasattr(river, q):
+            river_name = river.name
+            river = river.q
+        return self._send_request('PUT', '/_river/%s/_meta'%river_name, river)
+
+    def delete_river(self, river, river_name=None):
+        """
+        Delete a river
+        """
+        if hasattr(river, q):
+            river_name = river.name
+        return self._send_request('DELETE', '/_river/%s/'%river_name)
                     
-    def terms(self, fields, indexes=None, **query_params):
-        """
-        Extract terms and their document frequencies from one or more fields.
-        The fields argument must be a list or tuple of fields.
-        For valid query params see: 
-        http://www.elasticsearch.com/docs/elasticsearch/rest_api/terms/
-        """
-        if indexes is None:
-            indexes = ['_all']
-        path = self._make_path([','.join(indexes), "_terms"])
-        query_params['fields'] = ','.join(fields)
-        return self._send_request('GET', path, params=query_params)
-    
-    def morelikethis(self, index, doc_type, id, fields, **query_params):
-        """
-        Execute a "more like this" search query against one or more fields and get back search hits.
-        """
-        path = self._make_path([index, doc_type, id, '_mlt'])
-        query_params['fields'] = ','.join(fields)
-        return self._send_request('GET', path, params=query_params)        
+#    def terms(self, fields, indexes=None, **query_params):
+#        """
+#        Extract terms and their document frequencies from one or more fields.
+#        The fields argument must be a list or tuple of fields.
+#        For valid query params see: 
+#        http://www.elasticsearch.com/docs/elasticsearch/rest_api/terms/
+#        """
+#        indexes = indexes or self.default_indexes
+#        path = self._make_path([','.join(indexes), "_terms"])
+#        query_params['fields'] = ','.join(fields)
+#        return self._send_request('GET', path, params=query_params)
+#    
+#    def morelikethis(self, index, doc_type, id, fields, **query_params):
+#        """
+#        Execute a "more like this" search query against one or more fields and get back search hits.
+#        """
+#        path = self._make_path([index, doc_type, id, '_mlt'])
+#        query_params['fields'] = ','.join(fields)
+#        return self._send_request('GET', path, params=query_params)        

@@ -132,10 +132,14 @@ For more examples looks at the tests.
 Changelog
 =========
 
-v. 0.12.1: added collecting server info.
+v. 0.12.1: Added collecting server info.
+           Version 0.12 or above requirement.
            Fixed attachment plugin. 
            Updated bulk insert to use new api. 
-           Add facet support (except geotypes). 
+           Added facet support (except geotypes).
+           Added river support. 
+           Cleanup some method.
+           Added default_indexes variable.
 
 v. 0.12.0: added http transport, added autodetect of transport, updated thrift interface. 
 
@@ -154,10 +158,7 @@ TODO
 - API rewriting for indexing and mapping part
 - more docs
 - more tests
-- facets
-- rivers
 - cleanup
-
 
 License
 =======

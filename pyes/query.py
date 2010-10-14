@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 import logging
 
-import logging
 try:
     import json
 except ImportError:
@@ -88,14 +87,14 @@ class QueryFacet(Facet):
 #--- Query
 class Query(object):
     def __init__(self, 
-                 return_fields = None,
+                 fields = None,
                  start = 0,
                  size=None,
                  highlight=None,
                  sort = None,
                  explain=False):
         
-        self.return_fields = return_fields
+        self.fields = fields
         self.start = start
         self.size = size
         self.highlight=highlight
@@ -113,8 +112,8 @@ class Query(object):
     @property
     def q(self):
         res = {"query":self.serialize()}
-        if self.return_fields:
-            res['fields']=self.return_fields
+        if self.fields:
+            res['fields']=self.fields
         if self.size is not None:
             res['size']=self.size
         if self.start:

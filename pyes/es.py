@@ -8,10 +8,10 @@ __version__ = (0, 0, 10)
 import logging
 try:
     # For Python < 2.6 or people using a newer version of simplejson
-    import simplejson as json
+    import json
 except ImportError:
     # For Python >= 2.6
-    import json
+    import simplejson as json
 
 from urlparse import urlsplit
 from urllib import urlencode
@@ -36,8 +36,12 @@ log = logging.getLogger('pyes')
 from errors import QueryError
     
 def file_to_attachment(filename):
+    """
+    Convert a file to attachment
+    """
+#    return base64.b64encode(open(filename, 'rb').read())
     return {'_name':filename,
-            'content':base64.standard_b64encode(open(filename, 'rb').read())
+            'content':base64.b64encode(open(filename, 'rb').read())
             }
 
 class ESJsonEncoder(json.JSONEncoder):
@@ -63,12 +67,14 @@ class ES(object):
     ES connection object.
     """
     
-    def __init__(self, server, timeout=5.0, bulk_size = 400):
+    def __init__(self, server, timeout=5.0, bulk_size = 400, encoder= None, decoder = None):
         """
         Init a es object
         
         server: the server name, it can be a list of servers
         timeout: timeout for a call
+        bulk_size: size of bulk operation
+        encoder: tojson encoder
 
         """
         self.timeout = timeout
@@ -78,6 +84,11 @@ class ES(object):
         self.connection = None
         self.bulk_size = bulk_size
         self.buckets = []
+        self.info = {} #info about the current server
+        self.encoder = encoder
+        if self.encoder is None:
+            self.encoder = ESJsonEncoder
+        self.decoder = decoder
         if isinstance(server, (str, unicode)):
             self.servers = [server]
         else:
@@ -124,16 +135,20 @@ class ES(object):
         if not self.connection:
             self._init_connection()
         if isinstance(body, dict):
-            body = json.dumps(body, cls=ESJsonEncoder)
+            body = json.dumps(body, cls=self.encoder)
         if body is None:
             body=""
         request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()], uri=path, parameters=params, headers={}, body=body)
         response = self.connection.execute(request)
         try:
-            decoded = json.loads(response.body)
+            decoded = json.loads(response.body, cls=self.decoder)
         except:
-            print response.body
-            decoded = {}
+            import traceback
+            traceback.print_exc()
+            try:
+                decoded = json.loads(response.body)
+            except:
+                decoded = {}
         return  decoded
     
     def _make_path(self, path_components):
@@ -145,13 +160,6 @@ class ES(object):
         if not path.startswith('/'):
             path = '/'+path
         return path
-    
-#    def _prep_request(self, body):
-#        """
-#        Encodes body as json.
-#        """
-#        return json.dumps(body, cls=ESJsonEncoder)
-#        
         
     def _query_call(self, query_type, query, indexes=['_all'], doc_types=[], **query_params):
         """
@@ -221,6 +229,8 @@ class ES(object):
         """
         Refresh one or more indices
         """
+        self.force_bulk()
+
         if indexes is None:
             indexes = ['_all']
         path = self._make_path([','.join(indexes), '_refresh'])
@@ -264,6 +274,17 @@ class ES(object):
         path = self._make_path([','.join(indexes), doc_type,"_mapping"])
         return self._send_request('GET', path)
 
+    def collect_info(self):
+        """
+        Collect info about the connection and fill the info dictionary
+        """
+        self.info = {}
+        res = self._send_request('GET', "/")
+        self.info['server'] = {}
+        self.info['server']['name'] = res['name']
+        self.info['server']['version'] = res['version']
+        return self.info
+        
     #--- cluster
     def cluster_health(self, indexes=None, level="cluster", wait_for_status=None, 
                wait_for_relocating_shards=None, timeout=30):
@@ -321,11 +342,11 @@ class ES(object):
             optype = "index"
             if force_insert:
                 optype = "create"
-            cmd = { optype : { "index" : index, "type" : doc_type}}
+            cmd = { optype : { "_index" : index, "_type" : doc_type}}
             if id:
-                cmd[optype]['id'] = id
-            self.buckets.append(json.dumps(cmd, cls=ESJsonEncoder))
-            self.buckets.append(json.dumps(doc, cls=ESJsonEncoder))
+                cmd[optype]['_id'] = id
+            self.buckets.append(json.dumps(cmd, cls=self.encoder))
+            self.buckets.append(json.dumps(doc, cls=self.encoder))
             self.flush_bulk()
             return
             
@@ -388,6 +409,7 @@ class ES(object):
         path = self._make_path([index, doc_type, id])
         return self._send_request('DELETE', path)
         
+        
     def get(self, index, doc_type, id):
         """
         Get a typed JSON document from an index based on its id.
@@ -406,7 +428,7 @@ class ES(object):
             doc_types = []
         if not isinstance(query, basestring):
             if isinstance(query, dict):
-                query = json.dumps(body, cls=ESJsonEncoder)
+                query = json.dumps(body, cls=self.encoder)
             elif hasattr(query, "to_json"):
                 query = query.to_json()
                 

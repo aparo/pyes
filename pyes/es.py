@@ -22,6 +22,7 @@ from datetime import date, datetime
 from pprint import pprint 
 import base64
 import time
+from StringIO import StringIO
 try:
     from connection import connect as thrift_connect
     from pyesthrift.ttypes import *
@@ -112,8 +113,12 @@ class ES(object):
         self.debug_dump = False
         self.cluster_name = "undefined"
         self.connection = None
-        self.bulk_size = bulk_size
-        self.buckets = []
+        
+        #usaed in bulk
+        self.bulk_size = bulk_size #size of the bulk
+        self.bulk_data = StringIO()
+        self.bulk_items = 0
+        
         self.info = {} #info about the current server
         self.mappings = None #track mapping
         self.encoder = encoder
@@ -134,7 +139,7 @@ class ES(object):
         """
         Destructor
         """
-        if self.buckets:
+        if self.bulk_items>0:
             self.flush()
 
     def _init_connection(self):
@@ -383,8 +388,11 @@ class ES(object):
             cmd = { optype : { "_index" : index, "_type" : doc_type}}
             if id:
                 cmd[optype]['_id'] = id
-            self.buckets.append(json.dumps(cmd, cls=self.encoder))
-            self.buckets.append(json.dumps(doc, cls=self.encoder))
+            self.bulk_data.write(json.dumps(cmd, cls=self.encoder))
+            self.bulk_data.write("\n")
+            self.bulk_data.write(json.dumps(doc, cls=self.encoder))
+            self.bulk_data.write("\n")
+            self.bulk_items += 1
             self.flush_bulk()
             return
             
@@ -406,18 +414,19 @@ class ES(object):
         """
         Wait to process all pending operations
         """
-        if not forced and len(self.buckets)/2 < self.bulk_size: 
+        if not forced and self.bulk_items < self.bulk_size: 
             return
         self.force_bulk()
         
     def force_bulk(self):
         """
-        Force executing of all buckets
+        Force executing of all bulk data
         """
-        if len(self.buckets)==0:
+        if self.bulk_items==0:
             return
-        self._send_request("POST", "/_bulk", '\n'.join(self.buckets)+"\n")
-        self.buckets = []
+        self._send_request("POST", "/_bulk", self.bulk_data.getvalue())
+        self.buld_data = StringIO()
+        self.bulk_items = 0
 
     def put_file(self, filename, index, doc_type, id=None):
         """

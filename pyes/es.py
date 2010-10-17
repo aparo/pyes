@@ -21,6 +21,7 @@ import copy
 from datetime import date, datetime
 from pprint import pprint 
 import base64
+import time
 try:
     from connection import connect as thrift_connect
     from pyesthrift.ttypes import *
@@ -62,6 +63,35 @@ class ESJsonEncoder(json.JSONEncoder):
             # use no special encoding and hope for the best
             return value
 
+class ESJsonDecoder(json.JSONDecoder):
+    def __init__(self, *args, **kwargs):
+        kwargs['object_hook'] = self.dict_to_object
+        json.JSONDecoder.__init__(self, *args, **kwargs)
+
+    def string_to_datetime(self, obj):
+        """Transforma a datetime string to a datetime object
+        """
+        if len(obj)==19:
+            try:
+                return datetime(*value.strptime("%Y-%m-%dT%H:%M:%S")[:6])
+            except:
+                pass
+        return obj
+
+    def dict_to_object(self, d):
+        """
+        Detcode datetime value from string to datetime
+        """
+        for k, v in d.items():
+            if isinstance(v, basestring) and len(v)==19:
+                try:
+                    d[k]=datetime(*time.strptime(v, "%Y-%m-%dT%H:%M:%S")[:6])
+                except ValueError:
+                    pass
+            elif isinstance(v, list):
+                d[k] = [self.string_to_datetime(elem) for elem in v]
+        return d
+
 class ES(object):
     """
     ES connection object.
@@ -90,6 +120,8 @@ class ES(object):
         if self.encoder is None:
             self.encoder = ESJsonEncoder
         self.decoder = decoder
+        if self.decoder is None:
+            self.decoder = ESJsonDecoder
         if isinstance(server, (str, unicode)):
             self.servers = [server]
         else:
@@ -148,7 +180,7 @@ class ES(object):
             import traceback
             traceback.print_exc()
             try:
-                decoded = json.loads(response.body)
+                decoded = json.loads(response.body, cls=ESJsonDecoder)
             except:
                 decoded = {}
         return  decoded

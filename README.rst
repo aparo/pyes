@@ -140,6 +140,8 @@ v. 0.12.1: Added collecting server info.
            Added river support. 
            Cleanup some method.
            Added default_indexes variable.
+           Added datetime deserialization.
+           Improved performance and memory usage in bulk insert replacing list with StringIO.
 
 v. 0.12.0: added http transport, added autodetect of transport, updated thrift interface. 
 

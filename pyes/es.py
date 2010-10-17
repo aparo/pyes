@@ -3,7 +3,7 @@
 
 __author__ = 'Alberto Paro, Robert Eanes, Matt Dennewitz'
 __all__ = ['ES']
-__version__ = (0, 0, 10)
+__version__ = (0, 0, 12)
 
 import logging
 try:
@@ -173,9 +173,10 @@ class ES(object):
             path = "/"+path
         if not self.connection:
             self._init_connection()
-        if isinstance(body, dict):
-            body = json.dumps(body, cls=self.encoder)
-        if body is None:
+        if body:
+            if isinstance(body, dict):
+                body = json.dumps(body, cls=self.encoder)
+        else:
             body=""
         request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()], uri=path, parameters=params, headers={}, body=body)
         response = self.connection.execute(request)
@@ -364,8 +365,7 @@ class ES(object):
         """
         Retrieve the cluster state
         """
-        path = self._make_path(["_cluster", "state"])
-        return self._send_request('GET', path)
+        return self._send_request('GET', "/_cluster/state")
 
     def cluster_nodes(self, nodes = None):
         """
@@ -425,7 +425,7 @@ class ES(object):
         if self.bulk_items==0:
             return
         self._send_request("POST", "/_bulk", self.bulk_data.getvalue())
-        self.buld_data = StringIO()
+        self.bulk_data = StringIO()
         self.bulk_items = 0
 
     def put_file(self, filename, index, doc_type, id=None):

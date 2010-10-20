@@ -2,8 +2,7 @@
 # -*- coding: utf-8 -*-
 
 __author__ = 'Alberto Paro, Robert Eanes, Matt Dennewitz'
-__all__ = ['ES']
-__version__ = (0, 0, 12)
+__all__ = ['ES', 'file_to_attachment']
 
 import logging
 try:

@@ -11,7 +11,7 @@
 
 pyes is a connector to use elasticsearch from python.
 
-This version requires elasticsearch 0.12.
+This version requires elasticsearch 0.12 or above.
 
 Connecting
 ==========
@@ -132,6 +132,8 @@ For more examples looks at the tests.
 Changelog
 =========
 
+v. 0.13.0: TODO.
+
 v. 0.12.1: Added collecting server info.
            Version 0.12 or above requirement.
            Fixed attachment plugin. 
@@ -162,6 +164,7 @@ TODO
 - more docs
 - more tests
 - cleanup
+- add coverage
 
 License
 =======

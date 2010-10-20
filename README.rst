@@ -13,6 +13,18 @@ pyes is a connector to use elasticsearch from python.
 
 This version requires elasticsearch 0.12 or above.
 
+Features
+========
+
+- Thrift/HTTP protocols
+- Bulk insert
+- Index management
+- Every search query types
+- Facet Support
+- Geolocalization support
+- Highlighting
+- Initial River support
+
 Connecting
 ==========
 

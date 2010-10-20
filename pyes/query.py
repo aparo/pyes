@@ -560,9 +560,15 @@ class StringQuery(Query):
                 phrase_slop = 0,
                 boost = 1.0,
                 use_dis_max = True,
-                tie_breaker = 0, **kwargs):
+                tie_breaker = 0, 
+                clean_text=True,
+                **kwargs):
         super(StringQuery, self).__init__(**kwargs)
-        self.text = self._clean_data(query)
+        if clean_text:
+            self.text = self._clean_data(query)
+        else:
+            self.text = query
+            
         self.default_field = default_field
         self.default_operator = default_operator
         self.analyzer = analyzer

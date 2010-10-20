@@ -23,6 +23,7 @@ from pprint import pprint
 import base64
 import time
 from StringIO import StringIO
+from functools import wraps
 try:
     from connection import connect as thrift_connect
     from pyesthrift.ttypes import *
@@ -35,8 +36,23 @@ from connection_http import connect as http_connect
 log = logging.getLogger('pyes')
 
 #---- Errors
-from errors import QueryError
-    
+from errors import QueryError, IndexMissingException
+
+def process_errors(func):
+    @wraps(func)
+    def _func(*args, **kwargs):
+        result = func(*args, **kwargs)
+        if isinstance(result, dict):
+            if 'ok' in result:
+                return result
+            if 'error' in result:
+                error = result['error']
+                if error.startswith("IndexMissingException"):
+                    raise IndexMissingException(error)      
+                print error  
+        return result
+    return _func
+
 def file_to_attachment(filename):
     """
     Convert a file to attachment
@@ -207,7 +223,7 @@ class ES(object):
         These are identical api calls, except for the type of query.
         """
         querystring_args = query_params
-        indexes = indexes or self.default_indexes
+        indexes = self._validate_indexes(indexes)
         if doc_types is None:
             doc_type = []
         body = query
@@ -217,18 +233,26 @@ class ES(object):
         response = self._send_request('GET', path, body, querystring_args)
         return response
 
+    def _validate_indexes(self, indexes=None):
+        """
+        Return a valid list of integers. Allow to use a string or a list of indexers. 
+        """
+        indexes = indexes or self.default_indexes
+        if isinstance(indexes, basestring):
+            indexes = [indexes]
+        return indexes
+            
     #---- Admin commands
+    @process_errors
     def status(self, indexes=None):
         """
         Retrieve the status of one or more indices
         """
-        indexes = indexes or self.default_indexes
-        if isinstance(indexes, (str, unicode)):
-            path = self._make_path([indexes, '_status'])
-        else: 
-            path = self._make_path([','.join(indexes), '_status'])
+        indexes = self._validate_indexes(indexes)
+        path = self._make_path([','.join(indexes), '_status'])
         return self._send_request('GET', path)
 
+    @process_errors
     def create_index(self, index, settings=None):
         """
         Creates an index with optional settings.
@@ -237,31 +261,24 @@ class ES(object):
         """
         return self._send_request('PUT', index, settings)
         
-    def delete_index(self, index, safe_call=True):
+    @process_errors
+    def delete_index(self, index):
         """
         Deletes an index.
-        safe_call: if true does not raise an error on missing index
         """
-        try:
-            res = self._send_request('DELETE', index)
-        except QueryError, e:
-            if not safe_call:
-                raise e
-            res = {}
+        res = self._send_request('DELETE', index)
         return res
         
+    @process_errors
     def flush(self, indexes=None, refresh=None):
         """
         Flushes one or more indices (clear memory)
         """
         self.force_bulk()
 
-        indexes = indexes or self.default_indexes
+        indexes = self._validate_indexes(indexes)
 
-        if isinstance(indexes, (str, unicode)):
-            path = self._make_path([indexes, '_flush'])
-        else: 
-            path = self._make_path([','.join(indexes), '_flush'])
+        path = self._make_path([','.join(indexes), '_flush'])
         args = {}
         if refresh is not None:
             args['refresh'] = refresh
@@ -273,7 +290,8 @@ class ES(object):
         """
         self.force_bulk()
 
-        indexes = indexes or self.default_indexes
+        indexes = self._validate_indexes(indexes)
+
         path = self._make_path([','.join(indexes), '_refresh'])
         return self._send_request('POST', path)
         
@@ -281,7 +299,7 @@ class ES(object):
         """
         Optimize one ore more indices
         """
-        indexes = indexes or self.default_indexes
+        indexes = self._validate_indexes(indexes)
         path = self._make_path([','.join(indexes), '_optimize'])
         return self._send_request('POST', path, params=args)
 
@@ -289,15 +307,15 @@ class ES(object):
         """
         Gateway snapshot one or more indices
         """
-        indexes = indexes or self.default_indexes
+        indexes = self._validate_indexes(indexes)
         path = self._make_path([','.join(indexes), '_gateway', 'snapshot'])
         return self._send_request('POST', path)
 
-    def put_mapping(self, doc_type, mapping, indexes=None):
+    def put_mapping(self, doc_type, mapping, indexes):
         """
         Register specific mapping definition for a specific type against one or more indices.
         """
-        indexes = indexes or self.default_indexes
+        indexes = self._validate_indexes(indexes)
         path = self._make_path([','.join(indexes), doc_type,"_mapping"])
         if doc_type not in mapping:
             mapping = {doc_type:mapping}
@@ -307,7 +325,7 @@ class ES(object):
         """
         Register specific mapping definition for a specific type against one or more indices.
         """
-        indexes = indexes or self.default_indexes
+        indexes = self._validate_indexes(indexes)
         if doc_type:
             path = self._make_path([','.join(indexes), doc_type,"_mapping"])
         else:
@@ -469,9 +487,11 @@ class ES(object):
         Execute a search query against one or more indices and get back search hits.
         query must be a dictionary or a Query object that will convert to Query DSL
         """
-        indexes = indexes or self.default_indexes
+        indexes = self._validate_indexes(indexes)
         if doc_types is None:
             doc_types = []
+        if isinstance(doc_types, basestring):
+            doc_types = [doc_types]
         if not isinstance(query, basestring):
             if isinstance(query, dict):
                 query = json.dumps(body, cls=self.encoder)
@@ -485,7 +505,7 @@ class ES(object):
         Execute a query against one or more indices and get hits count.
         """
         from query import Query
-        indexes = indexes or self.default_indexes
+        indexes = self._validate_indexes(indexes)
         if doc_types is None:
             doc_types = []
         if isinstance(query, Query):
@@ -516,7 +536,7 @@ class ES(object):
 #        For valid query params see: 
 #        http://www.elasticsearch.com/docs/elasticsearch/rest_api/terms/
 #        """
-#        indexes = indexes or self.default_indexes
+#        indexes = self._validate_indexes(indexes)
 #        path = self._make_path([','.join(indexes), "_terms"])
 #        query_params['fields'] = ','.join(fields)
 #        return self._send_request('GET', path, params=query_params)

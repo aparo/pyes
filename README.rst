@@ -11,7 +11,7 @@
 
 pyes is a connector to use elasticsearch from python.
 
-For now it is in alpha state, but working.
+This version requires elasticsearch 0.12.
 
 Connecting
 ==========
@@ -142,6 +142,7 @@ v. 0.12.1: Added collecting server info.
            Added default_indexes variable.
            Added datetime deserialization.
            Improved performance and memory usage in bulk insert replacing list with StringIO.
+           Initial propagation of elasticsearch exception to python.
 
 v. 0.12.0: added http transport, added autodetect of transport, updated thrift interface. 
 

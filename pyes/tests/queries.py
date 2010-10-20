@@ -134,11 +134,5 @@ class QuerySearchTestCase(ESTestCase):
         result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
 
-    def test_QueryHighlight(self):
-        q = StringQuery("nice")
-        q.add_highlight("parsedtext")
-        result = self.conn.search(query = q, indexes=["test-index"])
-        self.assertEquals(result['hits']['total'], 2)
-
 if __name__ == "__main__":
     unittest.main()

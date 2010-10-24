@@ -23,6 +23,8 @@ import base64
 import time
 from StringIO import StringIO
 from functools import wraps
+from decimal import Decimal
+
 try:
     from connection import connect as thrift_connect
     from pyesthrift.ttypes import *
@@ -52,6 +54,23 @@ def process_errors(func):
         return result
     return _func
 
+#def process_query_result(func):
+#    @wraps(func)
+#    def _func(*args, **kwargs):
+#        result = func(*args, **kwargs)
+#        if 'hits' in result:
+##            setattr(result, "total", result['hits']['total'])
+#            if 'hits' in result['hits']:
+#                for hit in result['hits']['hits']:
+#                    for key, item in hit.items():
+#                        if key.startswith("_"):
+#                            hit[key[1:]]=item
+#                            del hit[key]
+##        else:
+##            setattr(result, "total", 0)
+#        return result
+#    return _func
+
 def file_to_attachment(filename):
     """
     Convert a file to attachment
@@ -75,6 +94,8 @@ class ESJsonEncoder(json.JSONEncoder):
         elif isinstance(value, date):
             dt = datetime(value.year, value.month, value.day, 0, 0, 0)
             return dt.strftime("%Y-%m-%dT%H:%M:%S")
+        elif isinstance(value, Decimal):
+            return float(str(value))
         else:
             # use no special encoding and hope for the best
             return value
@@ -129,7 +150,7 @@ class ES(object):
         self.cluster_name = "undefined"
         self.connection = None
         
-        #usaed in bulk
+        #used in bulk
         self.bulk_size = bulk_size #size of the bulk
         self.bulk_data = StringIO()
         self.bulk_items = 0
@@ -481,6 +502,7 @@ class ES(object):
         path = self._make_path([index, doc_type, id])
         return self._send_request('GET', path)
         
+#    @process_query_result
     def search(self, query, indexes=None, doc_types=None, **query_params):
         """
         Execute a search query against one or more indices and get back search hits.

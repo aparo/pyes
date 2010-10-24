@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+__author__ = 'Alberto Paro'
+
 __all__ = ['NoServerAvailable', "QueryError"]
 
 class NoServerAvailable(Exception):

@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+__author__ = 'Alberto Paro'
+
 import logging
 
 try:
@@ -567,8 +570,7 @@ class StringQuery(Query):
         if clean_text:
             self.text = self._clean_data(query)
         else:
-            self.text = query
-            
+            self.text = query            
         self.default_field = default_field
         self.default_operator = default_operator
         self.analyzer = analyzer

@@ -39,15 +39,15 @@ class ClusterTestCase(ESTestCase):
                 nice guy""", "uuid":"33333", "position":3}, "test-index", "test-type", 3)
         self.conn.refresh(["test-index"])
 
-#    def test_ClusterState(self):
-#        result = self.conn.cluster_state()
-#        self.assertTrue('blocks' in result)
-#        self.assertTrue('routing_table' in result)
-#
-#    def test_ClusterNodes(self):
-#        result = self.conn.cluster_nodes()
-#        self.assertTrue('cluster_name' in result)
-#        self.assertTrue('nodes' in result)
+    def test_ClusterState(self):
+        result = self.conn.cluster_state()
+        self.assertTrue('blocks' in result)
+        self.assertTrue('routing_table' in result)
+
+    def test_ClusterNodes(self):
+        result = self.conn.cluster_nodes()
+        self.assertTrue('cluster_name' in result)
+        self.assertTrue('nodes' in result)
 
     def test_ClusterHealth(self):
         result = self.conn.cluster_health()

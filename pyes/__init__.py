@@ -23,12 +23,11 @@ def version_with_meta():
     return "%s (%s)" % (__version__,
                         is_stable_release() and "stable" or "unstable")
 
-from pyes.connection import *
 from es import ES, file_to_attachment
 from query import *
 from rivers import *
 from objectid import ObjectId
-
+from utils import *
 try:
     #useful for additional query extra features
     from query_extra import *

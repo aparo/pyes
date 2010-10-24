@@ -21,6 +21,13 @@ class ESTestCase(unittest.TestCase):
         for (key, value) in expected.items():
             self.assertEquals(value, result[key])
 
+    def dump(self, result):
+        """
+        dump to stdout the result
+        """
+        from pprint import pprint
+        pprint(result)
+
 if __name__ == "__main__":
     unittest.main()
 #    suite = unittest.TestLoader().loadTestsFromTestCase(GeoQuerySearchTestCase)

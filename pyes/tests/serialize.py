@@ -1,5 +1,8 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+__author__ = 'Alberto Paro'
+
 """
 Unit tests for pyes.  These require an es server with thrift plugin running on the default port (localhost:9500).
 """

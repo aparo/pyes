@@ -286,8 +286,19 @@ class ES(object):
         """
         Deletes an index.
         """
-        res = self._send_request('DELETE', index)
-        return res
+        return self._send_request('DELETE', index)
+
+    def close_index(self, index):
+        """
+        Close an index.
+        """
+        return self._send_request('POST', "/%s/_close"%index)
+
+    def open_index(self, index):
+        """
+        Open an index.
+        """
+        return self._send_request('POST', "/%s/_open"%index)
         
     @process_errors
     def flush(self, indexes=None, refresh=None):
@@ -314,6 +325,8 @@ class ES(object):
 
         path = self._make_path([','.join(indexes), '_refresh'])
         return self._send_request('POST', path)
+
+
         
     def optimize(self, indexes=None, **args):
         """

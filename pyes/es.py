@@ -106,18 +106,18 @@ class ESJsonDecoder(json.JSONDecoder):
         json.JSONDecoder.__init__(self, *args, **kwargs)
 
     def string_to_datetime(self, obj):
-        """Transforma a datetime string to a datetime object
+        """Decode a datetime string to a datetime object
         """
-        if len(obj)==19:
+        if isinstance(obj, basestring) and len(obj)==19:
             try:
-                return datetime(*value.strptime("%Y-%m-%dT%H:%M:%S")[:6])
+                return datetime(*obj.strptime("%Y-%m-%dT%H:%M:%S")[:6])
             except:
                 pass
         return obj
 
     def dict_to_object(self, d):
         """
-        Detcode datetime value from string to datetime
+        Decode datetime value from string to datetime
         """
         for k, v in d.items():
             if isinstance(v, basestring) and len(v)==19:

@@ -12,13 +12,7 @@ except ImportError:
     import simplejson as json
 
 from es import ESJsonEncoder
-
-# Characters that are part of Lucene query syntax must be stripped
-# from user input: + - && || ! ( ) { } [ ] ^ " ~ * ? : \
-# See: http://lucene.apache.org/java/3_0_2/queryparsersyntax.html#Escaping
-SPECIAL_CHARS = [33, 34, 38, 40, 41, 42, 58, 63, 91, 92, 93, 94, 123, 124, 125, 126]
-UNI_SPECIAL_CHARS = dict((c, None) for c in SPECIAL_CHARS)
-STR_SPECIAL_CHARS = ''.join([chr(c) for c in SPECIAL_CHARS])
+from utils import clean_string
 
 log = logging.getLogger('pyes')
 
@@ -272,7 +266,9 @@ class Query(object):
                  sort = None,
                  explain=False,
                  facet = None):
-        
+        """
+        fields: if is [], the _soruce is not returned
+        """
         self.fields = fields
         self.start = start
         self.size = size
@@ -286,19 +282,11 @@ class Query(object):
         Returns the facet factory
         """
         return self.facet
-
-    def _clean_data(self, text):
-        """
-        Remove Lucene reserved words from query string
-        """
-        if isinstance(text, unicode):
-            return text.translate(UNI_SPECIAL_CHARS)
-        return text.translate(None, STR_SPECIAL_CHARS)
     
     @property
     def q(self):
         res = {"query":self.serialize()}
-        if self.fields:
+        if self.fields is not None:
             res['fields']=self.fields
         if self.size is not None:
             res['size']=self.size
@@ -553,6 +541,7 @@ class StringQuery(Query):
     _internal_name = "query_string"
     
     def __init__(self, query, default_field = None,
+                 search_fields=None,
                 default_operator = "OR",
                 analyzer = None,
                 allow_leading_wildcard = True,
@@ -564,13 +553,12 @@ class StringQuery(Query):
                 boost = 1.0,
                 use_dis_max = True,
                 tie_breaker = 0, 
-                clean_text=True,
+                clean_text=False,
                 **kwargs):
         super(StringQuery, self).__init__(**kwargs)
-        if clean_text:
-            self.text = self._clean_data(query)
-        else:
-            self.text = query            
+        self.clean_text = clean_text 
+        self.search_fields = search_fields or []
+        self.query = query
         self.default_field = default_field
         self.default_operator = default_operator
         self.analyzer = analyzer
@@ -611,11 +599,15 @@ class StringQuery(Query):
             filters["fuzzy_min_sim"] = self.fuzzy_min_sim
         if self.phrase_slop:
             filters["phrase_slop"] = self.phrase_slop
-            
+        if self.search_fields:
+            filters["fields"] = self.search_fields
+               
         if self.boost!=1.0:
             filters["boost"] = self.boost
-        filters["query"] = self.text
-        
+        if self.clean_text:
+            filters["query"] = clean_string(self.query)
+        else:
+            filters["query"] = self.query            
         return {self._internal_name:filters}
 
 class FieldParameter:

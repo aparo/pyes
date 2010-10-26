@@ -325,8 +325,6 @@ class ES(object):
 
         path = self._make_path([','.join(indexes), '_refresh'])
         return self._send_request('POST', path)
-
-
         
     def optimize(self, indexes=None, **args):
         """

@@ -510,6 +510,37 @@ class TermQuery(Query):
             raise RuntimeError("A least a field/value pair must be added")
         return {self._internal_name:self._values}
 
+class TermsQuery(Query):
+    _internal_name = "terms"
+    
+    def __init__(self, field=None, values=None, boost=None, **kwargs):
+        super(TermsQuery, self).__init__(**kwargs)
+        self._values = {}
+        
+        if field is not None and values is not None:
+            try:
+                values = list(values)
+            except TypeError:
+                values = [values]
+            self.add(field, values)
+    
+    def add(self, field, values, boost=None):
+        match = {'value':values}
+        if boost:
+            if isinstance(boost, (float, int)):
+                match['boost']=boost
+            else:
+                match['boost']=float(boost)
+            self._values[field]=match
+            return
+        
+        self._values[field]=values
+        
+    def serialize(self):
+        if not self._values:
+            raise RuntimeError("A least a field/values pair must be added")
+        return {self._internal_name:self._values}
+
 class WildcardQuery(TermQuery):
     _internal_name = "wildcard"
 

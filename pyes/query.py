@@ -608,12 +608,6 @@ class StringQuery(Query):
         filters = {}
         if self.default_field:
             filters["default_field"] = self.default_field
-            if not isinstance(self.default_field, (str, unicode)) and isinstance(self.default_field, list):
-                if not self.use_dis_max:
-                    filters["use_dis_max"] = self.use_dis_max
-                if self.tie_breaker != 0:
-                    filters["tie_breaker"] = self.tie_breaker
-                
         if self.default_operator != "OR":
             filters["default_operator"] = self.default_operator
         if self.analyzer:
@@ -631,7 +625,16 @@ class StringQuery(Query):
         if self.phrase_slop:
             filters["phrase_slop"] = self.phrase_slop
         if self.search_fields:
-            filters["fields"] = self.search_fields
+            if isinstance(self.search_fields, (str, unicode)):
+                filters["fields"] = [self.search_fields]
+            else:
+                filters["fields"] = self.search_fields
+
+            if len(filters["fields"]) > 1:
+                if not self.use_dis_max:
+                    filters["use_dis_max"] = self.use_dis_max
+                if self.tie_breaker != 0:
+                    filters["tie_breaker"] = self.tie_breaker
                
         if self.boost!=1.0:
             filters["boost"] = self.boost

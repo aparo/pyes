@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+__author__ = 'Alberto Paro'
+
 import logging
 
 try:
@@ -9,13 +12,7 @@ except ImportError:
     import simplejson as json
 
 from es import ESJsonEncoder
-
-# Characters that are part of Lucene query syntax must be stripped
-# from user input: + - && || ! ( ) { } [ ] ^ " ~ * ? : \
-# See: http://lucene.apache.org/java/3_0_2/queryparsersyntax.html#Escaping
-SPECIAL_CHARS = [33, 34, 38, 40, 41, 42, 58, 63, 91, 92, 93, 94, 123, 124, 125, 126]
-UNI_SPECIAL_CHARS = dict((c, None) for c in SPECIAL_CHARS)
-STR_SPECIAL_CHARS = ''.join([chr(c) for c in SPECIAL_CHARS])
+from utils import clean_string
 
 log = logging.getLogger('pyes')
 
@@ -62,10 +59,14 @@ class FacetFactory(object):
     def __init__(self):
         self.facets = []
     
+    def add_term_facet(self, *args, **kwargs):
+        """Add a term factory"""
+        self.facets.append(TermFacet(*args, **kwargs))
+    
     @property
     def q(self):
         res={}
-        for facet in facets:
+        for facet in self.facets:
             res.update(facet.serialize())
         return {"facets":res}
 
@@ -76,14 +77,185 @@ class Facet(object):
 class QueryFacet(Facet):
     _internal_name = "query"
 
-    def __init__(self, query, **kwargs):
+    def __init__(self, name, query, **kwargs):
         super(QueryFacet, self).__init__(**kwargs)
         self.name = name
         self.query = query
         
     def serialize(self):
         return {self.name:{self._internal_name:self.query.serialize()}}
+
+class FilterFacet(Facet):
+    _internal_name = "filter"
+
+    def __init__(self, name, query, **kwargs):
+        super(FilterFacet, self).__init__(**kwargs)
+        self.name = name
+        self.query = query
         
+    def serialize(self):
+        return {self.name:{self._internal_name:self.query.serialize()}}
+
+class HistogramFacet(Facet):
+    _internal_name = "histogram"
+
+    def __init__(self, name, 
+                 field=None, interval= None, time_interval=None, 
+                 key_field=None, value_field=None,
+                 key_script=None, value_script=None, params=None,
+                 **kwargs):
+        super(HistogramFacet, self).__init__(**kwargs)
+        self.name = name
+        self.field = field
+        self.interval = interval
+        self.time_interval = time_interval
+        self.key_field = key_field
+        self.value_field = value_field
+        self.key_script = key_script
+        self.value_script = value_script
+        self.params = params
+
+    def _add_interval(self, data):
+        if self.interval:
+            data['interval'] = self.interval
+        elif self.time_interval:
+            data['time_interval'] = self.time_interval
+        else:
+            raise RuntimeError("Invalid field: interval or time_interval required")
+        
+    def serialize(self):
+        data = {}
+        
+        if self.field:
+            data['field'] = self.field
+            self._add_interval(data)
+        elif self.key_field:
+            data['key_field'] = self.key_field
+            if self.value_field:
+                data['value_field'] = self.value_field
+            else:
+                raise RuntimeError("Invalid key_field: value_field required")
+            self._add_interval(data)
+        elif self.key_script:
+            data['key_script'] = self.key_script
+            if self.value_script:
+                data['value_script'] = self.value_script
+            else:
+                raise RuntimeError("Invalid key_script: value_script required")
+            if self.params:
+                data['params'] = self.params
+                
+        return {self.name:{self._internal_name:data}}
+
+class RangeFacet(Facet):
+    _internal_name = "range"
+
+    def __init__(self, name, 
+                 field=None, ranges = None,
+                 key_field=None, value_field=None,
+                 key_script=None, value_script=None, params=None,
+                 **kwargs):
+        super(RangeFacet, self).__init__(**kwargs)
+        self.name = name
+        self.field = field
+        if ranges is None:
+            ranges = []
+        self.ranges = ranges
+        self.key_field = key_field
+        self.value_field = value_field
+        self.key_script = key_script
+        self.value_script = value_script
+        self.params = params
+
+    def serialize(self):
+        data = {}
+
+        if not self.ranges:
+            raise RuntimeError("Invalid ranges")
+        data['ranges'] = self.ranges
+        
+        if self.field:
+            data['field'] = self.field
+        elif self.key_field:
+            data['key_field'] = self.key_field
+            if self.value_field:
+                data['value_field'] = self.value_field
+            else:
+                raise RuntimeError("Invalid key_field: value_field required")
+        elif self.key_script:
+            data['key_script'] = self.key_script
+            if self.value_script:
+                data['value_script'] = self.value_script
+            else:
+                raise RuntimeError("Invalid key_script: value_script required")
+            if self.params:
+                data['params'] = self.params
+                
+        return {self.name:{self._internal_name:data}}
+
+class StatisticalFacet(Facet):
+    _internal_name = "statistical"
+
+    def __init__(self, name, field=None, script=None, params=None, **kwargs):
+        super(StatisticalFacet, self).__init__(**kwargs)
+        self.name = name
+        self.field = field
+        self.script = script
+        self.params = params
+
+    def serialize(self):
+        data = {}
+
+        if self.field:
+            data['field'] = self.field
+        elif self.script:
+            data['script'] = self.script
+            if self.params:
+                data['params'] = self.params
+                
+        return {self.name:{self._internal_name:data}}
+
+class TermFacet(Facet):
+    _internal_name = "terms"
+
+    def __init__(self, field, name=None, size=10, 
+                 order=None, exclude=None, 
+                 regex = None, regex_flags="DOTALL",
+                 script = None, **kwargs):
+        super(TermFacet, self).__init__(**kwargs)
+        self.name = name
+        self.field = field
+        if name is None:
+            self.name = field
+        self.size = size
+        self.order = order
+        self.exclude = exclude or []
+        self.regex = regex
+        self.regex_flags = regex_flags
+        self.script = script
+
+    def serialize(self):
+        data = {'field':self.field}
+        if self.size:
+            data['size'] = self.size
+
+        if self.order:
+            if self.order not in ['count', 'term', 'reverse_count', 'reverse_term']:
+                raise RuntimeError("Invalid order value:%s"%self.order)
+            data['order'] = self.order
+        if self.exclude:
+            data['exclude'] = self.exclude
+        if self.regex:
+            data['regex'] = self.regex
+            if self.regex_flags:
+                data['regex_flags'] = self.regex_flags
+        elif self.script:
+            data['script'] = self.script
+                
+        return {self.name:{self._internal_name:data}}
+
+
+
 #--- Query
 class Query(object):
     def __init__(self, 
@@ -92,27 +264,29 @@ class Query(object):
                  size=None,
                  highlight=None,
                  sort = None,
-                 explain=False):
-        
+                 explain=False,
+                 facet = None):
+        """
+        fields: if is [], the _soruce is not returned
+        """
         self.fields = fields
         self.start = start
         self.size = size
         self.highlight=highlight
         self.sort = sort
         self.explain = explain
-
-    def _clean_data(self, text):
+        self.facet = facet or FacetFactory()
+    
+    def get_facet_factory(self):
         """
-        Remove Lucene reserved words from query string
+        Returns the facet factory
         """
-        if isinstance(text, unicode):
-            return text.translate(UNI_SPECIAL_CHARS)
-        return text.translate(None, STR_SPECIAL_CHARS)
+        return self.facet
     
     @property
     def q(self):
         res = {"query":self.serialize()}
-        if self.fields:
+        if self.fields is not None:
             res['fields']=self.fields
         if self.size is not None:
             res['size']=self.size
@@ -124,6 +298,8 @@ class Query(object):
             res['sort'] = self.sort
         if self.explain:
             res['explain'] = self.explain
+        if self.facet.facets:
+            res.update(self.facet.q)
         return res
 
     def add_highlight(self, field, fragment_size=None, number_of_fragments=None):
@@ -365,6 +541,7 @@ class StringQuery(Query):
     _internal_name = "query_string"
     
     def __init__(self, query, default_field = None,
+                 search_fields=None,
                 default_operator = "OR",
                 analyzer = None,
                 allow_leading_wildcard = True,
@@ -375,9 +552,13 @@ class StringQuery(Query):
                 phrase_slop = 0,
                 boost = 1.0,
                 use_dis_max = True,
-                tie_breaker = 0, **kwargs):
+                tie_breaker = 0, 
+                clean_text=False,
+                **kwargs):
         super(StringQuery, self).__init__(**kwargs)
-        self.text = self._clean_data(query)
+        self.clean_text = clean_text 
+        self.search_fields = search_fields or []
+        self.query = query
         self.default_field = default_field
         self.default_operator = default_operator
         self.analyzer = analyzer
@@ -418,11 +599,15 @@ class StringQuery(Query):
             filters["fuzzy_min_sim"] = self.fuzzy_min_sim
         if self.phrase_slop:
             filters["phrase_slop"] = self.phrase_slop
-            
+        if self.search_fields:
+            filters["fields"] = self.search_fields
+               
         if self.boost!=1.0:
             filters["boost"] = self.boost
-        filters["query"] = self.text
-        
+        if self.clean_text:
+            filters["query"] = clean_string(self.query)
+        else:
+            filters["query"] = self.query            
         return {self._internal_name:filters}
 
 class FieldParameter:

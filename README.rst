@@ -11,7 +11,19 @@
 
 pyes is a connector to use elasticsearch from python.
 
-For now it is in alpha state, but working.
+This version requires elasticsearch 0.12 or above.
+
+Features
+========
+
+- Thrift/HTTP protocols
+- Bulk insert
+- Index management
+- Every search query types
+- Facet Support
+- Geolocalization support
+- Highlighting
+- Initial River support
 
 Connecting
 ==========
@@ -132,9 +144,19 @@ For more examples looks at the tests.
 Changelog
 =========
 
-v. 0.12.1: added collecting server info.
+v. 0.13.0: TODO.
+
+v. 0.12.1: Added collecting server info.
+           Version 0.12 or above requirement.
            Fixed attachment plugin. 
            Updated bulk insert to use new api. 
+           Added facet support (except geotypes).
+           Added river support. 
+           Cleanup some method.
+           Added default_indexes variable.
+           Added datetime deserialization.
+           Improved performance and memory usage in bulk insert replacing list with StringIO.
+           Initial propagation of elasticsearch exception to python.
 
 v. 0.12.0: added http transport, added autodetect of transport, updated thrift interface. 
 
@@ -150,13 +172,11 @@ v. 0.10.0: initial working version.
 TODO
 ----
 
-- API rewriting for indexing and mapping part
+- API rewriting for mapping
 - more docs
 - more tests
-- facets
-- rivers
 - cleanup
-
+- add coverage
 
 License
 =======

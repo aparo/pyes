@@ -2,8 +2,7 @@
 # -*- coding: utf-8 -*-
 
 __author__ = 'Alberto Paro, Robert Eanes, Matt Dennewitz'
-__all__ = ['ES']
-__version__ = (0, 0, 10)
+__all__ = ['ES', 'file_to_attachment']
 
 import logging
 try:
@@ -21,6 +20,11 @@ import copy
 from datetime import date, datetime
 from pprint import pprint 
 import base64
+import time
+from StringIO import StringIO
+from functools import wraps
+from decimal import Decimal
+
 try:
     from connection import connect as thrift_connect
     from pyesthrift.ttypes import *
@@ -33,8 +37,40 @@ from connection_http import connect as http_connect
 log = logging.getLogger('pyes')
 
 #---- Errors
-from errors import QueryError
-    
+from errors import QueryError, IndexMissingException
+
+def process_errors(func):
+    @wraps(func)
+    def _func(*args, **kwargs):
+        result = func(*args, **kwargs)
+        if isinstance(result, dict):
+            if 'ok' in result:
+                return result
+            if 'error' in result:
+                error = result['error']
+                if error.startswith("IndexMissingException"):
+                    raise IndexMissingException(error)      
+                print error  
+        return result
+    return _func
+
+#def process_query_result(func):
+#    @wraps(func)
+#    def _func(*args, **kwargs):
+#        result = func(*args, **kwargs)
+#        if 'hits' in result:
+##            setattr(result, "total", result['hits']['total'])
+#            if 'hits' in result['hits']:
+#                for hit in result['hits']['hits']:
+#                    for key, item in hit.items():
+#                        if key.startswith("_"):
+#                            hit[key[1:]]=item
+#                            del hit[key]
+##        else:
+##            setattr(result, "total", 0)
+#        return result
+#    return _func
+
 def file_to_attachment(filename):
     """
     Convert a file to attachment
@@ -58,9 +94,40 @@ class ESJsonEncoder(json.JSONEncoder):
         elif isinstance(value, date):
             dt = datetime(value.year, value.month, value.day, 0, 0, 0)
             return dt.strftime("%Y-%m-%dT%H:%M:%S")
+        elif isinstance(value, Decimal):
+            return float(str(value))
         else:
             # use no special encoding and hope for the best
             return value
+
+class ESJsonDecoder(json.JSONDecoder):
+    def __init__(self, *args, **kwargs):
+        kwargs['object_hook'] = self.dict_to_object
+        json.JSONDecoder.__init__(self, *args, **kwargs)
+
+    def string_to_datetime(self, obj):
+        """Decode a datetime string to a datetime object
+        """
+        if isinstance(obj, basestring) and len(obj)==19:
+            try:
+                return datetime(*obj.strptime("%Y-%m-%dT%H:%M:%S")[:6])
+            except:
+                pass
+        return obj
+
+    def dict_to_object(self, d):
+        """
+        Decode datetime value from string to datetime
+        """
+        for k, v in d.items():
+            if isinstance(v, basestring) and len(v)==19:
+                try:
+                    d[k]=datetime(*time.strptime(v, "%Y-%m-%dT%H:%M:%S")[:6])
+                except ValueError:
+                    pass
+            elif isinstance(v, list):
+                d[k] = [self.string_to_datetime(elem) for elem in v]
+        return d
 
 class ES(object):
     """
@@ -82,17 +149,25 @@ class ES(object):
         self.debug_dump = False
         self.cluster_name = "undefined"
         self.connection = None
-        self.bulk_size = bulk_size
-        self.buckets = []
+        
+        #used in bulk
+        self.bulk_size = bulk_size #size of the bulk
+        self.bulk_data = StringIO()
+        self.bulk_items = 0
+        
         self.info = {} #info about the current server
+        self.mappings = None #track mapping
         self.encoder = encoder
         if self.encoder is None:
             self.encoder = ESJsonEncoder
         self.decoder = decoder
+        if self.decoder is None:
+            self.decoder = ESJsonDecoder
         if isinstance(server, (str, unicode)):
             self.servers = [server]
         else:
             self.servers = server
+        self.default_indexes = ['_all']
         self._init_connection()
 
 
@@ -100,7 +175,7 @@ class ES(object):
         """
         Destructor
         """
-        if self.buckets:
+        if self.bulk_items>0:
             self.flush()
 
     def _init_connection(self):
@@ -134,9 +209,10 @@ class ES(object):
             path = "/"+path
         if not self.connection:
             self._init_connection()
-        if isinstance(body, dict):
-            body = json.dumps(body, cls=self.encoder)
-        if body is None:
+        if body:
+            if isinstance(body, dict):
+                body = json.dumps(body, cls=self.encoder)
+        else:
             body=""
         request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()], uri=path, parameters=params, headers={}, body=body)
         response = self.connection.execute(request)
@@ -146,7 +222,7 @@ class ES(object):
             import traceback
             traceback.print_exc()
             try:
-                decoded = json.loads(response.body)
+                decoded = json.loads(response.body, cls=ESJsonDecoder)
             except:
                 decoded = {}
         return  decoded
@@ -161,12 +237,15 @@ class ES(object):
             path = '/'+path
         return path
         
-    def _query_call(self, query_type, query, indexes=['_all'], doc_types=[], **query_params):
+    def _query_call(self, query_type, query, indexes=None, doc_types=None, **query_params):
         """
         This can be used for search and count calls.
         These are identical api calls, except for the type of query.
         """
         querystring_args = query_params
+        indexes = self._validate_indexes(indexes)
+        if doc_types is None:
+            doc_type = []
         body = query
         if hasattr(query, "to_json"):
             body = query.to_json()
@@ -174,19 +253,26 @@ class ES(object):
         response = self._send_request('GET', path, body, querystring_args)
         return response
 
+    def _validate_indexes(self, indexes=None):
+        """
+        Return a valid list of integers. Allow to use a string or a list of indexers. 
+        """
+        indexes = indexes or self.default_indexes
+        if isinstance(indexes, basestring):
+            indexes = [indexes]
+        return indexes
+            
     #---- Admin commands
+    @process_errors
     def status(self, indexes=None):
         """
         Retrieve the status of one or more indices
         """
-        if indexes is None:
-            indexes = ['_all']
-        if isinstance(indexes, (str, unicode)):
-            path = self._make_path([indexes, '_status'])
-        else: 
-            path = self._make_path([','.join(indexes), '_status'])
+        indexes = self._validate_indexes(indexes)
+        path = self._make_path([','.join(indexes), '_status'])
         return self._send_request('GET', path)
 
+    @process_errors
     def create_index(self, index, settings=None):
         """
         Creates an index with optional settings.
@@ -195,31 +281,35 @@ class ES(object):
         """
         return self._send_request('PUT', index, settings)
         
-    def delete_index(self, index, safe_call=True):
+    @process_errors
+    def delete_index(self, index):
         """
         Deletes an index.
-        safe_call: if true does not raise an error on missing index
         """
-        try:
-            res = self._send_request('DELETE', index)
-        except QueryError, e:
-            if not safe_call:
-                raise e
-            res = {}
-        return res
+        return self._send_request('DELETE', index)
+
+    def close_index(self, index):
+        """
+        Close an index.
+        """
+        return self._send_request('POST', "/%s/_close"%index)
+
+    def open_index(self, index):
+        """
+        Open an index.
+        """
+        return self._send_request('POST', "/%s/_open"%index)
         
+    @process_errors
     def flush(self, indexes=None, refresh=None):
         """
         Flushes one or more indices (clear memory)
         """
         self.force_bulk()
 
-        if indexes is None:
-            indexes = ['_all']
-        if isinstance(indexes, (str, unicode)):
-            path = self._make_path([indexes, '_flush'])
-        else: 
-            path = self._make_path([','.join(indexes), '_flush'])
+        indexes = self._validate_indexes(indexes)
+
+        path = self._make_path([','.join(indexes), '_flush'])
         args = {}
         if refresh is not None:
             args['refresh'] = refresh
@@ -231,8 +321,8 @@ class ES(object):
         """
         self.force_bulk()
 
-        if indexes is None:
-            indexes = ['_all']
+        indexes = self._validate_indexes(indexes)
+
         path = self._make_path([','.join(indexes), '_refresh'])
         return self._send_request('POST', path)
         
@@ -240,8 +330,7 @@ class ES(object):
         """
         Optimize one ore more indices
         """
-        if indexes is None:
-            indexes = ['_all']
+        indexes = self._validate_indexes(indexes)
         path = self._make_path([','.join(indexes), '_optimize'])
         return self._send_request('POST', path, params=args)
 
@@ -249,29 +338,29 @@ class ES(object):
         """
         Gateway snapshot one or more indices
         """
-        if indexes is None:
-            indexes = ['_all']
+        indexes = self._validate_indexes(indexes)
         path = self._make_path([','.join(indexes), '_gateway', 'snapshot'])
         return self._send_request('POST', path)
 
-    def put_mapping(self, doc_type, mapping, indexes=None):
+    def put_mapping(self, doc_type, mapping, indexes):
         """
         Register specific mapping definition for a specific type against one or more indices.
         """
-        if indexes is None:
-            indexes = ['_all']
+        indexes = self._validate_indexes(indexes)
         path = self._make_path([','.join(indexes), doc_type,"_mapping"])
         if doc_type not in mapping:
             mapping = {doc_type:mapping}
         return self._send_request('PUT', path, mapping)
 
-    def get_mapping(self, doc_type, indexes=None):
+    def get_mapping(self, doc_type=None, indexes=None):
         """
         Register specific mapping definition for a specific type against one or more indices.
         """
-        if indexes is None:
-            indexes = ['_all']
-        path = self._make_path([','.join(indexes), doc_type,"_mapping"])
+        indexes = self._validate_indexes(indexes)
+        if doc_type:
+            path = self._make_path([','.join(indexes), doc_type,"_mapping"])
+        else:
+            path = self._make_path([','.join(indexes),"_mapping"])
         return self._send_request('GET', path)
 
     def collect_info(self):
@@ -283,6 +372,10 @@ class ES(object):
         self.info['server'] = {}
         self.info['server']['name'] = res['name']
         self.info['server']['version'] = res['version']
+        self.info['allinfo'] = res
+        self.info['status'] = self.status(["_all"])
+        #processing indexes
+        self.info['mappings'] = self.get_mapping()
         return self.info
         
     #--- cluster
@@ -321,8 +414,7 @@ class ES(object):
         """
         Retrieve the cluster state
         """
-        path = self._make_path(["_cluster", "state"])
-        return self._send_request('GET', path)
+        return self._send_request('GET', "/_cluster/state")
 
     def cluster_nodes(self, nodes = None):
         """
@@ -345,8 +437,11 @@ class ES(object):
             cmd = { optype : { "_index" : index, "_type" : doc_type}}
             if id:
                 cmd[optype]['_id'] = id
-            self.buckets.append(json.dumps(cmd, cls=self.encoder))
-            self.buckets.append(json.dumps(doc, cls=self.encoder))
+            self.bulk_data.write(json.dumps(cmd, cls=self.encoder))
+            self.bulk_data.write("\n")
+            self.bulk_data.write(json.dumps(doc, cls=self.encoder))
+            self.bulk_data.write("\n")
+            self.bulk_items += 1
             self.flush_bulk()
             return
             
@@ -368,18 +463,19 @@ class ES(object):
         """
         Wait to process all pending operations
         """
-        if not forced and len(self.buckets)/2 < self.bulk_size: 
+        if not forced and self.bulk_items < self.bulk_size: 
             return
         self.force_bulk()
         
     def force_bulk(self):
         """
-        Force executing of all buckets
+        Force executing of all bulk data
         """
-        if len(self.buckets)==0:
+        if self.bulk_items==0:
             return
-        self._send_request("POST", "/_bulk", '\n'.join(self.buckets)+"\n")
-        self.buckets = []
+        self._send_request("POST", "/_bulk", self.bulk_data.getvalue())
+        self.bulk_data = StringIO()
+        self.bulk_items = 0
 
     def put_file(self, filename, index, doc_type, id=None):
         """
@@ -417,24 +513,23 @@ class ES(object):
         path = self._make_path([index, doc_type, id])
         return self._send_request('GET', path)
         
+#    @process_query_result
     def search(self, query, indexes=None, doc_types=None, **query_params):
         """
         Execute a search query against one or more indices and get back search hits.
         query must be a dictionary or a Query object that will convert to Query DSL
         """
-        if indexes is None:
-            indexes = ['_all']
+        indexes = self._validate_indexes(indexes)
         if doc_types is None:
             doc_types = []
+        if isinstance(doc_types, basestring):
+            doc_types = [doc_types]
         if not isinstance(query, basestring):
             if isinstance(query, dict):
                 query = json.dumps(body, cls=self.encoder)
             elif hasattr(query, "to_json"):
                 query = query.to_json()
                 
-#        if body:
-#            body.update(query_params)
-#            query_params = {}
         return self._query_call("_search", query, indexes, doc_types, **query_params)
         
     def count(self, query, indexes=None, doc_types=None, **query_params):
@@ -442,31 +537,46 @@ class ES(object):
         Execute a query against one or more indices and get hits count.
         """
         from query import Query
-        if indexes is None:
-            indexes = ['_all']
+        indexes = self._validate_indexes(indexes)
         if doc_types is None:
             doc_types = []
         if isinstance(query, Query):
             query = query.count()
         return self._query_call("_count", query, indexes, doc_types, **query_params)
+
+    def create_river(self, river, river_name=None):
+        """
+        Create a river
+        """
+        if hasattr(river, q):
+            river_name = river.name
+            river = river.q
+        return self._send_request('PUT', '/_river/%s/_meta'%river_name, river)
+
+    def delete_river(self, river, river_name=None):
+        """
+        Delete a river
+        """
+        if hasattr(river, q):
+            river_name = river.name
+        return self._send_request('DELETE', '/_river/%s/'%river_name)
                     
-    def terms(self, fields, indexes=None, **query_params):
-        """
-        Extract terms and their document frequencies from one or more fields.
-        The fields argument must be a list or tuple of fields.
-        For valid query params see: 
-        http://www.elasticsearch.com/docs/elasticsearch/rest_api/terms/
-        """
-        if indexes is None:
-            indexes = ['_all']
-        path = self._make_path([','.join(indexes), "_terms"])
-        query_params['fields'] = ','.join(fields)
-        return self._send_request('GET', path, params=query_params)
-    
-    def morelikethis(self, index, doc_type, id, fields, **query_params):
-        """
-        Execute a "more like this" search query against one or more fields and get back search hits.
-        """
-        path = self._make_path([index, doc_type, id, '_mlt'])
-        query_params['fields'] = ','.join(fields)
-        return self._send_request('GET', path, params=query_params)        
+#    def terms(self, fields, indexes=None, **query_params):
+#        """
+#        Extract terms and their document frequencies from one or more fields.
+#        The fields argument must be a list or tuple of fields.
+#        For valid query params see: 
+#        http://www.elasticsearch.com/docs/elasticsearch/rest_api/terms/
+#        """
+#        indexes = self._validate_indexes(indexes)
+#        path = self._make_path([','.join(indexes), "_terms"])
+#        query_params['fields'] = ','.join(fields)
+#        return self._send_request('GET', path, params=query_params)
+#    
+#    def morelikethis(self, index, doc_type, id, fields, **query_params):
+#        """
+#        Execute a "more like this" search query against one or more fields and get back search hits.
+#        """
+#        path = self._make_path([index, doc_type, id, '_mlt'])
+#        query_params['fields'] = ','.join(fields)
+#        return self._send_request('GET', path, params=query_params)        

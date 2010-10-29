@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+__author__ = 'Alberto Paro'
+
 #
 # Fake ttypes to use in http protocol to simulate thrift ones
 #

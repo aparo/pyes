@@ -4,7 +4,7 @@
 import logging
 logger = logging.getLogger(__name__)
 
-VERSION = (0, 12, 1)
+VERSION = (0, 13, 0)
 
 __version__ = ".".join(map(str, VERSION[0:3])) + "".join(VERSION[3:])
 __author__ = "Alberto Paro"
@@ -23,11 +23,11 @@ def version_with_meta():
     return "%s (%s)" % (__version__,
                         is_stable_release() and "stable" or "unstable")
 
-from pyes.connection import *
-from es import ES
+from es import ES, file_to_attachment
 from query import *
+from rivers import *
 from objectid import ObjectId
-
+from utils import *
 try:
     #useful for additional query extra features
     from query_extra import *

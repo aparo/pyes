@@ -283,13 +283,13 @@ class DisMaxQuery(Query):
 
         if self.tie_breaker != 0.0:
             filters["tie_breaker"] = self.tie_breaker
+            
         if self.boost != 1.0:
             filters["boost"] = self.boost
         
         filters["queries"] = [q.serialize() for q in self.queries]
         
         return {self._internal_name:filters}
-
 
 class FieldQuery(Query):
     _internal_name = "field"
@@ -701,8 +701,16 @@ class StringQuery(Query):
         if self.phrase_slop:
             filters["phrase_slop"] = self.phrase_slop
         if self.search_fields:
-            filters["fields"] = self.search_fields
-               
+            if isinstance(self.search_fields, (str, unicode)):
+                filters["fields"] = [self.search_fields]
+            else:
+                filters["fields"] = self.search_fields
+
+            if len(filters["fields"]) > 1:
+                if not self.use_dis_max:
+                    filters["use_dis_max"] = self.use_dis_max
+                if self.tie_breaker != 0:
+                    filters["tie_breaker"] = self.tie_breaker               
         if self.boost!=1.0:
             filters["boost"] = self.boost
         if self.clean_text:

@@ -1,0 +1,411 @@
+{
+    "testindex": {
+        "mydoctype": {
+            "_all": {
+                "enabled": true, 
+                "store": "yes", 
+                "term_vector": "no"
+            }, 
+            "_boost": {
+                "name": "_boost"
+            }, 
+            "_id": {
+                "store": "yes"
+            }, 
+            "_index": {
+                "enabled": false, 
+                "store": "no"
+            }, 
+            "_source": {
+                "enabled": true, 
+                "name": "_source"
+            }, 
+            "_type": {
+                "store": "yes"
+            }, 
+            "date_formats": [
+                "dateOptionalTime", 
+                "yyyy/MM/dd HH:mm:ss||yyyy/MM/dd"
+            ], 
+            "dynamic": true, 
+            "enabled": true, 
+            "path": "full", 
+            "properties": {
+                "firm": {
+                    "dynamic": true, 
+                    "enabled": true, 
+                    "path": "full", 
+                    "properties": {
+                        "id": {
+                            "boost": 1.0, 
+                            "index": "not_analyzed", 
+                            "index_name": "id", 
+                            "omit_norms": true, 
+                            "omit_term_freq_and_positions": true, 
+                            "precision_step": 4, 
+                            "store": "yes", 
+                            "term_vector": "no", 
+                            "type": "long"
+                        }, 
+                        "name_of_firm": {
+                            "fields": {
+                                "name_of_firm": {
+                                    "boost": 1.0, 
+                                    "index": "analyzed", 
+                                    "index_name": "name_of_firm", 
+                                    "omit_norms": false, 
+                                    "omit_term_freq_and_positions": false, 
+                                    "store": "yes", 
+                                    "term_vector": "with_positions_offsets", 
+                                    "type": "string"
+                                }, 
+                                "untouched": {
+                                    "boost": 1.0, 
+                                    "include_in_all": false, 
+                                    "index": "not_analyzed", 
+                                    "index_name": "untouched", 
+                                    "omit_norms": false, 
+                                    "omit_term_freq_and_positions": false, 
+                                    "store": "yes", 
+                                    "term_vector": "no", 
+                                    "type": "string"
+                                }
+                            }, 
+                            "path": "full", 
+                            "type": "multi_field"
+                        }
+                    }, 
+                    "type": "object"
+                }, 
+                "code": {
+                    "dynamic": true, 
+                    "enabled": true, 
+                    "path": "full", 
+                    "properties": {
+                        "short_description": {
+                            "boost": 1.0, 
+                            "index": "analyzed", 
+                            "index_name": "short_description", 
+                            "omit_norms": false, 
+                            "omit_term_freq_and_positions": false, 
+                            "store": "no", 
+                            "term_vector": "no", 
+                            "type": "string"
+                        }, 
+                        "description": {
+                            "boost": 1.0, 
+                            "index": "analyzed", 
+                            "index_name": "description", 
+                            "omit_norms": false, 
+                            "omit_term_freq_and_positions": false, 
+                            "store": "yes", 
+                            "term_vector": "with_positions_offsets", 
+                            "type": "string"
+                        }, 
+                        "id": {
+                            "boost": 1.0, 
+                            "index": "not_analyzed", 
+                            "index_name": "id", 
+                            "omit_norms": false, 
+                            "omit_term_freq_and_positions": false, 
+                            "store": "yes", 
+                            "term_vector": "no", 
+                            "type": "string"
+                        }, 
+                        "id_typeric": {
+                            "boost": 1.0, 
+                            "index": "analyzed", 
+                            "index_name": "id_typeric", 
+                            "omit_norms": false, 
+                            "omit_term_freq_and_positions": false, 
+                            "store": "no", 
+                            "term_vector": "no", 
+                            "type": "string"
+                        }, 
+                        "leaf": {
+                            "boost": 1.0, 
+                            "index": "analyzed", 
+                            "index_name": "leaf", 
+                            "omit_norms": false, 
+                            "omit_term_freq_and_positions": false, 
+                            "store": "no", 
+                            "term_vector": "no", 
+                            "type": "string"
+                        }, 
+                        "level": {
+                            "boost": 1.0, 
+                            "index": "not_analyzed", 
+                            "index_name": "level", 
+                            "omit_norms": true, 
+                            "omit_term_freq_and_positions": true, 
+                            "precision_step": 4, 
+                            "store": "no", 
+                            "term_vector": "no", 
+                            "type": "long"
+                        }
+                    }, 
+                    "type": "object"
+                }, 
+                "codsan": {
+                    "boost": 1.0, 
+                    "index": "not_analyzed", 
+                    "index_name": "codsan", 
+                    "omit_norms": false, 
+                    "omit_term_freq_and_positions": false, 
+                    "store": "yes", 
+                    "term_vector": "no", 
+                    "type": "string"
+                }, 
+                "tags": {
+                    "fields": {
+                        "tags": {
+                            "boost": 1.0, 
+                            "index": "analyzed", 
+                            "index_name": "tags", 
+                            "omit_norms": false, 
+                            "omit_term_freq_and_positions": false, 
+                            "store": "yes", 
+                            "term_vector": "with_positions_offsets", 
+                            "type": "string"
+                        }, 
+                        "untouched": {
+                            "boost": 1.0, 
+                            "include_in_all": false, 
+                            "index": "not_analyzed", 
+                            "index_name": "untouched", 
+                            "omit_norms": false, 
+                            "omit_term_freq_and_positions": false, 
+                            "store": "yes", 
+                            "term_vector": "no", 
+                            "type": "string"
+                        }
+                    }, 
+                    "path": "full", 
+                    "type": "multi_field"
+                }, 
+                "product": {
+                    "dynamic": true, 
+                    "enabled": true, 
+                    "path": "full", 
+                    "properties": {
+                        "id": {
+                            "boost": 1.0, 
+                            "index": "not_analyzed", 
+                            "index_name": "id", 
+                            "omit_norms": true, 
+                            "omit_term_freq_and_positions": true, 
+                            "precision_step": 4, 
+                            "store": "yes", 
+                            "term_vector": "no", 
+                            "type": "long"
+                        }, 
+                        "name_of_base": {
+                            "boost": 1.0, 
+                            "index": "not_analyzed", 
+                            "index_name": "name_of_base", 
+                            "omit_norms": false, 
+                            "omit_term_freq_and_positions": false, 
+                            "store": "yes", 
+                            "term_vector": "no", 
+                            "type": "string"
+                        }, 
+                        "name_of_product": {
+                            "fields": {
+                                "name_of_product": {
+                                    "boost": 1.0, 
+                                    "index": "analyzed", 
+                                    "index_name": "name_of_product", 
+                                    "omit_norms": false, 
+                                    "omit_term_freq_and_positions": false, 
+                                    "store": "yes", 
+                                    "term_vector": "with_positions_offsets", 
+                                    "type": "string"
+                                }, 
+                                "untouched": {
+                                    "boost": 1.0, 
+                                    "include_in_all": false, 
+                                    "index": "not_analyzed", 
+                                    "index_name": "untouched", 
+                                    "omit_norms": false, 
+                                    "omit_term_freq_and_positions": false, 
+                                    "store": "yes", 
+                                    "term_vector": "no", 
+                                    "type": "string"
+                                }
+                            }, 
+                            "path": "full", 
+                            "type": "multi_field"
+                        }
+                    }, 
+                    "type": "object"
+                }, 
+                "flag_mod": {
+                    "boost": 1.0, 
+                    "index": "not_analyzed", 
+                    "index_name": "flag_mod", 
+                    "omit_norms": true, 
+                    "omit_term_freq_and_positions": false, 
+                    "store": "yes", 
+                    "term_vector": "no", 
+                    "type": "boolean"
+                }, 
+                "stock": {
+                    "boost": 1.0, 
+                    "index": "not_analyzed", 
+                    "index_name": "stock", 
+                    "omit_norms": true, 
+                    "omit_term_freq_and_positions": false, 
+                    "store": "yes", 
+                    "term_vector": "no", 
+                    "type": "boolean"
+                }, 
+                "id": {
+                    "boost": 1.0, 
+                    "index": "not_analyzed", 
+                    "index_name": "id", 
+                    "omit_norms": true, 
+                    "omit_term_freq_and_positions": true, 
+                    "precision_step": 4, 
+                    "store": "yes", 
+                    "term_vector": "no", 
+                    "type": "long"
+                }, 
+                "note": {
+                    "dynamic": true, 
+                    "enabled": true, 
+                    "path": "full", 
+                    "properties": {
+                        "filename": {
+                            "boost": 1.0, 
+                            "index": "not_analyzed", 
+                            "index_name": "filename", 
+                            "omit_norms": false, 
+                            "omit_term_freq_and_positions": false, 
+                            "store": "no", 
+                            "term_vector": "no", 
+                            "type": "string"
+                        }, 
+                        "numero": {
+                            "boost": 1.0, 
+                            "index": "not_analyzed", 
+                            "index_name": "numero", 
+                            "omit_norms": false, 
+                            "omit_term_freq_and_positions": false, 
+                            "store": "yes", 
+                            "term_vector": "no", 
+                            "type": "string"
+                        }, 
+                        "title": {
+                            "fields": {
+                                "title": {
+                                    "boost": 1.0, 
+                                    "index": "analyzed", 
+                                    "index_name": "title", 
+                                    "omit_norms": false, 
+                                    "omit_term_freq_and_positions": false, 
+                                    "store": "yes", 
+                                    "term_vector": "with_positions_offsets", 
+                                    "type": "string"
+                                }, 
+                                "untouched": {
+                                    "boost": 1.0, 
+                                    "include_in_all": false, 
+                                    "index": "not_analyzed", 
+                                    "index_name": "untouched", 
+                                    "omit_norms": false, 
+                                    "omit_term_freq_and_positions": false, 
+                                    "store": "yes", 
+                                    "term_vector": "no", 
+                                    "type": "string"
+                                }
+                            }, 
+                            "path": "full", 
+                            "type": "multi_field"
+                        }
+                    }, 
+                    "type": "object"
+                }, 
+                "price": {
+                    "boost": 1.0, 
+                    "index": "not_analyzed", 
+                    "index_name": "price", 
+                    "omit_norms": true, 
+                    "omit_term_freq_and_positions": true, 
+                    "precision_step": 4, 
+                    "store": "yes", 
+                    "term_vector": "no", 
+                    "type": "double"
+                },                 
+                "folder": {
+                    "dynamic": true, 
+                    "enabled": true, 
+                    "path": "full", 
+                    "properties": {
+                        "id": {
+                            "boost": 1.0, 
+                            "index": "not_analyzed", 
+                            "index_name": "id", 
+                            "omit_norms": true, 
+                            "omit_term_freq_and_positions": true, 
+                            "precision_step": 4, 
+                            "store": "yes", 
+                            "term_vector": "no", 
+                            "type": "long"
+                        }, 
+                        "title": {
+                            "boost": 1.0, 
+                            "index": "analyzed", 
+                            "index_name": "title", 
+                            "omit_norms": false, 
+                            "omit_term_freq_and_positions": false, 
+                            "store": "yes", 
+                            "term_vector": "with_positions_offsets", 
+                            "type": "string"
+                        }
+                    }, 
+                    "type": "object"
+                }, 
+                "folder_sub": {
+                    "dynamic": true, 
+                    "enabled": true, 
+                    "path": "full", 
+                    "properties": {
+                        "id": {
+                            "boost": 1.0, 
+                            "index": "not_analyzed", 
+                            "index_name": "id", 
+                            "omit_norms": true, 
+                            "omit_term_freq_and_positions": true, 
+                            "precision_step": 4, 
+                            "store": "yes", 
+                            "term_vector": "no", 
+                            "type": "long"
+                        }, 
+                        "title": {
+                            "boost": 1.0, 
+                            "index": "analyzed", 
+                            "index_name": "title", 
+                            "omit_norms": false, 
+                            "omit_term_freq_and_positions": false, 
+                            "store": "yes", 
+                            "term_vector": "with_positions_offsets", 
+                            "type": "string"
+                        }
+                    }, 
+                    "type": "object"
+                }, 
+                "type_folder": {
+                    "boost": 1.0, 
+                    "index": "not_analyzed", 
+                    "index_name": "type_folder", 
+                    "omit_norms": false, 
+                    "omit_term_freq_and_positions": false, 
+                    "store": "yes", 
+                    "term_vector": "no", 
+                    "type": "string"
+                }
+            }, 
+            "type": "object"
+        }
+    }
+}

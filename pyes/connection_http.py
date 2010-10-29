@@ -6,12 +6,11 @@ __author__ = 'Alberto Paro'
 """
 Work taken from pycassa
 """
-from exceptions import Exception
 import logging
 import random
 import threading
 import time
-from errors import NoServerAvailable
+from exceptions import NoServerAvailable
 import urllib3
 from fakettypes import *
 import json

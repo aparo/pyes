@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 __author__ = 'Alberto Paro, Robert Eanes, Matt Dennewitz'
-__all__ = ['ES', 'file_to_attachment']
+__all__ = ['ES', 'file_to_attachment', 'decode_json']
 
 import logging
 try:
@@ -24,6 +24,7 @@ import time
 from StringIO import StringIO
 from functools import wraps
 from decimal import Decimal
+import traceback
 
 try:
     from connection import connect as thrift_connect
@@ -33,11 +34,12 @@ except ImportError:
     from fakettypes import *
     thrift_enable = False
 from connection_http import connect as http_connect
-
+import threading
 log = logging.getLogger('pyes')
+from mappings import Mapper
 
 #---- Errors
-from errors import QueryError, IndexMissingException
+from exceptions import IndexMissingException, NotFoundException, SearchPhaseExecutionException
 
 def process_errors(func):
     @wraps(func)
@@ -50,9 +52,27 @@ def process_errors(func):
                 error = result['error']
                 if error.startswith("IndexMissingException"):
                     raise IndexMissingException(error)      
-                print error  
+                if error.endswith("] missing"):
+                    raise IndexMissingException(error)      
+                print "tocheck",error  
         return result
     return _func
+
+def process_error(status, result):
+    if isinstance(result, dict):
+        if 'ok' in result:
+            return result
+        if 'error' in result:
+            error = result['error']
+            if error.startswith("IndexMissingException"):
+                raise IndexMissingException(error)      
+            if status==400:
+                if error.endswith("] missing"):
+                    raise NotFoundException(error.split(" ")[0].strip("[]"))
+            if status==500 and error.startswith("SearchPhaseExecutionException["):
+                raise SearchPhaseExecutionException(error[len("SearchPhaseExecutionException"):].strip("[]"))
+            print "tocheck",error  
+    return result
 
 #def process_query_result(func):
 #    @wraps(func)
@@ -219,12 +239,13 @@ class ES(object):
         try:
             decoded = json.loads(response.body, cls=self.decoder)
         except:
-            import traceback
             traceback.print_exc()
             try:
                 decoded = json.loads(response.body, cls=ESJsonDecoder)
             except:
-                decoded = {}
+                decoded = response.body
+        if response.status!=200:
+            process_error(response.status, decoded)
         return  decoded
     
     def _make_path(self, path_components):
@@ -263,7 +284,6 @@ class ES(object):
         return indexes
             
     #---- Admin commands
-    @process_errors
     def status(self, indexes=None):
         """
         Retrieve the status of one or more indices
@@ -272,7 +292,6 @@ class ES(object):
         path = self._make_path([','.join(indexes), '_status'])
         return self._send_request('GET', path)
 
-    @process_errors
     def create_index(self, index, settings=None):
         """
         Creates an index with optional settings.
@@ -281,7 +300,6 @@ class ES(object):
         """
         return self._send_request('PUT', index, settings)
         
-    @process_errors
     def delete_index(self, index):
         """
         Deletes an index.
@@ -300,7 +318,6 @@ class ES(object):
         """
         return self._send_request('POST', "/%s/_open"%index)
         
-    @process_errors
     def flush(self, indexes=None, refresh=None):
         """
         Flushes one or more indices (clear memory)
@@ -361,7 +378,11 @@ class ES(object):
             path = self._make_path([','.join(indexes), doc_type,"_mapping"])
         else:
             path = self._make_path([','.join(indexes),"_mapping"])
-        return self._send_request('GET', path)
+        result = self._send_request('GET', path)
+        #processing indexes
+        self.mappings = Mapper(result)
+        return result
+
 
     def collect_info(self):
         """
@@ -374,8 +395,6 @@ class ES(object):
         self.info['server']['version'] = res['version']
         self.info['allinfo'] = res
         self.info['status'] = self.status(["_all"])
-        #processing indexes
-        self.info['mappings'] = self.get_mapping()
         return self.info
         
     #--- cluster
@@ -513,7 +532,6 @@ class ES(object):
         path = self._make_path([index, doc_type, id])
         return self._send_request('GET', path)
         
-#    @process_query_result
     def search(self, query, indexes=None, doc_types=None, **query_params):
         """
         Execute a search query against one or more indices and get back search hits.
@@ -526,7 +544,7 @@ class ES(object):
             doc_types = [doc_types]
         if not isinstance(query, basestring):
             if isinstance(query, dict):
-                query = json.dumps(body, cls=self.encoder)
+                query = json.dumps(query, cls=self.encoder)
             elif hasattr(query, "to_json"):
                 query = query.to_json()
                 
@@ -548,7 +566,7 @@ class ES(object):
         """
         Create a river
         """
-        if hasattr(river, q):
+        if hasattr(river, "q"):
             river_name = river.name
             river = river.q
         return self._send_request('PUT', '/_river/%s/_meta'%river_name, river)
@@ -557,7 +575,7 @@ class ES(object):
         """
         Delete a river
         """
-        if hasattr(river, q):
+        if hasattr(river, "q"):
             river_name = river.name
         return self._send_request('DELETE', '/_river/%s/'%river_name)
                     
@@ -580,3 +598,12 @@ class ES(object):
 #        path = self._make_path([index, doc_type, id, '_mlt'])
 #        query_params['fields'] = ','.join(fields)
 #        return self._send_request('GET', path, params=query_params)        
+
+def decode_json(data):
+    """ Decode some json to dict"""
+    return json.loads(data, cls=ESJsonDecoder)
+
+def encode_json(data):
+    """ Encode some json to dict"""
+    return json.dumps(data, cls=ESJsonEncoder)
+    

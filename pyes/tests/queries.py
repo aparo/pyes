@@ -3,8 +3,7 @@
 """
 Unit tests for pyes.  These require an es server with thrift plugin running on the default port (localhost:9500).
 """
-import unittest
-from pyes.tests import ESTestCase
+from pyestest import *
 from pyes import *
 from time import sleep
 
@@ -106,15 +105,15 @@ class QuerySearchTestCase(ESTestCase):
         self.assertEquals(result['hits']['total'], 2)
 
     def test_OR_AND_Filters(self):
-        q1= TermQuery("position", 1)
-        q2= TermQuery("position", 2)
-        andq = ANDFilterQuery([q1, q2])
+        q1= TermFilter("position", 1)
+        q2= TermFilter("position", 2)
+        andq = ANDFilter([q1, q2])
         
         q = FilteredQuery(MatchAllQuery(), andq)
         result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 0)
 
-        orq = ORFilterQuery([q1, q2])
+        orq = ORFilter([q1, q2])
         q = FilteredQuery(MatchAllQuery(), orq)
         result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 2)

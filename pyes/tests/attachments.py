@@ -3,10 +3,9 @@
 """
 Unit tests for pyes.  These require an es server with thrift plugin running on the default port (localhost:9500).
 """
-import unittest
-from pyes.tests import ESTestCase
-from pyes import TermQuery, file_to_attachment
 import os
+from pyestest import *
+from pyes import TermQuery, file_to_attachment
 
 class TestFileSaveTestCase(ESTestCase):
     def test_filesave(self):
@@ -83,6 +82,3 @@ class QueryAttachmentTestCase(ESTestCase):
         result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
         self.assertEquals(result['hits']['hits'][0]['fields']['attachment.author'], u'Tika Developers')
-
-if __name__ == "__main__":
-    unittest.main()

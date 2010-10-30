@@ -6,7 +6,6 @@ __author__ = 'Alberto Paro'
 """
 Work taken from pycassa
 """
-from exceptions import Exception
 import logging
 import random
 import socket
@@ -19,7 +18,7 @@ from thrift.transport import TSocket
 from thrift.protocol import TBinaryProtocol
 from pyesthrift import Rest
 
-from errors import NoServerAvailable
+from exceptions import NoServerAvailable
 
 __all__ = ['connect', 'connect_thread_local', 'NoServerAvailable']
 

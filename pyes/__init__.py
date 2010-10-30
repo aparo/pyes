@@ -23,9 +23,11 @@ def version_with_meta():
     return "%s (%s)" % (__version__,
                         is_stable_release() and "stable" or "unstable")
 
-from es import ES, file_to_attachment
+from es import ES, file_to_attachment, decode_json
 from query import *
 from rivers import *
+from filters import *
+#from highlight import HighLighter
 from objectid import ObjectId
 from utils import *
 try:

@@ -146,9 +146,11 @@ Changelog
 
 v. 0.13.0: API Changes: errors -> exceptions.
            
-           Splitting of query/filters
+           Splitting of query/filters.
            
-           Added open/close of index
+           Added open/close of index.
+
+           Added the number of retries if server is down.
 
 v. 0.12.1: Added collecting server info.
 

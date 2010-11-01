@@ -154,7 +154,9 @@ class ES(object):
     ES connection object.
     """
     
-    def __init__(self, server, timeout=5.0, bulk_size = 400, encoder= None, decoder = None):
+    def __init__(self, server, timeout=5.0, bulk_size = 400, 
+                 encoder= None, decoder = None,
+                 max_retries=3):
         """
         Init a es object
         
@@ -162,9 +164,10 @@ class ES(object):
         timeout: timeout for a call
         bulk_size: size of bulk operation
         encoder: tojson encoder
-
+        max_retries: number of max retries for server if a server is down
         """
         self.timeout = timeout
+        self.max_retries = max_retries
         self.cluster = None
         self.debug_dump = False
         self.cluster_name = "undefined"
@@ -205,11 +208,11 @@ class ES(object):
         #detect connectiontype
         port = self.servers[0].split(":")[1]
         if port.startswith("92"):
-            self.connection = http_connect(self.servers, timeout=self.timeout)
+            self.connection = http_connect(self.servers, timeout=self.timeout, max_retries=self.max_retries)
             return
         if not thrift_enable:
             raise RuntimeError("If you want to use thrift, please install pythrift")
-        self.connection = thrift_connect(self.servers, timeout=self.timeout)
+        self.connection = thrift_connect(self.servers, timeout=self.timeout, max_retries=self.max_retries)
         
     def _discovery(self):
         """

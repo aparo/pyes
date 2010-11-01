@@ -24,7 +24,6 @@ __all__ = ['connect', 'connect_thread_local', 'NoServerAvailable']
 
 DEFAULT_SERVER = '127.0.0.1:9500'
 #API_VERSION = VERSION.split('.')
-MAX_CONNECT_RETRIES = 3
 
 log = logging.getLogger('pyes')
 
@@ -59,7 +58,7 @@ class ClientTransport(object):
 
 
 def connect(servers=None, framed_transport=False, timeout=None,
-            retry_time=60, recycle=None, round_robin=None):
+            retry_time=60, recycle=None, round_robin=None, max_retries=3):
     """
     Constructs a single ElastiSearch connection. Connects to a randomly chosen
     server on the list.
@@ -76,7 +75,7 @@ def connect(servers=None, framed_transport=False, timeout=None,
     servers : [server]
               List of ES servers with format: "hostname:port"
 
-              Default: ['127.0.0.1:8500']
+              Default: ['127.0.0.1:9500']
     framed_transport: bool
               If True, use a TFramedTransport instead of a TBufferedTransport
     timeout: float
@@ -92,6 +91,9 @@ def connect(servers=None, framed_transport=False, timeout=None,
 
               Default: None (Never recycle)
 
+    max_retries: int
+              Max retry time on connection down
+              
     round_robin: bool
               *DEPRECATED*
 
@@ -103,7 +105,7 @@ def connect(servers=None, framed_transport=False, timeout=None,
     if servers is None:
         servers = [DEFAULT_SERVER]
     return ThreadLocalConnection(servers, framed_transport, timeout,
-                                 retry_time, recycle)
+                                 retry_time, recycle, max_retries=max_retries)
 
 connect_thread_local = connect
 
@@ -147,17 +149,18 @@ class ServerSet(object):
 
 class ThreadLocalConnection(object):
     def __init__(self, servers, framed_transport=False, timeout=None,
-                 retry_time=10, recycle=None):
+                 retry_time=10, recycle=None, max_retries=3):
         self._servers = ServerSet(servers, retry_time)
         self._framed_transport = framed_transport
         self._timeout = timeout
         self._recycle = recycle
+        self._max_retries = max_retries
         self._local = threading.local()
 
     def __getattr__(self, attr):
         def _client_call(*args, **kwargs):
 
-            for retry in range((MAX_CONNECT_RETRIES+1)):
+            for retry in xrange(self._max_retries+1):
                 try:
                     conn = self._ensure_connection()
                     return getattr(conn.client, attr)(*args, **kwargs)
@@ -165,7 +168,7 @@ class ThreadLocalConnection(object):
                     log.exception('Client error: %s', exc)
                     self.close()
 
-                    if retry < MAX_CONNECT_RETRIES:
+                    if retry < self._max_retries:
                         continue
 
                     raise NoServerAvailable

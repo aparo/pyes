@@ -107,10 +107,18 @@ class ORFilter(FilterList):
     def __init__(self, *args, **kwargs):
         super(ORFilter, self).__init__(*args, **kwargs)
 
-class NotFilter(FilterList):
+
+class NotFilter(Filter):
     _internal_name = "not"
-    def __init__(self, *args, **kwargs):
-        super(NotFilter, self).__init__(*args, **kwargs)
+    def __init__(self, filter, **kwargs):
+        super(NotFilter, self).__init__(**kwargs)
+        self.filter = filter
+
+    def serialize(self):
+        if not isinstance(self.filter, Filter):
+            raise RuntimeError("NotFilter argument should be a Filter")
+        return {self._internal_name: {"filter": self.filter.serialize()}}
+
 
 class RangeFilter(Filter):
     

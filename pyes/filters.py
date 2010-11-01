@@ -198,14 +198,14 @@ class TermsFilter(Filter):
     _internal_name = "terms"
     
     def __init__(self, field=None, values=None, **kwargs):
-        super(TermFilter, self).__init__(**kwargs)
+        super(TermsFilter, self).__init__(**kwargs)
         self._values = {}
         
         if field is not None and values is not None:
             self.add(field, values)
     
     def add(self, field, values):
-        self._values[field]={'value':values}
+        self._values[field]=values
         
     def serialize(self):
         if not self._values:

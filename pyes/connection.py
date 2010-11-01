@@ -24,6 +24,7 @@ __all__ = ['connect', 'connect_thread_local', 'NoServerAvailable']
 
 DEFAULT_SERVER = '127.0.0.1:9500'
 #API_VERSION = VERSION.split('.')
+MAX_CONNECT_RETRIES = 3
 
 log = logging.getLogger('pyes')
 
@@ -155,13 +156,20 @@ class ThreadLocalConnection(object):
 
     def __getattr__(self, attr):
         def _client_call(*args, **kwargs):
-            try:
-                conn = self._ensure_connection()
-                return getattr(conn.client, attr)(*args, **kwargs)
-            except (Thrift.TException, socket.timeout, socket.error), exc:
-                log.exception('Client error: %s', exc)
-                self.close()
-                return _client_call(*args, **kwargs) # Retry
+
+            for retry in range((MAX_CONNECT_RETRIES+1)):
+                try:
+                    conn = self._ensure_connection()
+                    return getattr(conn.client, attr)(*args, **kwargs)
+                except (Thrift.TException, socket.timeout, socket.error), exc:
+                    log.exception('Client error: %s', exc)
+                    self.close()
+
+                    if retry < MAX_CONNECT_RETRIES:
+                        continue
+
+                    raise NoServerAvailable
+
         setattr(self, attr, _client_call)
         return getattr(self, attr)
 

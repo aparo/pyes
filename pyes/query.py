@@ -81,7 +81,8 @@ class Query(object):
                  highlight=None,
                  sort = None,
                  explain=False,
-                 facet = None):
+                 facet = None,
+                 index_boost = {}):
         """
         fields: if is [], the _soruce is not returned
         """
@@ -92,6 +93,7 @@ class Query(object):
         self.sort = sort
         self.explain = explain
         self.facet = facet or FacetFactory()
+        self.index_boost = index_boost
     
     def get_facet_factory(self):
         """
@@ -114,6 +116,8 @@ class Query(object):
             res['sort'] = self.sort
         if self.explain:
             res['explain'] = self.explain
+        if self.index_boost:
+            res['indices_boost'] = self.index_boost
         if self.facet.facets:
             res.update(self.facet.q)
         return res
@@ -126,7 +130,16 @@ class Query(object):
             self.highlight = HighLighter("<b>", "</b>")
         self.highlight.add_field(field, fragment_size, number_of_fragments)
         
-
+    def add_index_boost(self, index, boost):
+        """
+        Add a boost on an index
+        """
+        if boost is None:
+            if self.index_boost.has_key(index):
+                del(self.index_boost[index])
+        else:
+            self.index_boost[index] = boost
+        
     def count(self):
         return self.serialize()
 

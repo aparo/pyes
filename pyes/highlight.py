@@ -19,7 +19,7 @@ class HighLighter:
         data = {}
         if fragment_size:
             data['fragment_size'] = fragment_size
-        if number_of_fragments:
+        if number_of_fragments is not None:
             data['number_of_fragments'] = number_of_fragments
             
         self.fields[name] = data

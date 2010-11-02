@@ -7,7 +7,7 @@
 from thrift.Thrift import *
 
 from thrift.transport import TTransport
-from thrift.protocol import TBinaryProtocol
+from thrift.protocol import TBinaryProtocol, TProtocol
 try:
   from thrift.protocol import fastbinary
 except:
@@ -41,7 +41,7 @@ class Method:
   }
 
 class Status:
-  CONTINUE = 100
+  CONT = 100
   SWITCHING_PROTOCOLS = 101
   OK = 200
   CREATED = 201
@@ -87,7 +87,7 @@ class Status:
   INSUFFICIENT_STORAGE = 506
 
   _VALUES_TO_NAMES = {
-    100: "CONTINUE",
+    100: "CONT",
     101: "SWITCHING_PROTOCOLS",
     200: "OK",
     201: "CREATED",
@@ -134,7 +134,7 @@ class Status:
   }
 
   _NAMES_TO_VALUES = {
-    "CONTINUE": 100,
+    "CONT": 100,
     "SWITCHING_PROTOCOLS": 101,
     "OK": 200,
     "CREATED": 201,
@@ -179,6 +179,7 @@ class Status:
     "GATEWAY_TIMEOUT": 504,
     "INSUFFICIENT_STORAGE": 506,
   }
+
 
 class RestRequest:
   """
@@ -292,6 +293,13 @@ class RestRequest:
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
     oprot.writeStructEnd()
+    def validate(self):
+      if self.method is None:
+        raise TProtocol.TProtocolException(message='Required field method is unset!')
+      if self.uri is None:
+        raise TProtocol.TProtocolException(message='Required field uri is unset!')
+      return
+
 
   def __repr__(self):
     L = ['%s=%r' % (key, value)
@@ -382,6 +390,11 @@ class RestResponse:
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
     oprot.writeStructEnd()
+    def validate(self):
+      if self.status is None:
+        raise TProtocol.TProtocolException(message='Required field status is unset!')
+      return
+
 
   def __repr__(self):
     L = ['%s=%r' % (key, value)
@@ -393,4 +406,3 @@ class RestResponse:
 
   def __ne__(self, other):
     return not (self == other)
-

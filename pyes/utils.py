@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 __author__ = 'Alberto Paro'
-__all__ = ['clean_string', 'ResultSet', "ESRange"]
+__all__ = ['clean_string', 'ResultSet', "ESRange", "ESRangeOp"]
 
 
 # Characters that are part of Lucene query syntax must be stripped
@@ -12,54 +12,28 @@ SPECIAL_CHARS = [33, 34, 38, 40, 41, 42, 58, 63, 91, 92, 93, 94, 123, 124, 125, 
 UNI_SPECIAL_CHARS = dict((c, None) for c in SPECIAL_CHARS)
 STR_SPECIAL_CHARS = ''.join([chr(c) for c in SPECIAL_CHARS])
 
-class ESRange:
-    def __init__(self, field, _from=None, _to=None, include_lower=None, 
-                 include_upper=None, from_inclusive=None, 
-                 
-                 boost=None, type=None, **kwargs):
+class ESRange(object):
+    def __init__(self, field, from_value=None, to_value=None, include_lower=None, 
+                 include_upper=None, boost=None, **kwargs):
         """
         type can be "gt", "gte", "lt", "lte"
         
         """
         self.field = field
-        self.fromV = _from
-        self.to = _to
+        self.from_value = from_value
+        self.to_value = to_value
+        self.type = type
         self.include_lower = include_lower
         self.include_upper = include_upper
         self.boost = boost
-        self.type = type
     
-    def _validate(self):
-        """
-        Validate the ranges
-        """
-        if self.type is not None:
-            if self.type == "gt":
-                self._from = False
-                self.from_inclusive = False
-            elif self.type == "gte":
-                self._from = True
-                self.from_inclusive = True
-            if self.type == "lt":
-                self._to = False
-                self.to_inclusive = False
-            elif self.type == "lte":
-                self._to = True
-                self.to_inclusive = True
-        
     def serialize(self):
         
-        self._validate()
-
         filters = {}
-        if self.fromV:
-            filters['from'] = self.fromV
-        if self.to:
-            filters['to'] = self.to
-        if self.from_inclusive is not None:
-            filters['from_inclusive'] = self.from_inclusive
-        if self.to_inclusive is not None:
-            filters['to_inclusive'] = self.to_inclusive
+        if self.from_value is not None:
+            filters['from'] = self.from_value
+        if self.to_value is not None:
+            filters['to'] = self.to_value
         if self.include_lower is not None:
             filters['include_lower'] = self.include_lower
         if self.include_upper is not None:
@@ -67,7 +41,25 @@ class ESRange:
         if self.boost is not None:
             filters['boost'] = self.boost
         return self.field, filters
-    
+
+class ESRangeOp(ESRange):
+    def __init__(self, field, op, value, boost=None):
+        from_value = to_value = include_lower = include_upper = None
+        if op == "gt":
+            from_value = value
+            include_lower = False
+        elif op == "gte":
+            from_value = value
+            include_lower = True
+        if op == "lt":
+            to_value = value
+            include_upper = False
+        elif op == "lte":
+            to_value = value
+            include_upper = True
+        super(ESRangeOp, self).__init__(field, from_value, to_value, \
+                include_lower, include_upper, boost)
+
 def clean_string(text):
     """
     Remove Lucene reserved characters from query string

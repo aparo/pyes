@@ -4,7 +4,6 @@
 __author__ = 'Alberto Paro, Robert Eanes, Matt Dennewitz'
 __all__ = ['ES', 'file_to_attachment', 'decode_json']
 
-import logging
 try:
     # For Python < 2.6 or people using a newer version of simplejson
     import json
@@ -12,13 +11,8 @@ except ImportError:
     # For Python >= 2.6
     import simplejson as json
 
-from urlparse import urlsplit
-from urllib import urlencode
 import logging
-from random import randint
-import copy
 from datetime import date, datetime
-from pprint import pprint 
 import base64
 import time
 from StringIO import StringIO
@@ -34,7 +28,6 @@ except ImportError:
     from fakettypes import *
     thrift_enable = False
 from connection_http import connect as http_connect
-import threading
 log = logging.getLogger('pyes')
 from mappings import Mapper
 

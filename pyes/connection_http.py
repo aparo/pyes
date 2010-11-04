@@ -12,6 +12,7 @@ import threading
 import time
 from exceptions import NoServerAvailable
 import urllib3
+from httplib import HTTPConnection
 from fakettypes import *
 import json
 import socket
@@ -40,13 +41,22 @@ class ESJsonEncoder(json.JSONEncoder):
             # use no special encoding and hope for the best
             return value
 
+class TimeoutHttpConnectionPool(urllib3.HTTPConnectionPool):
+    def _new_conn(self):
+        """
+        Return a fresh HTTPConnection with timeout passed
+        """
+        self.num_connections += 1
+        log.info("Starting new HTTP connection (%d): %s" % (self.num_connections, self.host))
+        return HTTPConnection(host=self.host, port=self.port, timeout=self.timeout)
+
 class ClientTransport(object):
     """Encapsulation of a client session."""
 
     def __init__(self, server, framed_transport, timeout, recycle):
         host, port = server.split(":")
 
-        self.client = urllib3.HTTPConnectionPool(host, port, timeout=timeout)
+        self.client = TimeoutHttpConnectionPool(host, port, timeout)
         setattr(self.client, "execute", self.execute)
         if recycle:
             self.recycle = time.time() + recycle + random.uniform(0, recycle * 0.1)

@@ -152,6 +152,8 @@ v. 0.13.0: API Changes: errors -> exceptions.
 
            Added the number of retries if server is down.
 
+           Refactory Range query. (Andrei)
+
 v. 0.12.1: Added collecting server info.
 
            Version 0.12 or above requirement.

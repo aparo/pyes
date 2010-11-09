@@ -10,36 +10,18 @@ import logging
 import random
 import threading
 import time
-from exceptions import NoServerAvailable
+from pyes.exceptions import NoServerAvailable
 import urllib3
 from httplib import HTTPConnection
 from fakettypes import *
-import json
 import socket
+import sys
 __all__ = ['connect', 'connect_thread_local']
 
 DEFAULT_SERVER = '127.0.0.1:9200'
 #API_VERSION = VERSION.split('.')
 
 log = logging.getLogger('pyes')
-
-class ESJsonEncoder(json.JSONEncoder):
-    def default(self, value):
-        """Convert rogue and mysterious data types.
-        Conversion notes:
-        
-        - ``datetime.date`` and ``datetime.datetime`` objects are
-        converted into datetime strings.
-        """
-
-        if isinstance(value, datetime):
-            return value.strftime("%Y-%m-%dT%H:%M:%S")
-        elif isinstance(value, date):
-            dt = datetime(value.year, value.month, value.day, 0, 0, 0)
-            return dt.strftime("%Y-%m-%dT%H:%M:%S")
-        else:
-            # use no special encoding and hope for the best
-            return value
 
 class TimeoutHttpConnectionPool(urllib3.HTTPConnectionPool):
     def _new_conn(self):
@@ -48,14 +30,16 @@ class TimeoutHttpConnectionPool(urllib3.HTTPConnectionPool):
         """
         self.num_connections += 1
         log.info("Starting new HTTP connection (%d): %s" % (self.num_connections, self.host))
+        if sys.version_info < (2, 6):
+            return HTTPConnection(host=self.host, port=int(self.port))
         return HTTPConnection(host=self.host, port=self.port, timeout=self.timeout)
+        
 
 class ClientTransport(object):
     """Encapsulation of a client session."""
 
     def __init__(self, server, framed_transport, timeout, recycle):
         host, port = server.split(":")
-
         self.client = TimeoutHttpConnectionPool(host, port, timeout)
         setattr(self.client, "execute", self.execute)
         if recycle:

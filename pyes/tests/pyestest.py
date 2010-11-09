@@ -12,7 +12,7 @@ import os
 
 class ESTestCase(unittest.TestCase):
     def setUp(self):
-        self.conn = ES('127.0.0.1:9500')
+        self.conn = ES('127.0.0.1:9200')
         try:
             self.conn.delete_index("test-index")
         except NotFoundException:

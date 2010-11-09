@@ -144,6 +144,8 @@ For more examples looks at the tests.
 Changelog
 =========
 
+v. 0.13.1: Added jython support (HTTP only for now).
+
 v. 0.13.0: API Changes: errors -> exceptions.
            
            Splitting of query/filters.
@@ -153,6 +155,10 @@ v. 0.13.0: API Changes: errors -> exceptions.
            Added the number of retries if server is down.
 
            Refactory Range query. (Andrei)
+
+           Improved HTTP connection timeout/retries. (Sandymahalo)
+
+           Cleanup some imports. (Sandymahalo)
 
 v. 0.12.1: Added collecting server info.
 
@@ -195,6 +201,7 @@ TODO
 - more tests
 - cleanup
 - add coverage
+- add jython native client protocol
 
 License
 =======

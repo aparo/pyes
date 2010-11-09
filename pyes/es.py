@@ -32,7 +32,7 @@ log = logging.getLogger('pyes')
 from mappings import Mapper
 
 #---- Errors
-from exceptions import IndexMissingException, NotFoundException, SearchPhaseExecutionException
+from pyes.exceptions import IndexMissingException, NotFoundException, SearchPhaseExecutionException
 
 def process_errors(func):
     @wraps(func)

@@ -3,7 +3,7 @@
 """
 Unit tests for pyes.  These require an es server with thrift plugin running on the default port (localhost:9500).
 """
-
+from pyestest import ESTestCase
 
 #if __name__ == "__main__":
 #    unittest.main()

@@ -26,19 +26,17 @@ class QuickRunTests(TestCommand):
         TestCommand.run(self, *args, **kwargs)
 
 
-install_requires = ["urllib3", "thrift"]
-
+install_requires = ["urllib3", "simplejson"]
+if not sys.platform.startswith("java"):
+    install_requires += [ "thrift", ]    
 try:
     import importlib
 except ImportError:
     install_requires.append("importlib")
 
 
-install_requires.extend([
-    "thrift"])
-
 py_version = sys.version_info
-if sys.version_info < (2, 6):
+if not sys.platform.startswith("java") and sys.version_info < (2, 6):
     install_requires.append("multiprocessing==2.6.2.1")
 
 if os.path.exists("README.rst"):

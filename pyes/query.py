@@ -276,9 +276,9 @@ class ConstantScoreQuery(Query):
 class DisMaxQuery(Query):
     _internal_name = "dis_max"
     
-    def __init__(self, query=None, tie_breaker = 0.0, boost =  1.0, **kwargs ):
+    def __init__(self, query=None, tie_breaker = 0.0, boost =  1.0, queries=None, **kwargs ):
         super(DisMaxQuery, self).__init__(**kwargs)
-        self.queries = []
+        self.queries = queries or []
         self.tie_breaker = tie_breaker
         self.boost = boost
         if query:

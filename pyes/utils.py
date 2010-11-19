@@ -138,22 +138,3 @@ def keys_to_string(data):
                 del data[key]
                 data[str(key)] = val
     return data
-
-#def process_query_result(func):
-#    @wraps(func)
-#    def _func(*args, **kwargs):
-#        result = func(*args, **kwargs)
-#        if 'hits' in result:
-#            setattr(result, "total", result['hits']['total'])
-#            if 'hits' in result['hits']:
-#                for hit in result['hits']['hits']:
-#                    for key, item in hit.items():
-#                        if key.startswith("_"):
-#                            hit[key[1:]]=item
-#                            del hit[key]
-#        else:
-#            setattr(result, "total", 0)
-#        return result
-#    return _func
-#
-#def file_to_attachme

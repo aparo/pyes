@@ -18,7 +18,8 @@ class MapperTestCase(ESTestCase):
 
     def test_parser(self):
         mapper = Mapper(self.datamap)
-        self.conn.get_mapping()
+        mapping=self.conn.get_mapping()
+        self.dump(mapping)
 #        for key, value in self.datatomap['properties'].items():
 #            r=mapper.get_field(key, value)
 #            print r.to_json()

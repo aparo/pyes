@@ -32,7 +32,7 @@ log = logging.getLogger('pyes')
 from mappings import Mapper
 
 #---- Errors
-from pyes.exceptions import IndexMissingException, NotFoundException, SearchPhaseExecutionException
+from pyes.exceptions import IndexMissingException, NotFoundException, SearchPhaseExecutionException, ReplicationShardOperationFailedException
 
 def process_errors(func):
     @wraps(func)
@@ -62,8 +62,12 @@ def process_error(status, result):
             if status==400:
                 if error.endswith("] missing"):
                     raise NotFoundException(error.split(" ")[0].strip("[]"))
-            if status==500 and error.startswith("SearchPhaseExecutionException["):
-                raise SearchPhaseExecutionException(error[len("SearchPhaseExecutionException"):].strip("[]"))
+            if status==500:
+                if error.startswith("SearchPhaseExecutionException["):
+                    raise SearchPhaseExecutionException(error[len("SearchPhaseExecutionException"):].strip("[]"))
+                elif error.startswith("ReplicationShardOperationFailedException["):
+                    raise ReplicationShardOperationFailedException(error[len("ReplicationShardOperationFailedException"):].strip("[]"))
+
             print "tocheck",error  
     return result
 
@@ -361,6 +365,8 @@ class ES(object):
         """
         indexes = self._validate_indexes(indexes)
         path = self._make_path([','.join(indexes), doc_type,"_mapping"])
+        if hasattr(mapping, "to_json"):
+            mapping = mapping.to_json()
         if doc_type not in mapping:
             mapping = {doc_type:mapping}
         return self._send_request('PUT', path, mapping)

@@ -36,15 +36,20 @@ class AbstractField(object):
         self.name = name
 
     def to_json(self):
-        result = {"type":self.type}
+        result = {"type":self.type,
+                  'index':self.index}
         if self.store != "no":
-            result['store'] = self.store
+            if isinstance(self.store, bool):
+                if self.store:
+                    result['store'] = "yes"
+                else:
+                    result['store'] = "no"
+            else:
+                result['store'] = self.store
         if self.boost != 1.0:
             result['boost'] = self.boost
         if self.term_vector != "no":
             result['term_vector'] = self.term_vector
-        if self.index != "not_analyzed":
-            result['index'] = self.index
         if self.omit_norms != True:
             result['omit_norms'] = self.omit_norms
         if self.omit_term_freq_and_positions != True:
@@ -59,7 +64,7 @@ class AbstractField(object):
         return result
 
 class StringField(AbstractField):
-    def __init__(self, name=None, null_value=None, include_in_all=None, *args, **kwargs):
+    def __init__(self, null_value=None, include_in_all=None, *args, **kwargs):
         super(StringField, self).__init__(**kwargs)
         self.null_value = null_value
         self.include_in_all = include_in_all        
@@ -119,15 +124,18 @@ class DateField(NumericFieldAbstract):
         return result
     
 class BooleanField(AbstractField):
-    def __init__(self, name=None, null_value=None, include_in_all=None, *args, **kwargs):
+    def __init__(self, null_value=None, include_in_all=None, *args, **kwargs):
         super(BooleanField, self).__init__(*args, **kwargs)
         self.null_value = null_value
+        self.include_in_all = include_in_all
         self.type = "boolean"
         
     def to_json(self):
         result = super(BooleanField, self).to_json()
         if self.null_value is not None:
             result['null_value'] = self.null_value
+        if self.include_in_all is not None:
+            result['include_in_all'] = self.include_in_all
         return result
 
 class MultiField(object):
@@ -159,6 +167,14 @@ class ObjectField(object):
         self.enabled = enabled
         if properties:
             self.properties = dict([(name, get_field(name, data)) for name, data in properties.items()])
+        else:
+            self.properties = {}
+
+    def add_property(self, prop):
+        """
+        Add a property to the object
+        """
+        self.properties[prop.name] = prop
 
     def to_json(self):
         result = {"type": self.type,
@@ -223,6 +239,9 @@ class DocumentObjectField(object):
             for name, value in self.properties.items():
                 result['properties'][name]=value.to_json()
         return result
+    
+    def __unicode__(self):
+        return "<DocumentObjectField:%s>" % self.to_json()
 
 def get_field(name, data):
     data = keys_to_string(data)
@@ -237,7 +256,7 @@ def get_field(name, data):
         return LongField(name=name, **data)
     elif type=="double":
         return DoubleField(name=name, **data)
-    elif type=="data":
+    elif type=="date":
         return DateField(name=name, **data)
     elif type=="multi_field":
         return MultiField(name=name, **data)

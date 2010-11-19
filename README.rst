@@ -144,6 +144,8 @@ For more examples looks at the tests.
 Changelog
 =========
 
+v. 0.13.2: in bulk index document can also be already json string. (mLewisLogic)
+
 v. 0.13.1: Added jython support (HTTP only for now).
 
 v. 0.13.0: API Changes: errors -> exceptions.

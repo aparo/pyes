@@ -460,7 +460,9 @@ class ES(object):
                 cmd[optype]['_id'] = id
             self.bulk_data.write(json.dumps(cmd, cls=self.encoder))
             self.bulk_data.write("\n")
-            self.bulk_data.write(json.dumps(doc, cls=self.encoder))
+            if isinstance(doc, dict):
+                doc = json.dumps(doc, cls=self.encoder)
+            self.bulk_data.write(doc)
             self.bulk_data.write("\n")
             self.bulk_items += 1
             self.flush_bulk()

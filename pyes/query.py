@@ -15,7 +15,7 @@ from es import ESJsonEncoder
 from utils import clean_string, ESRange
 from facets import FacetFactory
 from highlight import HighLighter
-
+from pyes.exceptions import InvalidQuery, InvalidParameterQuery
 log = logging.getLogger('pyes')
     
 class FieldParameter:
@@ -146,8 +146,14 @@ class Query(object):
     def __repr__(self):
         return str(self.q)
 
-    def to_json(self):
-        return json.dumps(self.q, cls=ESJsonEncoder)
+    def to_json(self, inner=False):
+        """
+        Inner return only the inner query. Useful for delete_by_query and reindex.
+        """
+        q = self.q
+        if inner:
+            q = q['query']
+        return json.dumps(q, cls=ESJsonEncoder)
 
 
 
@@ -301,7 +307,8 @@ class DisMaxQuery(Query):
             filters["boost"] = self.boost
         
         filters["queries"] = [q.serialize() for q in self.queries]
-        
+        if not filters["queries"]:
+            raise InvalidQuery("A least a query is required")
         return {self._internal_name:filters}
 
 class FieldQuery(Query):
@@ -629,6 +636,8 @@ class TermQuery(Query):
             self.add(field, value)
     
     def add(self, field, value, boost=None):
+        if not value.strip():
+            raise InvalidParameterQuery("value %r must be valid text"%value)
         match = {'value':value}
         if boost:
             if isinstance(boost, (float, int)):
@@ -727,8 +736,13 @@ class StringQuery(Query):
         if self.boost!=1.0:
             filters["boost"] = self.boost
         if self.clean_text:
-            filters["query"] = clean_string(self.query)
+            query = clean_string(self.query)
+            if not query:
+                raise InvalidQuery("The query is empty")
+            filters["query"] = query
         else:
+            if not self.query.strip():
+                raise InvalidQuery("The query is empty")
             filters["query"] = self.query            
         return {self._internal_name:filters}
 

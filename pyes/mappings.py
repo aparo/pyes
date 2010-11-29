@@ -245,7 +245,7 @@ class DocumentObjectField(object):
 
 def get_field(name, data):
     data = keys_to_string(data)
-    type = data['type']
+    type = data.get('type', 'object')
     if type=="string":
         return StringField(name=name, **data)
     elif type=="boolean":

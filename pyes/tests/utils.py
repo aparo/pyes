@@ -11,6 +11,7 @@ from pyes.tests import ESTestCase
 from pyes import *
 from time import sleep
 from datetime import datetime
+from pyes.utils import clean_string
 
 class SerializationTestCase(ESTestCase):
     def setUp(self):
@@ -58,6 +59,11 @@ class SerializationTestCase(ESTestCase):
         
 #        self.assertEquals(result['hits']['hits'][0]['_source']['inserted'], datetime(2010, 10, 22, 12, 12, 12))
         
+    def test_cleanstring(self):
+        print clean_string("senthil(")
+        print clean_string("senthil&")
+        print clean_string("senthil-")
+        print clean_string("senthil:")
 
 if __name__ == "__main__":
     unittest.main()

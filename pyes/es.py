@@ -32,7 +32,7 @@ log = logging.getLogger('pyes')
 from mappings import Mapper
 
 #---- Errors
-from pyes.exceptions import IndexMissingException, NotFoundException, SearchPhaseExecutionException, ReplicationShardOperationFailedException
+from pyes.exceptions import IndexMissingException, NotFoundException, SearchPhaseExecutionException, ReplicationShardOperationFailedException, ClusterBlockException
 
 def process_errors(func):
     @wraps(func)
@@ -67,7 +67,9 @@ def process_error(status, result):
                     raise SearchPhaseExecutionException(error[len("SearchPhaseExecutionException"):].strip("[]"))
                 elif error.startswith("ReplicationShardOperationFailedException["):
                     raise ReplicationShardOperationFailedException(error[len("ReplicationShardOperationFailedException"):].strip("[]"))
-
+                elif error.startswith("ClusterBlockException["):
+                    raise ClusterBlockException(error[len("ClusterBlockException"):].strip("[]"))
+                 
             print "tocheck",error  
     return result
 
@@ -528,6 +530,12 @@ class ES(object):
         path = self._make_path([index, doc_type, id])
         return self._send_request('DELETE', path)
         
+    def delete_mapping(self, index, doc_type):
+        """
+        Delete a typed JSON document type from a specific index.
+        """
+        path = self._make_path([index, doc_type])
+        return self._send_request('DELETE', path)
         
     def get(self, index, doc_type, id):
         """

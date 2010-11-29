@@ -144,7 +144,7 @@ For more examples looks at the tests.
 Changelog
 =========
 
-v. 0.13.2: in bulk index document can also be already json string. (mLewisLogic)
+v. 0.14.0: Added delete of mapping type.
 
 v. 0.13.1: Added jython support (HTTP only for now).
 

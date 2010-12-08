@@ -561,6 +561,30 @@ class ES(object):
                 query = query.to_json()
                 
         return self._query_call("_search", query, indexes, doc_types, **query_params)
+
+    def reindex(self, query, indexes=None, doc_types=None, **query_params):
+        """
+        Execute a search query against one or more indices and and reindex the hits.
+        query must be a dictionary or a Query object that will convert to Query DSL.
+        Note: reindex is only available in my ElasticSearch branch on github.
+        """
+        indexes = self._validate_indexes(indexes)
+        if doc_types is None:
+            doc_types = []
+        if isinstance(doc_types, basestring):
+            doc_types = [doc_types]
+        if not isinstance(query, basestring):
+            if isinstance(query, dict):
+                if 'query' in query:
+                    query = query['query']
+                query = json.dumps(query, cls=self.encoder)
+            elif hasattr(query, "to_json"):
+                query = query.to_json(inner=True)
+        querystring_args = query_params
+        indexes = self._validate_indexes(indexes)
+        body = query
+        path = self._make_path([','.join(indexes), ','.join(doc_types), "_reindexbyquery"])
+        return self._send_request('POST', path, body, querystring_args)
         
     def count(self, query, indexes=None, doc_types=None, **query_params):
         """

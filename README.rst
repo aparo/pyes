@@ -148,6 +148,10 @@ v. 0.14.0: Added delete of mapping type.
 
            Embedded urllib3 to be buildout safe and for users sake.
 
+           Some code cleanup.
+
+           Added reindex by query (usable only with my git branch).
+
 v. 0.13.1: Added jython support (HTTP only for now).
 
 v. 0.13.0: API Changes: errors -> exceptions.
@@ -206,6 +210,7 @@ TODO
 - cleanup
 - add coverage
 - add jython native client protocol
+- add parent/children management
 
 License
 =======

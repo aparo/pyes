@@ -200,7 +200,8 @@ class ObjectField(object):
 class DocumentObjectField(object):
     def __init__(self, name=None, type=None, path=None, properties=None,
                  dynamic=None, enabled=None, _all=None, _boost=None, _id=None,
-                 _index=None, _source=None, _type=None, date_formats=None):
+                 _index=None, _source=None, _type=None, date_formats=None,
+                 _parent=None):
         self.name = name
         self.type = "object"
         self.path = path
@@ -213,6 +214,7 @@ class DocumentObjectField(object):
         self._index = _index
         self._source = _source
         self._type = _type
+        self._parent = _parent
         self.date_formats = date_formats
         if properties:
             self.properties = dict([(name, get_field(name, data)) for name, data in properties.items()])
@@ -238,6 +240,8 @@ class DocumentObjectField(object):
             result['_source'] = self._source
         if self._type is not None:
             result['_type'] = self._type
+        if self._parent is not None:
+            result['_parent'] = self._parent
 
         if self.properties:
             for name, value in self.properties.items():

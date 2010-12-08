@@ -94,7 +94,7 @@ class Query(object):
         self.explain = explain
         self.facet = facet or FacetFactory()
         self.index_boost = index_boost
-    
+
     def get_facet_factory(self):
         """
         Returns the facet factory
@@ -278,6 +278,56 @@ class ConstantScoreQuery(Query):
             filters.update(f.serialize())
 
         return {self._internal_name:filters}
+
+class HasChildQuery(ConstantScoreQuery):
+    _internal_name = "has_child"
+
+    def __init__(self, type, **kwargs):
+        super(HasChildQuery, self).__init__(**kwargs)
+        self.type = type
+
+    def serialize(self):
+        filters = {}
+
+        if self.boost != 1.0:
+            filters["boost"] = self.boost
+
+        for f in self.filters:
+            filters.update(f.serialize())
+
+        return {self._internal_name:{
+                                     'type':self.type,
+                                     'query':filters}}
+
+class TopChildrenQuery(ConstantScoreQuery):
+    _internal_name = "top_children"
+
+    def __init__(self, type, score="max", factor=5, incremental_factor=2,
+                 **kwargs):
+        super(TopChildrenQuery, self).__init__(**kwargs)
+        self.type = type
+        self.score = score
+        self.factor = factor
+        self.incremental_factor = incremental_factor
+
+    def serialize(self):
+        filters = {}
+
+        if self.boost != 1.0:
+            filters["boost"] = self.boost
+
+        for f in self.filters:
+            filters.update(f.serialize())
+
+        if self.score not in ["max", "min", "avg"]:
+            raise InvalidParameterQuery("Invalid value '%s' for score" % self.score)
+
+        return {self._internal_name:{
+                                     'type':self.type,
+                                     'query':filters,
+                                     'score':self.score,
+                                     'factor':self.factor,
+                                     "incremental_factor":self.incremental_factor}}
 
 class DisMaxQuery(Query):
     _internal_name = "dis_max"

@@ -35,3 +35,9 @@ try:
     from query_extra import *
 except ImportError:
     pass
+
+try:
+    #useful for additional features for django users
+    from djangoutils import *
+except ImportError:
+    pass

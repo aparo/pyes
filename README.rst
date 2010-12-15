@@ -154,6 +154,9 @@ v. 0.14.0: Added delete of mapping type.
 
            Added contrib with mailman indexing.
 
+           Autodetect if django is available and added related functions.
+
+
 v. 0.13.1: Added jython support (HTTP only for now).
 
 v. 0.13.0: API Changes: errors -> exceptions.

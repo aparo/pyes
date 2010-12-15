@@ -150,7 +150,9 @@ v. 0.14.0: Added delete of mapping type.
 
            Some code cleanup.
 
-           Added reindex by query (usable only with my git branch).
+           Added reindex by query (usable only with my elasticsearch git branch).
+
+           Added contrib with mailman indexing.
 
 v. 0.13.1: Added jython support (HTTP only for now).
 

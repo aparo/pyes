@@ -4,9 +4,10 @@
 __author__ = 'Alberto Paro'
 __all__ = ["get_values"]
 
+#useful to raise ad invali import
+import django
+
 from types import NoneType
-from django.db.models.manager import Manager
-from django.db.models import Model
 import datetime
 
 #--- taken from http://djangosnippets.org/snippets/2278/
@@ -29,6 +30,8 @@ def get_values(instance, go_into={}, exclude=(), extra=(), skip_none=False):
                ('image'))
 
     """
+    from django.db.models.manager import Manager
+    from django.db.models import Model
 
     SIMPLE_TYPES = (int, long, str, list, dict, tuple, bool, float, bool,
                     unicode, NoneType)

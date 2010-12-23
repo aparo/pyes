@@ -610,14 +610,14 @@ class ES(object):
 #        path = self._make_path([','.join(indexes), "_terms"])
 #        query_params['fields'] = ','.join(fields)
 #        return self._send_request('GET', path, params=query_params)
-#    
-#    def morelikethis(self, index, doc_type, id, fields, **query_params):
-#        """
-#        Execute a "more like this" search query against one or more fields and get back search hits.
-#        """
-#        path = self._make_path([index, doc_type, id, '_mlt'])
-#        query_params['fields'] = ','.join(fields)
-#        return self._send_request('GET', path, params=query_params)        
+
+    def morelikethis(self, index, doc_type, id, fields, **query_params):
+        """
+        Execute a "more like this" search query against one or more fields and get back search hits.
+        """
+        path = self._make_path([index, doc_type, id, '_mlt'])
+        query_params['fields'] = ','.join(fields)
+        return self._send_request('GET', path, params=query_params)
 
 def decode_json(data):
     """ Decode some json to dict"""

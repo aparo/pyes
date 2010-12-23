@@ -12,7 +12,7 @@ class IndexingTestCase(ESTestCase):
     def setUp(self):
         super(IndexingTestCase, self).setUp()
         self.conn.create_index("test-index")
-        self.conn.delete_index("test-index2")
+        self.conn.create_index("test-index2")
 
         #Sleep to allow ElasticSearch to set up 
         #mapping and indices before running tests
@@ -26,38 +26,38 @@ class IndexingTestCase(ESTestCase):
         self.assertTrue(result.has_key('server'))
         self.assertTrue(result['server'].has_key('name'))
         self.assertTrue(result['server'].has_key('version'))
-        
+
     def testIndexingWithID(self):
         """
         Testing an indexing given an ID
         """
         result = self.conn.index({"name":"Joe Tester"}, "test-index", "test-type", 1)
-        self.assertResultContains(result, {'_type': 'test-type', '_id': '1', 'ok': True, '_index': 'test-index'} )
+        self.assertResultContains(result, {'_type': 'test-type', '_id': '1', 'ok': True, '_index': 'test-index'})
 
     def testIndexingWithoutID(self):
         """Testing an indexing given without ID"""
         result = self.conn.index({"name":"Joe Tester"}, "test-index", "test-type")
-        self.assertResultContains(result, {'_type': 'test-type', 'ok': True, '_index': 'test-index'} )
+        self.assertResultContains(result, {'_type': 'test-type', 'ok': True, '_index': 'test-index'})
         # should have an id of some value assigned.
         self.assertTrue(result.has_key('_id') and result['_id'])
-        
+
     def testExplicitIndexCreate(self):
         """Creazione indice"""
         result = self.conn.delete_index("test-index2")
         result = self.conn.create_index("test-index2")
         self.assertResultContains(result, {'acknowledged': True, 'ok': True})
-    
+
     def testDeleteByID(self):
         self.conn.index({"name":"Joe Tester"}, "test-index", "test-type", 1)
         self.conn.refresh(["test-index"])
         result = self.conn.delete("test-index", "test-type", 1)
         self.assertResultContains(result, {'_type': 'test-type', '_id': '1', 'ok': True, '_index': 'test-index'})
-        
+
     def testDeleteIndex(self):
         self.conn.create_index("another-index")
         result = self.conn.delete_index("another-index")
         self.assertResultContains(result, {'acknowledged': True, 'ok': True})
-        
+
     def testCannotCreateExistingIndex(self):
         self.conn.create_index("another-index")
         result = self.conn.create_index("another-index")
@@ -65,23 +65,23 @@ class IndexingTestCase(ESTestCase):
         self.assertResultContains(result, {'error': '[another-index] Already exists'})
 
     def testPutMapping(self):
-        result = self.conn.create_index("test-index")        
+        result = self.conn.create_index("test-index")
         result = self.conn.put_mapping("test-type", {"test-type" : {"properties" : {"name" : {"type" : "string", "store" : "yes"}}}}, indexes=["test-index"])
         self.assertResultContains(result, {'acknowledged': True, 'ok': True})
-        
+
     def testIndexStatus(self):
         self.conn.create_index("another-index")
         result = self.conn.status(["another-index"])
         self.conn.delete_index("another-index")
         self.assertTrue(result.has_key('indices'))
         self.assertResultContains(result, {'ok': True})
-        
+
     def testIndexFlush(self):
         self.conn.create_index("another-index")
         result = self.conn.flush(["another-index"])
         self.conn.delete_index("another-index")
         self.assertResultContains(result, {'ok': True})
-        
+
     def testIndexRefresh(self):
         self.conn.create_index("another-index")
         result = self.conn.refresh(["another-index"])
@@ -125,12 +125,16 @@ class IndexingTestCase(ESTestCase):
 #    def testTermsMinFreq(self):
 #        result = self.conn.terms(['name'], min_freq=2)
 #        self.assertResultContains(result, {'docs': {'max_doc': 2, 'num_docs': 2, 'deleted_docs': 0}, 'fields': {'name': {'terms': []}}})
-        
-#    def testMLT(self):
-#        self.conn.index({"name":"Joe Test"}, "test-index", "test-type", 3)
-#        self.conn.refresh(["test-index"])
-#        result = self.conn.morelikethis("test-index", "test-type", 1, ['name'], min_term_freq=1, min_doc_freq=1)
-#        self.assertResultContains(result, {'hits': {'hits': [{'_type': 'test-type', '_id': '3', '_source': {'name': 'Joe Test'}, '_index': 'test-index'}], 'total': 1}})
+
+    def testMLT(self):
+        self.conn.index({"name":"Joe Test"}, "test-index", "test-type", 1)
+        self.conn.index({"name":"Joe Tester"}, "test-index", "test-type", 2)
+        self.conn.index({"name":"Joe Tested"}, "test-index", "test-type", 3)
+        self.conn.refresh(["test-index"])
+        sleep(0.5)
+        result = self.conn.morelikethis("test-index", "test-type", 1, ['name'], min_term_freq=1, min_doc_freq=1)
+        del result[u'took']
+        self.assertResultContains(result, {u'hits': {u'hits': [], u'total': 0, u'max_score': None}, u'_shards': {u'successful': 5, u'failed': 0, u'total': 5}})
 
 if __name__ == "__main__":
     unittest.main()

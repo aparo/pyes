@@ -158,6 +158,7 @@ v. 0.14.0: Added delete of mapping type.
 
            Code cleanup and PEP8.
 
+           Reactivated the morelikethis query.
 
 v. 0.13.1: Added jython support (HTTP only for now).
 

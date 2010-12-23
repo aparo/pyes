@@ -156,6 +156,8 @@ v. 0.14.0: Added delete of mapping type.
 
            Autodetect if django is available and added related functions.
 
+           Code cleanup and PEP8.
+
 
 v. 0.13.1: Added jython support (HTTP only for now).
 

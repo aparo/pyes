@@ -32,7 +32,6 @@ import socket
 import struct
 import threading
 import time
-import warnings
 
 class InvalidId(Exception):
     """Raised when trying to create an ObjectId from invalid data.

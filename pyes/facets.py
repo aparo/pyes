@@ -7,14 +7,14 @@ __author__ = 'Alberto Paro'
 class FacetFactory(object):
     def __init__(self):
         self.facets = []
-    
+
     def add_term_facet(self, *args, **kwargs):
         """Add a term factory"""
         self.facets.append(TermFacet(*args, **kwargs))
-    
+
     @property
     def q(self):
-        res={}
+        res = {}
         for facet in self.facets:
             res.update(facet.serialize())
         return {"facets":res}
@@ -22,7 +22,7 @@ class FacetFactory(object):
 class Facet(object):
     def __init__(self, *args, **kwargs):
         pass
-    
+
 class QueryFacet(Facet):
     _internal_name = "query"
 
@@ -30,7 +30,7 @@ class QueryFacet(Facet):
         super(QueryFacet, self).__init__(**kwargs)
         self.name = name
         self.query = query
-        
+
     def serialize(self):
         return {self.name:{self._internal_name:self.query.serialize()}}
 
@@ -41,15 +41,15 @@ class FilterFacet(Facet):
         super(FilterFacet, self).__init__(**kwargs)
         self.name = name
         self.query = query
-        
+
     def serialize(self):
         return {self.name:{self._internal_name:self.query.serialize()}}
 
 class HistogramFacet(Facet):
     _internal_name = "histogram"
 
-    def __init__(self, name, 
-                 field=None, interval= None, time_interval=None, 
+    def __init__(self, name,
+                 field=None, interval=None, time_interval=None,
                  key_field=None, value_field=None,
                  key_script=None, value_script=None, params=None,
                  **kwargs):
@@ -71,10 +71,10 @@ class HistogramFacet(Facet):
             data['time_interval'] = self.time_interval
         else:
             raise RuntimeError("Invalid field: interval or time_interval required")
-        
+
     def serialize(self):
         data = {}
-        
+
         if self.field:
             data['field'] = self.field
             self._add_interval(data)
@@ -93,14 +93,14 @@ class HistogramFacet(Facet):
                 raise RuntimeError("Invalid key_script: value_script required")
             if self.params:
                 data['params'] = self.params
-                
+
         return {self.name:{self._internal_name:data}}
 
 class RangeFacet(Facet):
     _internal_name = "range"
 
-    def __init__(self, name, 
-                 field=None, ranges = None,
+    def __init__(self, name,
+                 field=None, ranges=None,
                  key_field=None, value_field=None,
                  key_script=None, value_script=None, params=None,
                  **kwargs):
@@ -122,7 +122,7 @@ class RangeFacet(Facet):
         if not self.ranges:
             raise RuntimeError("Invalid ranges")
         data['ranges'] = self.ranges
-        
+
         if self.field:
             data['field'] = self.field
         elif self.key_field:
@@ -139,7 +139,7 @@ class RangeFacet(Facet):
                 raise RuntimeError("Invalid key_script: value_script required")
             if self.params:
                 data['params'] = self.params
-                
+
         return {self.name:{self._internal_name:data}}
 
 class StatisticalFacet(Facet):
@@ -161,16 +161,16 @@ class StatisticalFacet(Facet):
             data['script'] = self.script
             if self.params:
                 data['params'] = self.params
-                
+
         return {self.name:{self._internal_name:data}}
 
 class TermFacet(Facet):
     _internal_name = "terms"
 
-    def __init__(self, field, name=None, size=10, 
-                 order=None, exclude=None, 
-                 regex = None, regex_flags="DOTALL",
-                 script = None, **kwargs):
+    def __init__(self, field, name=None, size=10,
+                 order=None, exclude=None,
+                 regex=None, regex_flags="DOTALL",
+                 script=None, **kwargs):
         super(TermFacet, self).__init__(**kwargs)
         self.name = name
         self.field = field
@@ -190,7 +190,7 @@ class TermFacet(Facet):
 
         if self.order:
             if self.order not in ['count', 'term', 'reverse_count', 'reverse_term']:
-                raise RuntimeError("Invalid order value:%s"%self.order)
+                raise RuntimeError("Invalid order value:%s" % self.order)
             data['order'] = self.order
         if self.exclude:
             data['exclude'] = self.exclude
@@ -200,5 +200,5 @@ class TermFacet(Facet):
                 data['regex_flags'] = self.regex_flags
         elif self.script:
             data['script'] = self.script
-                
+
         return {self.name:{self._internal_name:data}}

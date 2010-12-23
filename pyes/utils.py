@@ -3,7 +3,6 @@
 
 __author__ = 'Alberto Paro'
 __all__ = ['clean_string', 'ResultSet', "ESRange", "ESRangeOp", "string_b64encode", "string_b64decode"]
-import datetime
 import base64
 
 def string_b64encode(s):

@@ -22,11 +22,12 @@ import traceback
 
 try:
     from connection import connect as thrift_connect
-    from pyesthrift.ttypes import *
+    from pyesthrift.ttypes import Method, RestRequest
     thrift_enable = True
 except ImportError:
-    from fakettypes import *
+    from fakettypes import Method, RestRequest
     thrift_enable = False
+
 from connection_http import connect as http_connect
 log = logging.getLogger('pyes')
 from mappings import Mapper
@@ -44,10 +45,10 @@ def process_errors(func):
             if 'error' in result:
                 error = result['error']
                 if error.startswith("IndexMissingException"):
-                    raise IndexMissingException(error)      
+                    raise IndexMissingException(error)
                 if error.endswith("] missing"):
-                    raise IndexMissingException(error)      
-                print "tocheck",error  
+                    raise IndexMissingException(error)
+                print "tocheck", error
         return result
     return _func
 
@@ -58,37 +59,20 @@ def process_error(status, result):
         if 'error' in result:
             error = result['error']
             if error.startswith("IndexMissingException"):
-                raise IndexMissingException(error)      
-            if status==400:
+                raise IndexMissingException(error)
+            if status == 400:
                 if error.endswith("] missing"):
                     raise NotFoundException(error.split(" ")[0].strip("[]"))
-            if status==500:
+            if status == 500:
                 if error.startswith("SearchPhaseExecutionException["):
                     raise SearchPhaseExecutionException(error[len("SearchPhaseExecutionException"):].strip("[]"))
                 elif error.startswith("ReplicationShardOperationFailedException["):
                     raise ReplicationShardOperationFailedException(error[len("ReplicationShardOperationFailedException"):].strip("[]"))
                 elif error.startswith("ClusterBlockException["):
                     raise ClusterBlockException(error[len("ClusterBlockException"):].strip("[]"))
-                 
-            print "tocheck",error  
-    return result
 
-#def process_query_result(func):
-#    @wraps(func)
-#    def _func(*args, **kwargs):
-#        result = func(*args, **kwargs)
-#        if 'hits' in result:
-##            setattr(result, "total", result['hits']['total'])
-#            if 'hits' in result['hits']:
-#                for hit in result['hits']['hits']:
-#                    for key, item in hit.items():
-#                        if key.startswith("_"):
-#                            hit[key[1:]]=item
-#                            del hit[key]
-##        else:
-##            setattr(result, "total", 0)
-#        return result
-#    return _func
+            print "tocheck", error
+    return result
 
 def file_to_attachment(filename):
     """
@@ -127,7 +111,7 @@ class ESJsonDecoder(json.JSONDecoder):
     def string_to_datetime(self, obj):
         """Decode a datetime string to a datetime object
         """
-        if isinstance(obj, basestring) and len(obj)==19:
+        if isinstance(obj, basestring) and len(obj) == 19:
             try:
                 return datetime(*obj.strptime("%Y-%m-%dT%H:%M:%S")[:6])
             except:
@@ -139,9 +123,9 @@ class ESJsonDecoder(json.JSONDecoder):
         Decode datetime value from string to datetime
         """
         for k, v in d.items():
-            if isinstance(v, basestring) and len(v)==19:
+            if isinstance(v, basestring) and len(v) == 19:
                 try:
-                    d[k]=datetime(*time.strptime(v, "%Y-%m-%dT%H:%M:%S")[:6])
+                    d[k] = datetime(*time.strptime(v, "%Y-%m-%dT%H:%M:%S")[:6])
                 except ValueError:
                     pass
             elif isinstance(v, list):
@@ -152,9 +136,9 @@ class ES(object):
     """
     ES connection object.
     """
-    
-    def __init__(self, server, timeout=5.0, bulk_size = 400, 
-                 encoder= None, decoder = None,
+
+    def __init__(self, server, timeout=5.0, bulk_size=400,
+                 encoder=None, decoder=None,
                  max_retries=3):
         """
         Init a es object
@@ -171,12 +155,12 @@ class ES(object):
         self.debug_dump = False
         self.cluster_name = "undefined"
         self.connection = None
-        
+
         #used in bulk
         self.bulk_size = bulk_size #size of the bulk
         self.bulk_data = StringIO()
         self.bulk_items = 0
-        
+
         self.info = {} #info about the current server
         self.mappings = None #track mapping
         self.encoder = encoder
@@ -197,7 +181,7 @@ class ES(object):
         """
         Destructor
         """
-        if self.bulk_items>0:
+        if self.bulk_items > 0:
             self.flush()
 
     def _init_connection(self):
@@ -212,30 +196,30 @@ class ES(object):
         if not thrift_enable:
             raise RuntimeError("If you want to use thrift, please install pythrift")
         self.connection = thrift_connect(self.servers, timeout=self.timeout, max_retries=self.max_retries)
-        
+
     def _discovery(self):
         """
         Find other servers asking nodes to given server
         """
         data = self.cluster_nodes()
         self.cluster_name = data["cluster_name"]
-        for nodename, nodedata in data["nodes"].items():
+        for _, nodedata in data["nodes"].items():
             server = nodedata['http_address'].replace("]", "").replace("inet[", "http:/")
             if server not in self.servers:
                 self.servers.append(server)
         self._init_connection()
         return self.servers
-    
+
     def _send_request(self, method, path, body=None, params={}):
         if not path.startswith("/"):
-            path = "/"+path
+            path = "/" + path
         if not self.connection:
             self._init_connection()
         if body:
             if isinstance(body, dict):
                 body = json.dumps(body, cls=self.encoder)
         else:
-            body=""
+            body = ""
         request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()], uri=path, parameters=params, headers={}, body=body)
         response = self.connection.execute(request)
         try:
@@ -246,10 +230,10 @@ class ES(object):
                 decoded = json.loads(response.body, cls=ESJsonDecoder)
             except:
                 decoded = response.body
-        if response.status!=200:
+        if response.status != 200:
             process_error(response.status, decoded)
         return  decoded
-    
+
     def _make_path(self, path_components):
         """
         Smush together the path components. Empty components will be ignored.
@@ -257,9 +241,9 @@ class ES(object):
         path_components = [str(component) for component in path_components if component]
         path = '/'.join(path_components)
         if not path.startswith('/'):
-            path = '/'+path
+            path = '/' + path
         return path
-        
+
     def _query_call(self, query_type, query, indexes=None, doc_types=None, **query_params):
         """
         This can be used for search and count calls.
@@ -268,11 +252,11 @@ class ES(object):
         querystring_args = query_params
         indexes = self._validate_indexes(indexes)
         if doc_types is None:
-            doc_type = []
+            doc_types = []
         body = query
         if hasattr(query, "to_json"):
             body = query.to_json()
-        path = self._make_path([','.join(indexes), ','.join(doc_types),query_type])
+        path = self._make_path([','.join(indexes), ','.join(doc_types), query_type])
         response = self._send_request('GET', path, body, querystring_args)
         return response
 
@@ -284,7 +268,7 @@ class ES(object):
         if isinstance(indexes, basestring):
             indexes = [indexes]
         return indexes
-            
+
     #---- Admin commands
     def status(self, indexes=None):
         """
@@ -301,7 +285,7 @@ class ES(object):
         Elasticsearch also accepts yaml, but we are only passing JSON.
         """
         return self._send_request('PUT', index, settings)
-        
+
     def delete_index(self, index):
         """
         Deletes an index.
@@ -312,14 +296,14 @@ class ES(object):
         """
         Close an index.
         """
-        return self._send_request('POST', "/%s/_close"%index)
+        return self._send_request('POST', "/%s/_close" % index)
 
     def open_index(self, index):
         """
         Open an index.
         """
-        return self._send_request('POST', "/%s/_open"%index)
-        
+        return self._send_request('POST', "/%s/_open" % index)
+
     def flush(self, indexes=None, refresh=None):
         """
         Flushes one or more indices (clear memory)
@@ -344,7 +328,7 @@ class ES(object):
 
         path = self._make_path([','.join(indexes), '_refresh'])
         return self._send_request('POST', path)
-        
+
     def optimize(self, indexes=None, **args):
         """
         Optimize one ore more indices
@@ -366,7 +350,7 @@ class ES(object):
         Register specific mapping definition for a specific type against one or more indices.
         """
         indexes = self._validate_indexes(indexes)
-        path = self._make_path([','.join(indexes), doc_type,"_mapping"])
+        path = self._make_path([','.join(indexes), doc_type, "_mapping"])
         if hasattr(mapping, "to_json"):
             mapping = mapping.to_json()
         if doc_type not in mapping:
@@ -379,9 +363,9 @@ class ES(object):
         """
         indexes = self._validate_indexes(indexes)
         if doc_type:
-            path = self._make_path([','.join(indexes), doc_type,"_mapping"])
+            path = self._make_path([','.join(indexes), doc_type, "_mapping"])
         else:
-            path = self._make_path([','.join(indexes),"_mapping"])
+            path = self._make_path([','.join(indexes), "_mapping"])
         result = self._send_request('GET', path)
         #processing indexes
         self.mappings = Mapper(result)
@@ -400,9 +384,9 @@ class ES(object):
         self.info['allinfo'] = res
         self.info['status'] = self.status(["_all"])
         return self.info
-        
+
     #--- cluster
-    def cluster_health(self, indexes=None, level="cluster", wait_for_status=None, 
+    def cluster_health(self, indexes=None, level="cluster", wait_for_status=None,
                wait_for_relocating_shards=None, timeout=30):
         """
         Request Parameters
@@ -421,16 +405,16 @@ class ES(object):
         """
         path = self._make_path(["_cluster", "health"])
         mapping = {}
-        if level!="cluster":
+        if level != "cluster":
             if level not in ["cluster", "indices", "shards"]:
-                raise ValueError("Invalid level: %s"%level)
+                raise ValueError("Invalid level: %s" % level)
             mapping['level'] = level
         if wait_for_status:
             if wait_for_status not in ["cluster", "indices", "shards"]:
-                raise ValueError("Invalid wait_for_status: %s"%wait_for_status)
+                raise ValueError("Invalid wait_for_status: %s" % wait_for_status)
             mapping['wait_for_status'] = wait_for_status
-            
-            mapping['timeout'] = "%ds"%timeout
+
+            mapping['timeout'] = "%ds" % timeout
         return self._send_request('GET', path, mapping)
 
     def cluster_state(self):
@@ -439,7 +423,7 @@ class ES(object):
         """
         return self._send_request('GET', "/_cluster/state")
 
-    def cluster_nodes(self, nodes = None):
+    def cluster_nodes(self, nodes=None):
         """
         Retrieve the node infos
         """
@@ -469,8 +453,8 @@ class ES(object):
             self.bulk_items += 1
             self.flush_bulk()
             return
-            
-            
+
+
         if force_insert:
             querystring_args = {'opType':'create'}
         else:
@@ -480,7 +464,7 @@ class ES(object):
             request_method = 'POST'
         else:
             request_method = 'PUT'
-        
+
         path = self._make_path([index, doc_type, id])
         return self._send_request(request_method, path, doc, querystring_args)
 
@@ -488,15 +472,15 @@ class ES(object):
         """
         Wait to process all pending operations
         """
-        if not forced and self.bulk_items < self.bulk_size: 
+        if not forced and self.bulk_items < self.bulk_size:
             return
         self.force_bulk()
-        
+
     def force_bulk(self):
         """
         Force executing of all bulk data
         """
-        if self.bulk_items==0:
+        if self.bulk_items == 0:
             return
         self._send_request("POST", "/_bulk", self.bulk_data.getvalue())
         self.bulk_data = StringIO()
@@ -507,7 +491,7 @@ class ES(object):
         Store a file in a index
         """
         querystring_args = {}
-            
+
         if id is None:
             request_method = 'POST'
         else:
@@ -522,28 +506,28 @@ class ES(object):
         """
         data = self.get(index, doc_type, id)
         return data["_source"]['_name'], base64.standard_b64decode(data["_source"]['content'])
-        
+
     def delete(self, index, doc_type, id):
         """
         Delete a typed JSON document from a specific index based on its id.
         """
         path = self._make_path([index, doc_type, id])
         return self._send_request('DELETE', path)
-        
+
     def delete_mapping(self, index, doc_type):
         """
         Delete a typed JSON document type from a specific index.
         """
         path = self._make_path([index, doc_type])
         return self._send_request('DELETE', path)
-        
+
     def get(self, index, doc_type, id):
         """
         Get a typed JSON document from an index based on its id.
         """
         path = self._make_path([index, doc_type, id])
         return self._send_request('GET', path)
-        
+
     def search(self, query, indexes=None, doc_types=None, **query_params):
         """
         Execute a search query against one or more indices and get back search hits.
@@ -559,7 +543,7 @@ class ES(object):
                 query = json.dumps(query, cls=self.encoder)
             elif hasattr(query, "to_json"):
                 query = query.to_json()
-                
+
         return self._query_call("_search", query, indexes, doc_types, **query_params)
 
     def reindex(self, query, indexes=None, doc_types=None, **query_params):
@@ -585,7 +569,7 @@ class ES(object):
         body = query
         path = self._make_path([','.join(indexes), ','.join(doc_types), "_reindexbyquery"])
         return self._send_request('POST', path, body, querystring_args)
-        
+
     def count(self, query, indexes=None, doc_types=None, **query_params):
         """
         Execute a query against one or more indices and get hits count.
@@ -605,7 +589,7 @@ class ES(object):
         if hasattr(river, "q"):
             river_name = river.name
             river = river.q
-        return self._send_request('PUT', '/_river/%s/_meta'%river_name, river)
+        return self._send_request('PUT', '/_river/%s/_meta' % river_name, river)
 
     def delete_river(self, river, river_name=None):
         """
@@ -613,8 +597,8 @@ class ES(object):
         """
         if hasattr(river, "q"):
             river_name = river.name
-        return self._send_request('DELETE', '/_river/%s/'%river_name)
-                    
+        return self._send_request('DELETE', '/_river/%s/' % river_name)
+
 #    def terms(self, fields, indexes=None, **query_params):
 #        """
 #        Extract terms and their document frequencies from one or more fields.
@@ -642,4 +626,4 @@ def decode_json(data):
 def encode_json(data):
     """ Encode some json to dict"""
     return json.dumps(data, cls=ESJsonEncoder)
-    
+

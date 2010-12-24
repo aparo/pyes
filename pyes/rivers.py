@@ -17,7 +17,8 @@ from es import ESJsonEncoder
 log = logging.getLogger('pyes')
 
 class River(object):
-    def __init__(self, index_name=None, index_type=None, bulk_size=100, bulk_timeout=None):
+    def __init__(self,index_name=None, index_type=None, bulk_size=100, bulk_timeout=None):
+        self.name = index_name 
         self.index_name = index_name
         self.index_type = index_type
         self.bulk_size = bulk_size
@@ -27,6 +28,8 @@ class River(object):
     def q(self):
         res = self.serialize()
         index = {}
+        if self.name:
+            index['name'] = self.name
         if self.index_name:
             index['index'] = self.index_name
         if self.index_type:

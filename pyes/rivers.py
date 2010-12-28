@@ -18,15 +18,18 @@ log = logging.getLogger('pyes')
 
 class River(object):
     def __init__(self, index_name=None, index_type=None, bulk_size=100, bulk_timeout=None):
+        self.name = index_name
         self.index_name = index_name
         self.index_type = index_type
         self.bulk_size = bulk_size
         self.bulk_timeout = bulk_timeout
-    
+
     @property
     def q(self):
         res = self.serialize()
         index = {}
+        if self.name:
+            index['name'] = self.name
         if self.index_name:
             index['index'] = self.index_name
         if self.index_type:
@@ -38,17 +41,17 @@ class River(object):
         if index:
             res['index'] = index
         return res
-    
+
     def __repr__(self):
         return str(self.q)
 
     def to_json(self):
         return json.dumps(self.q, cls=ESJsonEncoder)
-    
+
 class RabbitMQRiver(River):
     type = "rabbitmq"
-    
-    def __init__(self, host="localhost", port=5672, user="guest", 
+
+    def __init__(self, host="localhost", port=5672, user="guest",
                  password="guest", vhost="/", queue="es", exchange="es",
                  routing_key="es", **kwargs):
         super(RabbitMQRiver, self).__init__(**kwargs)
@@ -65,7 +68,7 @@ class RabbitMQRiver(River):
         return {
                 "type" : self.type,
                 self.type : {
-                    "host" : self.host, 
+                    "host" : self.host,
                     "port" : self.port,
                     "user" : self.user,
                     "pass" : self.password,
@@ -79,7 +82,7 @@ class RabbitMQRiver(River):
 
 class TwitterRiver(River):
     type = "twitter"
-    
+
     def __init__(self, user, password, **kwargs):
         super(TwitterRiver, self).__init__(**kwargs)
         self.user = user
@@ -97,7 +100,7 @@ class TwitterRiver(River):
 
 class CouchDBRiver(River):
     type = "couchdb"
-    
+
     def __init__(self, host="localhost", port=5984, db="mydb", filter=None, **kwargs):
         super(CouchDBRiver, self).__init__(**kwargs)
         self.host = host
@@ -109,7 +112,7 @@ class CouchDBRiver(River):
         return {
                 "type" : self.type,
                 self.type : {
-                    "host" : self.host, 
+                    "host" : self.host,
                     "port" : self.port,
                     "db" : self.db,
                     "filter" : self.filter,

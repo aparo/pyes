@@ -164,6 +164,11 @@ v. 0.14.0: Added delete of mapping type.
 
            Added autorefresh to sync search and write.
 
+           Added QueryFilter.
+
+           Forced name attribute in multifield declaration.
+
+           Added is_empty to ConstantScoreQuery and fixed some bad behaviour.
 
 v. 0.13.1: Added jython support (HTTP only for now).
 
@@ -217,7 +222,6 @@ v. 0.10.0: initial working version.
 TODO
 ----
 
-- API rewriting for mapping
 - more docs
 - more tests
 - cleanup

@@ -15,7 +15,7 @@ from es import ESJsonEncoder
 from utils import clean_string, ESRange
 from facets import FacetFactory
 from highlight import HighLighter
-from pyes.exceptions import InvalidQuery, InvalidParameterQuery
+from pyes.exceptions import InvalidQuery, InvalidParameterQuery, QueryError
 log = logging.getLogger('pyes')
 
 class FieldParameter:
@@ -268,16 +268,25 @@ class ConstantScoreQuery(Query):
 
             self.filters.append(filter)
 
+    def is_empty(self):
+        """Returns if the query is empty"""
+        if self.filters:
+            return False
+        return True
+
     def serialize(self):
-        filters = {}
+        data = {}
 
         if self.boost != 1.0:
-            filters["boost"] = self.boost
+            data["boost"] = self.boost
+        filters = {}
 
         for f in self.filters:
             filters.update(f.serialize())
-
-        return {self._internal_name:filters}
+        if not filters:
+            raise QueryError("A filter is required")
+        data['filter'] = filters
+        return {self._internal_name:data}
 
 class HasChildQuery(ConstantScoreQuery):
     _internal_name = "has_child"

@@ -3,11 +3,11 @@
 
 __author__ = 'Alberto Paro'
 
-from utils import keys_to_string
 import threading
 
 _thread_locals = threading.local()
 #store threadsafe data
+from pyes.utils import keys_to_string
 
 check_values = {
                 'index': ['no', 'analyzed', 'not_analyzed'],
@@ -143,12 +143,12 @@ class BooleanField(AbstractField):
         return result
 
 class MultiField(object):
-    def __init__(self, name=None, type=None, path=None, fields=None):
+    def __init__(self, name, type=None, path=None, fields=None):
         self.name = name
         self.type = "multi_field"
         self.path = path
         self.fields = {}
-        if fields:
+        if fields and isinstance(fields, dict):
             self.fields = dict([(name, get_field(name, data)) for name, data in fields.items()])
 
     def to_json(self):
@@ -196,6 +196,9 @@ class ObjectField(object):
             for name, value in self.properties.items():
                 result['properties'][name] = value.to_json()
         return result
+
+    def __str__(self):
+        return str(self.to_json())
 
 class DocumentObjectField(object):
     def __init__(self, name=None, type=None, path=None, properties=None,
@@ -252,6 +255,11 @@ class DocumentObjectField(object):
         return "<DocumentObjectField:%s>" % self.to_json()
 
 def get_field(name, data):
+    """
+    Return a valid Field by given data
+    """
+    if isinstance(data, AbstractField):
+        return data
     data = keys_to_string(data)
     type = data.get('type', 'object')
     if type == "string":

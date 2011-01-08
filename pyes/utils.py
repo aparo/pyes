@@ -102,7 +102,7 @@ class ResultSet(object):
         if self._total is None:
             self._total = 0
             if self.valid:
-                self._total = self._results.get("total", 0)
+                self._total = self._results.get("hits", {}).get('total', 0)
         return self._total
 
     def fix_keys(self):

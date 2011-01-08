@@ -36,8 +36,6 @@ class ANDFilter(FilterList):
     def __init__(self, *args, **kwargs):
         super(ANDFilter, self).__init__(*args, **kwargs)
 
-
-
 class BoolFilter(Filter):
     """
     A filter that matches documents matching boolean combinations of other 
@@ -219,6 +217,17 @@ class TermsFilter(Filter):
             raise RuntimeError("A least a field/value pair must be added")
         return {self._internal_name:self._values}
 
+class QueryFilter(Filter):
+    _internal_name = "query"
+    
+    def __init__(self, query, **kwargs):
+        super(QueryFilter, self).__init__(**kwargs)
+        self._query = query
+
+    def serialize(self):
+        if not self._query:
+            raise RuntimeError("A least a field/value pair must be added")
+        return {self._internal_name : self._query.serialize()}
 
 #
 #--- Geo Queries

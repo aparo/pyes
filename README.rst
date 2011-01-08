@@ -170,6 +170,7 @@ v. 0.14.0: Added delete of mapping type.
 
            Added is_empty to ConstantScoreQuery and fixed some bad behaviour.
 
+
 v. 0.13.1: Added jython support (HTTP only for now).
 
 v. 0.13.0: API Changes: errors -> exceptions.

@@ -139,7 +139,8 @@ class ES(object):
 
     def __init__(self, server, timeout=5.0, bulk_size=400,
                  encoder=None, decoder=None,
-                 max_retries=3):
+                 max_retries=3, autorefresh=False,
+                 default_indexes=['_all']):
         """
         Init a es object
         
@@ -148,6 +149,7 @@ class ES(object):
         bulk_size: size of bulk operation
         encoder: tojson encoder
         max_retries: number of max retries for server if a server is down
+        autorefresh: check if need a refresh before a query
         """
         self.timeout = timeout
         self.max_retries = max_retries
@@ -155,6 +157,8 @@ class ES(object):
         self.debug_dump = False
         self.cluster_name = "undefined"
         self.connection = None
+        self.autorefresh = autorefresh
+        self.refreshed = True
 
         #used in bulk
         self.bulk_size = bulk_size #size of the bulk
@@ -173,7 +177,7 @@ class ES(object):
             self.servers = [server]
         else:
             self.servers = server
-        self.default_indexes = ['_all']
+        self.default_indexes = default_indexes
         self._init_connection()
 
 
@@ -203,7 +207,7 @@ class ES(object):
         """
         data = self.cluster_nodes()
         self.cluster_name = data["cluster_name"]
-        for _, nodedata in data["nodes"].items():
+        for nodename, nodedata in data["nodes"].items():
             server = nodedata['http_address'].replace("]", "").replace("inet[", "http:/")
             if server not in self.servers:
                 self.servers.append(server)
@@ -249,6 +253,8 @@ class ES(object):
         This can be used for search and count calls.
         These are identical api calls, except for the type of query.
         """
+        if self.autorefresh and self.refreshed == False:
+            self.refresh(indexes)
         querystring_args = query_params
         indexes = self._validate_indexes(indexes)
         if doc_types is None:
@@ -318,16 +324,22 @@ class ES(object):
             args['refresh'] = refresh
         return self._send_request('POST', path, params=args)
 
-    def refresh(self, indexes=None):
+    def refresh(self, indexes=None, timesleep=1):
         """
         Refresh one or more indices
+        
+        timesleep: seconds to wait
         """
         self.force_bulk()
-
         indexes = self._validate_indexes(indexes)
 
         path = self._make_path([','.join(indexes), '_refresh'])
-        return self._send_request('POST', path)
+        result = self._send_request('POST', path)
+        time.sleep(timesleep)
+        self.cluster_health(wait_for_status='green')
+        self.refreshed = True
+        return result
+
 
     def optimize(self, indexes=None, **args):
         """
@@ -335,7 +347,9 @@ class ES(object):
         """
         indexes = self._validate_indexes(indexes)
         path = self._make_path([','.join(indexes), '_optimize'])
-        return self._send_request('POST', path, params=args)
+        result = self._send_request('POST', path, params=args)
+        self.refreshed = True
+        return result
 
     def gateway_snapshot(self, indexes=None):
         """
@@ -345,7 +359,7 @@ class ES(object):
         path = self._make_path([','.join(indexes), '_gateway', 'snapshot'])
         return self._send_request('POST', path)
 
-    def put_mapping(self, doc_type, mapping, indexes):
+    def put_mapping(self, doc_type, mapping, indexes=None):
         """
         Register specific mapping definition for a specific type against one or more indices.
         """
@@ -355,6 +369,7 @@ class ES(object):
             mapping = mapping.to_json()
         if doc_type not in mapping:
             mapping = {doc_type:mapping}
+        self.refreshed = False
         return self._send_request('PUT', path, mapping)
 
     def get_mapping(self, doc_type=None, indexes=None):
@@ -410,7 +425,7 @@ class ES(object):
                 raise ValueError("Invalid level: %s" % level)
             mapping['level'] = level
         if wait_for_status:
-            if wait_for_status not in ["cluster", "indices", "shards"]:
+            if wait_for_status not in ["green", "yellow", "red"]:
                 raise ValueError("Invalid wait_for_status: %s" % wait_for_status)
             mapping['wait_for_status'] = wait_for_status
 
@@ -437,6 +452,8 @@ class ES(object):
         """
         Index a typed JSON document into a specific index and make it searchable.
         """
+        self.refreshed = False
+
         if bulk:
             optype = "index"
             if force_insert:
@@ -610,7 +627,7 @@ class ES(object):
 #        path = self._make_path([','.join(indexes), "_terms"])
 #        query_params['fields'] = ','.join(fields)
 #        return self._send_request('GET', path, params=query_params)
-
+#    
     def morelikethis(self, index, doc_type, id, fields, **query_params):
         """
         Execute a "more like this" search query against one or more fields and get back search hits.

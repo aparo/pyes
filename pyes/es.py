@@ -448,10 +448,13 @@ class ES(object):
         path = self._make_path(parts)
         return self._send_request('GET', path)
 
-    def index(self, doc, index, doc_type, id=None, force_insert=False, bulk=False):
+    def index(self, doc, index, doc_type, id=None, force_insert=False, bulk=False, querystring_args=None):
         """
         Index a typed JSON document into a specific index and make it searchable.
         """
+        if querystring_args is None:
+            querystring_args = {}
+
         self.refreshed = False
 
         if bulk:
@@ -473,9 +476,7 @@ class ES(object):
 
 
         if force_insert:
-            querystring_args = {'opType':'create'}
-        else:
-            querystring_args = {}
+            querystring_args['opType'] = 'create'
 
         if id is None:
             request_method = 'POST'

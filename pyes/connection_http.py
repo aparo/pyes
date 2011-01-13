@@ -12,6 +12,7 @@ import threading
 import time
 from pyes.exceptions import NoServerAvailable
 import urllib3
+import urllib
 from httplib import HTTPConnection
 from fakettypes import *
 import socket
@@ -51,7 +52,10 @@ class ClientTransport(object):
         """
         Execute a request and return a response
         """
-        response = self.client.urlopen(Method._VALUES_TO_NAMES[request.method], request.uri, body=request.body, headers=request.headers)    
+        uri = request.uri
+        if request.parameters:
+            uri += '?' + urllib.urlencode(request.parameters)
+        response = self.client.urlopen(Method._VALUES_TO_NAMES[request.method], uri, body=request.body, headers=request.headers)    
         return RestResponse(status=response.status, body=response.data, headers=response.headers)
 
 def connect(servers=None, framed_transport=False, timeout=None,

@@ -108,7 +108,7 @@ class Query(object):
             res['fields'] = self.fields
         if self.size is not None:
             res['size'] = self.size
-        if self.start is None:
+        if self.start is not None:
             res['from'] = self.start
         if self.highlight:
             res['highlight'] = self.highlight.serialize()

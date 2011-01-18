@@ -713,6 +713,22 @@ class TermQuery(Query):
             raise RuntimeError("A least a field/value pair must be added")
         return {self._internal_name:self._values}
 
+class TermsQuery(TermQuery):
+    _internal_name = "terms"
+
+    def __init__(self, *args, **kwargs):
+        super(TermsQuery, self).__init__(*args, **kwargs)
+
+    def add(self, field, value, minimum_match=1):
+        if isinstance(value, list):
+            raise InvalidParameterQuery("value %r must be valid list" % value)
+        self._values[field] = value
+        if minimum_match:
+            if isinstance(minimum_match, int):
+                self._values['minimum_match'] = minimum_match
+            else:
+                self._values['minimum_match'] = int(minimum_match)
+
 class RegexTermQuery(TermQuery):
     _internal_name = "regex_term"
 

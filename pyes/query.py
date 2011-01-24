@@ -971,3 +971,39 @@ class WildcardQuery(TermQuery):
 
     def __init__(self, *args, **kwargs):
         super(WildcardQuery, self).__init__(*args, **kwargs)
+
+class CustomScoreQuery(Query):
+    _internal_name = "custom_score"
+
+    def __init__(self, query=None, script=None, params=None, lang=None,
+                 **kwargs):
+        super(CustomScoreQuery, self).__init__(**kwargs)
+        self.query = query
+        self.script = script
+        self.lang = lang
+        if params is None:
+            params = {}
+        self.params = params
+
+    def add_param(self, name, value):
+        """
+        Add a parameter
+        """
+        self.params[name] = value
+
+    def serialize(self):
+        data = {}
+        if not self.query:
+            raise RuntimeError("A least a query must be declared")
+        data['query'] = self.query.serialize()
+        if not self.script:
+            raise RuntimeError("A script must be provided")
+        data['script'] = self.script
+        if self.params:
+            data['params'] = self.params
+        if self.lang:
+            data['lang'] = self.lang
+        return {self._internal_name:data}
+
+    def __repr__(self):
+        return str(self.q)

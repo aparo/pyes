@@ -133,5 +133,14 @@ class QuerySearchTestCase(ESTestCase):
         result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
 
+    def test_CustomScoreQuery(self):
+        q = CustomScoreQuery(query=MatchAllQuery(),
+                             lang="js",
+                             script="parseFloat(_score*(5+doc.position.value))"
+                             )
+        result = self.conn.search(query=q, indexes=["test-index"])
+        self.assertEquals(result['hits']['total'], 1)
+        self.assertEquals(result['hits']['max_score'], 7.0)
+
 if __name__ == "__main__":
     unittest.main()

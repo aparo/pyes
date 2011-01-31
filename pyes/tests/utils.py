@@ -9,7 +9,6 @@ Unit tests for pyes.  These require an es server with thrift plugin running on t
 import unittest
 from pyes.tests import ESTestCase
 from pyes import *
-from time import sleep
 from datetime import datetime
 from pyes.utils import clean_string
 
@@ -44,10 +43,6 @@ class SerializationTestCase(ESTestCase):
         self.conn.index({"name":"Joe Tester", "parsedtext":"Joe Testere nice guy", "uuid":"11111", "position":1, 'inserted':datetime(2010,10,22,12,12,12)}, "test-index", "test-type", 1)
         self.conn.index({"name":"Bill Baloney", "parsedtext":"Joe Testere nice guy", "uuid":"22222", "position":2, 'inserted':datetime(2010,10,22,12,12,10)}, "test-index", "test-type", 2)
         self.conn.refresh(["test-index"])
-
-        #Sleep to allow ElasticSearch to set up 
-        #mapping and indices before running tests
-        #sleep(0.5)
 
     def test_TermQuery(self):
         q = TermQuery("parsedtext", "joe")

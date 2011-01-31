@@ -133,8 +133,7 @@ class ResultSet(object):
                         del hl[key]
 
     def __getattr__(self, name):
-        if name in self._results:
-            return self._results[name]
+        return self._results['hits'][name]
 
 def keys_to_string(data):
     """

@@ -33,7 +33,7 @@ log = logging.getLogger('pyes')
 from mappings import Mapper
 
 #---- Errors
-from pyes.exceptions import IndexMissingException, NotFoundException, SearchPhaseExecutionException, ReplicationShardOperationFailedException, ClusterBlockException
+from pyes.exceptions import IndexMissingException, NotFoundException, AlreadyExistsException, SearchPhaseExecutionException, ReplicationShardOperationFailedException, ClusterBlockException
 
 def process_errors(func):
     @wraps(func)
@@ -62,7 +62,9 @@ def process_error(status, result):
                 raise IndexMissingException(error)
             if status == 400:
                 if error.endswith("] missing"):
-                    raise NotFoundException(error.split(" ")[0].strip("[]"))
+                    raise NotFoundException(error[:-len(" missing")].strip("[]"))
+                elif error.endswith("] Already exists"):
+                    raise AlreadyExistsException(error[:-len(" Already exists")].strip("[]"))
             if status == 500:
                 if error.startswith("SearchPhaseExecutionException["):
                     raise SearchPhaseExecutionException(error[len("SearchPhaseExecutionException"):].strip("[]"))

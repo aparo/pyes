@@ -3,9 +3,14 @@
 
 __author__ = 'Alberto Paro'
 
-__all__ = ['NoServerAvailable', "QueryError", "NotFoundException", 
-           "IndexMissingException", "SearchPhaseExecutionException",
-           "InvalidQuery", "InvalidParameterQuery",
+__all__ = ['NoServerAvailable',
+           "QueryError",
+           "NotFoundException", 
+           "AlreadyExistsException", 
+           "IndexMissingException",
+           "SearchPhaseExecutionException",
+           "InvalidQuery",
+           "InvalidParameterQuery",
            "QueryParameterError",
            "ReplicationShardOperationFailedException",
            "ClusterBlockException"]
@@ -44,8 +49,15 @@ class QueryParameterError(Exception):
         self._message = message
 
     message = property(_get_message, _set_message)
-    
+
 class NotFoundException(Exception):
+    def _get_message(self): 
+        return self._message
+    def _set_message(self, message): 
+        self._message = message
+    message = property(_get_message, _set_message)
+
+class AlreadyExistsException(Exception):
     def _get_message(self): 
         return self._message
     def _set_message(self, message): 

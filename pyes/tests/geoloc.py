@@ -45,30 +45,30 @@ class GeoQuerySearchTestCase(ESTestCase):
         #mapping and indices before running tests
         #sleep(0.5)
 
-    def test_GeoDistanceQuery(self):
-        gq = GeoDistanceQuery("pin.location", {"lat" : 40, "lon" : -70}, "200km")
+    def test_GeoDistanceFilter(self):
+        gq = GeoDistanceFilter("pin.location", {"lat" : 40, "lon" : -70}, "200km")
         q = FilteredQuery(MatchAllQuery(), gq)
         result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
 
-        gq = GeoDistanceQuery("pin.location", [40, -70], "200km")
+        gq = GeoDistanceFilter("pin.location", [40, -70], "200km")
         q = FilteredQuery(MatchAllQuery(), gq)
         result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
 
-    def test_GeoBoundingBoxQuery(self):
-        gq = GeoBoundingBoxQuery("pin.location", location_tl = {"lat" : 40.717, "lon" : 70.99}, location_br = {"lat" : 40.03, "lon" : 72.0})
+    def test_GeoBoundingBoxFilter(self):
+        gq = GeoBoundingBoxFilter("pin.location", location_tl = {"lat" : 40.717, "lon" : 70.99}, location_br = {"lat" : 40.03, "lon" : 72.0})
         q = FilteredQuery(MatchAllQuery(), gq)
         result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
 
-        gq = GeoBoundingBoxQuery("pin.location",  [40.717, 70.99], [40.03, 74.1])
+        gq = GeoBoundingBoxFilter("pin.location",  [40.717, 70.99], [40.03, 74.1])
         q = FilteredQuery(MatchAllQuery(), gq)
         result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
 
-    def test_GeoPolygonQuery(self):
-        gq = GeoPolygonQuery("pin.location", [{"lat" : 50, "lon" : -30},
+    def test_GeoPolygonFilter(self):
+        gq = GeoPolygonFilter("pin.location", [{"lat" : 50, "lon" : -30},
                                                 {"lat" : 30, "lon" : -80},
                                                 {"lat" : 80, "lon" : -90}]
                                                 )
@@ -76,7 +76,7 @@ class GeoQuerySearchTestCase(ESTestCase):
         result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
 
-        gq = GeoPolygonQuery("pin.location", [[ 50, -30],
+        gq = GeoPolygonFilter("pin.location", [[ 50, -30],
                                               [ 30, -80],
                                               [ 80, -90]]
                                                 )

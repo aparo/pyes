@@ -5,12 +5,12 @@ __author__ = 'Alberto Paro'
 
 __all__ = ['NoServerAvailable', "QueryError", "NotFoundException", 
            "IndexMissingException", "SearchPhaseExecutionException",
-           "InvalidQuery", "InvalidParameterQuery", "MaxRetryError"]
+           "InvalidQuery", "InvalidParameterQuery",
+           "QueryParameterError",
+           "ReplicationShardOperationFailedException",
+           "ClusterBlockException"]
 
 class NoServerAvailable(Exception):
-    pass
-
-class MaxRetryError(Exception):
     pass
 
 class InvalidQuery(Exception):
@@ -65,7 +65,6 @@ class ReplicationShardOperationFailedException(Exception):
     def _set_message(self, message): 
         self._message = message
     message = property(_get_message, _set_message)
-
 
 class ClusterBlockException(Exception):
     def _get_message(self): 

@@ -35,23 +35,6 @@ from mappings import Mapper
 #---- Errors
 from pyes.exceptions import IndexMissingException, NotFoundException, AlreadyExistsException, SearchPhaseExecutionException, ReplicationShardOperationFailedException, ClusterBlockException
 
-def process_errors(func):
-    @wraps(func)
-    def _func(*args, **kwargs):
-        result = func(*args, **kwargs)
-        if isinstance(result, dict):
-            if 'ok' in result:
-                return result
-            if 'error' in result:
-                error = result['error']
-                if error.startswith("IndexMissingException"):
-                    raise IndexMissingException(error)
-                if error.endswith("] missing"):
-                    raise IndexMissingException(error)
-                print "tocheck", error
-        return result
-    return _func
-
 def process_error(status, result):
     if isinstance(result, dict):
         if 'ok' in result:

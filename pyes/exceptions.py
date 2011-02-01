@@ -42,9 +42,10 @@ class ElasticSearchException(Exception):
     appropriate.
 
     """
-    def __init__(self, error, status=None):
+    def __init__(self, error, status=None, result=None):
         super(ElasticSearchException, self).__init__(error)
         self.status = status
+        self.result = result
 
 class IndexMissingException(ElasticSearchException):
     pass

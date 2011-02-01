@@ -32,32 +32,7 @@ from connection_http import connect as http_connect
 log = logging.getLogger('pyes')
 from mappings import Mapper
 
-#---- Errors
-from pyes.exceptions import IndexMissingException, NotFoundException, AlreadyExistsException, SearchPhaseExecutionException, ReplicationShardOperationFailedException, ClusterBlockException
-
-def process_error(status, result):
-    if isinstance(result, dict):
-        if 'ok' in result:
-            return result
-        if 'error' in result:
-            error = result['error']
-            if error.startswith("IndexMissingException"):
-                raise IndexMissingException(error)
-            if status == 400:
-                if error.endswith("] missing"):
-                    raise NotFoundException(error[:-len(" missing")].strip("[]"))
-                elif error.endswith("] Already exists"):
-                    raise AlreadyExistsException(error[:-len(" Already exists")].strip("[]"))
-            if status == 500:
-                if error.startswith("SearchPhaseExecutionException["):
-                    raise SearchPhaseExecutionException(error[len("SearchPhaseExecutionException"):].strip("[]"))
-                elif error.startswith("ReplicationShardOperationFailedException["):
-                    raise ReplicationShardOperationFailedException(error[len("ReplicationShardOperationFailedException"):].strip("[]"))
-                elif error.startswith("ClusterBlockException["):
-                    raise ClusterBlockException(error[len("ClusterBlockException"):].strip("[]"))
-
-            print "tocheck", error
-    return result
+from convert_errors import raise_if_error
 
 def file_to_attachment(filename):
     """
@@ -220,7 +195,7 @@ class ES(object):
             except:
                 decoded = response.body
         if response.status != 200:
-            process_error(response.status, decoded)
+            raise_if_error(response.status, decoded)
         return  decoded
 
     def _make_path(self, path_components):

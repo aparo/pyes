@@ -33,6 +33,7 @@ log = logging.getLogger('pyes')
 from mappings import Mapper
 
 from convert_errors import raise_if_error
+import pyes.exceptions
 
 def file_to_attachment(filename):
     """
@@ -252,11 +253,31 @@ class ES(object):
         """
         return self._send_request('PUT', index, settings)
 
-    def delete_index(self, index):
+    def create_index_if_missing(self, index, settings=None):
+        """Creates an index if it doesn't already exist.
+
+        If supplied, settings must be a dictionary.
+
         """
-        Deletes an index.
+        try:
+            return self.create_index(index, settings)
+        except pyes.exceptions.AlreadyExistsException, e:
+            return e.result
+
+    def delete_index(self, index):
+        """Deletes an index.
+
         """
         return self._send_request('DELETE', index)
+
+    def delete_index_if_exists(self, index):
+        """Deletes an index if it exists.
+
+        """
+        try:
+            return self.delete_index(index)
+        except pyes.exceptions.NotFoundException, e:
+            return e.result
 
     def close_index(self, index):
         """

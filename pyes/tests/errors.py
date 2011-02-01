@@ -10,17 +10,19 @@ import pyes.exceptions
 class ErrorReportingTestCase(ESTestCase):
     def setUp(self):
         super(ErrorReportingTestCase, self).setUp()
+        self.conn.delete_index_if_exists("test-index")
+
+    def tearDown(self):
+        self.conn.delete_index_if_exists("test-index")
 
     def testCreateDelete(self):
         """Test errors thrown when creating or deleting indexes.
 
         """
-        try:
-            self.conn.delete_index("test-index")
-        except pyes.exceptions.NotFoundException:
-            pass
+        result = self.conn.create_index("test-index")
+        self.assertTrue('ok' in result)
+        self.assertTrue('error' not in result)
 
-        self.conn.create_index("test-index")
         err = self.checkRaises(pyes.exceptions.AlreadyExistsException,
                                self.conn.create_index, "test-index")
         self.assertEqual(str(err), "[test-index] Already exists")
@@ -28,7 +30,10 @@ class ErrorReportingTestCase(ESTestCase):
         self.assertTrue('error' in err.result)
         self.assertTrue('ok' not in err.result)
 
-        self.conn.delete_index("test-index")
+        result = self.conn.delete_index("test-index")
+        self.assertTrue('ok' in result)
+        self.assertTrue('error' not in result)
+
         err = self.checkRaises(pyes.exceptions.NotFoundException,
                                self.conn.delete_index, "test-index")
         self.assertEqual(str(err), "[test-index] missing")
@@ -40,10 +45,6 @@ class ErrorReportingTestCase(ESTestCase):
         """Test generation of a IndexMissingException.
 
         """
-        try:
-            self.conn.delete_index("test-index")
-        except pyes.exceptions.NotFoundException:
-            pass
         err = self.checkRaises(pyes.exceptions.IndexMissingException,
                                self.conn.flush, 'test-index')
         self.assertEqual(str(err), "[test-index] missing")

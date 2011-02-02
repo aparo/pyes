@@ -157,6 +157,28 @@ class MultiField(object):
         if self.fields:
             for name, value in self.fields.items():
                 result['fields'][name] = value.to_json()
+        if self.path:
+            result['path'] = self.path
+        return result
+
+class AttachmentField(object):
+    """An attachment field.
+
+    Requires the mapper-attachments plugin to be installed to be used.
+
+    """
+    def __init__(self, name, type=None, path=None, fields=None):
+        self.name = name
+        self.type = "attachment"
+        self.path = path
+        self.fields = dict([(name, get_field(name, data)) for name, data in fields.items()])
+
+    def to_json(self):
+        result_fields = dict((name, value.to_json())
+                             for (name, value) in self.fields.items())
+        result = dict(type=self.type, fields=result_fields)
+        if self.path:
+            result['path'] = self.path
         return result
 
 class ObjectField(object):
@@ -276,6 +298,8 @@ def get_field(name, data):
         return DateField(name=name, **data)
     elif type == "multi_field":
         return MultiField(name=name, **data)
+    elif type == "attachment":
+        return AttachmentField(name=name, **data)
     elif type == "object":
         if '_all' in data:
             return DocumentObjectField(name=name, **data)

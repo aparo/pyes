@@ -140,8 +140,8 @@ class IndexingTestCase(ESTestCase):
         self.assertResultContains(result, {u'_shards': {u'successful': 5, u'failed': 0, u'total': 5}})
         self.assertTrue(u'hits' in result)
         self.assertResultContains(result['hits'], {u'hits': [
-                                  {u'_score': 0.19178301, u'_type': u'test-type', u'_id': u'3', u'_source': {u'name': u'Joe Tested'}, u'_index': u'test-index'},
-                                  {u'_score': 0.19178301, u'_type': u'test-type', u'_id': u'2', u'_source': {u'name': u'Joe Tester'}, u'_index': u'test-index'}
+                                  {u'_score': 0.19178301, u'_type': u'test-type', u'_id': u'3', u'_source': {u'name': u'Joe Tested'}, u'_index': u'test-index', u'_version': 1},
+                                  {u'_score': 0.19178301, u'_type': u'test-type', u'_id': u'2', u'_source': {u'name': u'Joe Tester'}, u'_index': u'test-index', u'_version': 1}
                                   ], u'total': 2, u'max_score': 0.19178301})
 
 if __name__ == "__main__":

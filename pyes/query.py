@@ -141,6 +141,8 @@ class Query(object):
             self.index_boost[index] = boost
 
     def count(self):
+        # FIXME - document this or remove it - I don't think it does anything
+        # sensible.
         return self.serialize()
 
     def __repr__(self):

@@ -10,19 +10,16 @@ from pyes.exceptions import NotFoundException
 from pprint import pprint
 import os
 
+def get_conn():
+    return ES('127.0.0.1:9200')
+
 class ESTestCase(unittest.TestCase):
     def setUp(self):
-        self.conn = ES('127.0.0.1:9200')
-        try:
-            self.conn.delete_index("test-index")
-        except NotFoundException:
-            pass
+        self.conn = get_conn()
+        self.conn.delete_index_if_exists("test-index")
         
     def tearDown(self):
-        try:
-            self.conn.delete_index("test-index")
-        except NotFoundException:
-            pass
+        self.conn.delete_index_if_exists("test-index")
 
     def assertResultContains(self, result, expected):
         for (key, value) in expected.items():

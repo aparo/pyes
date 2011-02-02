@@ -4,68 +4,73 @@
 Unit tests for pyes.  These require an es server with thrift plugin running on the default port (localhost:9500).
 """
 import unittest
-from pyes.tests import ESTestCase
+from pyes.tests import ESTestCase, get_conn
 from pyes import *
+
+def setUp():
+    conn = get_conn()
+    mapping = {
+        "pin" : {
+            "properties" : {
+                "location" : {
+                    "type" : "geo_point"
+                }
+            }
+        }
+    } 
+    conn.delete_index_if_exists("test-mindex")
+    conn.create_index("test-mindex")
+    conn.put_mapping("test-type", {'properties':mapping}, ["test-mindex"])
+    conn.index({
+        "pin" : {
+            "location" : {
+                "lat" : 40.12,
+                "lon" : -71.34
+            }
+        }
+    }, "test-mindex", "test-type", 1)
+    conn.index({
+        "pin" : {
+            "location" : {
+                "lat" : 40.12,
+                "lon" : 71.34
+            }
+        }
+    }, "test-mindex", "test-type", 2)
+
+    conn.refresh(["test-mindex"])
+
+def tearDown():
+    conn = get_conn()
+    conn.delete_index_if_exists("test-mindex")
 
 #--- Geo Queries Test case
 class GeoQuerySearchTestCase(ESTestCase):
-    def setUp(self):
-        super(GeoQuerySearchTestCase, self).setUp()
-        mapping ={
-                "pin" : {
-                    "properties" : {
-                        "location" : {
-                            "type" : "geo_point"
-                        }
-                    }
-                }
-            } 
-        self.conn.create_index("test-index")
-        self.conn.put_mapping("test-type", {'properties':mapping}, ["test-index"])
-        self.conn.index({
-                            "pin" : {
-                                "location" : {
-                                    "lat" : 40.12,
-                                    "lon" : -71.34
-                                }
-                            }
-                        }, "test-index", "test-type", 1)
-        self.conn.index({
-                            "pin" : {
-                                "location" : {
-                                    "lat" : 40.12,
-                                    "lon" : 71.34
-                                }
-                            }
-                        }, "test-index", "test-type", 2)
-
-        self.conn.refresh(["test-index"])
-        
-        #Sleep to allow ElasticSearch to set up 
-        #mapping and indices before running tests
-        #sleep(0.5)
 
     def test_GeoDistanceFilter(self):
         gq = GeoDistanceFilter("pin.location", {"lat" : 40, "lon" : -70}, "200km")
         q = FilteredQuery(MatchAllQuery(), gq)
-        result = self.conn.search(query = q, indexes=["test-index"])
+        result = self.conn.search(query = q, indexes=["test-mindex"])
         self.assertEquals(result['hits']['total'], 1)
 
-        gq = GeoDistanceFilter("pin.location", [40, -70], "200km")
+        gq = GeoDistanceFilter("pin.location", [-70, 40], "200km")
         q = FilteredQuery(MatchAllQuery(), gq)
-        result = self.conn.search(query = q, indexes=["test-index"])
+        result = self.conn.search(query = q, indexes=["test-mindex"])
         self.assertEquals(result['hits']['total'], 1)
 
     def test_GeoBoundingBoxFilter(self):
         gq = GeoBoundingBoxFilter("pin.location", location_tl = {"lat" : 40.717, "lon" : 70.99}, location_br = {"lat" : 40.03, "lon" : 72.0})
         q = FilteredQuery(MatchAllQuery(), gq)
-        result = self.conn.search(query = q, indexes=["test-index"])
+        result = self.conn.search(query = q, indexes=["test-mindex"])
         self.assertEquals(result['hits']['total'], 1)
 
-        gq = GeoBoundingBoxFilter("pin.location",  [40.717, 70.99], [40.03, 74.1])
+        gq = GeoBoundingBoxFilter("pin.location",  [70.99, 40.717], [74.1, 40.03])
         q = FilteredQuery(MatchAllQuery(), gq)
-        result = self.conn.search(query = q, indexes=["test-index"])
-        self.assertEquals(result['hits']['total'], 1)
+        result2 = self.conn.search(query = q, indexes=["test-mindex"])
+        self.assertEquals(result2['hits']['total'], 1)
+        del result['took']
+        del result2['took']
+        self.assertEquals(result, result2)
 
     def test_GeoPolygonFilter(self):
         gq = GeoPolygonFilter("pin.location", [{"lat" : 50, "lon" : -30},
@@ -73,15 +78,15 @@ class GeoQuerySearchTestCase(ESTestCase):
                                                 {"lat" : 80, "lon" : -90}]
                                                 )
         q = FilteredQuery(MatchAllQuery(), gq)
-        result = self.conn.search(query = q, indexes=["test-index"])
+        result = self.conn.search(query = q, indexes=["test-mindex"])
         self.assertEquals(result['hits']['total'], 1)
 
-        gq = GeoPolygonFilter("pin.location", [[ 50, -30],
-                                              [ 30, -80],
-                                              [ 80, -90]]
+        gq = GeoPolygonFilter("pin.location", [[ -30, 50],
+                                              [ -80, 30],
+                                              [ -90, 80]]
                                                 )
         q = FilteredQuery(MatchAllQuery(), gq)
-        result = self.conn.search(query = q, indexes=["test-index"])
+        result = self.conn.search(query = q, indexes=["test-mindex"])
         self.assertEquals(result['hits']['total'], 1)
 
 if __name__ == "__main__":

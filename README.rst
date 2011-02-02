@@ -144,6 +144,11 @@ For more examples looks at the tests.
 Changelog
 =========
 
+Note for next release - the order of geolocation parameters expected by
+elasticsearch changed between ES 0.14.4 and ES 0.15, from [lat, lon] to [lon,
+lat].  Clients will need to update accordingly, or use an object with named
+parameters.
+
 v. 0.14.0: Added delete of mapping type.
 
            Embedded urllib3 to be buildout safe and for users sake.

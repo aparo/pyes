@@ -35,6 +35,9 @@ def setUp():
         u'pos': {
             'store': 'yes',
             'type': u'integer'},
+        u'doubles': {
+            'store': 'yes',
+            'type': u'double'},
         u'uuid': {
             'boost': 1.0,
             'index': 'not_analyzed',
@@ -45,8 +48,8 @@ def setUp():
     conn.delete_index_if_exists("test-pindex")
     conn.create_index("test-pindex")
     conn.put_mapping("test-type", {'properties':mapping}, ["test-pindex"])
-    conn.index({"name":"Joe Tester", "parsedtext":"Joe Testere nice guy", "uuid":"11111", "position":1}, "test-pindex", "test-type", 1)
-    conn.index({"name":"Bill Baloney", "parsedtext":"Joe Testere nice guy", "uuid":"22222", "position":2}, "test-pindex", "test-type", 2)
+    conn.index({"name":"Joe Tester", "parsedtext":"Joe Testere nice guy", "uuid":"11111", "position":1, "doubles":[1.0, 2.0, 3.0]}, "test-pindex", "test-type", 1)
+    conn.index({"name":"Bill Baloney", "parsedtext":"Joe Testere nice guy", "uuid":"22222", "position":2, "doubles":[0.1, 0.2, 0.3]}, "test-pindex", "test-type", 2)
     conn.refresh(["test-pindex"])
 
 def tearDown():

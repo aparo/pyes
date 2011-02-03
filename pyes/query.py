@@ -282,9 +282,11 @@ class ConstantScoreQuery(Query):
         if self.boost != 1.0:
             data["boost"] = self.boost
         filters = {}
-
-        for f in self.filters:
-            filters.update(f.serialize())
+        if len(self.filters) == 1:
+            filters.update(self.filters[0].serialize())
+        else:
+            from pyes import ANDFilter
+            filters.update(ANDFilter(self.filters).serialize())
         if not filters:
             raise QueryError("A filter is required")
         data['filter'] = filters

@@ -198,6 +198,23 @@ class TermFilter(Filter):
             raise RuntimeError("A least a field/value pair must be added")
         return {self._internal_name:self._values}
 
+class RegexTermFilter(Filter):
+    _internal_name = "regex_term"
+
+    def __init__(self, field=None, value=None, **kwargs):
+        super(RegexTermFilter, self).__init__(**kwargs)
+        self._values = {}
+
+        if field is not None and value is not None:
+            self.add(field, value)
+
+    def add(self, field, value):
+        self._values[field] = value
+
+    def serialize(self):
+        if not self._values:
+            raise RuntimeError("A least a field/value pair must be added")
+        return {self._internal_name:self._values}
 
 class TermsFilter(Filter):
     _internal_name = "terms"
@@ -219,7 +236,7 @@ class TermsFilter(Filter):
 
 class QueryFilter(Filter):
     _internal_name = "query"
-    
+
     def __init__(self, query, **kwargs):
         super(QueryFilter, self).__init__(**kwargs)
         self._query = query

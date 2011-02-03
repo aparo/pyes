@@ -101,7 +101,8 @@ class ES(object):
     def __init__(self, server, timeout=5.0, bulk_size=400,
                  encoder=None, decoder=None,
                  max_retries=3, autorefresh=False,
-                 default_indexes=['_all']):
+                 default_indexes=['_all'],
+                 dump_curl=False):
         """
         Init a es object
         
@@ -111,6 +112,7 @@ class ES(object):
         encoder: tojson encoder
         max_retries: number of max retries for server if a server is down
         autorefresh: check if need a refresh before a query
+        dump_curl: dump every query to a curl file
         """
         self.timeout = timeout
         self.max_retries = max_retries
@@ -120,6 +122,10 @@ class ES(object):
         self.connection = None
         self.autorefresh = autorefresh
         self.refreshed = True
+        self.dump_curl = None
+        if dump_curl:
+            # TOFIX: OS independent!
+            self.dump_curl = open(os.path.join("/tmp", dump_curl + ".sh"), "wb")
 
         #used in bulk
         self.bulk_size = bulk_size #size of the bulk
@@ -186,6 +192,8 @@ class ES(object):
         else:
             body = ""
         request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()], uri=path, parameters=params, headers={}, body=body)
+        if self.dump_curl:
+            self._dump_curl_request(request)
         response = self.connection.execute(request)
         try:
             decoded = json.loads(response.body, cls=self.decoder)
@@ -220,6 +228,8 @@ class ES(object):
         indexes = self._validate_indexes(indexes)
         if doc_types is None:
             doc_types = []
+        if isinstance(doc_types, basestring):
+            doc_types = [doc_types]
         body = query
         if hasattr(query, "to_json"):
             body = query.to_json()
@@ -238,6 +248,16 @@ class ES(object):
         if isinstance(indexes, basestring):
             indexes = [indexes]
         return indexes
+
+    def _dump_curl_request(self, request):
+        self.dump_curl.write("curl -X" + Method._VALUES_TO_NAMES[request.method])
+        self.dump_curl.write(" " + request.uri)
+        if request.body:
+            self.dump_curl.write(" -d \'%s\'" % request.body)
+
+        self.dump_curl.write("\n")
+        #self.client.urlopen(, , body=request.body, headers=request.headers)
+
 
     #---- Admin commands
     def status(self, indexes=None):

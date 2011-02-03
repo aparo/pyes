@@ -177,6 +177,11 @@ v. 0.14.0: Added delete of mapping type.
 
            Added CustomScoreQuery.
 
+           Added parent/children indexing.
+
+           Added dump commands in a script file "curl" way.
+
+           Added a lot of fix from Richard Boulton.
 
 v. 0.13.1: Added jython support (HTTP only for now).
 
@@ -235,7 +240,6 @@ TODO
 - cleanup
 - add coverage
 - add jython native client protocol
-- add parent/children management
 
 License
 =======

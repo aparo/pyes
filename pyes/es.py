@@ -345,13 +345,49 @@ class ES(object):
         return result
 
 
-    def optimize(self, indexes=None, **args):
-        """
-        Optimize one ore more indices
+    def optimize(self, indexes=None,
+                 wait_for_merge=False,
+                 max_num_segments=None,
+                 only_expunge_deletes=False,
+                 refresh=True,
+                 flush=True):
+        """Optimize one or more indices.
+
+        `indexes` is the list of indexes to optimise.  If not supplied, or
+        "_all", all indexes are optimised.
+
+        `wait_for_merge` (boolean): If True, the operation will not return
+        until the merge has been completed.  Defaults to False.
+
+        `max_num_segments` (integer): The number of segments to optimize to. To
+        fully optimize the index, set it to 1. Defaults to half the number
+        configured by the merge policy (which in turn defaults to 10).
+
+        `only_expunge_deletes` (boolean): Should the optimize process only
+        expunge segments with deletes in it. In Lucene, a document is not
+        deleted from a segment, just marked as deleted. During a merge process
+        of segments, a new segment is created that does have those deletes.
+        This flag allow to only merge segments that have deletes. Defaults to
+        false.
+
+        `refresh` (boolean): Should a refresh be performed after the optimize.
+        Defaults to true.
+
+        `flush` (boolean): Should a flush be performed after the optimize.
+        Defaults to true.
+
         """
         indexes = self._validate_indexes(indexes)
         path = self._make_path([','.join(indexes), '_optimize'])
-        result = self._send_request('POST', path, params=args)
+        params = dict(
+            wait_for_merge=wait_for_merge,
+            only_expunge_deletes=only_expunge_deletes,
+            refresh=refresh,
+            flush=flush,
+        )
+        if max_num_segments is not None:
+            params['max_num_segments'] = max_num_segments
+        result = self._send_request('POST', path, params=params)
         self.refreshed = True
         return result
 

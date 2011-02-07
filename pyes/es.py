@@ -228,8 +228,11 @@ class ES(object):
         return response
 
     def _validate_indexes(self, indexes=None):
-        """
-        Return a valid list of integers. Allow to use a string or a list of indexers. 
+        """Return a valid list of indexes.
+
+        `indexes` may be a string or a list of strings.
+        If `indexes` is not supplied, returns the default_indexes.
+
         """
         indexes = indexes or self.default_indexes
         if isinstance(indexes, basestring):

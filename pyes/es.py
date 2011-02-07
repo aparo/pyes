@@ -197,12 +197,15 @@ class ES(object):
         response = self.connection.execute(request)
         try:
             decoded = json.loads(response.body, cls=self.decoder)
-        except:
-            traceback.print_exc()
+        except ValueError:
             try:
                 decoded = json.loads(response.body, cls=ESJsonDecoder)
-            except:
-                decoded = response.body
+            except ValueError:
+                # The only known place where we get back a body which can't be
+                # parsed as JSON is when no handler is found for a request URI.
+                # In this case, the body is actually a good message to return
+                # in the exception.
+                raise pyes.exceptions.ElasticSearchException(response.body, response.status, response.body)
         if response.status != 200:
             raise_if_error(response.status, decoded)
         return  decoded

@@ -52,5 +52,17 @@ class ErrorReportingTestCase(ESTestCase):
         self.assertTrue('error' in err.result)
         self.assertTrue('ok' not in err.result)
 
+    def testBadRequest(self):
+        """Test error reported by doing a bad request.
+
+        """
+        err = self.checkRaises(pyes.exceptions.ElasticSearchException,
+                               self.conn._send_request, 'GET', '_bad_request')
+        self.assertEqual(str(err), "No handler found for uri [/_bad_request] and method [GET]")
+        self.assertEqual(err.status, 400)
+        self.assertEqual(err.result, 'No handler found for uri [/_bad_request] and method [GET]')
+
+
+
 if __name__ == "__main__":
     unittest.main()

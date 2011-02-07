@@ -40,10 +40,10 @@ class QuerySearchTestCase(ESTestCase):
         self.conn.refresh(["test-index"])
 
     def test_QueryHighlight(self):
-        q = StringQuery("joe")
+        q = Search(StringQuery("joe"))
         q.add_highlight("parsedtext")
         q.add_highlight("name")
-        result = self.conn.search(query = q, indexes=["test-index"])
+        result = self.conn.search(q, indexes=["test-index"])
         from pprint import pprint
         pprint(result)
         self.assertEquals(result['hits']['total'], 2)

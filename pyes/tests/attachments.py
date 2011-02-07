@@ -77,7 +77,7 @@ class QueryAttachmentTestCase(ESTestCase):
         self.conn.refresh(["test-index"])
 
     def test_TermQuery(self):
-        q = TermQuery("uuid", "1", fields=['attachment', 'attachment.author', 'attachment.title', 'attachment.date'])
+        q = TermQuery("uuid", "1").search(fields=['attachment', 'attachment.author', 'attachment.title', 'attachment.date'])
 #        q = TermQuery("uuid", "1", fields=['*'])
         result = self.conn.search(query = q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)

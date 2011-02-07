@@ -234,8 +234,6 @@ class ES(object):
         if isinstance(doc_types, basestring):
             doc_types = [doc_types]
         body = query
-        if hasattr(query, "to_json"):
-            body = query.to_json()
         path = self._make_path([','.join(indexes), ','.join(doc_types), query_type])
         response = self._send_request('GET', path, body, querystring_args)
         return response
@@ -595,22 +593,29 @@ class ES(object):
         return self._send_request('GET', path)
 
     def search(self, query, indexes=None, doc_types=None, **query_params):
-        """
-        Execute a search query against one or more indices and get back search hits.
-        query must be a dictionary or a Query object that will convert to Query DSL
+        """Execute a search against one or more indices to get the search hits.
+
+        `query` must be a Search object, a Query object, or a custom
+        dictionary of search parameters using the query DSL to be passed
+        directly.
+
         """
         indexes = self._validate_indexes(indexes)
         if doc_types is None:
             doc_types = []
-        if isinstance(doc_types, basestring):
+        elif isinstance(doc_types, basestring):
             doc_types = [doc_types]
-        if not isinstance(query, basestring):
-            if isinstance(query, dict):
-                query = json.dumps(query, cls=self.encoder)
-            elif hasattr(query, "to_json"):
-                query = query.to_json()
 
-        return self._query_call("_search", query, indexes, doc_types, **query_params)
+        if hasattr(query, 'to_search_json'):
+            # Common case - a Search or Query object.
+            body = query.to_search_json()
+        elif isinstance(query, dict):
+            # A direct set of search parameters.
+            body = json.dumps(query, cls=self.encoder)
+        else:
+            raise pyes.exceptions.InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
+
+        return self._query_call("_search", body, indexes, doc_types, **query_params)
 
     def reindex(self, query, indexes=None, doc_types=None, **query_params):
         """
@@ -628,8 +633,8 @@ class ES(object):
                 if 'query' in query:
                     query = query['query']
                 query = json.dumps(query, cls=self.encoder)
-            elif hasattr(query, "to_json"):
-                query = query.to_json(inner=True)
+            elif hasattr(query, "to_query_json"):
+                query = query.to_query_json(inner=True)
         querystring_args = query_params
         indexes = self._validate_indexes(indexes)
         body = query
@@ -644,8 +649,8 @@ class ES(object):
         indexes = self._validate_indexes(indexes)
         if doc_types is None:
             doc_types = []
-        if isinstance(query, Query):
-            query = query.count()
+        if hasattr(query, 'to_query_json'):
+            query = query.to_query_json()
         return self._query_call("_count", query, indexes, doc_types, **query_params)
 
     def create_river(self, river, river_name=None):

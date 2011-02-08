@@ -47,6 +47,9 @@ def raise_if_error(status, result):
 
     if status < 400:
         return
+    if status == 404 and isinstance(result, dict) and result.get('ok'):
+        raise pyes.exceptions.NotFoundException("Item not found", status, result)
+
     if not isinstance(result, dict) or 'error' not in result:
         raise pyes.exceptions.ElasticSearchException("Unknown exception type", status, result)
 

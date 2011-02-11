@@ -47,8 +47,11 @@ def raise_if_error(status, result):
 
     if status < 400:
         return
-    if not isinstance(result, dict) or 'error' not in result:
+    if not isinstance(result, dict) or result.get('error') is None:
         raise pyes.exceptions.ElasticSearchException("Unknown exception type", status, result)
+
+    if status == 400:
+        raise pyes.exceptions.NotFoundException("")
 
     error = result['error']
     bits = error.split('[', 1)

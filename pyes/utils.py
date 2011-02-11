@@ -125,7 +125,7 @@ class ResultSet(object):
         if not self.valid:
             return
 
-        for hit in self._results['hits']:
+        for hit in self._results['hits']['hits']:
             if 'highlight' in hit:
                 hl = hit['highlight']
                 for key, item in hl.items():

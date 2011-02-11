@@ -5,10 +5,8 @@ Unit tests for pyes.  These require an es server with thrift plugin running on t
 """
 
 import unittest
-from pyes import ES, file_to_attachment
-from pyes.exceptions import NotFoundException
+from pyes import ES
 from pprint import pprint
-import os
 
 def get_conn():
     return ES('127.0.0.1:9200')
@@ -17,7 +15,7 @@ class ESTestCase(unittest.TestCase):
     def setUp(self):
         self.conn = get_conn()
         self.conn.delete_index_if_exists("test-index")
-        
+
     def tearDown(self):
         self.conn.delete_index_if_exists("test-index")
 

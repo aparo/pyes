@@ -15,7 +15,7 @@ Contents:
 .. toctree::
     :maxdepth: 1
 
-    elasticsearch/index
+    guide/index
 
 
 Indices and tables

@@ -123,9 +123,9 @@ class ES(object):
         self.autorefresh = autorefresh
         self.refreshed = True
         self.dump_curl = None
-        if dump_curl:
-            # TOFIX: OS independent!
-            self.dump_curl = open(os.path.join("/tmp", dump_curl + ".sh"), "wb")
+        #if dump_curl:
+        #    # TOFIX: OS independent!
+        #    self.dump_curl = open(os.path.join("/tmp", dump_curl + ".sh"), "wb")
 
         #used in bulk
         self.bulk_size = bulk_size #size of the bulk

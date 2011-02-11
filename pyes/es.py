@@ -303,6 +303,113 @@ class ES(object):
         except pyes.exceptions.NotFoundException, e:
             return e.result
 
+    def get_indices(self, include_aliases=False):
+        """Get a dict holding an entry for each index which exists.
+
+        If include_alises is True, the dict will also contain entries for
+        aliases.
+
+        The key for each entry in the dict is the index or alias name.  The
+        value is a dict holding the following properties:
+
+         - num_docs: Number of documents in the index or alias.
+         - alias_for: Only present for an alias: holds a list of indices which
+           this is an alias for.
+
+        """
+        status = self.status()
+        result = {}
+        indices = status['indices']
+        for index in sorted(indices.keys()):
+            info = indices[index]
+            num_docs = info['docs']['num_docs']
+            result[index] = dict(num_docs=num_docs)
+            if not include_aliases:
+                continue
+            for alias in info['aliases']:
+                try:
+                    alias_obj = result[alias]
+                except KeyError:
+                    alias_obj = {}
+                    result[alias] = alias_obj
+                alias_obj['num_docs'] = alias_obj.get('num_docs', 0) + num_docs
+                try:
+                    alias_obj['alias_for'].append(index)
+                except KeyError:
+                    alias_obj['alias_for'] = [index]
+        return result
+
+    def get_alias(self, alias):
+        """Get the index or indices pointed to by a given alias.
+
+        Raises IndexMissingException if the alias does not exist.
+
+        Otherwise, returns a list of index names.
+
+        """
+        status = self.status(alias)
+        return status['indices'].keys()
+
+    def change_aliases(self, commands):
+        """Change the aliases stored.
+
+        `commands` is a list of 3-tuples; (command, index, alias), where
+        `command` is one of "add" or "remove", and `index` and `alias` are the
+        index and alias to add or remove.
+
+        """
+        body = {
+            'actions': [
+                 {command: dict(index=index, alias=alias) }
+                 for (command, index, alias) in commands
+            ]
+        }
+        return self._send_request('POST', "_aliases", body)
+
+    def add_alias(self, alias, indices):
+        """Add an alias to point to a set of indices.
+
+        """
+        if isinstance(indices, basestring):
+            indices = [indices]
+        return self.change_aliases(['add', index, alias]
+                                   for index in indices)
+
+    def delete_alias(self, alias, indices):
+        """Delete an alias.
+
+        The specified index or indices are deleted from the alias, if they are
+        in it to start with.  This won't report an error even if the indices
+        aren't present in the alias.
+
+        """
+        if isinstance(indices, basestring):
+            indices = [indices]
+        return self.change_aliases(['remove', index, alias]
+                                   for index in indices)
+
+    def set_alias(self, alias, indices):
+        """Set an alias.
+
+        This handles removing the old list of indices pointed to by the alias.
+
+        Warning: there is a race condition in the implementation of this
+        function - if another client modifies the indices which this alias
+        points to during this call, the old value of the alias may not be
+        correctly set.
+
+        """
+        if isinstance(indices, basestring):
+            indices = [indices]
+        try:
+            old_indices = self.get_alias(alias)
+        except pyes.exceptions.IndexMissingException:
+            old_indices = []
+        commands = [['remove', index, alias] for index in old_indices]
+        commands.extend([['add', index, alias] for index in indices])
+        if len(commands) > 0:
+            return self.change_aliases(commands)
+
     def close_index(self, index):
         """
         Close an index.

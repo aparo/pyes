@@ -10,8 +10,8 @@ from pyes.exceptions import NotFoundException
 from pprint import pprint
 import os
 
-def get_conn():
-    return ES('127.0.0.1:9200')
+def get_conn(*args, **kwargs):
+    return ES('127.0.0.1:9200', *args, **kwargs)
 
 class ESTestCase(unittest.TestCase):
     def setUp(self):

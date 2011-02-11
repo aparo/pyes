@@ -112,7 +112,12 @@ class ES(object):
         encoder: tojson encoder
         max_retries: number of max retries for server if a server is down
         autorefresh: check if need a refresh before a query
-        dump_curl: dump every query to a curl file
+
+        dump_curl: If truthy, this will dump every query to a curl file.  If
+        this is set to a string value, it names the file that output is sent
+        to.  Otherwise, it should be set to an object with a write() method,
+        which output will be written to.
+
         """
         self.timeout = timeout
         self.max_retries = max_retries
@@ -122,10 +127,16 @@ class ES(object):
         self.connection = None
         self.autorefresh = autorefresh
         self.refreshed = True
-        self.dump_curl = None
         if dump_curl:
-            # TOFIX: OS independent!
-            self.dump_curl = open(os.path.join("/tmp", dump_curl + ".sh"), "wb")
+            if isinstance(dump_curl, basestring):
+                self.dump_curl = open(dump_curl, "wb")
+            elif hasattr(dump_curl, 'write'):
+                self.dump_curl = dump_curl
+            else:
+                raise TypeError("dump_curl parameter must be supplied with a "
+                                "string or an object with a write() method")
+        else:
+            self.dump_curl = None
 
         #used in bulk
         self.bulk_size = bulk_size #size of the bulk
@@ -146,7 +157,6 @@ class ES(object):
             self.servers = server
         self.default_indexes = default_indexes
         self._init_connection()
-
 
     def __del__(self):
         """
@@ -192,7 +202,7 @@ class ES(object):
         else:
             body = ""
         request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()], uri=path, parameters=params, headers={}, body=body)
-        if self.dump_curl:
+        if self.dump_curl is not None:
             self._dump_curl_request(request)
         response = self.connection.execute(request)
         try:
@@ -251,14 +261,12 @@ class ES(object):
         return indexes
 
     def _dump_curl_request(self, request):
+        self.dump_curl.write("# [%s]\n" % datetime.now().isoformat())
         self.dump_curl.write("curl -X" + Method._VALUES_TO_NAMES[request.method])
-        self.dump_curl.write(" " + request.uri)
+        self.dump_curl.write(" http://" + self.servers[0] + request.uri)
         if request.body:
-            self.dump_curl.write(" -d \'%s\'" % request.body)
-
+            self.dump_curl.write(" -d \"%s\"" % request.body.replace('"', '\\"'))
         self.dump_curl.write("\n")
-        #self.client.urlopen(, , body=request.body, headers=request.headers)
-
 
     #---- Admin commands
     def status(self, indexes=None):

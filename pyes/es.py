@@ -112,7 +112,12 @@ class ES(object):
         encoder: tojson encoder
         max_retries: number of max retries for server if a server is down
         autorefresh: check if need a refresh before a query
-        dump_curl: dump every query to a curl file
+
+        dump_curl: If truthy, this will dump every query to a curl file.  If
+        this is set to a string value, it names the file that output is sent
+        to.  Otherwise, it should be set to an object with a write() method,
+        which output will be written to.
+
         """
         self.timeout = timeout
         self.max_retries = max_retries
@@ -122,10 +127,16 @@ class ES(object):
         self.connection = None
         self.autorefresh = autorefresh
         self.refreshed = True
-        self.dump_curl = None
-        #if dump_curl:
-        #    # TOFIX: OS independent!
-        #    self.dump_curl = open(os.path.join("/tmp", dump_curl + ".sh"), "wb")
+        if dump_curl:
+            if isinstance(dump_curl, basestring):
+                self.dump_curl = open(dump_curl, "wb")
+            elif hasattr(dump_curl, 'write'):
+                self.dump_curl = dump_curl
+            else:
+                raise TypeError("dump_curl parameter must be supplied with a "
+                                "string or an object with a write() method")
+        else:
+            self.dump_curl = None
 
         #used in bulk
         self.bulk_size = bulk_size #size of the bulk
@@ -146,7 +157,6 @@ class ES(object):
             self.servers = server
         self.default_indexes = default_indexes
         self._init_connection()
-
 
     def __del__(self):
         """
@@ -192,7 +202,7 @@ class ES(object):
         else:
             body = ""
         request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()], uri=path, parameters=params, headers={}, body=body)
-        if self.dump_curl:
+        if self.dump_curl is not None:
             self._dump_curl_request(request)
         response = self.connection.execute(request)
         try:
@@ -234,8 +244,6 @@ class ES(object):
         if isinstance(doc_types, basestring):
             doc_types = [doc_types]
         body = query
-        if hasattr(query, "to_json"):
-            body = query.to_json()
         path = self._make_path([','.join(indexes), ','.join(doc_types), query_type])
         response = self._send_request('GET', path, body, querystring_args)
         return response
@@ -253,14 +261,12 @@ class ES(object):
         return indexes
 
     def _dump_curl_request(self, request):
+        self.dump_curl.write("# [%s]\n" % datetime.now().isoformat())
         self.dump_curl.write("curl -X" + Method._VALUES_TO_NAMES[request.method])
-        self.dump_curl.write(" " + request.uri)
+        self.dump_curl.write(" http://" + self.servers[0] + request.uri)
         if request.body:
-            self.dump_curl.write(" -d \'%s\'" % request.body)
-
+            self.dump_curl.write(" -d \"%s\"" % request.body.replace('"', '\\"'))
         self.dump_curl.write("\n")
-        #self.client.urlopen(, , body=request.body, headers=request.headers)
-
 
     #---- Admin commands
     def status(self, indexes=None):
@@ -304,6 +310,113 @@ class ES(object):
             return self.delete_index(index)
         except pyes.exceptions.NotFoundException, e:
             return e.result
+
+    def get_indices(self, include_aliases=False):
+        """Get a dict holding an entry for each index which exists.
+
+        If include_alises is True, the dict will also contain entries for
+        aliases.
+
+        The key for each entry in the dict is the index or alias name.  The
+        value is a dict holding the following properties:
+
+         - num_docs: Number of documents in the index or alias.
+         - alias_for: Only present for an alias: holds a list of indices which
+           this is an alias for.
+
+        """
+        status = self.status()
+        result = {}
+        indices = status['indices']
+        for index in sorted(indices.keys()):
+            info = indices[index]
+            num_docs = info['docs']['num_docs']
+            result[index] = dict(num_docs=num_docs)
+            if not include_aliases:
+                continue
+            for alias in info['aliases']:
+                try:
+                    alias_obj = result[alias]
+                except KeyError:
+                    alias_obj = {}
+                    result[alias] = alias_obj
+                alias_obj['num_docs'] = alias_obj.get('num_docs', 0) + num_docs
+                try:
+                    alias_obj['alias_for'].append(index)
+                except KeyError:
+                    alias_obj['alias_for'] = [index]
+        return result
+
+    def get_alias(self, alias):
+        """Get the index or indices pointed to by a given alias.
+
+        Raises IndexMissingException if the alias does not exist.
+
+        Otherwise, returns a list of index names.
+
+        """
+        status = self.status(alias)
+        return status['indices'].keys()
+
+    def change_aliases(self, commands):
+        """Change the aliases stored.
+
+        `commands` is a list of 3-tuples; (command, index, alias), where
+        `command` is one of "add" or "remove", and `index` and `alias` are the
+        index and alias to add or remove.
+
+        """
+        body = {
+            'actions': [
+                 {command: dict(index=index, alias=alias) }
+                 for (command, index, alias) in commands
+            ]
+        }
+        return self._send_request('POST', "_aliases", body)
+
+    def add_alias(self, alias, indices):
+        """Add an alias to point to a set of indices.
+
+        """
+        if isinstance(indices, basestring):
+            indices = [indices]
+        return self.change_aliases(['add', index, alias]
+                                   for index in indices)
+
+    def delete_alias(self, alias, indices):
+        """Delete an alias.
+
+        The specified index or indices are deleted from the alias, if they are
+        in it to start with.  This won't report an error even if the indices
+        aren't present in the alias.
+
+        """
+        if isinstance(indices, basestring):
+            indices = [indices]
+        return self.change_aliases(['remove', index, alias]
+                                   for index in indices)
+
+    def set_alias(self, alias, indices):
+        """Set an alias.
+
+        This handles removing the old list of indices pointed to by the alias.
+
+        Warning: there is a race condition in the implementation of this
+        function - if another client modifies the indices which this alias
+        points to during this call, the old value of the alias may not be
+        correctly set.
+
+        """
+        if isinstance(indices, basestring):
+            indices = [indices]
+        try:
+            old_indices = self.get_alias(alias)
+        except pyes.exceptions.IndexMissingException:
+            old_indices = []
+        commands = [['remove', index, alias] for index in old_indices]
+        commands.extend([['add', index, alias] for index in indices])
+        if len(commands) > 0:
+            return self.change_aliases(commands)
 
     def close_index(self, index):
         """
@@ -595,22 +708,29 @@ class ES(object):
         return self._send_request('GET', path)
 
     def search(self, query, indexes=None, doc_types=None, **query_params):
-        """
-        Execute a search query against one or more indices and get back search hits.
-        query must be a dictionary or a Query object that will convert to Query DSL
+        """Execute a search against one or more indices to get the search hits.
+
+        `query` must be a Search object, a Query object, or a custom
+        dictionary of search parameters using the query DSL to be passed
+        directly.
+
         """
         indexes = self._validate_indexes(indexes)
         if doc_types is None:
             doc_types = []
-        if isinstance(doc_types, basestring):
+        elif isinstance(doc_types, basestring):
             doc_types = [doc_types]
-        if not isinstance(query, basestring):
-            if isinstance(query, dict):
-                query = json.dumps(query, cls=self.encoder)
-            elif hasattr(query, "to_json"):
-                query = query.to_json()
 
-        return self._query_call("_search", query, indexes, doc_types, **query_params)
+        if hasattr(query, 'to_search_json'):
+            # Common case - a Search or Query object.
+            body = query.to_search_json()
+        elif isinstance(query, dict):
+            # A direct set of search parameters.
+            body = json.dumps(query, cls=self.encoder)
+        else:
+            raise pyes.exceptions.InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
+
+        return self._query_call("_search", body, indexes, doc_types, **query_params)
 
     def reindex(self, query, indexes=None, doc_types=None, **query_params):
         """
@@ -628,8 +748,8 @@ class ES(object):
                 if 'query' in query:
                     query = query['query']
                 query = json.dumps(query, cls=self.encoder)
-            elif hasattr(query, "to_json"):
-                query = query.to_json(inner=True)
+            elif hasattr(query, "to_query_json"):
+                query = query.to_query_json(inner=True)
         querystring_args = query_params
         indexes = self._validate_indexes(indexes)
         body = query
@@ -644,8 +764,8 @@ class ES(object):
         indexes = self._validate_indexes(indexes)
         if doc_types is None:
             doc_types = []
-        if isinstance(query, Query):
-            query = query.count()
+        if hasattr(query, 'to_query_json'):
+            query = query.to_query_json()
         return self._query_call("_count", query, indexes, doc_types, **query_params)
 
     def create_river(self, river, river_name=None):

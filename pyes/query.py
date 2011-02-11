@@ -72,9 +72,15 @@ class FieldParameter:
         return self.field, filters
 
 
-#--- Query
-class Query(object):
+class Search(object):
+    """A search to be performed.
+
+    This contains a query, and has addtional parameters which are used to
+    control how the search works, what it should return, etc.
+
+    """
     def __init__(self,
+                 query=None,
                  fields=None,
                  start=None,
                  size=None,
@@ -84,8 +90,9 @@ class Query(object):
                  facet=None,
                  index_boost={}):
         """
-        fields: if is [], the _soruce is not returned
+        fields: if is [], the _source is not returned
         """
+        self.query = query
         self.fields = fields
         self.start = start
         self.size = size
@@ -103,7 +110,13 @@ class Query(object):
 
     @property
     def q(self):
-        res = {"query":self.serialize()}
+        return self.serialize()
+
+    def serialize(self):
+        """Serialize the search to a structure as passed for a search body.
+
+        """
+        res = {"query": self.query.serialize()}
         if self.fields is not None:
             res['fields'] = self.fields
         if self.size is not None:
@@ -123,67 +136,105 @@ class Query(object):
         return res
 
     def add_highlight(self, field, fragment_size=None, number_of_fragments=None):
-        """
-        Add an highlight field
+        """Add a highlight field.
+
+        The Search object will be returned, so calls to this can be chained.
+
         """
         if self.highlight is None:
             self.highlight = HighLighter("<b>", "</b>")
         self.highlight.add_field(field, fragment_size, number_of_fragments)
+        return self
 
     def add_index_boost(self, index, boost):
-        """
-        Add a boost on an index
+        """Add a boost on an index.
+
+        The Search object will be returned, so calls to this can be chained.
+
         """
         if boost is None:
             if self.index_boost.has_key(index):
                 del(self.index_boost[index])
         else:
             self.index_boost[index] = boost
-
-    def count(self):
-        # FIXME - document this or remove it - I don't think it does anything
-        # sensible.
-        return self.serialize()
+        return self
 
     def __repr__(self):
         return str(self.q)
 
-    def to_json(self, inner=False):
-        """
-        Inner return only the inner query. Useful for delete_by_query and reindex.
-        """
-        q = self.q
-        if inner:
-            q = q['query']
-        return json.dumps(q, cls=ESJsonEncoder)
+    def to_search_json(self):
+        """Convert the search to JSON.
 
+        The output of this is suitable for using as the request body for
+        search.
+
+        """
+        return json.dumps(self.q, cls=ESJsonEncoder)
+
+
+class Query(object):
+    """Base class for all queries.
+
+    """
+    def serialize(self):
+        """Serialize the query to a structure using the query DSL.
+
+        """
+        raise NotImplementedError()
+
+    def search(self, **kwargs):
+        """Return this query wrapped in a Search object.
+
+        Any keyword arguments supplied to this call will be passed to the
+        Search object.
+
+        """
+        return Search(query=self, **kwargs)
+
+    def to_search_json(self):
+        """Convert the query to JSON suitable for searching with.
+
+        The output of this is suitable for using as the request body for
+        search.
+
+        """
+        return json.dumps(dict(query=self.serialize()), cls=ESJsonEncoder)
+
+    def to_query_json(self):
+        """Convert the query to JSON using the query DSL.
+
+        The output of this is suitable for using as the request body for count,
+        delete_by_query and reindex.
+
+        """
+        return json.dumps(self.serialize(), cls=ESJsonEncoder)
 
 
 class BoolQuery(Query):
-    """
-    A query that matches documents matching boolean combinations of other 
-    queries. The bool query maps to Lucene **BooleanQuery**. It is built 
-    using one or more boolean clauses, each clause with a typed occurrence. 
-    The occurrence types are:
-    
-    ================  ========================================================
-     Occur             Description                                                                                                                                                                                                                                                            
-    ================  ========================================================
-    **must**          The clause (query) must appear in matching documents.                                                                                                                                                                                                                  
-    **should**        The clause (query) should appear in the matching 
-                      document. A boolean query with no **must** clauses, one 
-                      or more **should** clauses must match a document. The 
-                      minimum number of should clauses to match can be set 
-                      using **minimum_number_should_match** parameter.   
-    **must_not**      The clause (query) must not appear in the matching 
-                      documents. Note that it is not possible to search on 
-                      documents that only consists of a **must_not** clauses.                                                                                                        
-    ================  ========================================================
-    
-    The bool query also supports **disable_coord** parameter (defaults to 
-    **false**).
-    """
+    """A boolean combination of other queries.
 
+    BoolQuery maps to Lucene **BooleanQuery**. It is built using one or more
+    boolean clauses, each clause with a typed occurrence.  The occurrence types
+    are:
+
+    ================  ========================================================
+     Occur             Description
+    ================  ========================================================
+    **must**          The clause (query) must appear in matching documents.
+    **should**        The clause (query) should appear in the matching
+                      document. A boolean query with no **must** clauses, one
+                      or more **should** clauses must match a document. The
+                      minimum number of should clauses to match can be set
+                      using **minimum_number_should_match** parameter.
+    **must_not**      The clause (query) must not appear in the matching
+                      documents. Note that it is not possible to search on
+                      documents that only consists of a **must_not** clauses.
+    ================  ========================================================
+
+    The bool query also supports **disable_coord** parameter (defaults to
+    **false**).
+
+    """
     def __init__(self, must=None, must_not=None, should=None,
                  boost=None, minimum_number_should_match=1,
                  disable_coord=None,
@@ -207,22 +258,40 @@ class BoolQuery(Query):
             self.add_should(should)
 
     def add_must(self, queries):
+        """Add a query to the "must" clause of the query.
+
+        The Query object will be returned, so calls to this can be chained.
+
+        """
         if isinstance(queries, list):
             self._must.extend(queries)
         else:
             self._must.append(queries)
-
-    def add_must_not(self, queries):
-        if isinstance(queries, list):
-            self._must_not.extend(queries)
-        else:
-            self._must_not.append(queries)
+        return self
 
     def add_should(self, queries):
+        """Add a query to the "should" clause of the query.
+
+        The Query object will be returned, so calls to this can be chained.
+
+        """
         if isinstance(queries, list):
             self._should.extend(queries)
         else:
             self._should.append(queries)
+        return self
+
+    def add_must_not(self, queries):
+        """Add a query to the "must_not" clause of the query.
+
+        The Query object will be returned, so calls to this can be chained.
+
+        """
+        if isinstance(queries, list):
+            self._must_not.extend(queries)
+        else:
+            self._must_not.append(queries)
+        return self
 
     def is_empty(self):
         if self._must:
@@ -232,7 +301,6 @@ class BoolQuery(Query):
         if self._should:
             return False
         return True
-
 
     def serialize(self):
         filters = {}
@@ -252,8 +320,14 @@ class BoolQuery(Query):
         return {"bool":filters}
 
 
-
 class ConstantScoreQuery(Query):
+    """Returns a constant score for all documents matching a filter.
+
+    Multiple filters may be supplied by passing a sequence or iterator as the
+    filter parameter.  If multiple filters are supplied, documents must match
+    all of them to be matched by this query.
+
+    """
     _internal_name = "constant_score"
 
     def __init__(self, filter=None, boost=1.0, **kwargs):
@@ -264,14 +338,22 @@ class ConstantScoreQuery(Query):
             self.add(filter)
 
     def add(self, filter):
-        if isinstance(filter, list):
-            self.filters.extend(filter)
-        else:
+        """Add a filter, or a list of filters, to the query.
 
+        If a sequence of filters is supplied, they are all added, and will be
+        combined with an ANDFilter.
+
+        """
+        if isinstance(filter, Filter):
             self.filters.append(filter)
+        else:
+            self.filters.extend(filter)
+        return self
 
     def is_empty(self):
-        """Returns if the query is empty"""
+        """Returns True if the query is empty.
+        
+        """
         if self.filters:
             return False
         return True
@@ -357,8 +439,8 @@ class DisMaxQuery(Query):
         if isinstance(query, list):
             self.queries.extend(query)
         else:
-
             self.queries.append(query)
+        return self
 
     def serialize(self):
         filters = {}
@@ -660,11 +742,8 @@ class FilterQuery(Query):
     def serialize(self):
         filters = [f.serialize() for f in self._filters]
         if not filters:
-            raise RuntimeError("A least a filter must be declared")
+            raise RuntimeError("A least one filter must be declared")
         return {self._internal_name:{"filter":filters}}
-
-    def __repr__(self):
-        return str(self.q)
 
 class PrefixQuery(Query):
     def __init__(self, field=None, prefix=None, boost=None, **kwargs):
@@ -689,6 +768,11 @@ class PrefixQuery(Query):
         return {"prefix":self._values}
 
 class TermQuery(Query):
+    """Match documents that have fields that contain a term (not analyzed).
+
+    A boost may be supplied.
+
+    """
     _internal_name = "term"
 
     def __init__(self, field=None, value=None, boost=None, **kwargs):

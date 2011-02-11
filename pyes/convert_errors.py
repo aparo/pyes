@@ -16,6 +16,7 @@ import pyes.exceptions
 # and then contain the error description wrapped in [].
 exceptions_by_name = dict((name, getattr(pyes.exceptions, name))
     for name in (
+        'ElasticSearchIllegalArgumentException',
         'IndexMissingException',
         'SearchPhaseExecutionException',
         'ReplicationShardOperationFailedException',
@@ -47,11 +48,12 @@ def raise_if_error(status, result):
 
     if status < 400:
         return
-    if not isinstance(result, dict) or result.get('error') is None:
-        raise pyes.exceptions.ElasticSearchException("Unknown exception type", status, result)
 
-    if status == 400:
-        raise pyes.exceptions.NotFoundException("")
+    if status == 404 and isinstance(result, dict) and result.get('ok'):
+        raise pyes.exceptions.NotFoundException("Item not found", status, result)
+
+    if not isinstance(result, dict) or 'error' not in result:
+        raise pyes.exceptions.ElasticSearchException("Unknown exception type", status, result)
 
     error = result['error']
     bits = error.split('[', 1)

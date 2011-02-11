@@ -62,6 +62,13 @@ class ErrorReportingTestCase(ESTestCase):
         self.assertEqual(err.status, 400)
         self.assertEqual(err.result, 'No handler found for uri [/_bad_request] and method [GET]')
 
+    def testDelete(self):
+        """Test error reported by deleting a missing document.
+
+        """
+        err = self.checkRaises(pyes.exceptions.NotFoundException,
+                               self.conn.delete, "test-index", "flibble",
+                               "asdf")
 
 
 if __name__ == "__main__":

@@ -47,6 +47,9 @@ class ElasticSearchException(Exception):
         self.status = status
         self.result = result
 
+class ElasticSearchIllegalArgumentException(ElasticSearchException):
+    pass
+
 class IndexMissingException(ElasticSearchException):
     pass
 

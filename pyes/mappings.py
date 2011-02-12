@@ -110,6 +110,11 @@ class LongField(NumericFieldAbstract):
         super(LongField, self).__init__(*args, **kwargs)
         self.type = "long"
 
+class FloatField(NumericFieldAbstract):
+    def __init__(self, *args, **kwargs):
+        super(FloatField, self).__init__(*args, **kwargs)
+        self.type = "float"
+
 class DoubleField(NumericFieldAbstract):
     def __init__(self, *args, **kwargs):
         super(DoubleField, self).__init__(*args, **kwargs)

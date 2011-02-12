@@ -21,6 +21,7 @@ exceptions_by_name = dict((name, getattr(pyes.exceptions, name))
         'SearchPhaseExecutionException',
         'ReplicationShardOperationFailedException',
         'ClusterBlockException',
+        'MapperParsingException',
     )
 )
 

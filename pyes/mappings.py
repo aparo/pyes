@@ -297,6 +297,8 @@ def get_field(name, data):
         return IntegerField(name=name, **data)
     elif type == "long":
         return LongField(name=name, **data)
+    elif type == "float":
+        return FloatField(name=name, **data)
     elif type == "double":
         return DoubleField(name=name, **data)
     elif type == "date":

@@ -344,6 +344,7 @@ class ConstantScoreQuery(Query):
         combined with an ANDFilter.
 
         """
+        from pyes.filters import Filter
         if isinstance(filter, Filter):
             self.filters.append(filter)
         else:
@@ -808,7 +809,7 @@ class TermsQuery(TermQuery):
         super(TermsQuery, self).__init__(*args, **kwargs)
 
     def add(self, field, value, minimum_match=1):
-        if isinstance(value, list):
+        if not isinstance(value, list):
             raise InvalidParameterQuery("value %r must be valid list" % value)
         self._values[field] = value
         if minimum_match:

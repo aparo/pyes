@@ -198,6 +198,11 @@ class TermFilter(Filter):
             raise RuntimeError("A least a field/value pair must be added")
         return {self._internal_name:self._values}
 
+class MissingFilter(TermFilter):
+    _internal_name = "missing"
+    def __init__(self, field=None, **kwargs):
+        super(MissingFilter, self).__init__(field="field", value=field, **kwargs)
+
 class RegexTermFilter(Filter):
     _internal_name = "regex_term"
 

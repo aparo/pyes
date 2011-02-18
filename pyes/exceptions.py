@@ -14,6 +14,7 @@ __all__ = ['NoServerAvailable',
            "QueryParameterError",
            "ReplicationShardOperationFailedException",
            "ClusterBlockException",
+           "MapperParsingException",
            "ElasticSearchException",
           ]
 
@@ -66,4 +67,7 @@ class ReplicationShardOperationFailedException(ElasticSearchException):
     pass
 
 class ClusterBlockException(ElasticSearchException):
+    pass
+
+class MapperParsingException(ElasticSearchException):
     pass

@@ -24,6 +24,7 @@ class AbstractField(object):
                  term_vector="no", omit_norms=True,
                  omit_term_freq_and_positions=True,
                  type=None, index_name=None,
+                 analyzer=None,
                  index_analyzer=None,
                  search_analyzer=None,
                  name=None):
@@ -35,6 +36,7 @@ class AbstractField(object):
         self.omit_term_freq_and_positions = omit_term_freq_and_positions
         self.index_name = index_name
         self.type = type
+        self.analyzer = analyzer
         self.index_analyzer = index_analyzer
         self.search_analyzer = search_analyzer
         self.name = name
@@ -60,6 +62,8 @@ class AbstractField(object):
             result['omit_term_freq_and_positions'] = self.omit_term_freq_and_positions
         if self.index_name:
             result['index_name'] = self.index_name
+        if self.analyzer:
+            result['analyzer'] = self.analyzer
         if self.index_analyzer:
             result['index_analyzer'] = self.index_analyzer
         if self.search_analyzer:
@@ -109,6 +113,11 @@ class LongField(NumericFieldAbstract):
     def __init__(self, *args, **kwargs):
         super(LongField, self).__init__(*args, **kwargs)
         self.type = "long"
+
+class FloatField(NumericFieldAbstract):
+    def __init__(self, *args, **kwargs):
+        super(FloatField, self).__init__(*args, **kwargs)
+        self.type = "float"
 
 class DoubleField(NumericFieldAbstract):
     def __init__(self, *args, **kwargs):
@@ -292,6 +301,8 @@ def get_field(name, data):
         return IntegerField(name=name, **data)
     elif type == "long":
         return LongField(name=name, **data)
+    elif type == "float":
+        return FloatField(name=name, **data)
     elif type == "double":
         return DoubleField(name=name, **data)
     elif type == "date":

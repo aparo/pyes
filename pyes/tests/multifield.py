@@ -49,7 +49,6 @@ class MultifieldTestCase(ESTestCase):
                            'type': u'string'}}
         self.conn.create_index("test-index")
         res = self.conn.put_mapping("test-type", {'properties':mapping}, ["test-index"])
-        self.dump(res)
         self.conn.index({"name":"Joe Tester", "parsedtext":"Joe Testere nice guy", "uuid":"11111", "position":1}, "test-index", "test-type", 1)
         self.conn.index({"name":"Bill Baloney", "parsedtext":"Joe Testere nice guy", "uuid":"22222", "position":2}, "test-index", "test-type", 2)
         self.conn.refresh(["test-index"])

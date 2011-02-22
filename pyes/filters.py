@@ -9,7 +9,7 @@ from es import encode_json
 class Filter(object):
     def __init__(self, **kwargs):
         """
-        fields: if is [], the _source is not returned
+        Base Object for every Filter Object
         """
 
     @property
@@ -341,15 +341,22 @@ class MatchAllFilter(Filter):
 
 
 class HasChildFilter(Filter):
+    """
+    The has_child filter accepts a query and the child type to run against, 
+    and results in parent documents that have child docs matching the query
+    """
     _internal_name = "has_child"
-    def __init__(self, type, filter, **kwargs):
+    def __init__(self, type, filter, _scope=None, **kwargs):
         super(HasChildFilter, self).__init__(**kwargs)
         self.filter = filter
         self.type = type
+        self._scope = _scope
 
     def serialize(self):
         if not isinstance(self.filter, Filter):
             raise RuntimeError("NotFilter argument should be a Filter")
-
-        return {self._internal_name: {"query": self.filter.serialize(),
-                                      "type":self.type}}
+        data = {"query": self.filter.serialize(),
+                "type":self.type}
+        if self._scope is not None:
+            data['_scope'] = self._scope
+        return {self._internal_name: data}

@@ -75,7 +75,7 @@ class FieldParameter:
 class Search(object):
     """A search to be performed.
 
-    This contains a query, and has addtional parameters which are used to
+    This contains a query, and has additional parameters which are used to
     control how the search works, what it should return, etc.
 
     """

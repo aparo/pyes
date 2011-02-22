@@ -40,13 +40,9 @@ class BulkTestCase(ESTestCase):
         self.conn.force_bulk()
         self.conn.refresh(["test-index"])
 
-        #Sleep to allow ElasticSearch to set up 
-        #mapping and indices before running tests
-        #sleep(0.5)
-
     def test_TermQuery(self):
         q = TermQuery("name", "bill")
-        result = self.conn.search(query = q, indexes=["test-index"])
+        result = self.conn.search(query=q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 2)
 
 if __name__ == "__main__":

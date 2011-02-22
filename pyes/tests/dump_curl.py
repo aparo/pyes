@@ -5,7 +5,6 @@ Unit tests for pyes.  These require an es server with thrift plugin running on t
 """
 import unittest
 from pyes.tests import ESTestCase, get_conn
-import pyes.exceptions
 import StringIO
 
 class DumpCurlTestCase(ESTestCase):

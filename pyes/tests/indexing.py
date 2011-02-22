@@ -48,7 +48,7 @@ class IndexingTestCase(ESTestCase):
 
     def testExplicitIndexCreate(self):
         """Creazione indice"""
-        result = self.conn.delete_index("test-index2")
+        self.conn.delete_index("test-index2")
         result = self.conn.create_index("test-index2")
         self.assertResultContains(result, {'acknowledged': True, 'ok': True})
 

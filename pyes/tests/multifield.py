@@ -5,8 +5,7 @@ Unit tests for pyes.  These require an es server with thrift plugin running on t
 """
 import unittest
 from pyes.tests import ESTestCase
-from pyes import *
-from time import sleep
+from pyes import TermQuery
 
 class MultifieldTestCase(ESTestCase):
     def setUp(self):
@@ -38,7 +37,7 @@ class MultifieldTestCase(ESTestCase):
                                          u'store': u'yes',
                                          "term_vector" : "no",
                                          u'type': u'string'}
-                                        
+
                                         }
 
                  },
@@ -55,21 +54,17 @@ class MultifieldTestCase(ESTestCase):
         self.conn.index({"name":"Bill Baloney", "parsedtext":"Joe Testere nice guy", "uuid":"22222", "position":2}, "test-index", "test-type", 2)
         self.conn.refresh(["test-index"])
 
-        #Sleep to allow ElasticSearch to set up 
-        #mapping and indices before running tests
-        #sleep(0.5)
-
     def test_TermQuery(self):
         q = TermQuery("name", "joe")
-        result = self.conn.search(query = q, indexes=["test-index"])
+        result = self.conn.search(query=q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
 
         q = TermQuery("name", "joe", 3)
-        result = self.conn.search(query = q, indexes=["test-index"])
+        result = self.conn.search(query=q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
-        
+
         q = TermQuery("name", "joe", "3")
-        result = self.conn.search(query = q, indexes=["test-index"])
+        result = self.conn.search(query=q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
 
 

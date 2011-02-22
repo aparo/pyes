@@ -11,11 +11,8 @@ Contents:
     references/index
     changelog
     links
-
-.. toctree::
-    :maxdepth: 1
-
-    guide/index
+    guide/reference/index
+    guide/appendix/index
 
 
 Indices and tables

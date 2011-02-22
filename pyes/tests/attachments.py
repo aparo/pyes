@@ -4,18 +4,18 @@
 Unit tests for pyes.  These require an es server with thrift plugin running on the default port (localhost:9500).
 """
 import os
-from pyestest import *
+from pyestest import ESTestCase
 from pyes import TermQuery, file_to_attachment
 
 class TestFileSaveTestCase(ESTestCase):
     def test_filesave(self):
         mapping = {
-                   "my_attachment" : { "type" : "attachment", 
+                   "my_attachment" : { "type" : "attachment",
                                       'fields':{
                                         "file" : {'store' : "yes"},
                                         "date" : {'store' : "yes"},
                                         "author" : {'store': "yes"},
-                                        "title" : {'store': "yes"},}
+                                        "title" : {'store': "yes"}, }
                                       }
                    }
         self.conn.create_index("test-index")
@@ -26,7 +26,7 @@ class TestFileSaveTestCase(ESTestCase):
         content = open(name, "rb").read()
         self.conn.put_file(name, "test-index", "test-type", 1)
         self.conn.refresh(["test-index"])
-        mappings = self.conn.get_mapping("test-type", ["test-index"])
+        _ = self.conn.get_mapping("test-type", ["test-index"])
         nname, ncontent = self.conn.get_file("test-index", "test-type", 1)
         self.assertEquals(name, nname)
         self.assertEquals(content, ncontent)
@@ -35,7 +35,7 @@ class QueryAttachmentTestCase(ESTestCase):
     def setUp(self):
         super(QueryAttachmentTestCase, self).setUp()
         mapping = {
-                   "attachment" : { "type" : "attachment", 
+                   "attachment" : { "type" : "attachment",
                                       'fields':{
                                         "file" : {'store' : "yes"},
                                         "date" : {'store' : "yes"},
@@ -68,7 +68,7 @@ class QueryAttachmentTestCase(ESTestCase):
 #                "_all": {"store": "yes", "term_vector": "with_positions_offsets"}
 #            }
 #        }
-        self.conn.debug_dump=True
+        self.conn.debug_dump = True
         self.conn.create_index("test-index")
         self.conn.put_mapping("test-type", {"test-type":{'properties':mapping}}, ["test-index"])
         self.conn.refresh(["test-index"])
@@ -79,6 +79,6 @@ class QueryAttachmentTestCase(ESTestCase):
     def test_TermQuery(self):
         q = TermQuery("uuid", "1").search(fields=['attachment', 'attachment.author', 'attachment.title', 'attachment.date'])
 #        q = TermQuery("uuid", "1", fields=['*'])
-        result = self.conn.search(query = q, indexes=["test-index"])
+        result = self.conn.search(query=q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
         self.assertEquals(result['hits']['hits'][0]['fields']['attachment.author'], u'Tika Developers')

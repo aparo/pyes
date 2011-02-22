@@ -746,6 +746,9 @@ class FilterQuery(Query):
             raise RuntimeError("A least one filter must be declared")
         return {self._internal_name:{"filter":filters}}
 
+    def __repr__(self):
+        return str(self.q)
+
 class PrefixQuery(Query):
     def __init__(self, field=None, prefix=None, boost=None, **kwargs):
         super(PrefixQuery, self).__init__(**kwargs)

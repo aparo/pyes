@@ -16,9 +16,7 @@ from datetime import date, datetime
 import base64
 import time
 from StringIO import StringIO
-from functools import wraps
 from decimal import Decimal
-import traceback
 
 try:
     from connection import connect as thrift_connect
@@ -184,7 +182,7 @@ class ES(object):
         """
         data = self.cluster_nodes()
         self.cluster_name = data["cluster_name"]
-        for nodename, nodedata in data["nodes"].items():
+        for _, nodedata in data["nodes"].items():
             server = nodedata['http_address'].replace("]", "").replace("inet[", "http:/")
             if server not in self.servers:
                 self.servers.append(server)
@@ -635,7 +633,7 @@ class ES(object):
 
         if force_insert:
             querystring_args['opType'] = 'create'
-        
+
         if parent:
             querystring_args['parent'] = parent
 
@@ -762,7 +760,6 @@ class ES(object):
         """
         Execute a query against one or more indices and get hits count.
         """
-        from query import Query
         indexes = self._validate_indexes(indexes)
         if doc_types is None:
             doc_types = []

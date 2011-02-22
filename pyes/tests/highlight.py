@@ -5,8 +5,7 @@ Unit tests for pyes.  These require an es server with thrift plugin running on t
 """
 import unittest
 from pyes.tests import ESTestCase
-from pyes import *
-from time import sleep
+from pyes import Search, StringQuery
 
 class QuerySearchTestCase(ESTestCase):
     def setUp(self):

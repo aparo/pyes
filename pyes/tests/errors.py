@@ -66,7 +66,7 @@ class ErrorReportingTestCase(ESTestCase):
         """Test error reported by deleting a missing document.
 
         """
-        err = self.checkRaises(pyes.exceptions.NotFoundException,
+        self.checkRaises(pyes.exceptions.NotFoundException,
                                self.conn.delete, "test-index", "flibble",
                                "asdf")
 

@@ -5,8 +5,7 @@ Issue #6 testcase.
 """
 import unittest
 from pyes.tests import ESTestCase
-from pyes import *
-from time import sleep
+from pyes import MatchAllQuery
 
 class QuerySearchTestCase(ESTestCase):
     def test_ReconvertDoubles(self):
@@ -17,7 +16,7 @@ class QuerySearchTestCase(ESTestCase):
 
         """
         q = MatchAllQuery()
-        result = self.conn.search(query = q, indexes=["test-pindex"])
+        result = self.conn.search(query=q, indexes=["test-pindex"])
         self.assertEquals(result['hits']['total'], 2)
 
 if __name__ == "__main__":

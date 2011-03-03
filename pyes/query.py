@@ -579,12 +579,15 @@ class FuzzyLikeThisQuery(Query):
 
     def __init__(self, fields, like_text,
                      ignore_tf=False, max_query_terms=25,
+                     min_similarity=0.5, prefix_length=0,
                      boost=1.0, **kwargs):
         super(FuzzyLikeThisQuery, self).__init__(**kwargs)
         self.fields = fields
         self.like_text = like_text
         self.ignore_tf = ignore_tf
         self.max_query_terms = max_query_terms
+        self.min_similarity = min_similarity
+        self.prefix_length = prefix_length
         self.boost = boost
 
     def serialize(self):
@@ -595,6 +598,10 @@ class FuzzyLikeThisQuery(Query):
             filters["ignore_tf"] = self.ignore_tf
         if self.max_query_terms != 25:
             filters["max_query_terms"] = self.max_query_terms
+        if self.min_similarity != 0.5:
+            filters["min_similarity"] = self.min_similarity
+        if self.prefix_length != 0:
+            filters["prefix_length"] = self.prefix_length
         if self.boost != 1.0:
             filters["boost"] = self.boost
         return {self._internal_name:filters}

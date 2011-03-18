@@ -27,8 +27,8 @@ class QuickRunTests(TestCommand):
 
 
 install_requires = ["urllib3", "simplejson"]
-if not sys.platform.startswith("java"):
-    install_requires += [ "thrift", ]    
+#if not sys.platform.startswith("java"):
+#    install_requires += [ "thrift", ]    
 try:
     import importlib
 except ImportError:
@@ -58,7 +58,7 @@ setup(
     zip_safe=False,
     install_requires=install_requires,
     tests_require=['nose', 'nose-cover3', 'unittest2', 'simplejson'],
-    cmdclass = {"quicktest": QuickRunTests},
+    cmdclass={"quicktest": QuickRunTests},
     test_suite="nose.collector",
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',

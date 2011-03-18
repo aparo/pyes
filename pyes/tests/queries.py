@@ -129,6 +129,11 @@ class QuerySearchTestCase(ESTestCase):
         result = self.conn.search(query=q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
 
+    def test_HasChildQuery(self):
+        q = HasChildQuery(type="test-type2", query=TermQuery("name", "data1"))
+        result = self.conn.search(query=q, indexes=["test-index"])
+        self.assertEquals(result['hits']['total'], 1)
+
     def test_RegexTermQuery(self):
         # Don't run this test, because it depends on the RegexTermQuery
         # feature which is not currently in elasticsearch trunk.

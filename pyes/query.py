@@ -375,25 +375,19 @@ class ConstantScoreQuery(Query):
         data['filter'] = filters
         return {self._internal_name:data}
 
-class HasChildQuery(ConstantScoreQuery):
+class HasChildQuery(Query):
     _internal_name = "has_child"
 
-    def __init__(self, type, _scope=None, **kwargs):
+    def __init__(self, type, query, _scope=None, **kwargs):
         super(HasChildQuery, self).__init__(**kwargs)
         self.type = type
         self._scope = _scope
+        self.query = query
 
     def serialize(self):
-        filters = {}
-
-        if self.boost != 1.0:
-            filters["boost"] = self.boost
-
-        for f in self.filters:
-            filters.update(f.serialize())
         data = {
              'type':self.type,
-             'query':filters}
+             'query':self.query.serialize()}
         if self._scope is not None:
             data['_scope'] = self._scope
         return {self._internal_name:data}

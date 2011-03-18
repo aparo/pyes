@@ -306,6 +306,8 @@ class ES(object):
         """
         try:
             return self.delete_index(index)
+        except pyes.exceptions.IndexMissingException:
+            pass
         except pyes.exceptions.NotFoundException, e:
             return e.result
 

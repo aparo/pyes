@@ -192,7 +192,10 @@ class AttachmentField(object):
 
 class ObjectField(object):
     def __init__(self, name=None, type=None, path=None, properties=None,
-                 dynamic=None, enabled=None, include_in_all=None):
+                 dynamic=None, enabled=None, include_in_all=None,
+                 _id=False, _type=False, _source=None, _all=None,
+                 _analyzer=None, _boost=None,
+                 _parent=None, _index=None):
         self.name = name
         self.type = "object"
         self.path = path
@@ -200,6 +203,14 @@ class ObjectField(object):
         self.include_in_all = include_in_all
         self.dynamic = dynamic
         self.enabled = enabled
+        self._id = _id
+        self._type = _type
+        self._source = _source
+        self._all = _all
+        self._analyzer = _analyzer
+        self._boost = _boost
+        self._parent = _parent
+        self._index = _index
         if properties:
             self.properties = dict([(name, get_field(name, data)) for name, data in properties.items()])
         else:
@@ -214,6 +225,22 @@ class ObjectField(object):
     def to_json(self):
         result = {"type": self.type,
                   "properties": {}}
+        if self._id:
+            result['_id'] = {"store":True}
+        if self._type:
+            result['_type'] = {"store":True}
+        if self._source is not None:
+            result['_source'] = self._source
+        if self._all is not None:
+            result['_all'] = self._all
+        if self._analyzer is not None:
+            result['_analyzer'] = self._analyzer
+        if self._boost is not None:
+            result['_boost'] = self._boost
+        if self._parent is not None:
+            result['_parent'] = self._parent
+        if self._index:
+            result['_index'] = {"store":True}
         if self.dynamic is not None:
             result['dynamic'] = self.dynamic
         if self.enabled is not None:

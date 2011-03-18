@@ -86,6 +86,36 @@ class StringField(AbstractField):
             result['include_in_all'] = self.include_in_all
         return result
 
+class GeoPointField(AbstractField):
+    def __init__(self, null_value=None, include_in_all=None,
+                 lat_lon=None, geohash=None, geohash_precision=None,
+                 *args, **kwargs):
+        super(GeoPointField, self).__init__(**kwargs)
+        self.null_value = null_value
+        self.include_in_all = include_in_all
+        self.lat_lon = lat_lon
+        self.geohash = geohash
+        self.geohash_precision = geohash_precision
+        self.type = "geo_point"
+
+    def to_json(self):
+        result = super(GeoPointField, self).to_json()
+        if self.null_value is not None:
+            result['null_value'] = self.null_value
+        if self.include_in_all is not None:
+            result['include_in_all'] = self.include_in_all
+        if self.lat_lon is not None:
+            result['lat_lon'] = self.lat_lon
+        if self.geohash is not None:
+            result['geohash'] = self.geohash
+        if self.geohash_precision is not None:
+            try:
+                int(self.geohash_precision)
+            except ValueError:
+                raise ValueError("geohash_precision must be an integer")
+            result['geohash_precision'] = self.geohash_precision
+        return result
+
 class NumericFieldAbstract(AbstractField):
     def __init__(self, null_value=None, include_in_all=None, precision_step=4,
                  **kwargs):
@@ -339,6 +369,8 @@ def get_field(name, data):
         return DateField(name=name, **data)
     elif type == "multi_field":
         return MultiField(name=name, **data)
+    elif type == "geo_point":
+        return GeoPointField(name=name, **data)
     elif type == "attachment":
         return AttachmentField(name=name, **data)
     elif type == "object":

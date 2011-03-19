@@ -208,6 +208,11 @@ class MissingFilter(TermFilter):
     def __init__(self, field=None, **kwargs):
         super(MissingFilter, self).__init__(field="field", value=field, **kwargs)
 
+class ExistsFilter(TermFilter):
+    _internal_name = "exists"
+    def __init__(self, field=None, **kwargs):
+        super(ExistsFilter, self).__init__(field="field", value=field, **kwargs)
+
 class RegexTermFilter(Filter):
     _internal_name = "regex_term"
 

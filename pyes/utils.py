@@ -125,7 +125,7 @@ class ResultSet(object):
         if not self.valid:
             return
 
-        for hit in self._results['hits']:
+        for hit in self._results['hits']['hits']:
             if 'highlight' in hit:
                 hl = hit['highlight']
                 for key, item in hl.items():
@@ -133,8 +133,7 @@ class ResultSet(object):
                         del hl[key]
 
     def __getattr__(self, name):
-        if name in self._results:
-            return self._results[name]
+        return self._results['hits'][name]
 
 def keys_to_string(data):
     """

@@ -72,9 +72,15 @@ class FieldParameter:
         return self.field, filters
 
 
-#--- Query
-class Query(object):
+class Search(object):
+    """A search to be performed.
+
+    This contains a query, and has additional parameters which are used to
+    control how the search works, what it should return, etc.
+
+    """
     def __init__(self,
+                 query=None,
                  fields=None,
                  start=None,
                  size=None,
@@ -84,8 +90,9 @@ class Query(object):
                  facet=None,
                  index_boost={}):
         """
-        fields: if is [], the _soruce is not returned
+        fields: if is [], the _source is not returned
         """
+        self.query = query
         self.fields = fields
         self.start = start
         self.size = size
@@ -103,12 +110,18 @@ class Query(object):
 
     @property
     def q(self):
-        res = {"query":self.serialize()}
+        return self.serialize()
+
+    def serialize(self):
+        """Serialize the search to a structure as passed for a search body.
+
+        """
+        res = {"query": self.query.serialize()}
         if self.fields is not None:
             res['fields'] = self.fields
         if self.size is not None:
             res['size'] = self.size
-        if self.start is None:
+        if self.start is not None:
             res['from'] = self.start
         if self.highlight:
             res['highlight'] = self.highlight.serialize()
@@ -123,65 +136,105 @@ class Query(object):
         return res
 
     def add_highlight(self, field, fragment_size=None, number_of_fragments=None):
-        """
-        Add an highlight field
+        """Add a highlight field.
+
+        The Search object will be returned, so calls to this can be chained.
+
         """
         if self.highlight is None:
             self.highlight = HighLighter("<b>", "</b>")
         self.highlight.add_field(field, fragment_size, number_of_fragments)
+        return self
 
     def add_index_boost(self, index, boost):
-        """
-        Add a boost on an index
+        """Add a boost on an index.
+
+        The Search object will be returned, so calls to this can be chained.
+
         """
         if boost is None:
             if self.index_boost.has_key(index):
                 del(self.index_boost[index])
         else:
             self.index_boost[index] = boost
-
-    def count(self):
-        return self.serialize()
+        return self
 
     def __repr__(self):
         return str(self.q)
 
-    def to_json(self, inner=False):
-        """
-        Inner return only the inner query. Useful for delete_by_query and reindex.
-        """
-        q = self.q
-        if inner:
-            q = q['query']
-        return json.dumps(q, cls=ESJsonEncoder)
+    def to_search_json(self):
+        """Convert the search to JSON.
 
+        The output of this is suitable for using as the request body for
+        search.
+
+        """
+        return json.dumps(self.q, cls=ESJsonEncoder)
+
+
+class Query(object):
+    """Base class for all queries.
+
+    """
+    def serialize(self):
+        """Serialize the query to a structure using the query DSL.
+
+        """
+        raise NotImplementedError()
+
+    def search(self, **kwargs):
+        """Return this query wrapped in a Search object.
+
+        Any keyword arguments supplied to this call will be passed to the
+        Search object.
+
+        """
+        return Search(query=self, **kwargs)
+
+    def to_search_json(self):
+        """Convert the query to JSON suitable for searching with.
+
+        The output of this is suitable for using as the request body for
+        search.
+
+        """
+        return json.dumps(dict(query=self.serialize()), cls=ESJsonEncoder)
+
+    def to_query_json(self):
+        """Convert the query to JSON using the query DSL.
+
+        The output of this is suitable for using as the request body for count,
+        delete_by_query and reindex.
+
+        """
+        return json.dumps(self.serialize(), cls=ESJsonEncoder)
 
 
 class BoolQuery(Query):
-    """
-    A query that matches documents matching boolean combinations of other 
-    queries. The bool query maps to Lucene **BooleanQuery**. It is built 
-    using one or more boolean clauses, each clause with a typed occurrence. 
-    The occurrence types are:
-    
-    ================  ========================================================
-     Occur             Description                                                                                                                                                                                                                                                            
-    ================  ========================================================
-    **must**          The clause (query) must appear in matching documents.                                                                                                                                                                                                                  
-    **should**        The clause (query) should appear in the matching 
-                      document. A boolean query with no **must** clauses, one 
-                      or more **should** clauses must match a document. The 
-                      minimum number of should clauses to match can be set 
-                      using **minimum_number_should_match** parameter.   
-    **must_not**      The clause (query) must not appear in the matching 
-                      documents. Note that it is not possible to search on 
-                      documents that only consists of a **must_not** clauses.                                                                                                        
-    ================  ========================================================
-    
-    The bool query also supports **disable_coord** parameter (defaults to 
-    **false**).
-    """
+    """A boolean combination of other queries.
 
+    BoolQuery maps to Lucene **BooleanQuery**. It is built using one or more
+    boolean clauses, each clause with a typed occurrence.  The occurrence types
+    are:
+
+    ================  ========================================================
+     Occur             Description
+    ================  ========================================================
+    **must**          The clause (query) must appear in matching documents.
+    **should**        The clause (query) should appear in the matching
+                      document. A boolean query with no **must** clauses, one
+                      or more **should** clauses must match a document. The
+                      minimum number of should clauses to match can be set
+                      using **minimum_number_should_match** parameter.
+    **must_not**      The clause (query) must not appear in the matching
+                      documents. Note that it is not possible to search on
+                      documents that only consists of a **must_not** clauses.
+    ================  ========================================================
+
+    The bool query also supports **disable_coord** parameter (defaults to
+    **false**).
+
+    """
     def __init__(self, must=None, must_not=None, should=None,
                  boost=None, minimum_number_should_match=1,
                  disable_coord=None,
@@ -205,22 +258,40 @@ class BoolQuery(Query):
             self.add_should(should)
 
     def add_must(self, queries):
+        """Add a query to the "must" clause of the query.
+
+        The Query object will be returned, so calls to this can be chained.
+
+        """
         if isinstance(queries, list):
             self._must.extend(queries)
         else:
             self._must.append(queries)
-
-    def add_must_not(self, queries):
-        if isinstance(queries, list):
-            self._must_not.extend(queries)
-        else:
-            self._must_not.append(queries)
+        return self
 
     def add_should(self, queries):
+        """Add a query to the "should" clause of the query.
+
+        The Query object will be returned, so calls to this can be chained.
+
+        """
         if isinstance(queries, list):
             self._should.extend(queries)
         else:
             self._should.append(queries)
+        return self
+
+    def add_must_not(self, queries):
+        """Add a query to the "must_not" clause of the query.
+
+        The Query object will be returned, so calls to this can be chained.
+
+        """
+        if isinstance(queries, list):
+            self._must_not.extend(queries)
+        else:
+            self._must_not.append(queries)
+        return self
 
     def is_empty(self):
         if self._must:
@@ -230,7 +301,6 @@ class BoolQuery(Query):
         if self._should:
             return False
         return True
-
 
     def serialize(self):
         filters = {}
@@ -250,8 +320,14 @@ class BoolQuery(Query):
         return {"bool":filters}
 
 
-
 class ConstantScoreQuery(Query):
+    """Returns a constant score for all documents matching a filter.
+
+    Multiple filters may be supplied by passing a sequence or iterator as the
+    filter parameter.  If multiple filters are supplied, documents must match
+    all of them to be matched by this query.
+
+    """
     _internal_name = "constant_score"
 
     def __init__(self, filter=None, boost=1.0, **kwargs):
@@ -262,14 +338,23 @@ class ConstantScoreQuery(Query):
             self.add(filter)
 
     def add(self, filter):
-        if isinstance(filter, list):
-            self.filters.extend(filter)
-        else:
+        """Add a filter, or a list of filters, to the query.
 
+        If a sequence of filters is supplied, they are all added, and will be
+        combined with an ANDFilter.
+
+        """
+        from pyes.filters import Filter
+        if isinstance(filter, Filter):
             self.filters.append(filter)
+        else:
+            self.filters.extend(filter)
+        return self
 
     def is_empty(self):
-        """Returns if the query is empty"""
+        """Returns True if the query is empty.
+        
+        """
         if self.filters:
             return False
         return True
@@ -280,33 +365,32 @@ class ConstantScoreQuery(Query):
         if self.boost != 1.0:
             data["boost"] = self.boost
         filters = {}
-
-        for f in self.filters:
-            filters.update(f.serialize())
+        if len(self.filters) == 1:
+            filters.update(self.filters[0].serialize())
+        else:
+            from pyes import ANDFilter
+            filters.update(ANDFilter(self.filters).serialize())
         if not filters:
             raise QueryError("A filter is required")
         data['filter'] = filters
         return {self._internal_name:data}
 
-class HasChildQuery(ConstantScoreQuery):
+class HasChildQuery(Query):
     _internal_name = "has_child"
 
-    def __init__(self, type, **kwargs):
+    def __init__(self, type, query, _scope=None, **kwargs):
         super(HasChildQuery, self).__init__(**kwargs)
         self.type = type
+        self._scope = _scope
+        self.query = query
 
     def serialize(self):
-        filters = {}
-
-        if self.boost != 1.0:
-            filters["boost"] = self.boost
-
-        for f in self.filters:
-            filters.update(f.serialize())
-
-        return {self._internal_name:{
-                                     'type':self.type,
-                                     'query':filters}}
+        data = {
+             'type':self.type,
+             'query':self.query.serialize()}
+        if self._scope is not None:
+            data['_scope'] = self._scope
+        return {self._internal_name:data}
 
 class TopChildrenQuery(ConstantScoreQuery):
     _internal_name = "top_children"
@@ -353,8 +437,8 @@ class DisMaxQuery(Query):
         if isinstance(query, list):
             self.queries.extend(query)
         else:
-
             self.queries.append(query)
+        return self
 
     def serialize(self):
         filters = {}
@@ -492,12 +576,15 @@ class FuzzyLikeThisQuery(Query):
 
     def __init__(self, fields, like_text,
                      ignore_tf=False, max_query_terms=25,
+                     min_similarity=0.5, prefix_length=0,
                      boost=1.0, **kwargs):
         super(FuzzyLikeThisQuery, self).__init__(**kwargs)
         self.fields = fields
         self.like_text = like_text
         self.ignore_tf = ignore_tf
         self.max_query_terms = max_query_terms
+        self.min_similarity = min_similarity
+        self.prefix_length = prefix_length
         self.boost = boost
 
     def serialize(self):
@@ -508,6 +595,10 @@ class FuzzyLikeThisQuery(Query):
             filters["ignore_tf"] = self.ignore_tf
         if self.max_query_terms != 25:
             filters["max_query_terms"] = self.max_query_terms
+        if self.min_similarity != 0.5:
+            filters["min_similarity"] = self.min_similarity
+        if self.prefix_length != 0:
+            filters["prefix_length"] = self.prefix_length
         if self.boost != 1.0:
             filters["boost"] = self.boost
         return {self._internal_name:filters}
@@ -656,7 +747,7 @@ class FilterQuery(Query):
     def serialize(self):
         filters = [f.serialize() for f in self._filters]
         if not filters:
-            raise RuntimeError("A least a filter must be declared")
+            raise RuntimeError("A least one filter must be declared")
         return {self._internal_name:{"filter":filters}}
 
     def __repr__(self):
@@ -685,6 +776,11 @@ class PrefixQuery(Query):
         return {"prefix":self._values}
 
 class TermQuery(Query):
+    """Match documents that have fields that contain a term (not analyzed).
+
+    A boost may be supplied.
+
+    """
     _internal_name = "term"
 
     def __init__(self, field=None, value=None, boost=None, **kwargs):
@@ -712,6 +808,22 @@ class TermQuery(Query):
         if not self._values:
             raise RuntimeError("A least a field/value pair must be added")
         return {self._internal_name:self._values}
+
+class TermsQuery(TermQuery):
+    _internal_name = "terms"
+
+    def __init__(self, *args, **kwargs):
+        super(TermsQuery, self).__init__(*args, **kwargs)
+
+    def add(self, field, value, minimum_match=1):
+        if not isinstance(value, list):
+            raise InvalidParameterQuery("value %r must be valid list" % value)
+        self._values[field] = value
+        if minimum_match:
+            if isinstance(minimum_match, int):
+                self._values['minimum_match'] = minimum_match
+            else:
+                self._values['minimum_match'] = int(minimum_match)
 
 class RegexTermQuery(TermQuery):
     _internal_name = "regex_term"
@@ -955,3 +1067,39 @@ class WildcardQuery(TermQuery):
 
     def __init__(self, *args, **kwargs):
         super(WildcardQuery, self).__init__(*args, **kwargs)
+
+class CustomScoreQuery(Query):
+    _internal_name = "custom_score"
+
+    def __init__(self, query=None, script=None, params=None, lang=None,
+                 **kwargs):
+        super(CustomScoreQuery, self).__init__(**kwargs)
+        self.query = query
+        self.script = script
+        self.lang = lang
+        if params is None:
+            params = {}
+        self.params = params
+
+    def add_param(self, name, value):
+        """
+        Add a parameter
+        """
+        self.params[name] = value
+
+    def serialize(self):
+        data = {}
+        if not self.query:
+            raise RuntimeError("A least a query must be declared")
+        data['query'] = self.query.serialize()
+        if not self.script:
+            raise RuntimeError("A script must be provided")
+        data['script'] = self.script
+        if self.params:
+            data['params'] = self.params
+        if self.lang:
+            data['lang'] = self.lang
+        return {self._internal_name:data}
+
+    def __repr__(self):
+        return str(self.q)

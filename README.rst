@@ -144,6 +144,11 @@ For more examples looks at the tests.
 Changelog
 =========
 
+Note for next release - the order of geolocation parameters expected by
+elasticsearch changed between ES 0.14.4 and ES 0.15, from [lat, lon] to [lon,
+lat].  Clients will need to update accordingly, or use an object with named
+parameters.
+
 v. 0.14.0: Added delete of mapping type.
 
            Embedded urllib3 to be buildout safe and for users sake.
@@ -170,6 +175,13 @@ v. 0.14.0: Added delete of mapping type.
 
            Added is_empty to ConstantScoreQuery and fixed some bad behaviour.
 
+           Added CustomScoreQuery.
+
+           Added parent/children indexing.
+
+           Added dump commands in a script file "curl" way.
+
+           Added a lot of fix from Richard Boulton.
 
 v. 0.13.1: Added jython support (HTTP only for now).
 
@@ -228,7 +240,6 @@ TODO
 - cleanup
 - add coverage
 - add jython native client protocol
-- add parent/children management
 
 License
 =======

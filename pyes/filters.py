@@ -9,7 +9,7 @@ from es import encode_json
 class Filter(object):
     def __init__(self, **kwargs):
         """
-        fields: if is [], the _source is not returned
+        Base Object for every Filter Object
         """
 
     @property
@@ -198,6 +198,33 @@ class TermFilter(Filter):
             raise RuntimeError("A least a field/value pair must be added")
         return {self._internal_name:self._values}
 
+class ExistsFilter(TermFilter):
+    _internal_name = "exists"
+    def __init__(self, field=None, **kwargs):
+        super(ExistsFilter, self).__init__(field="field", value=field, **kwargs)
+
+class MissingFilter(TermFilter):
+    _internal_name = "missing"
+    def __init__(self, field=None, **kwargs):
+        super(MissingFilter, self).__init__(field="field", value=field, **kwargs)
+
+class RegexTermFilter(Filter):
+    _internal_name = "regex_term"
+
+    def __init__(self, field=None, value=None, **kwargs):
+        super(RegexTermFilter, self).__init__(**kwargs)
+        self._values = {}
+
+        if field is not None and value is not None:
+            self.add(field, value)
+
+    def add(self, field, value):
+        self._values[field] = value
+
+    def serialize(self):
+        if not self._values:
+            raise RuntimeError("A least a field/value pair must be added")
+        return {self._internal_name:self._values}
 
 class TermsFilter(Filter):
     _internal_name = "terms"
@@ -219,7 +246,7 @@ class TermsFilter(Filter):
 
 class QueryFilter(Filter):
     _internal_name = "query"
-    
+
     def __init__(self, query, **kwargs):
         super(QueryFilter, self).__init__(**kwargs)
         self._query = query
@@ -319,15 +346,22 @@ class MatchAllFilter(Filter):
 
 
 class HasChildFilter(Filter):
+    """
+    The has_child filter accepts a query and the child type to run against, 
+    and results in parent documents that have child docs matching the query
+    """
     _internal_name = "has_child"
-    def __init__(self, type, filter, **kwargs):
+    def __init__(self, type, filter, _scope=None, **kwargs):
         super(HasChildFilter, self).__init__(**kwargs)
         self.filter = filter
         self.type = type
+        self._scope = _scope
 
     def serialize(self):
         if not isinstance(self.filter, Filter):
             raise RuntimeError("NotFilter argument should be a Filter")
-
-        return {self._internal_name: {"query": self.filter.serialize(),
-                                      "type":self.type}}
+        data = {"query": self.filter.serialize(),
+                "type":self.type}
+        if self._scope is not None:
+            data['_scope'] = self._scope
+        return {self._internal_name: data}

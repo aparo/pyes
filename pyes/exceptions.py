@@ -3,73 +3,71 @@
 
 __author__ = 'Alberto Paro'
 
-__all__ = ['NoServerAvailable', "QueryError", "NotFoundException", 
-           "IndexMissingException", "SearchPhaseExecutionException",
-           "InvalidQuery", "InvalidParameterQuery", "MaxRetryError"]
+__all__ = ['NoServerAvailable',
+           "QueryError",
+           "NotFoundException",
+           "AlreadyExistsException",
+           "IndexMissingException",
+           "SearchPhaseExecutionException",
+           "InvalidQuery",
+           "InvalidParameterQuery",
+           "QueryParameterError",
+           "ReplicationShardOperationFailedException",
+           "ClusterBlockException",
+           "MapperParsingException",
+           "ElasticSearchException",
+          ]
 
 class NoServerAvailable(Exception):
     pass
 
-class MaxRetryError(Exception):
-    pass
 
 class InvalidQuery(Exception):
-    def _get_message(self): 
-        return self._message
-    def _set_message(self, message): 
-        self._message = message
-    message = property(_get_message, _set_message)
+    pass
 
 class InvalidParameterQuery(InvalidQuery):
     pass
 
 class QueryError(Exception):
-    def _get_message(self): 
-        return self._message
-    def _set_message(self, message): 
-        self._message = message
-    message = property(_get_message, _set_message)
-    
-class IndexMissingException(Exception):
-    def _get_message(self): 
-        return self._message
-    def _set_message(self, message): 
-        self._message = message
-    message = property(_get_message, _set_message)
+    pass
 
 class QueryParameterError(Exception):
-    def _get_message(self): 
-        return self._message
-    def _set_message(self, message): 
-        self._message = message
-
-    message = property(_get_message, _set_message)
-    
-class NotFoundException(Exception):
-    def _get_message(self): 
-        return self._message
-    def _set_message(self, message): 
-        self._message = message
-    message = property(_get_message, _set_message)
-    
-class SearchPhaseExecutionException(Exception):
-    def _get_message(self): 
-        return self._message
-    def _set_message(self, message): 
-        self._message = message
-    message = property(_get_message, _set_message)
-
-class ReplicationShardOperationFailedException(Exception):
-    def _get_message(self): 
-        return self._message
-    def _set_message(self, message): 
-        self._message = message
-    message = property(_get_message, _set_message)
+    pass
 
 
-class ClusterBlockException(Exception):
-    def _get_message(self): 
-        return self._message
-    def _set_message(self, message): 
-        self._message = message
-    message = property(_get_message, _set_message)
+class ElasticSearchException(Exception):
+    """Base class of exceptions raised as a result of parsing an error return
+    from ElasticSearch.
+
+    An exception of this class will be raised if no more specific subclass is
+    appropriate.
+
+    """
+    def __init__(self, error, status=None, result=None):
+        super(ElasticSearchException, self).__init__(error)
+        self.status = status
+        self.result = result
+
+class ElasticSearchIllegalArgumentException(ElasticSearchException):
+    pass
+
+class IndexMissingException(ElasticSearchException):
+    pass
+
+class NotFoundException(ElasticSearchException):
+    pass
+
+class AlreadyExistsException(ElasticSearchException):
+    pass
+
+class SearchPhaseExecutionException(ElasticSearchException):
+    pass
+
+class ReplicationShardOperationFailedException(ElasticSearchException):
+    pass
+
+class ClusterBlockException(ElasticSearchException):
+    pass
+
+class MapperParsingException(ElasticSearchException):
+    pass

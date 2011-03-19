@@ -10,6 +10,7 @@ import logging
 import random
 import threading
 import time
+import urllib
 from pyes.exceptions import NoServerAvailable
 import urllib3
 import urllib

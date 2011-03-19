@@ -5,7 +5,6 @@ Unit tests for pyes.  These require an es server with thrift plugin running on t
 """
 import unittest
 from pyes.tests import ESTestCase
-from pyes import TermQuery
 
 class ClusterTestCase(ESTestCase):
     def setUp(self):
@@ -53,6 +52,6 @@ class ClusterTestCase(ESTestCase):
         result = self.conn.cluster_health()
         print "health"
         print result
-        
+
 if __name__ == "__main__":
     unittest.main()

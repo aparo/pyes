@@ -5,8 +5,8 @@ Unit tests for pyes.  These require an es server with thrift plugin running on t
 """
 import unittest
 from pyes.tests import ESTestCase
-from pyes import *
-from time import sleep
+from pyes import TermQuery
+from datetime import datetime
 
 class MultifieldTestCase(ESTestCase):
     def setUp(self):
@@ -38,10 +38,59 @@ class MultifieldTestCase(ESTestCase):
                                          u'store': u'yes',
                                          "term_vector" : "no",
                                          u'type': u'string'}
-                                        
+
                                         }
 
                  },
+#                u'value': {"type" : "multi_field",
+#                                  "fields":{
+#                                     u'string':{
+#                                        u'boost': 1.0,
+#                                         u'index': u'analyzed',
+#                                         u'omit_norms': False,
+#                                         u'omit_term_freq_and_positions': False,
+#                                         u'store': u'yes',
+#                                         "term_vector" : "with_positions_offsets",
+#                                         u'type': u'string'},
+#                                     u'ustring':{u'boost': 1.0,
+#                                         u'index': u'not_analyzed',
+#                                         u'omit_norms': False,
+#                                         u'omit_term_freq_and_positions': False,
+#                                         u'store': u'yes',
+#                                         "term_vector" : "no",
+#                                         u'type': u'string'},
+#                                     u'long':{u'boost': 1.0,
+#                                         u'index': u'not_analyzed',
+#                                         u'omit_norms': False,
+#                                         u'omit_term_freq_and_positions': False,
+#                                         u'store': u'yes',
+#                                         "term_vector" : "no",
+#                                         u'type': u'long'},
+#                                     u'date':{u'boost': 1.0,
+#                                         u'index': u'not_analyzed',
+#                                         u'omit_norms': False,
+#                                         u'omit_term_freq_and_positions': False,
+#                                         u'store': u'yes',
+#                                         "term_vector" : "no",
+#                                         u'type': u'date'},
+#                                     u'bool':{u'boost': 1.0,
+#                                         u'index': u'not_analyzed',
+#                                         u'omit_norms': False,
+#                                         u'omit_term_freq_and_positions': False,
+#                                         u'store': u'yes',
+#                                         "term_vector" : "no",
+#                                         u'type': u'boolean'},
+#                                     u'double':{u'boost': 1.0,
+#                                         u'index': u'not_analyzed',
+#                                         u'omit_norms': False,
+#                                         u'omit_term_freq_and_positions': False,
+#                                         u'store': u'yes',
+#                                         "term_vector" : "no",
+#                                         u'type': u'double'}
+#
+#                                        }
+#
+#                 },
                  u'pos': {'store': 'yes',
                             'type': u'integer'},
                  u'uuid': {'boost': 1.0,
@@ -50,26 +99,30 @@ class MultifieldTestCase(ESTestCase):
                            'type': u'string'}}
         self.conn.create_index("test-index")
         res = self.conn.put_mapping("test-type", {'properties':mapping}, ["test-index"])
-        self.dump(res)
         self.conn.index({"name":"Joe Tester", "parsedtext":"Joe Testere nice guy", "uuid":"11111", "position":1}, "test-index", "test-type", 1)
         self.conn.index({"name":"Bill Baloney", "parsedtext":"Joe Testere nice guy", "uuid":"22222", "position":2}, "test-index", "test-type", 2)
+        self.conn.index({"value":"Joe Tester"}, "test-index", "test-type")
+        self.conn.index({"value":123343543536}, "test-index", "test-type")
+        self.conn.index({"value":True}, "test-index", "test-type")
+        self.conn.index({"value":43.32}, "test-index", "test-type")
+        self.conn.index({"value":datetime.now()}, "test-index", "test-type")
         self.conn.refresh(["test-index"])
-
-        #Sleep to allow ElasticSearch to set up 
-        #mapping and indices before running tests
-        #sleep(0.5)
 
     def test_TermQuery(self):
         q = TermQuery("name", "joe")
-        result = self.conn.search(query = q, indexes=["test-index"])
+        result = self.conn.search(query=q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
 
         q = TermQuery("name", "joe", 3)
-        result = self.conn.search(query = q, indexes=["test-index"])
+        result = self.conn.search(query=q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
-        
+
         q = TermQuery("name", "joe", "3")
-        result = self.conn.search(query = q, indexes=["test-index"])
+        result = self.conn.search(query=q, indexes=["test-index"])
+        self.assertEquals(result['hits']['total'], 1)
+
+        q = TermQuery("value", 43.32)
+        result = self.conn.search(query=q, indexes=["test-index"])
         self.assertEquals(result['hits']['total'], 1)
 
 

@@ -6,17 +6,22 @@ Unit tests for pyes.  These require an es server with thrift plugin running on t
 import unittest
 from pyes.tests import ESTestCase
 from pyes import TermQuery
+from pyes.exceptions import AlreadyExistsException
 from time import sleep
 
 class IndexingTestCase(ESTestCase):
     def setUp(self):
         super(IndexingTestCase, self).setUp()
+        self.conn.delete_index_if_exists("test-index")
+        self.conn.delete_index_if_exists("test-index2")
+        self.conn.delete_index_if_exists("another-index")
         self.conn.create_index("test-index")
         self.conn.create_index("test-index2")
 
-        #Sleep to allow ElasticSearch to set up 
-        #mapping and indices before running tests
-        #sleep(0.5)
+    def tearDown(self):
+        self.conn.delete_index_if_exists("test-index")
+        self.conn.delete_index_if_exists("test-index2")
+        self.conn.delete_index_if_exists("another-index")
 
     def testCollectInfo(self):
         """
@@ -43,7 +48,7 @@ class IndexingTestCase(ESTestCase):
 
     def testExplicitIndexCreate(self):
         """Creazione indice"""
-        result = self.conn.delete_index("test-index2")
+        self.conn.delete_index("test-index2")
         result = self.conn.create_index("test-index2")
         self.assertResultContains(result, {'acknowledged': True, 'ok': True})
 
@@ -60,12 +65,10 @@ class IndexingTestCase(ESTestCase):
 
     def testCannotCreateExistingIndex(self):
         self.conn.create_index("another-index")
-        result = self.conn.create_index("another-index")
+        self.assertRaises(AlreadyExistsException, self.conn.create_index, "another-index")
         self.conn.delete_index("another-index")
-        self.assertResultContains(result, {'error': '[another-index] Already exists'})
 
     def testPutMapping(self):
-        result = self.conn.create_index("test-index")
         result = self.conn.put_mapping("test-type", {"test-type" : {"properties" : {"name" : {"type" : "string", "store" : "yes"}}}}, indexes=["test-index"])
         self.assertResultContains(result, {'acknowledged': True, 'ok': True})
 
@@ -134,7 +137,12 @@ class IndexingTestCase(ESTestCase):
         sleep(0.5)
         result = self.conn.morelikethis("test-index", "test-type", 1, ['name'], min_term_freq=1, min_doc_freq=1)
         del result[u'took']
-        self.assertResultContains(result, {u'hits': {u'hits': [], u'total': 0, u'max_score': None}, u'_shards': {u'successful': 5, u'failed': 0, u'total': 5}})
+        self.assertResultContains(result, {u'_shards': {u'successful': 5, u'failed': 0, u'total': 5}})
+        self.assertTrue(u'hits' in result)
+        self.assertResultContains(result['hits'], {u'hits': [
+                                  {u'_score': 0.19178301, u'_type': u'test-type', u'_id': u'3', u'_source': {u'name': u'Joe Tested'}, u'_index': u'test-index', u'_version': 1},
+                                  {u'_score': 0.19178301, u'_type': u'test-type', u'_id': u'2', u'_source': {u'name': u'Joe Tester'}, u'_index': u'test-index', u'_version': 1}
+                                  ], u'total': 2, u'max_score': 0.19178301})
 
 if __name__ == "__main__":
     unittest.main()

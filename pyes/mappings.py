@@ -24,6 +24,7 @@ class AbstractField(object):
                  term_vector="no", omit_norms=True,
                  omit_term_freq_and_positions=True,
                  type=None, index_name=None,
+                 analyzer=None,
                  index_analyzer=None,
                  search_analyzer=None,
                  name=None):
@@ -35,6 +36,7 @@ class AbstractField(object):
         self.omit_term_freq_and_positions = omit_term_freq_and_positions
         self.index_name = index_name
         self.type = type
+        self.analyzer = analyzer
         self.index_analyzer = index_analyzer
         self.search_analyzer = search_analyzer
         self.name = name
@@ -60,6 +62,8 @@ class AbstractField(object):
             result['omit_term_freq_and_positions'] = self.omit_term_freq_and_positions
         if self.index_name:
             result['index_name'] = self.index_name
+        if self.analyzer:
+            result['analyzer'] = self.analyzer
         if self.index_analyzer:
             result['index_analyzer'] = self.index_analyzer
         if self.search_analyzer:
@@ -80,6 +84,36 @@ class StringField(AbstractField):
             result['null_value'] = self.null_value
         if self.include_in_all is not None:
             result['include_in_all'] = self.include_in_all
+        return result
+
+class GeoPointField(AbstractField):
+    def __init__(self, null_value=None, include_in_all=None,
+                 lat_lon=None, geohash=None, geohash_precision=None,
+                 *args, **kwargs):
+        super(GeoPointField, self).__init__(**kwargs)
+        self.null_value = null_value
+        self.include_in_all = include_in_all
+        self.lat_lon = lat_lon
+        self.geohash = geohash
+        self.geohash_precision = geohash_precision
+        self.type = "geo_point"
+
+    def to_json(self):
+        result = super(GeoPointField, self).to_json()
+        if self.null_value is not None:
+            result['null_value'] = self.null_value
+        if self.include_in_all is not None:
+            result['include_in_all'] = self.include_in_all
+        if self.lat_lon is not None:
+            result['lat_lon'] = self.lat_lon
+        if self.geohash is not None:
+            result['geohash'] = self.geohash
+        if self.geohash_precision is not None:
+            try:
+                int(self.geohash_precision)
+            except ValueError:
+                raise ValueError("geohash_precision must be an integer")
+            result['geohash_precision'] = self.geohash_precision
         return result
 
 class NumericFieldAbstract(AbstractField):
@@ -109,6 +143,11 @@ class LongField(NumericFieldAbstract):
     def __init__(self, *args, **kwargs):
         super(LongField, self).__init__(*args, **kwargs)
         self.type = "long"
+
+class FloatField(NumericFieldAbstract):
+    def __init__(self, *args, **kwargs):
+        super(FloatField, self).__init__(*args, **kwargs)
+        self.type = "float"
 
 class DoubleField(NumericFieldAbstract):
     def __init__(self, *args, **kwargs):
@@ -157,11 +196,36 @@ class MultiField(object):
         if self.fields:
             for name, value in self.fields.items():
                 result['fields'][name] = value.to_json()
+        if self.path:
+            result['path'] = self.path
+        return result
+
+class AttachmentField(object):
+    """An attachment field.
+
+    Requires the mapper-attachments plugin to be installed to be used.
+
+    """
+    def __init__(self, name, type=None, path=None, fields=None):
+        self.name = name
+        self.type = "attachment"
+        self.path = path
+        self.fields = dict([(name, get_field(name, data)) for name, data in fields.items()])
+
+    def to_json(self):
+        result_fields = dict((name, value.to_json())
+                             for (name, value) in self.fields.items())
+        result = dict(type=self.type, fields=result_fields)
+        if self.path:
+            result['path'] = self.path
         return result
 
 class ObjectField(object):
     def __init__(self, name=None, type=None, path=None, properties=None,
-                 dynamic=None, enabled=None, include_in_all=None):
+                 dynamic=None, enabled=None, include_in_all=None,
+                 _id=False, _type=False, _source=None, _all=None,
+                 _analyzer=None, _boost=None,
+                 _parent=None, _index=None, _routing=None):
         self.name = name
         self.type = "object"
         self.path = path
@@ -169,6 +233,15 @@ class ObjectField(object):
         self.include_in_all = include_in_all
         self.dynamic = dynamic
         self.enabled = enabled
+        self._id = _id
+        self._type = _type
+        self._source = _source
+        self._all = _all
+        self._analyzer = _analyzer
+        self._boost = _boost
+        self._parent = _parent
+        self._index = _index
+        self._routing = _routing
         if properties:
             self.properties = dict([(name, get_field(name, data)) for name, data in properties.items()])
         else:
@@ -183,6 +256,24 @@ class ObjectField(object):
     def to_json(self):
         result = {"type": self.type,
                   "properties": {}}
+        if self._id:
+            result['_id'] = {"store":True}
+        if self._type:
+            result['_type'] = {"store":True}
+        if self._source is not None:
+            result['_source'] = self._source
+        if self._all is not None:
+            result['_all'] = self._all
+        if self._analyzer is not None:
+            result['_analyzer'] = self._analyzer
+        if self._boost is not None:
+            result['_boost'] = self._boost
+        if self._parent is not None:
+            result['_parent'] = self._parent
+        if self._index:
+            result['_index'] = {"store":True}
+        if self._routing is not None:
+            result['_routing'] = self._routing
         if self.dynamic is not None:
             result['dynamic'] = self.dynamic
         if self.enabled is not None:
@@ -270,12 +361,18 @@ def get_field(name, data):
         return IntegerField(name=name, **data)
     elif type == "long":
         return LongField(name=name, **data)
+    elif type == "float":
+        return FloatField(name=name, **data)
     elif type == "double":
         return DoubleField(name=name, **data)
     elif type == "date":
         return DateField(name=name, **data)
     elif type == "multi_field":
         return MultiField(name=name, **data)
+    elif type == "geo_point":
+        return GeoPointField(name=name, **data)
+    elif type == "attachment":
+        return AttachmentField(name=name, **data)
     elif type == "object":
         if '_all' in data:
             return DocumentObjectField(name=name, **data)

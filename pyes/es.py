@@ -733,6 +733,23 @@ class ES(object):
             raise pyes.exceptions.InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
 
         return self._query_call("_search", body, indexes, doc_types, **query_params)
+    
+    def scan(self, query, indexes=None, doc_types=None, scroll_timeout="10m", **query_params):
+        """Return a generator which will scan against one or more indices and iterate over the search hits. (currently support only by ES Master)
+
+        `query` must be a Search object, a Query object, or a custom
+        dictionary of search parameters using the query DSL to be passed
+        directly.
+
+        """
+        results = self.search(query=query, indexes=indexes, doc_types=doc_types, search_type="scan", scroll=scroll_timeout, **query_params)
+        while True:
+            scroll_id = results["_scroll_id"]
+            results = self._send_request('GET', "_search/scroll", scroll_id, {"scroll":scroll_timeout})
+            total = results["hits"]["total"]
+            if not total:
+                break
+            yield results
 
     def reindex(self, query, indexes=None, doc_types=None, **query_params):
         """

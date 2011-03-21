@@ -604,7 +604,7 @@ class ES(object):
         path = self._make_path(parts)
         return self._send_request('GET', path)
 
-    def index(self, doc, index, doc_type, id=None, parent=None, force_insert=False, bulk=False, querystring_args=None):
+    def index(self, doc, index, doc_type, id=None, parent=None, force_insert=False, bulk=False, version=None, querystring_args=None):
         """
         Index a typed JSON document into a specific index and make it searchable.
         """
@@ -620,6 +620,8 @@ class ES(object):
             cmd = { optype : { "_index" : index, "_type" : doc_type}}
             if parent:
                 cmd[optype]['_parent'] = parent
+            if version:
+                cmd[optype]['_version'] = version
             if id:
                 cmd[optype]['_id'] = id
             self.bulk_data.write(json.dumps(cmd, cls=self.encoder))
@@ -638,6 +640,8 @@ class ES(object):
 
         if parent:
             querystring_args['parent'] = parent
+        if version:
+            querystring_args['version'] = version
 
         if id is None:
             request_method = 'POST'

@@ -88,6 +88,7 @@ class Search(object):
                  sort=None,
                  explain=False,
                  facet=None,
+                 version=None,
                  index_boost={}):
         """
         fields: if is [], the _source is not returned
@@ -100,6 +101,7 @@ class Search(object):
         self.sort = sort
         self.explain = explain
         self.facet = facet or FacetFactory()
+        self.version = version
         self.index_boost = index_boost
 
     def get_facet_factory(self):
@@ -129,6 +131,8 @@ class Search(object):
             res['sort'] = self.sort
         if self.explain:
             res['explain'] = self.explain
+        if self.version:
+            res['version'] = self.version
         if self.index_boost:
             res['indices_boost'] = self.index_boost
         if self.facet.facets:

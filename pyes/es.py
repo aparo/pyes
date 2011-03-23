@@ -704,13 +704,15 @@ class ES(object):
         path = self._make_path([index, doc_type])
         return self._send_request('DELETE', path)
 
-    def get(self, index, doc_type, id, fields=None, **get_params):
+    def get(self, index, doc_type, id, fields=None, routing=None, **get_params):
         """
         Get a typed JSON document from an index based on its id.
         """
         path = self._make_path([index, doc_type, id])
         if fields is not None:
             get_params["fields"] = ",".join(fields)
+        if routing:
+            get_params["routing"] = routing
         return self._send_request('GET', path, params=get_params)
 
     def search(self, query, indexes=None, doc_types=None, **query_params):

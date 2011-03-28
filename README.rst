@@ -149,6 +149,52 @@ elasticsearch changed between ES 0.14.4 and ES 0.15, from [lat, lon] to [lon,
 lat].  Clients will need to update accordingly, or use an object with named
 parameters.
 
+v. 0.15.0:
+	
+           Only require simplejson for python < 2.6 (matterkkila)
+
+           Added basic version support to ES.index and Search (merrellb)
+
+           Added scan method to ES.  This is only supported on ES Master (pre 0.16) (merrellb)
+
+           Added GeoPointField to mapping types (merrellb)
+
+           Disable thrift in setup.py. 
+
+           Added missing _routing property in ObjectField 
+
+           Added ExistsFilter 
+
+           Improved HasChildren 
+
+           Add min_similarity and prefix_length to flt. 
+
+           Added _scope to HasChildQuery. (andreiz)
+
+           Added parent/child document in test indexing. Added _scope to HasChildFilter. 
+
+           Added MissingFilter as a subclass of TermFilter 
+
+           Fixed error in checking TermsQuery (merrellb)
+
+           If an analyzer is set on a field, the returned mapping will have an analyzer 
+
+           Add a specific error subtype for mapper parsing exceptions (rboulton)
+
+           Add support for Float numeric field mappings (rboulton)
+
+           ES.get() now accepts "fields" as well as other keyword arguments (eg "routing") (rboulton)
+
+           Allow dump_curl to be passed a filehandle (or still a filename), don't for filenames to be in /tmp, and add a basic test of it. 
+
+           Add alias handling (rboulton)
+
+           Add ElasticSearchIllegalArgumentException - used for example when writing to an alias which refers to more than one index. (rboulton)
+
+           Handle errors produced by deleting a missing document, and add a test for it. (rboulton)
+
+           Split Query object into a Search object, for the search specific parts, and a Query base class.  Allow ES.search() to take a query or a search object.  Make some of the methods of Query base classes chainable, where that is an obviously reasonable thing to do. (rboulton)
+
 v. 0.14.0: Added delete of mapping type.
 
            Embedded urllib3 to be buildout safe and for users sake.

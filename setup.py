@@ -26,7 +26,8 @@ class QuickRunTests(TestCommand):
         TestCommand.run(self, *args, **kwargs)
 
 
-install_requires = ["urllib3", "simplejson"]
+install_requires = ["urllib3"]
+
 #if not sys.platform.startswith("java"):
 #    install_requires += [ "thrift", ]    
 try:
@@ -34,6 +35,12 @@ try:
 except ImportError:
     install_requires.append("importlib")
 
+try:
+    # For Python >= 2.6
+    import json
+except ImportError:
+    # For Python < 2.6 or people using a newer version of simplejson
+    install_requires.append("simplejson")
 
 py_version = sys.version_info
 if not sys.platform.startswith("java") and sys.version_info < (2, 6):

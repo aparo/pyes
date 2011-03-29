@@ -12,7 +12,7 @@ from pyes.utils import keys_to_string
 check_values = {
                 'index': ['no', 'analyzed', 'not_analyzed'],
                 'term_vector': ['no', 'yes', 'with_offsets', 'with_positions', 'with_positions_offsets'],
-                'type': ['float', 'double', 'integer', 'long'],
+                'type': ['float', 'double', 'short', 'integer', 'long'],
                 'store': ['yes', 'no'],
                 'index_analyzer' : [],
                 'search_analyzer' : [],
@@ -134,6 +134,11 @@ class NumericFieldAbstract(AbstractField):
             result['precision_step'] = self.precision_step
         return result
 
+class ShortField(NumericFieldAbstract):
+    def __init__(self, *args, **kwargs):
+        super(ShortField, self).__init__(*args, **kwargs)
+        self.type = "short"
+        
 class IntegerField(NumericFieldAbstract):
     def __init__(self, *args, **kwargs):
         super(IntegerField, self).__init__(*args, **kwargs)
@@ -357,6 +362,8 @@ def get_field(name, data):
         return StringField(name=name, **data)
     elif type == "boolean":
         return BooleanField(name=name, **data)
+    elif type == "short":
+        return ShortField(name=name, **data)
     elif type == "integer":
         return IntegerField(name=name, **data)
     elif type == "long":

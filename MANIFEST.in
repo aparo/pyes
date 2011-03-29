@@ -10,12 +10,10 @@ include pavement.py
 include setup.cfg
 recursive-include bin *
 recursive-include pyes *.py
-recursive-include docs *
 recursive-include contrib *
 recursive-include examples *
+prune docs/*
 prune tests/*.pyc
-prune docs/*.pyc
 prune contrib/*.pyc
 prune pyes/*.pyc
 prune bin/*.pyc
-prune docs/.build

@@ -11,19 +11,19 @@
 
 pyes is a connector to use elasticsearch from python.
 
-This version requires elasticsearch 0.12 or above.
+This version requires elasticsearch 0.15 or above.
 
 Features
 ========
 
 - Thrift/HTTP protocols
-- Bulk insert
+- Bulk insert/delete
 - Index management
 - Every search query types
 - Facet Support
 - Geolocalization support
 - Highlighting
-- Initial River support
+- River support
 
 Connecting
 ==========
@@ -148,6 +148,10 @@ Note for next release - the order of geolocation parameters expected by
 elasticsearch changed between ES 0.14.4 and ES 0.15, from [lat, lon] to [lon,
 lat].  Clients will need to update accordingly, or use an object with named
 parameters.
+
+v. 0.16.0:
+
+           Bulk delete (acdha).
 
 v. 0.15.0:
 	

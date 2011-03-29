@@ -60,7 +60,7 @@ setup(
     url=distmeta.__homepage__,
     platforms=["any"],
     license="BSD",
-    packages=find_packages(exclude=['ez_setup', 'tests', 'tests.*']),
+    packages=find_packages(exclude=['ez_setup', 'tests', 'tests.*', "docs.*"]),
     scripts=[],
     zip_safe=False,
     install_requires=install_requires,

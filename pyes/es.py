@@ -690,10 +690,20 @@ class ES(object):
         data = self.get(index, doc_type, id)
         return data["_source"]['_name'], base64.standard_b64decode(data["_source"]['content'])
 
-    def delete(self, index, doc_type, id):
+    def delete(self, index, doc_type, id, bulk=False):
         """
         Delete a typed JSON document from a specific index based on its id.
+        If bulk is True, the delete operation is put in bulk mode.
         """
+        if bulk:
+            cmd = { "delete" : { "_index" : index, "_type" : doc_type,
+                                "_id": id}}
+            self.bulk_data.write(json.dumps(cmd, cls=self.encoder))
+            self.bulk_data.write("\n")
+            self.bulk_items += 1
+            self.flush_bulk()
+            return
+
         path = self._make_path([index, doc_type, id])
         return self._send_request('DELETE', path)
 
@@ -739,7 +749,7 @@ class ES(object):
             raise pyes.exceptions.InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
 
         return self._query_call("_search", body, indexes, doc_types, **query_params)
-    
+
     def scan(self, query, indexes=None, doc_types=None, scroll_timeout="10m", **query_params):
         """Return a generator which will scan against one or more indices and iterate over the search hits. (currently support only by ES Master)
 

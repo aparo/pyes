@@ -793,7 +793,7 @@ class TermQuery(Query):
         self._values = {}
 
         if field is not None and value is not None:
-            self.add(field, value)
+            self.add(field, value, boost)
 
     def add(self, field, value, boost=None):
         if not value.strip():

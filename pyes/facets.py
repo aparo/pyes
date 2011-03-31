@@ -167,7 +167,7 @@ class StatisticalFacet(Facet):
 class TermFacet(Facet):
     _internal_name = "terms"
 
-    def __init__(self, field, name=None, size=10,
+    def __init__(self, field=None, fields=None, name=None, size=10,
                  order=None, exclude=None,
                  regex=None, regex_flags="DOTALL",
                  script=None, **kwargs):
@@ -184,7 +184,14 @@ class TermFacet(Facet):
         self.script = script
 
     def serialize(self):
-        data = {'field':self.field}
+        if self.fields:
+            data = {'fields':self.fields}
+        else:
+            if self.field:
+                data = {'field':self.field}
+            else:
+                raise RuntimeError("Field or Fields is required:%s" % self.order)
+
         if self.size:
             data['size'] = self.size
 

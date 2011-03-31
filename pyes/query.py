@@ -181,6 +181,11 @@ class Query(object):
     """Base class for all queries.
 
     """
+
+    def __init__(self, *args, **kwargs):
+        if len(args) > 0 or len(kwargs) > 0:
+            raise RuntimeWarning("No all parameters are processed by derivated query object")
+
     def serialize(self):
         """Serialize the query to a structure using the query DSL.
 

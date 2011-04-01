@@ -1,8 +1,10 @@
+.. _es-guide-reference-api-search-facets-date-histogram-facet:
+
 ====================
 Date Histogram Facet
 ====================
 
-A specific histogram facet that can work with **date** field types enhancing it over the regular :doc:`histogram facet <./histogram-facet.html>`.  Here is a quick example:
+A specific histogram facet that can work with **date** field types enhancing it over the regular :ref:`histogram facet <es-guide-reference-api-search-facets-histogram-facet>`.  Here is a quick example:
 
 
 .. code-block:: js

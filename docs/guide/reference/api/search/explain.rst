@@ -1,3 +1,5 @@
+.. _es-guide-reference-api-search-explain:
+
 =======
 Explain
 =======
@@ -9,7 +11,7 @@ Enables explanation for each hit on how its score was computed.
 
 
     {
-        :doc:`explain <./>`  in <./>`  true,
+        :ref:`explain <es-guide-reference-api-search>`  in <es-guide-reference-api-search>`  true,
         "query" : {
             "term" : { "user" : "kimchy" }
         }

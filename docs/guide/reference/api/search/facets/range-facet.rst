@@ -1,3 +1,5 @@
+.. _es-guide-reference-api-search-facets-range-facet:
+
 ===========
 Range Facet
 ===========

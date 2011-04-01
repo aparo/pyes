@@ -1,8 +1,10 @@
+.. _es-guide-reference-query-dsl-not-filter:
+
 ==========
 Not Filter
 ==========
 
-A filter that filters out matched documents using a query. This filter is more performant then :doc:`bool <./bool-filter.html>`  filter. Can be placed within queries that accept a filter.
+A filter that filters out matched documents using a query. This filter is more performant then :ref:`bool <es-guide-reference-query-dsl-bool-filter>`  filter. Can be placed within queries that accept a filter.
 
 
 .. code-block:: js

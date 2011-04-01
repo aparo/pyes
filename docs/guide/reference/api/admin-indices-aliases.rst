@@ -1,3 +1,5 @@
+.. _es-guide-reference-api-admin-indices-aliases:
+
 =====================
 Admin Indices Aliases
 =====================

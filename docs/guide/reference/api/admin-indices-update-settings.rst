@@ -1,3 +1,5 @@
+.. _es-guide-reference-api-admin-indices-update-settings:
+
 =============================
 Admin Indices Update Settings
 =============================

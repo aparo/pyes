@@ -1,3 +1,5 @@
+.. _es-guide-reference-mapping-ip-type:
+
 =======
 Ip Type
 =======

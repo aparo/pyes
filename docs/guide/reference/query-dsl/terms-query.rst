@@ -1,3 +1,5 @@
+.. _es-guide-reference-query-dsl-terms-query:
+
 ===========
 Terms Query
 ===========

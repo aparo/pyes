@@ -1,3 +1,5 @@
+.. _es-guide-reference-api-search-from-size:
+
 =========
 From Size
 =========

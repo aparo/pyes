@@ -1,8 +1,10 @@
+.. _es-guide-reference-api-count:
+
 =====
 Count
 =====
 
-The count API allows to easily execute a query and get the number of matches for that query. It can be executed across one or more indices and across one or more types. The query can either be provided using a simple query string as a parameter, or using the :doc:`Query DSL <.//guide/reference/query-dsl>`  defined within the request body. Here is an example:
+The count API allows to easily execute a query and get the number of matches for that query. It can be executed across one or more indices and across one or more types. The query can either be provided using a simple query string as a parameter, or using the :ref:`Query DSL <es-guide-reference-api-guide-reference-query-dsl>`  defined within the request body. Here is an example:
 
 
 .. code-block:: js
@@ -83,7 +85,7 @@ default_operator     The default operator to be used, can be **AND** or **OR**. 
 Request Body
 ============
 
-The count can use the :doc:`Query DSL <.//guide/reference/query-dsl>`  within its body in order to express the query that should be executed. The body content can also be passed as a REST parameter named **source**.
+The count can use the :ref:`Query DSL <es-guide-reference-api-guide-reference-query-dsl>`  within its body in order to express the query that should be executed. The body content can also be passed as a REST parameter named **source**.
 
 
 Note

@@ -1,8 +1,10 @@
+.. _es-guide-reference-index-modules-analysis-standard-analyzer:
+
 =================
 Standard Analyzer
 =================
 
-An analyzer of type **standard** that is built of using :doc:`Standard Tokenizer <./standard-tokenizer.html>`,  with :doc:`Standard Token Filter <./standard-tokenfilter.html>`,  :doc:`Lower Case Token Filter <./lowercase-tokenfilter.html>`,  and :doc:`Stop Token Filter <./stop-tokenfilter.html>`.  
+An analyzer of type **standard** that is built of using :ref:`Standard Tokenizer <es-guide-reference-index-modules-analysis-standard-tokenizer>`,  with :ref:`Standard Token Filter <es-guide-reference-index-modules-analysis-standard-tokenfilter>`,  :ref:`Lower Case Token Filter <es-guide-reference-index-modules-analysis-lowercase-tokenfilter>`,  and :ref:`Stop Token Filter <es-guide-reference-index-modules-analysis-stop-tokenfilter>`.  
 
 The following are settings that can be set for a **standard** analyzer type:
 

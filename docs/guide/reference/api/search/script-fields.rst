@@ -1,8 +1,10 @@
+.. _es-guide-reference-api-search-script-fields:
+
 =============
 Script Fields
 =============
 
-Allows to return a :doc:`script evaluation <.//guide/reference/modules/scripting>`  (based on different fields) for each hit, for example:
+Allows to return a :ref:`script evaluation <es-guide-reference-api-search-guide-reference-modules-scripting>`  (based on different fields) for each hit, for example:
 
 
 .. code-block:: js

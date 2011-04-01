@@ -1,3 +1,5 @@
+.. _es-guide-reference-query-dsl-constant-score-query:
+
 ====================
 Constant Score Query
 ====================

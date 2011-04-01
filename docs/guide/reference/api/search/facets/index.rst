@@ -1,3 +1,5 @@
+.. _es-guide-reference-api-search-facets-index:
+
 ======
 Facets
 ======
@@ -35,7 +37,7 @@ Custom scope names works in conjunction with child queries / filters, allowing t
 filter
 ======
 
-All facets can be configured with an additional filter (explained in the :doc:`Query DSL <.//guide/reference/query-dsl>`  section), which will further reduce the documents they execute on. For example:
+All facets can be configured with an additional filter (explained in the :ref:`Query DSL <es-guide-reference-api-search-facets-guide-reference-query-dsl>`  section), which will further reduce the documents they execute on. For example:
 
 
 .. code-block:: js

@@ -1,3 +1,5 @@
+.. _es-guide-reference-query-dsl-prefix-filter:
+
 =============
 Prefix Filter
 =============

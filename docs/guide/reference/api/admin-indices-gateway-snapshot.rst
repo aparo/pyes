@@ -1,3 +1,5 @@
+.. _es-guide-reference-api-admin-indices-gateway-snapshot:
+
 ==============================
 Admin Indices Gateway Snapshot
 ==============================

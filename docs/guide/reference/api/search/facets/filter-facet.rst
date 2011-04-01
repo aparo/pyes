@@ -1,8 +1,10 @@
+.. _es-guide-reference-api-search-facets-filter-facet:
+
 ============
 Filter Facet
 ============
 
-A facet filter allows to return a count of the hits matching the facet filter. The filter itself can be expressed using the :doc:`Query DSL <.//../../query-dsl/>`.  For example:
+A facet filter allows to return a count of the hits matching the facet filter. The filter itself can be expressed using the :ref:`Query DSL <es-guide-reference-api-query-dsl>`.  For example:
 
 
 .. code-block:: js

@@ -1,8 +1,10 @@
+.. _es-guide-reference-api-search-request-body:
+
 ============
 Request Body
 ============
 
-The search request can be executed with a search DSL, which includes the :doc:`Query DSL <.//guide/reference/query-dsl>`,  within its body. Here is an example:
+The search request can be executed with a search DSL, which includes the :ref:`Query DSL <es-guide-reference-api-search-guide-reference-query-dsl>`,  within its body. Here is an example:
 
 
 .. code-block:: js
@@ -22,12 +24,12 @@ And here is a sample response:
 
 
     {
-        :doc:`_shards <./{>`  s <./{>`  
+        :ref:`_shards <es-guide-reference-api-search-{>`  s <es-guide-reference-api-search-{>`  
             "total" : 5,
             "successful" : 5,
             "failed" : 0
         },
-        :doc:`hits <./{>`  s <./{>`  
+        :ref:`hits <es-guide-reference-api-search-{>`  s <es-guide-reference-api-search-{>`  
             "total" : 1,
             "hits" : [
                 {

@@ -1,8 +1,10 @@
+.. _es-guide-reference-java-api-delete-by-query:
+
 ===============
 Delete By Query
 ===============
 
-The delete by query API allows to delete documents from one or more indices and one or more types based on a query. The query can either be provided the :doc:`Query DSL <.//query_dsl>`.  Here is an example:
+The delete by query API allows to delete documents from one or more indices and one or more types based on a query. The query can either be provided the :ref:`Query DSL <es-guide-reference-java-api-query_dsl>`.  Here is an example:
 
 
 
@@ -18,5 +20,5 @@ The delete by query API allows to delete documents from one or more indices and 
             .actionGet();
 
 
-For more information on the delete by query operation, check out the :doc:`delete_by_query API <.//guide/reference/api/delete-by-query.html>`  docs.
+For more information on the delete by query operation, check out the :ref:`delete_by_query API <es-guide-reference-java-api-guide-reference-api-delete-by-query>`  docs.
 

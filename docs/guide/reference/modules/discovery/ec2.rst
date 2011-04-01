@@ -1,3 +1,5 @@
+.. _es-guide-reference-modules-discovery-ec2:
+
 ===
 Ec2
 ===

@@ -1,3 +1,5 @@
+.. _es-guide-reference-mapping-core-types:
+
 ==========
 Core Types
 ==========
@@ -153,7 +155,7 @@ The following table lists all the attributes that can be used with a date type:
  Attribute             Description                                                                                                                                                                  
 ====================  ==============================================================================================================================================================================
 **index_name**        The name of the field that will be stored in the index. Defaults to the property/field name.                                                                                  
-**format**            The :doc:`date format <./date-format.html>`.  .html>`.  Defaults to **dateOptionalTime**.                                                                                     
+**format**            The :ref:`date format <es-guide-reference-mapping-date-format>`.  rence-mapping-date-format>`.  Defaults to **dateOptionalTime**.                                             
 **store**             Set to **yes** the store actual field in the index, **no** to not store it. Defaults to **no** (note, the JSON document itself is stored, and it can be retrieved from it).   
 **index**             Set to **no** if the value should not be indexed. In this case, **store** should be set to **yes**, since if its not indexed and not stored, there is nothing to do with it.  
 **precision_step**    The precision step (number of terms generated for each number value). Defaults to **4**.                                                                                      

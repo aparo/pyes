@@ -1,8 +1,10 @@
+.. _es-guide-reference-query-dsl-script-filter:
+
 =============
 Script Filter
 =============
 
-A filter allowing to define :doc:`scripts <.//guide/refrence/modules/scripting.html>`  as filters. For example:
+A filter allowing to define :ref:`scripts <es-guide-reference-query-dsl-guide-refrence-modules-scripting>`  as filters. For example:
 
 
 .. code-block:: js

@@ -1,3 +1,5 @@
+.. _es-guide-reference-api-admin-indices-status:
+
 ====================
 Admin Indices Status
 ====================

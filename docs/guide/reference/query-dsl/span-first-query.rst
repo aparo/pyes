@@ -1,3 +1,5 @@
+.. _es-guide-reference-query-dsl-span-first-query:
+
 ================
 Span First Query
 ================

@@ -1,3 +1,5 @@
+.. _es-guide-reference-query-dsl-mlt-field-query:
+
 ===============
 Mlt Field Query
 ===============

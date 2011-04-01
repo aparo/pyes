@@ -1,3 +1,5 @@
+.. _es-guide-reference-query-dsl-filtered-query:
+
 ==============
 Filtered Query
 ==============

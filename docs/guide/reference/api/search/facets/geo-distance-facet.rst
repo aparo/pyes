@@ -1,3 +1,5 @@
+.. _es-guide-reference-api-search-facets-geo-distance-facet:
+
 ==================
 Geo Distance Facet
 ==================

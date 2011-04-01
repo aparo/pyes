@@ -1,3 +1,5 @@
+.. _es-guide-reference-query-dsl-range-query:
+
 ===========
 Range Query
 ===========
@@ -14,7 +16,7 @@ Matches documents with fields that have terms within a certain range. The type o
                 "from" : 10, 
                 "to" : 20, 
                 "include_lower" : true, 
-                :doc:`include_upper <./>`  er <./>`  false, 
+                :ref:`include_upper <es-guide-reference-query-dsl>`  er <es-guide-reference-query-dsl>`  false, 
                 "boost" : 2.0
             }
         }

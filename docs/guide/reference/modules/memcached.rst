@@ -1,8 +1,10 @@
+.. _es-guide-reference-modules-memcached:
+
 =========
 Memcached
 =========
 
-The memcached module allows to expose *elasticsearch* :doc:`API <.//guide/reference/api>`  over the memcached protocol (as closely as possible). 
+The memcached module allows to expose *elasticsearch* :ref:`API <es-guide-reference-modules-guide-reference-api>`  over the memcached protocol (as closely as possible). 
 
 
 It is provided as a plugin called **transport-memcached** and installing is as simply as executing **plugin -install transport-memcached** or downloading the memcached plugin and placing it under the **plugins** directory.
@@ -51,7 +53,7 @@ The following are the settings the can be configured for memcached:
 **memcached.port**    A bind port range. Defaults to **11211-11311**.  
 ====================  =================================================
 
-It also shares the uses the common :doc:`network settings <.//node/network>`.  
+It also shares the uses the common :ref:`network settings <es-guide-reference-modules-node-network>`.  
 
 Disable memcached
 =================

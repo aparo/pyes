@@ -1,8 +1,10 @@
+.. _es-guide-reference-setup-configuration:
+
 =============
 Configuration
 =============
 
-*elasticsearch* configuration files can be found under **ES_HOME/config** folder. The folder comes with two files, the **elasticsearch.yml** for configuring ElasticSearch different :doc:`modules <./../modules>`,  and **logging.yml** for configuring the ElasticSearch logging.
+*elasticsearch* configuration files can be found under **ES_HOME/config** folder. The folder comes with two files, the **elasticsearch.yml** for configuring ElasticSearch different :ref:`modules <es-guide-reference-modules>`,  and **logging.yml** for configuring the ElasticSearch logging.
 
 
 Settings
@@ -92,7 +94,7 @@ This means that every index that gets created on the specific node started with 
     $ elasticsearch -f -Des.index.store.type=memory
 
 
-All of the index level configuration can be found within each :doc:`index module <.//guide/reference/index-modules>`.  
+All of the index level configuration can be found within each :ref:`index module <es-guide-reference-setup-guide-reference-index-modules>`.  
 
 Logging
 =======

@@ -1,8 +1,10 @@
+.. _es-guide-reference-java-api-count:
+
 =====
 Count
 =====
 
-The count API allows to easily execute a query and get the number of matches for that query. It can be executed across one or more indices and across one or more types. The query can be provided using the :doc:`Query DSL <./query-dsl.html>`.  
+The count API allows to easily execute a query and get the number of matches for that query. It can be executed across one or more indices and across one or more types. The query can be provided using the :ref:`Query DSL <es-guide-reference-java-api-query-dsl>`.  
 
 .. code-block:: java
 

@@ -1,3 +1,5 @@
+.. _es-guide-reference-query-dsl-span-not-query:
+
 ==============
 Span Not Query
 ==============

@@ -1,8 +1,10 @@
+.. _es-guide-reference-setup-installation:
+
 ============
 Installation
 ============
 
-After :doc:`downloading <.//download>`  the latest release and extracting it, *elasticsearch* can be started using:
+After :ref:`downloading <es-guide-reference-setup-download>`  the latest release and extracting it, *elasticsearch* can be started using:
 
 
 .. code-block:: bash

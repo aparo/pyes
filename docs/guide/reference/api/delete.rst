@@ -1,3 +1,5 @@
+.. _es-guide-reference-api-delete:
+
 ======
 Delete
 ======
@@ -57,7 +59,7 @@ Though there isn't explicit parameter for parent when deleting, it is important 
 Automatic for the Index
 =======================
 
-The delete operation automatically creates an index if it has not been created before (check out the :doc:`create index API <./../admin/indices/create_index>`  for manually creating an index), and also automatically creates a dynamic type mapping for the specific type if it has not been created before (check out the :doc:`put mapping <./../admin/indices/put_mapping>`  API for manually creating type mapping). 
+The delete operation automatically creates an index if it has not been created before (check out the :ref:`create index API <es-guide-reference-admin-indices-create_index>`  for manually creating an index), and also automatically creates a dynamic type mapping for the specific type if it has not been created before (check out the :ref:`put mapping <es-guide-reference-admin-indices-put_mapping>`  API for manually creating type mapping). 
 
 
 Distributed

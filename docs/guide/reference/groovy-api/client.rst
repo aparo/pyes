@@ -1,3 +1,5 @@
+.. _es-guide-reference-groovy-api-client:
+
 ======
 Client
 ======

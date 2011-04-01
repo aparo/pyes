@@ -1,8 +1,10 @@
+.. _es-guide-reference-api-index:
+
 ===
 Api
 ===
 
-This section describes the REST APIs *elasticsearch* provides (mainly) using JSON. The API is exposed using :doc:`HTTP <.//guide/reference/modules/http.html>`,  :doc:`thrift <.//guide/reference/modules/thrift.html>`,  :doc:`memcached <.//guide/reference/modules/memcached.html>`.  
+This section describes the REST APIs *elasticsearch* provides (mainly) using JSON. The API is exposed using :ref:`HTTP <es-guide-reference-api-guide-reference-modules-http>`,  :ref:`thrift <es-guide-reference-api-guide-reference-modules-thrift>`,  :ref:`memcached <es-guide-reference-api-guide-reference-modules-memcached>`.  
 
 Options
 =======

@@ -1,3 +1,5 @@
+.. _es-guide-reference-api-admin-cluster-state:
+
 ===================
 Admin Cluster State
 ===================

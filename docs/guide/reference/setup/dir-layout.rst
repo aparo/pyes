@@ -1,3 +1,5 @@
+.. _es-guide-reference-setup-dir-layout:
+
 ==========
 Dir Layout
 ==========

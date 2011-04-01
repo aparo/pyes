@@ -1,8 +1,10 @@
+.. _es-guide-reference-query-dsl-has-child-query:
+
 ===============
 Has Child Query
 ===============
 
-The **has_child** query works the same as the :doc:`has_child <./has-child-filter.html>`  filter, by automatically wrapping the filter with a :doc:`constant_score <./constant-score-query.html>`.  It has the same syntax as the :doc:`has_child <./has-child-filter.html>`  filter:
+The **has_child** query works the same as the :ref:`has_child <es-guide-reference-query-dsl-has-child-filter>`  filter, by automatically wrapping the filter with a :ref:`constant_score <es-guide-reference-query-dsl-constant-score-query>`.  It has the same syntax as the :ref:`has_child <es-guide-reference-query-dsl-has-child-filter>`  filter:
 
 
 .. code-block:: js

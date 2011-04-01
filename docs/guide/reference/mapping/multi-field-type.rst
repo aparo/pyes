@@ -1,8 +1,10 @@
+.. _es-guide-reference-mapping-multi-field-type:
+
 ================
 Multi Field Type
 ================
 
-The **multi_field** type allows to map several :doc:`core_types <./../core_types>`  of the same value. This can come very handy, for example, when wanting to map a **string** type, once when its **analyzed** and once when its **not_analyzed**. For example:
+The **multi_field** type allows to map several :ref:`core_types <es-guide-reference-core_types>`  of the same value. This can come very handy, for example, when wanting to map a **string** type, once when its **analyzed** and once when its **not_analyzed**. For example:
 
 
 .. code-block:: js

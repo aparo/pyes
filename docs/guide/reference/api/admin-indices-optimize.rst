@@ -1,3 +1,5 @@
+.. _es-guide-reference-api-admin-indices-optimize:
+
 ======================
 Admin Indices Optimize
 ======================

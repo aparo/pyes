@@ -1,3 +1,5 @@
+.. _es-guide-reference-api-search-sort:
+
 ====
 Sort
 ====
@@ -210,7 +212,7 @@ When sorting on a field, scores are not computed. By setting **track_scores** to
 
 
     {
-        :doc:`track_scores <./>`  es <./>`  true,
+        :ref:`track_scores <es-guide-reference-api-search>`  es <es-guide-reference-api-search>`  true,
         "sort" : [
             { "post_date" : {"reverse" : true} },
             { "name" : "desc" },

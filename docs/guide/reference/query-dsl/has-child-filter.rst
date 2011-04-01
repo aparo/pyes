@@ -1,3 +1,5 @@
+.. _es-guide-reference-query-dsl-has-child-filter:
+
 ================
 Has Child Filter
 ================

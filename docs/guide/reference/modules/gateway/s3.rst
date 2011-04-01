@@ -1,3 +1,5 @@
+.. _es-guide-reference-modules-gateway-s3:
+
 ==
 S3
 ==

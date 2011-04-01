@@ -1,8 +1,10 @@
+.. _es-guide-reference-modules-network:
+
 =======
 Network
 =======
 
-There are several modules within a Node that use network based configuration, for example, the :doc:`transport <./transport.html>`  and :doc:`http <./http.html>`  modules. Node level network settings allows to set common settings that will be shared among all network based modules (unless explicitly overridden in each module).
+There are several modules within a Node that use network based configuration, for example, the :ref:`transport <es-guide-reference-modules-transport>`  and :ref:`http <es-guide-reference-modules-http>`  modules. Node level network settings allows to set common settings that will be shared among all network based modules (unless explicitly overridden in each module).
 
 
 The **network.bind_host** setting allows to control the host different network components will bind on. By default, the bind host will be **anyLocalAddress** (typically **0.0.0.0** or **::0**).

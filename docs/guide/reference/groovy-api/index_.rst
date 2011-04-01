@@ -1,8 +1,10 @@
+.. _es-guide-reference-groovy-api-index_:
+
 ======
 Index_
 ======
 
-The index API is very similar to the :doc:`Java index API <.//guide/reference/java-api/index_.html>`.  The Groovy extension to it is the ability to provide the indexed source using a closure. For example:
+The index API is very similar to the :ref:`Java index API <es-guide-reference-groovy-api-guide-reference-java-api-index_>`.  The Groovy extension to it is the ability to provide the indexed source using a closure. For example:
 
 
 .. code-block:: js

@@ -1,8 +1,10 @@
+.. _es-guide-reference-mapping-root-object-type:
+
 ================
 Root Object Type
 ================
 
-The root object mapping is an :doc:`object type mapping <./object-type.html>`  that maps the root object (the type itself). On top of all the different mappings that can be set using the :doc:`object type mapping <./object-type.html>`,  it allows for additional, type level mapping definitions.
+The root object mapping is an :ref:`object type mapping <es-guide-reference-mapping-object-type>`  that maps the root object (the type itself). On top of all the different mappings that can be set using the :ref:`object type mapping <es-guide-reference-mapping-object-type>`,  it allows for additional, type level mapping definitions.
 
 
 The root object mapping allows to index a JSON document that either starts with the actual mapping type, or only contains its fields. For example, the following **tweet** JSON can be indexed:
@@ -71,7 +73,7 @@ date_formats
     }
 
 
-In the above mapping, if a new JSON field of type string is detected, the date formats specified will be used in order to check if its a date. If it passes parsing, then the field will be declared with **date** type, and will use the matching format as its format attribute. The date format itself is explained :doc:`here <.//date-format.html>`.  
+In the above mapping, if a new JSON field of type string is detected, the date formats specified will be used in order to check if its a date. If it passes parsing, then the field will be declared with **date** type, and will use the matching format as its format attribute. The date format itself is explained :ref:`here <es-guide-reference-mapping-date-format>`.  
 
 The default formats are: **dateOptionalTime** (ISO) and **yyyy/MM/dd HH:mm:ss||yyyy/MM/dd**.
 
@@ -97,8 +99,8 @@ For example, we might want to have all fields to be stored by default, or all `s
                         "mapping" : {
                             "type" : "multi_field",
                             "fields" : {
-                                :doc:`{name}" : {"type <./>`  pe <./>`  "{dynamic_type}", "index" : "analyzed", "store" : "yes"},
-                                :doc:`org" : {"type <./>`  pe <./>`  "{dynamic_type}", "index" : "not_analyzed", "store" : "yes"}
+                                :ref:`{name}" : {"type <es-guide-reference-mapping>`  pe <es-guide-reference-mapping>`  "{dynamic_type}", "index" : "analyzed", "store" : "yes"},
+                                :ref:`org" : {"type <es-guide-reference-mapping>`  pe <es-guide-reference-mapping>`  "{dynamic_type}", "index" : "not_analyzed", "store" : "yes"}
                             }
                         }
                     }

@@ -1,8 +1,10 @@
+.. _es-guide-reference-query-dsl-and-filter:
+
 ==========
 And Filter
 ==========
 
-A filter that matches documents using **AND** boolean operator on other queries. This filter is more performant then :doc:`bool <./bool-filter.html>`  filter. Can be placed within queries that accept a filter.
+A filter that matches documents using **AND** boolean operator on other queries. This filter is more performant then :ref:`bool <es-guide-reference-query-dsl-bool-filter>`  filter. Can be placed within queries that accept a filter.
 
 
 .. code-block:: js

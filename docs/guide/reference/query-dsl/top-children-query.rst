@@ -1,3 +1,5 @@
+.. _es-guide-reference-query-dsl-top-children-query:
+
 ==================
 Top Children Query
 ==================
@@ -22,7 +24,7 @@ The required parameters are the **query** and **type** (the child type to execut
 
     {
         "top_children" : {
-            :doc:`type <./>`  pe <./>`  "blog_tag",
+            :ref:`type <es-guide-reference-query-dsl>`  pe <es-guide-reference-query-dsl>`  "blog_tag",
             "query" : {
                 "term" : {
                     "tag" : "something"
@@ -47,7 +49,7 @@ A **_scope** can be defined on the query allowing to run facets on the same scop
     {
         "top_children" : {
             "_score" : "my_scope",
-            :doc:`type <./>`  pe <./>`  "blog_tag",
+            :ref:`type <es-guide-reference-query-dsl>`  pe <es-guide-reference-query-dsl>`  "blog_tag",
             "query" : {
                 "term" : {
                     "tag" : "something"

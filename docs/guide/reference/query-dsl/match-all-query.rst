@@ -1,3 +1,5 @@
+.. _es-guide-reference-query-dsl-match-all-query:
+
 ===============
 Match All Query
 ===============

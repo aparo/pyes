@@ -1,3 +1,5 @@
+.. _es-guide-reference-api-search-index-boost:
+
 ===========
 Index Boost
 ===========

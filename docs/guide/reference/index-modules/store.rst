@@ -1,3 +1,5 @@
+.. _es-guide-reference-index-modules-store:
+
 =====
 Store
 =====
@@ -11,7 +13,7 @@ The storage module allows to store the index either in memory or using file syst
 When using local gateway (the default), file system storage with *no* in memory storage is required to provide full persistency. This is required since the local gateway constructs its state from the local index state of each node. When using shared gateway (like shared fs, s3), the index can be safely stored in memory (with replicas).
 
 
-Another important aspect of memory based storage is the fact that ElasticSearch supports storing the index in memory *outside of the JVM heap space* using the :doc:`Memory <./#Memory>`  storage type. It translates to the fact that there is no need for extra large JVM heaps (with their own consequences) for storing the index in memory.
+Another important aspect of memory based storage is the fact that ElasticSearch supports storing the index in memory *outside of the JVM heap space* using the :ref:`Memory <es-guide-reference-index-modules-#Memory>`  storage type. It translates to the fact that there is no need for extra large JVM heaps (with their own consequences) for storing the index in memory.
 
 
 The following sections lists all the different storage types supported.

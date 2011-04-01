@@ -1,3 +1,5 @@
+.. _es-guide-reference-api-search-search-type:
+
 ===========
 Search Type
 ===========

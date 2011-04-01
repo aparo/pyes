@@ -1,3 +1,5 @@
+.. _es-guide-reference-api-admin-cluster-nodes-shutdown:
+
 ============================
 Admin Cluster Nodes Shutdown
 ============================

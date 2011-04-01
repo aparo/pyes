@@ -1,3 +1,5 @@
+.. _es-guide-reference-index-modules-analysis-letter-tokenizer:
+
 ================
 Letter Tokenizer
 ================

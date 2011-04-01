@@ -1,8 +1,10 @@
+.. _es-guide-reference-java-api-query-dsl:
+
 =========
 Query Dsl
 =========
 
-elasticsearch provides a full Java query dsl in a similar manner to the REST :doc:`Query DSL <.//guide/reference/query-dsl/>`.  The factory for query builders is **QueryBuilders** and the factory for filter builders is **FilterBuilders**. Here is an example:
+elasticsearch provides a full Java query dsl in a similar manner to the REST :ref:`Query DSL <es-guide-reference-java-api-guide-reference-query-dsl>`.  The factory for query builders is **QueryBuilders** and the factory for filter builders is **FilterBuilders**. Here is an example:
 
 
 .. code-block:: java

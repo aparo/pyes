@@ -1,3 +1,5 @@
+.. _es-guide-appendix-clients:
+
 =======
 Clients
 =======

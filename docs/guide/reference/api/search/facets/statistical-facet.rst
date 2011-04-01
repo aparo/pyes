@@ -1,3 +1,5 @@
+.. _es-guide-reference-api-search-facets-statistical-facet:
+
 =================
 Statistical Facet
 =================
@@ -25,7 +27,7 @@ Statistical facet allows to compute statistical data on a numeric fields. The st
 Script field
 ============
 
-When using **field**, the numeric value of the field is used to compute the statistical information. Sometimes, several fields values represent the statistics we want to compute, or some sort of mathematical evaluation. The script field allows to define a :doc:`script <./../../../../modules/scripting>`  to evaluate, with its value used to compute the statistical information. For example:
+When using **field**, the numeric value of the field is used to compute the statistical information. Sometimes, several fields values represent the statistics we want to compute, or some sort of mathematical evaluation. The script field allows to define a :ref:`script <es-guide-modules-scripting>`  to evaluate, with its value used to compute the statistical information. For example:
 
 
 .. code-block:: js

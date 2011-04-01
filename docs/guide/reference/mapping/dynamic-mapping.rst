@@ -1,8 +1,10 @@
+.. _es-guide-reference-mapping-dynamic-mapping:
+
 ===============
 Dynamic Mapping
 ===============
 
-Default mappings allow to automatically apply generic mapping definition to types that do not have mapping pre defined. This is mainly done thanks to the fact that the :doc:`object mapping <./object-type.html>`  and namely the :doc:`root object mapping <./root-object-type.html>`  allow for schema-less dynamic addition of unmapped fields.
+Default mappings allow to automatically apply generic mapping definition to types that do not have mapping pre defined. This is mainly done thanks to the fact that the :ref:`object mapping <es-guide-reference-mapping-object-type>`  and namely the :ref:`root object mapping <es-guide-reference-mapping-root-object-type>`  allow for schema-less dynamic addition of unmapped fields.
 
 
 The default mapping definition is plain mapping definition that is embedded within the distribution:
@@ -23,7 +25,7 @@ Pretty short, no? Basically, everything is defaulted, especially the dynamic nat
 The dynamic creation of mappings for unmapped types can be completely disabled by setting **index.mapper.dynamic** to **false**.
 
 
-As an example, here is how we can change the default :doc:`date_formats <./date-format.html>`  used in the root and inner object types:
+As an example, here is how we can change the default :ref:`date_formats <es-guide-reference-mapping-date-format>`  used in the root and inner object types:
 
 
 .. code-block:: js

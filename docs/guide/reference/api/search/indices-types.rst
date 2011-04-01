@@ -1,3 +1,5 @@
+.. _es-guide-reference-api-search-indices-types:
+
 =============
 Indices Types
 =============

@@ -1,8 +1,10 @@
+.. _es-guide-reference-api-search-index:
+
 ======
 Search
 ======
 
-The search API allows to execute a search query and get back search hits that match the query. It can be executed across :doc:`indices and types <./indices-types.html>`.  The query can either be provided using a simple :doc:`query string as a parameter <./uri-request.html>`,  or using a :doc:`request body <./request-body.html>`.  
+The search API allows to execute a search query and get back search hits that match the query. It can be executed across :ref:`indices and types <es-guide-reference-api-search-indices-types>`.  The query can either be provided using a simple :ref:`query string as a parameter <es-guide-reference-api-search-uri-request>`,  or using a :ref:`request body <es-guide-reference-api-search-request-body>`.  
 
 Routing
 =======
@@ -26,14 +28,15 @@ In such a case, if we want to search only on the tweets for a specific user, we 
 .. code-block:: js
 
     $ curl -XGET 'http://localhost:9200/twitter/tweet/_search?routing=kimchy' -d '{
-        "filtered" : {
-            "query" : {
-                "query_string" : {
-                    "query" : "some query string here"
+            "filtered" : {
+                "query" : {
+                    "query_string" : {
+                        "query" : "some query string here"
+                    }
+                },
+                "filter" : {
+                    "term" : { "user" : "kimchy" }
                 }
-            },
-            "filter" : {
-                "term" : { "user" : "kimchy" }
             }
         }
     }

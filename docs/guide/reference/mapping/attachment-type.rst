@@ -1,3 +1,5 @@
+.. _es-guide-reference-mapping-attachment-type:
+
 ===============
 Attachment Type
 ===============

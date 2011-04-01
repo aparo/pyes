@@ -1,3 +1,5 @@
+.. _es-guide-reference-api-admin-cluster-nodes-info:
+
 ========================
 Admin Cluster Nodes Info
 ========================

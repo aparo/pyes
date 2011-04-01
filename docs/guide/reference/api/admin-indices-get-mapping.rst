@@ -1,3 +1,5 @@
+.. _es-guide-reference-api-admin-indices-get-mapping:
+
 =========================
 Admin Indices Get Mapping
 =========================

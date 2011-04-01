@@ -1,3 +1,5 @@
+.. _es-guide-reference-river-index:
+
 =====
 River
 =====
@@ -6,6 +8,14 @@ A river is a pluggable service running within elasticsearch cluster pulling data
 
 
 A river is composed of a unique name and a type. The type is the type of the river (out of the box, there is the **dummy** river that simply logs that its running). The name uniquely identifies the river within the cluster. For example, one can run a river called **my_river** with type **dummy**, and another river called **my_other_river** with type **dummy**.
+
+.. toctree::
+    :maxdepth: 2
+	
+    couchdb
+    rabbitmq
+    twitter
+    wikipedia
 
 
 How it Works

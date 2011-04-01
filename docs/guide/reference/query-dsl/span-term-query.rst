@@ -1,3 +1,5 @@
+.. _es-guide-reference-query-dsl-span-term-query:
+
 ===============
 Span Term Query
 ===============

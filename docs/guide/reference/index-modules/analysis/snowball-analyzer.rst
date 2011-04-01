@@ -1,8 +1,10 @@
+.. _es-guide-reference-index-modules-analysis-snowball-analyzer:
+
 =================
 Snowball Analyzer
 =================
 
-An analyzer of type **snowball** that uses the :doc:`standard tokenizer <./standard-tokenizer.html>`,  with :doc:`standard filter <./standard-tokenfilter.html>`,  :doc:`lowercase filter <./lowercase-tokenfilter.html>`,  :doc:`stop filter <./stop-tokenfilter.html>`,  and :doc:`snowball filter <./snowball-tokenfilter.html>`.  
+An analyzer of type **snowball** that uses the :ref:`standard tokenizer <es-guide-reference-index-modules-analysis-standard-tokenizer>`,  with :ref:`standard filter <es-guide-reference-index-modules-analysis-standard-tokenfilter>`,  :ref:`lowercase filter <es-guide-reference-index-modules-analysis-lowercase-tokenfilter>`,  :ref:`stop filter <es-guide-reference-index-modules-analysis-stop-tokenfilter>`,  and :ref:`snowball filter <es-guide-reference-index-modules-analysis-snowball-tokenfilter>`.  
 
 The Snowball Analyzer is a stemming analyzer from Lucene that is originally based on the snowball project from `snowball.tartarus.org <http://snowball.tartarus.org>`_.  
 
@@ -25,7 +27,7 @@ Sample usage:
     }
 
 
-The **language** parameter can have the same values as the :doc:`snowball filter <./snowball-tokenfilter.html>`  and defaults to **English**. Note that only the languages English, Dutch, German, German2 and French have a default set of stopwords provided. 
+The **language** parameter can have the same values as the :ref:`snowball filter <es-guide-reference-index-modules-analysis-snowball-tokenfilter>`  and defaults to **English**. Note that only the languages English, Dutch, German, German2 and French have a default set of stopwords provided. 
 
 
 The **stopwords** parameter can be used to provide stopwords for the languages that has no defaults, or to simply replace the default set with your custom list. A default set of stopwords for many of these languages is available from for instance `here <http://svn.apache.org/repos/asf/lucene/dev/branches/branch_3x/lucene/contrib/analyzers/common/src/resources/org/apache/lucene/analysis>`_  and `here. <http://svn.apache.org/repos/asf/lucene/dev/branches/branch_3x/lucene/contrib/analyzers/common/src/resources/org/apache/lucene/analysis/snowball>`_  

@@ -1,3 +1,5 @@
+.. _es-guide-reference-index-modules-analysis-edgengram-tokenizer:
+
 ===================
 Edgengram Tokenizer
 ===================

@@ -1,3 +1,5 @@
+.. _es-guide-reference-river-couchdb:
+
 =======
 Couchdb
 =======

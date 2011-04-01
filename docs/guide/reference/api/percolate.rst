@@ -1,3 +1,5 @@
+.. _es-guide-reference-api-percolate:
+
 =========
 Percolate
 =========
@@ -50,7 +52,7 @@ And the matches are part of the response:
 
 .. code-block:: js
 
-    {:doc:`ok <./true>`,  :doc:`matches <./["kuku"]}>`  ["kuku"]}
+    {:ref:`ok <es-guide-reference-api-true>`,  :ref:`matches <es-guide-reference-api-["kuku"]}>`  i-true>`,  "matches":["kuku"]}
 
 
 Filtering Executed Queries

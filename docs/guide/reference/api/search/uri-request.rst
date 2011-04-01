@@ -1,3 +1,5 @@
+.. _es-guide-reference-api-search-uri-request:
+
 ===========
 Uri Request
 ===========
@@ -17,12 +19,12 @@ And here is a sample response:
 
 
     {
-        :doc:`_shards <./{>`  s <./{>`  
+        :ref:`_shards <es-guide-reference-api-search-{>`  s <es-guide-reference-api-search-{>`  
             "total" : 5,
             "successful" : 5,
             "failed" : 0
         },
-        :doc:`hits <./{>`  s <./{>`  
+        :ref:`hits <es-guide-reference-api-search-{>`  s <es-guide-reference-api-search-{>`  
             "total" : 1,
             "hits" : [
                 {

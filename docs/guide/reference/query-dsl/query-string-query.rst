@@ -1,3 +1,5 @@
+.. _es-guide-reference-query-dsl-query-string-query:
+
 ==================
 Query String Query
 ==================

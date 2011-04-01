@@ -1,8 +1,10 @@
+.. _es-guide-reference-query-dsl-custom-score-query:
+
 ==================
 Custom Score Query
 ==================
 
-**custom_score** query allows to wrap another query and customize the scoring of it optionally with a computation derived from other field values in the doc (numeric ones) using :doc:`script expression <.//guide/reference/modules/scripting>`.  Here is a simple sample:
+**custom_score** query allows to wrap another query and customize the scoring of it optionally with a computation derived from other field values in the doc (numeric ones) using :ref:`script expression <es-guide-reference-query-dsl-guide-reference-modules-scripting>`.  Here is a simple sample:
 
 
 .. code-block:: js

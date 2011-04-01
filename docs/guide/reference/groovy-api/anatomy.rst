@@ -1,8 +1,10 @@
+.. _es-guide-reference-groovy-api-anatomy:
+
 =======
 Anatomy
 =======
 
-Once a :doc:`GClient <./client.html>`  has been obtained, all of ElasticSearch APIs can be executed on it. Each Groovy API is exposed using three different mechanisms.
+Once a :ref:`GClient <es-guide-reference-groovy-api-client>`  has been obtained, all of ElasticSearch APIs can be executed on it. Each Groovy API is exposed using three different mechanisms.
 
 
 Closure Request

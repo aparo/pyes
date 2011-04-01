@@ -1,8 +1,10 @@
+.. _es-guide-reference-modules-http:
+
 ====
 Http
 ====
 
-The http module allows to expose *elasticsearch* :doc:`API <.//guide/reference/api>`  over HTTP.
+The http module allows to expose *elasticsearch* :ref:`API <es-guide-reference-modules-guide-reference-api>`  over HTTP.
 
 
 The http mechanism is completely asynchronous in nature, meaning that there is no blocking thread waiting for a response. The benefit of using asynchronous communication for HTTP is solving the `C10k problem <http://en.wikipedia.org/wiki/C10k_problem>`_.  
@@ -22,10 +24,10 @@ The following are the settings the can be configured for HTTP:
 **http.max_content_length**    The max content of an HTTP request. Defaults to **100mb**  
 =============================  ===========================================================
 
-It also shares the uses the common :doc:`network settings <./network.html>`.  
+It also shares the uses the common :ref:`network settings <es-guide-reference-modules-network>`.  
 
 Disable HTTP
 ============
 
-The http module can be completely disabled and not started by setting **http.enabled** to **false**. This make sense when creating non :doc:`data nodes <./node.html>`  which accept HTTP requests, and communicate with data nodes using the internal :doc:`transport <./transport.html>`.  
+The http module can be completely disabled and not started by setting **http.enabled** to **false**. This make sense when creating non :ref:`data nodes <es-guide-reference-modules-node>`  which accept HTTP requests, and communicate with data nodes using the internal :ref:`transport <es-guide-reference-modules-transport>`.  
 

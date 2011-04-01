@@ -1,3 +1,5 @@
+.. _es-guide-reference-modules-gateway-index:
+
 =======
 Gateway
 =======
@@ -11,7 +13,7 @@ Each time the cluster meta data changes (for example, and index is added or dele
 The gateway set on the node level will automatically control the index gateway that will be used. For example, if the **fs** gateway is used, then automatically, each index created on the node will also use its own respective index level **fs** gateway. In this case, if in an index should not persist its state, it should be explicitly set to **none** (which is the only other value it can be set to).
 
 
-The default gateway used is the :doc:`local <./local.html>`  gateway.
+The default gateway used is the :ref:`local <es-guide-reference-modules-gateway-local>`  gateway.
 
 
 Recovery After Nodes / Time

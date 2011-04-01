@@ -1,8 +1,10 @@
+.. _es-guide-reference-mapping-array-type:
+
 ==========
 Array Type
 ==========
 
-JSON documents allow to define an array (list) of fields or objects. Mapping array types could not be simpler since arrays gets automatically detected and mapping them can be done either with :doc:`Core Types <./../core_types>`  or :doc:`Object Type <./../object_type>`  mappings. For example, the following JSON defines several arrays:
+JSON documents allow to define an array (list) of fields or objects. Mapping array types could not be simpler since arrays gets automatically detected and mapping them can be done either with :ref:`Core Types <es-guide-reference-core_types>`  or :ref:`Object Type <es-guide-reference-object_type>`  mappings. For example, the following JSON defines several arrays:
 
 
 .. code-block:: js

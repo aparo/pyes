@@ -1,8 +1,10 @@
+.. _es-guide-reference-groovy-api-get:
+
 ===
 Get
 ===
 
-The get API is very similar to the :doc:`Java get API <.//guide/reference/java-api/get.html>`.  The main benefit of using groovy is handling the source content. It can be automatically converted to a **Map** which means using Groovy to navigate it is simple:
+The get API is very similar to the :ref:`Java get API <es-guide-reference-groovy-api-guide-reference-java-api-get>`.  The main benefit of using groovy is handling the source content. It can be automatically converted to a **Map** which means using Groovy to navigate it is simple:
 
 
 .. code-block:: js

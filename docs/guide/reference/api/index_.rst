@@ -1,3 +1,5 @@
+.. _es-guide-reference-api-index_:
+
 ======
 Index_
 ======
@@ -31,13 +33,13 @@ The result of the above index operation is:
 Automatic for the Index
 =======================
 
-The index operation automatically creates an index if it has not been created before (check out the :doc:`create index API <./admin-indices-create-index.html>`  for manually creating an index), and also automatically creates a dynamic type mapping for the specific type if it has not been created before (check out the :doc:`put mapping <./admin-indices-put-mapping.html>`  API for manually creating type mapping). 
+The index operation automatically creates an index if it has not been created before (check out the :ref:`create index API <es-guide-reference-api-admin-indices-create-index>`  for manually creating an index), and also automatically creates a dynamic type mapping for the specific type if it has not been created before (check out the :ref:`put mapping <es-guide-reference-api-admin-indices-put-mapping>`  API for manually creating type mapping). 
 
 
-The mapping itself is very flexible and is schema free, meaning that new fields / objects can be added and they will automatically be added to the mapping definition of the specific type. Check out the :doc:`mapping <.//guide/reference/mapping>`  section for more information on mapping definitions.
+The mapping itself is very flexible and is schema free, meaning that new fields / objects can be added and they will automatically be added to the mapping definition of the specific type. Check out the :ref:`mapping <es-guide-reference-api-guide-reference-mapping>`  section for more information on mapping definitions.
 
 
-Though explained on the :doc:`mapping <.//guide/reference/mapping>`  section, its important to note that the format of the JSON document can also include the type (very handy when using JSON mappers), for example:
+Though explained on the :ref:`mapping <es-guide-reference-api-guide-reference-mapping>`  section, its important to note that the format of the JSON document can also include the type (very handy when using JSON mappers), for example:
 
 
 .. code-block:: js
@@ -160,7 +162,7 @@ When indexing a child document, it is important that it will be routed to the sa
 Percolate
 =========
 
-:doc:`Percolation <./percolate.html>`  can be automatically done on an indexed doc by passing the **percolate** parameter. Setting it to ***** will cause all percolation queries registered against the index to be checked against the indexed doc, for example:
+:ref:`Percolation <es-guide-reference-api-percolate>`  can be automatically done on an indexed doc by passing the **percolate** parameter. Setting it to ***** will cause all percolation queries registered against the index to be checked against the indexed doc, for example:
 
 
 .. code-block:: js

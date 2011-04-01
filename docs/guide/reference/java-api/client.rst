@@ -1,3 +1,5 @@
+.. _es-guide-reference-java-api-client:
+
 ======
 Client
 ======

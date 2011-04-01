@@ -1,3 +1,5 @@
+.. _es-guide-reference-modules-discovery-zen:
+
 ===
 Zen
 ===
@@ -5,7 +7,7 @@ Zen
 The zen discovery is the built in discovery module for elasticsearch and the default. It provides both multicast and unicast discovery as well being easily extended to support cloud environments. 
 
 
-The zen discovery is integrated with other modules, for example, all communication between nodes is done using the :doc:`transport <./../transport.html>`  module.
+The zen discovery is integrated with other modules, for example, all communication between nodes is done using the :ref:`transport <es-guide-reference-modules-transport>`  module.
 
 
 
@@ -48,7 +50,7 @@ The unicast discovery allows to perform the discovery when multicast is not enab
 **hosts**    Either an array setting or a comma delimited setting. Each value is either in the form of **host:port**, or in the form of **host[port1-port2]**.  
 ===========  ===================================================================================================================================================
 
-The unicast discovery uses the :doc:`transport <./../../transport>`  module to perform the discovery.
+The unicast discovery uses the :ref:`transport <es-guide-reference-transport>`  module to perform the discovery.
 
 
 Master Election

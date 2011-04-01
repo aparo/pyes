@@ -1,3 +1,5 @@
+.. _es-guide-reference-query-dsl-geo-polygon-filter:
+
 ==================
 Geo Polygon Filter
 ==================

@@ -1,3 +1,5 @@
+.. _es-guide-reference-modules-indices:
+
 =======
 Indices
 =======

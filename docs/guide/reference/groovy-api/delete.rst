@@ -1,8 +1,10 @@
+.. _es-guide-reference-groovy-api-delete:
+
 ======
 Delete
 ======
 
-The delete API is very similar to the :doc:`Java delete API <.//guide/reference/java-api/delete.html>`,  here is an example:
+The delete API is very similar to the :ref:`Java delete API <es-guide-reference-groovy-api-guide-reference-java-api-delete>`,  here is an example:
 
 
 .. code-block:: js

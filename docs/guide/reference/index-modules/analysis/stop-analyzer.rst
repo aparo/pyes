@@ -1,8 +1,10 @@
+.. _es-guide-reference-index-modules-analysis-stop-analyzer:
+
 =============
 Stop Analyzer
 =============
 
-An analyzer of type **stop** that is built using a :doc:`Lower Case Tokenizer <./lowercast-tokenizer.html>`,  with :doc:`Stop Token Filter <./stop-tokenfilter.html>`.  
+An analyzer of type **stop** that is built using a :ref:`Lower Case Tokenizer <es-guide-reference-index-modules-analysis-lowercast-tokenizer>`,  with :ref:`Stop Token Filter <es-guide-reference-index-modules-analysis-stop-tokenfilter>`.  
 
 The following are settings that can be set for a **stop** analyzer type:
 

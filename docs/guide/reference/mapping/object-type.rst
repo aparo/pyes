@@ -1,3 +1,5 @@
+.. _es-guide-reference-mapping-object-type:
+
 ===========
 Object Type
 ===========
@@ -22,7 +24,7 @@ JSON documents are hierarchal in nature, allowing to define inner "object"s with
     }
 
  
-The above shows an example where a tweet includes the actual **person** details. A **person** is an object, with an **sid**, and a **name** object which has **first_name** and **last_name**. Its important to note that **tweet** is also an object, though a special :doc:`root object type <./../root_object_type>`  which allows for additional mapping definitions.
+The above shows an example where a tweet includes the actual **person** details. A **person** is an object, with an **sid**, and a **name** object which has **first_name** and **last_name**. Its important to note that **tweet** is also an object, though a special :ref:`root object type <es-guide-reference-root_object_type>`  which allows for additional mapping definitions.
 
 
 The following is an example of explicit mapping for the above JSON:
@@ -58,7 +60,7 @@ In order to mark a mapping of type **object**, set the **type** to object. This 
 properties
 ==========
 
-An object mapping can optionally define one or more properties using the **properties** tag. Properties list the properties this field will have. Each property can be either another **object**, or one of the :doc:`core_types <.//core_types>`.  
+An object mapping can optionally define one or more properties using the **properties** tag. Properties list the properties this field will have. Each property can be either another **object**, or one of the :ref:`core_types <es-guide-reference-mapping-core_types>`.  
 
 dynamic
 =======
@@ -103,7 +105,7 @@ There is no performance overhead of an **object** being dynamic, the ability to 
 The dynamic nature also works with inner objects, meaning that if a new **object** is provided within a mapped dynamic object, it will be automatically added to the index and mapped as well.
 
 
-When processing dynamic new fields, their type is automatically derived. For example, if it is a **number**, it will automatically be treated as number :doc:`core_type <./core-types.html>`.  Dynamic fields default to their default attributes, for example, they are not stored and they are always indexed.
+When processing dynamic new fields, their type is automatically derived. For example, if it is a **number**, it will automatically be treated as number :ref:`core_type <es-guide-reference-mapping-core-types>`.  Dynamic fields default to their default attributes, for example, they are not stored and they are always indexed.
 
 
 Date fields are special since they are represented as a **string**. Date fields are detected if they can be parsed as a date when they are first introduced into the system. The set of date formats that are tested against can be configured using the **date_formats** and explained later.
@@ -149,7 +151,7 @@ In the above, **name** and its content will not be indexed at all.
 path
 ====
 
-In the :doc:`core_types <./../core_types>`  section, a field can have a **index_name** associated with it in order to control the name of the field that will be stored within the index. When that field exists within an object(s) that are not the root object, the name of the field of the index can either include the full "path" to the field with its **index_name**, or just the **index_name**. For example (under mapping of _type_ **person**, removed the tweet type for clarity):
+In the :ref:`core_types <es-guide-reference-core_types>`  section, a field can have a **index_name** associated with it in order to control the name of the field that will be stored within the index. When that field exists within an object(s) that are not the root object, the name of the field of the index can either include the full "path" to the field with its **index_name**, or just the **index_name**. For example (under mapping of _type_ **person**, removed the tweet type for clarity):
 
 
 .. code-block:: js

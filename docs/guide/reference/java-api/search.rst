@@ -1,8 +1,10 @@
+.. _es-guide-reference-java-api-search:
+
 ======
 Search
 ======
 
-The search API allows to execute a search query and get back search hits that match the query. It can be executed across one or more indices and across one or more types. The query can either be provided using the :doc:`Query DSL <./query-dsl.html>`.  .html>`.  The body of the search request is built using the **SearchSourceBuilder**. Here is an example:
+The search API allows to execute a search query and get back search hits that match the query. It can be executed across one or more indices and across one or more types. The query can either be provided using the :ref:`Query DSL <es-guide-reference-java-api-query-dsl>`.  ference-java-api-query-dsl>`.  The body of the search request is built using the **SearchSourceBuilder**. Here is an example:
 
 .. code-block:: java
 

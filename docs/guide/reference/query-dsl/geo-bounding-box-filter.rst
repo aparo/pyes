@@ -1,3 +1,5 @@
+.. _es-guide-reference-query-dsl-geo-bounding-box-filter:
+
 =======================
 Geo Bounding Box Filter
 =======================

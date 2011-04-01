@@ -1,8 +1,10 @@
+.. _es-guide-reference-query-dsl-field-query:
+
 ===========
 Field Query
 ===========
 
-A query that executes a query string against a specific field. It is a simplified version of :doc:`query_string <./query-string-query.html>`  query (by setting the **default_field** to the field this query executed against). In its simplest form:
+A query that executes a query string against a specific field. It is a simplified version of :ref:`query_string <es-guide-reference-query-dsl-query-string-query>`  query (by setting the **default_field** to the field this query executed against). In its simplest form:
 
 
 .. code-block:: js
@@ -26,7 +28,7 @@ Most of the **query_string** parameters are allowed with the **field** query as 
             "name.first" : {
                 "query" : "+something -else",
                 "boost" : 2.0,
-                :doc:`enable_position_increments <./>`  ts <./>`  false
+                :ref:`enable_position_increments <es-guide-reference-query-dsl>`  ts <es-guide-reference-query-dsl>`  false
             }
         }
     }

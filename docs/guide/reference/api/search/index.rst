@@ -44,3 +44,25 @@ In such a case, if we want to search only on the tweets for a specific user, we 
 
 
 The routing parameter can be multi valued represented as a comma separated string. This will result in hitting the relevant shards where the routing values match to.
+
+
+.. toctree::
+    :maxdepth: 1
+
+    explain
+    facets/index
+    fields
+    filter
+    from-size
+    highlighting
+    index-boost
+    indices-types
+    named-filters
+    query
+    request-body
+    script-fields
+    scroll
+    search-type
+    sort
+    uri-request
+    version

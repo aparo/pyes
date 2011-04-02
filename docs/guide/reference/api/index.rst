@@ -4,7 +4,7 @@
 Api
 ===
 
-This section describes the REST APIs *elasticsearch* provides (mainly) using JSON. The API is exposed using :ref:`HTTP <es-guide-reference-api-guide-reference-modules-http>`,  :ref:`thrift <es-guide-reference-api-guide-reference-modules-thrift>`,  :ref:`memcached <es-guide-reference-api-guide-reference-modules-memcached>`.  
+This section describes the REST APIs *elasticsearch* provides (mainly) using JSON. The API is exposed using :ref:`HTTP <es-guide-reference-modules-http>`,  :ref:`thrift <es-guide-reference-modules-thrift>`,  :ref:`memcached <es-guide-reference-modules-memcached>`.  
 
 Options
 =======
@@ -46,3 +46,38 @@ All REST APIs accept a **callback** parameter resulting in a `JSONP <http://en.w
 
 You can also use the **source** query string parameter to substitute for the body of the request.
 
+
+
+.. toctree::
+    :maxdepth: 1
+
+    admin-cluster-health
+    admin-cluster-nodes-info
+    admin-cluster-nodes-shutdown
+    admin-cluster-nodes-stats
+    admin-cluster-state
+    admin-indices-aliases
+    admin-indices-analyze
+    admin-indices-clearcache
+    admin-indices-create-index
+    admin-indices-delete-index
+    admin-indices-delete-mapping
+    admin-indices-flush
+    admin-indices-gateway-snapshot
+    admin-indices-get-mapping
+    admin-indices-open-close
+    admin-indices-optimize
+    admin-indices-put-mapping
+    admin-indices-refresh
+    admin-indices-status
+    admin-indices-templates
+    admin-indices-update-settings
+    bulk
+    count
+    delete-by-query
+    delete
+    get
+    index_
+    more-like-this
+    percolate
+    search/index

@@ -4,3 +4,18 @@
 Modules
 =======
 
+.. toctree::
+    :maxdepth: 1
+
+    discovery/index
+    gateway/index
+    http
+    indices
+    jmx
+    memcached
+    network
+    node
+    scripting
+    threadpool
+    thrift
+    transport

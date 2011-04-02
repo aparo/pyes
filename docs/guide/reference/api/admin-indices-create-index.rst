@@ -72,5 +72,5 @@ The create index API allows to provide a set of one or more mappings:
 Index Settings
 ==============
 
-For more information regarding all the different index level settings that can be set when creating an index, please check the :ref:`index modules <es-guide-reference-api-guide-reference-index-modules>`  section.
+For more information regarding all the different index level settings that can be set when creating an index, please check the :ref:`index modules <es-guide-reference-index-modules>`  section.
 

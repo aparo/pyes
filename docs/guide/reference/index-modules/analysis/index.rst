@@ -102,3 +102,40 @@ Analyzers can be aliased to have several registered lookup names associated with
 
 Will allow the **standard** analyzer to also be referenced with **alias1** and **alias2** values.
 
+.. toctree::
+    :maxdepth: 1
+
+    custom-analyzer
+    keyword-analyzer
+    lang-analyzer
+    pattern-analyzer
+    simple-analyzer
+    snowball-analyzer
+    standard-analyzer
+    stop-analyzer
+    whitespace-analyzer
+
+    asciifolding-tokenfilter
+    compound-word-tokenfilter
+    edgengram-tokenfilter
+    length-tokenfilter
+    lowercase-tokenfilter
+    ngram-tokenfilter
+    phonetic-tokenfilter
+    porterstem-tokenfilter
+    shingle-tokenfilter
+    snowball-tokenfilter
+    standard-tokenfilter
+    standard-tokenizer
+    stop-tokenfilter
+
+    edgengram-tokenizer
+    keyword-tokenizer
+    letter-tokenizer
+    lowercase-tokenizer
+    ngram-tokenizer
+    whitespace-tokenizer
+
+    htmlstrip-charfilter
+
+    icu-plugin

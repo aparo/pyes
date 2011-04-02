@@ -10,7 +10,7 @@ Reference:
     setup/index
     api/index
     query-dsl/index
-    mappings/index
+    mapping/index
     modules/index
     index-modules/index
     river/index

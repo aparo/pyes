@@ -21,3 +21,13 @@ index.term_index_interval    Set the interval between indexed terms.  Large valu
 index.term_index_divisor     Subsamples which indexed terms are loaded into RAM. This has the same effect as **index.term_index_interval** except that setting must be done at indexing time while this setting can be set per reader / searcher.  When set to N, then one in every N*termIndexInterval terms in the index is loaded into memory.  By setting this to a value > 1 you can reduce memory usage, at the expense of higher latency when loading a TermInfo.  The default value is 1.  Set this to -1 to skip loading the terms index entirely.  
 index.refresh_interval       A time setting controlling how often the refresh operation will be executed. Defaults to **1s**. Can be set to **-1** in order to disable it.                                                                                                                                                                                                                                                                                                                                                                                   
 ===========================  ================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================
+
+.. toctree::
+    :maxdepth: 1
+
+    analysis/index
+    mapper
+    merge
+    store
+    translog
+	

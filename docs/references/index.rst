@@ -18,8 +18,6 @@
     pyes.filters
     pyes.highlight
     pyes.mappings
-    pyes.objectid
     pyes.query
-    pyes.query_extra
     pyes.rivers
     pyes.utils

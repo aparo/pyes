@@ -13,3 +13,15 @@ Maven Repository
 ----------------
 
 elasticsearch is hosted on `Sonatype <http://www.sonatype.org/>`_,  with both a `releases repo <http://oss.sonatype.org/content/repositories/releases/>`_  and a `snapshots repo <http://oss.sonatype.org/content/repositories/snapshots>`_.  
+
+
+.. toctree::
+    :maxdepth: 1
+
+    anatomy
+    client
+    count
+    delete
+    get
+    index_
+    search

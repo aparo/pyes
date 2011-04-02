@@ -56,3 +56,15 @@ All facets can be configured with an additional filter (explained in the :ref:`Q
         }
     }    
 
+
+.. toctree::
+    :maxdepth: 1
+
+    date-histogram-facet
+    filter-facet
+    geo-distance-facet
+    histogram-facet
+    query-facet
+    range-facet
+    statistical-facet
+    terms-facet

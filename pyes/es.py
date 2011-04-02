@@ -560,9 +560,11 @@ class ES(object):
     def cluster_health(self, indexes=None, level="cluster", wait_for_status=None,
                wait_for_relocating_shards=None, timeout=30):
         """
+        Check the current :ref:`cluster health <es-guide-reference-api-admin-cluster-health>`.
         Request Parameters
 
         The cluster health API accepts the following request parameters:
+        
         - level:                Can be one of cluster, indices or shards. Controls the details 
                                 level of the health information returned. Defaults to cluster.
         - wait_for_status       One of green, yellow or red. Will wait (until the timeout provided) 

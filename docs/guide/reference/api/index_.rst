@@ -36,10 +36,10 @@ Automatic for the Index
 The index operation automatically creates an index if it has not been created before (check out the :ref:`create index API <es-guide-reference-api-admin-indices-create-index>`  for manually creating an index), and also automatically creates a dynamic type mapping for the specific type if it has not been created before (check out the :ref:`put mapping <es-guide-reference-api-admin-indices-put-mapping>`  API for manually creating type mapping). 
 
 
-The mapping itself is very flexible and is schema free, meaning that new fields / objects can be added and they will automatically be added to the mapping definition of the specific type. Check out the :ref:`mapping <es-guide-reference-api-guide-reference-mapping>`  section for more information on mapping definitions.
+The mapping itself is very flexible and is schema free, meaning that new fields / objects can be added and they will automatically be added to the mapping definition of the specific type. Check out the :ref:`mapping <es-guide-reference-mapping>`  section for more information on mapping definitions.
 
 
-Though explained on the :ref:`mapping <es-guide-reference-api-guide-reference-mapping>`  section, its important to note that the format of the JSON document can also include the type (very handy when using JSON mappers), for example:
+Though explained on the :ref:`mapping <es-guide-reference-mapping>`  section, its important to note that the format of the JSON document can also include the type (very handy when using JSON mappers), for example:
 
 
 .. code-block:: js

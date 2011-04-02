@@ -16,3 +16,8 @@ Settings
 The **cluster.name** allows to create separated clusters from one another. The default value for the cluster name is **elasticsearch**, though it is recommended to change this to reflect the logical group name of the cluster running. 
 
 
+.. toctree::
+    :maxdepth: 1
+
+    ec2
+    zen

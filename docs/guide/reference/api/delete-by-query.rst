@@ -4,7 +4,7 @@
 Delete By Query
 ===============
 
-The delete by query API allows to delete documents from one or more indices and one or more types based on a query. The query can either be provided using a simple query string as a parameter, or using the :ref:`Query DSL <es-guide-reference-api-guide-reference-query-dsl>`  defined within the request body. Here is an example:
+The delete by query API allows to delete documents from one or more indices and one or more types based on a query. The query can either be provided using a simple query string as a parameter, or using the :ref:`Query DSL <es-guide-reference-query-dsl>`  defined within the request body. Here is an example:
 
 
 .. code-block:: js
@@ -89,7 +89,7 @@ default_operator     The default operator to be used, can be **AND** or **OR**. 
 Request Body
 ============
 
-The delete by query can use the :ref:`Query DSL <es-guide-reference-api-guide-reference-query-dsl>`  within its body in order to express the query that should be executed and delete all documents. The body content can also be passed as a REST parameter named **source**.
+The delete by query can use the :ref:`Query DSL <es-guide-reference-query-dsl>`  within its body in order to express the query that should be executed and delete all documents. The body content can also be passed as a REST parameter named **source**.
 
 
 Distributed

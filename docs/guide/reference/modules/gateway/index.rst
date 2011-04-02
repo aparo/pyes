@@ -44,3 +44,12 @@ Note, once the meta data has been recovered from the gateway (which indices to c
 
 Operations are blocked while the cluster meta data has not been recovered in order not to mix with the actual cluster meta data that will be recovered once the settings has been reached.
 
+
+.. toctree::
+    :maxdepth: 1
+
+    fs
+    hadoop
+    local
+    s3
+

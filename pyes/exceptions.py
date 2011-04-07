@@ -7,6 +7,7 @@ __all__ = ['NoServerAvailable',
            "QueryError",
            "NotFoundException",
            "AlreadyExistsException",
+           "IndexAlreadyExistsException",
            "IndexMissingException",
            "SearchPhaseExecutionException",
            "InvalidQuery",
@@ -58,6 +59,9 @@ class NotFoundException(ElasticSearchException):
     pass
 
 class AlreadyExistsException(ElasticSearchException):
+    pass
+
+class IndexAlreadyExistsException(AlreadyExistsException):
     pass
 
 class SearchPhaseExecutionException(ElasticSearchException):

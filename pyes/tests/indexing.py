@@ -6,7 +6,7 @@ Unit tests for pyes.  These require an es server with thrift plugin running on t
 import unittest
 from pyes.tests import ESTestCase
 from pyes import TermQuery
-from pyes.exceptions import AlreadyExistsException
+from pyes.exceptions import IndexAlreadyExistsException
 from time import sleep
 
 class IndexingTestCase(ESTestCase):
@@ -65,7 +65,7 @@ class IndexingTestCase(ESTestCase):
 
     def testCannotCreateExistingIndex(self):
         self.conn.create_index("another-index")
-        self.assertRaises(AlreadyExistsException, self.conn.create_index, "another-index")
+        self.assertRaises(IndexAlreadyExistsException, self.conn.create_index, "another-index")
         self.conn.delete_index("another-index")
 
     def testPutMapping(self):

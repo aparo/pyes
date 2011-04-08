@@ -768,7 +768,7 @@ class PrefixQuery(Query):
         self._values = {}
 
         if field is not None and prefix is not None:
-            self.add(field, prefix)
+            self.add(field, prefix, boost)
 
     def add(self, field, prefix, boost=None):
         match = {'prefix':prefix}

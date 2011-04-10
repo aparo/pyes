@@ -17,6 +17,7 @@ import pyes.exceptions
 exceptions_by_name = dict((name, getattr(pyes.exceptions, name))
     for name in (
         'ElasticSearchIllegalArgumentException',
+        'IndexAlreadyExistsException',
         'IndexMissingException',
         'SearchPhaseExecutionException',
         'ReplicationShardOperationFailedException',

@@ -291,7 +291,7 @@ class ES(object):
         """
         try:
             return self.create_index(index, settings)
-        except pyes.exceptions.AlreadyExistsException, e:
+        except pyes.exceptions.IndexAlreadyExistsException, e:
             return e.result
 
     def delete_index(self, index):

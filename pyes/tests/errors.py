@@ -23,7 +23,7 @@ class ErrorReportingTestCase(ESTestCase):
         self.assertTrue('ok' in result)
         self.assertTrue('error' not in result)
 
-        err = self.checkRaises(pyes.exceptions.AlreadyExistsException,
+        err = self.checkRaises(pyes.exceptions.IndexAlreadyExistsException,
                                self.conn.create_index, "test-index")
         self.assertEqual(str(err), "[test-index] Already exists")
         self.assertEqual(err.status, 400)
@@ -34,10 +34,10 @@ class ErrorReportingTestCase(ESTestCase):
         self.assertTrue('ok' in result)
         self.assertTrue('error' not in result)
 
-        err = self.checkRaises(pyes.exceptions.NotFoundException,
+        err = self.checkRaises(pyes.exceptions.IndexMissingException,
                                self.conn.delete_index, "test-index")
         self.assertEqual(str(err), "[test-index] missing")
-        self.assertEqual(err.status, 400)
+        self.assertEqual(err.status, 404)
         self.assertTrue('error' in err.result)
         self.assertTrue('ok' not in err.result)
 
@@ -48,7 +48,7 @@ class ErrorReportingTestCase(ESTestCase):
         err = self.checkRaises(pyes.exceptions.IndexMissingException,
                                self.conn.flush, 'test-index')
         self.assertEqual(str(err), "[test-index] missing")
-        self.assertEqual(err.status, 500)
+        self.assertEqual(err.status, 404)
         self.assertTrue('error' in err.result)
         self.assertTrue('ok' not in err.result)
 

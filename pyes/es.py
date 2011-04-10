@@ -565,16 +565,21 @@ class ES(object):
 
         The cluster health API accepts the following request parameters:
         
-        - level:                Can be one of cluster, indices or shards. Controls the details 
-                                level of the health information returned. Defaults to cluster.
-        - wait_for_status       One of green, yellow or red. Will wait (until the timeout provided) 
-                                until the status of the cluster changes to the one provided. 
+        :param level: Can be one of cluster, indices or shards. Controls the 
+                        details level of the health information returned. 
+                        Defaults to *cluster*.
+        :param wait_for_status: One of green, yellow or red. Will wait (until 
+                                the timeout provided) until the status of the 
+                                cluster changes to the one provided. 
                                 By default, will not wait for any status.
-        - wait_for_relocating_shards     A number controlling to how many relocating shards to 
-                                         wait for. Usually will be 0 to indicate to wait till 
-                                         all relocation have happened. Defaults to not to wait.
-        - timeout       A time based parameter controlling how long to wait if one of the 
-                        wait_for_XXX are provided. Defaults to 30s.
+        :param wait_for_relocating_shards: A number controlling to how many 
+                                           relocating shards to wait for. 
+                                           Usually will be 0 to indicate to 
+                                           wait till all relocation have 
+                                           happened. Defaults to not to wait.
+        :param timeout: A time based parameter controlling how long to wait 
+                        if one of the wait_for_XXX are provided. 
+                        Defaults to 30s.
         """
         path = self._make_path(["_cluster", "health"])
         mapping = {}
@@ -590,19 +595,67 @@ class ES(object):
             mapping['timeout'] = "%ds" % timeout
         return self._send_request('GET', path, mapping)
 
-    def cluster_state(self):
+    def cluster_state(self, filter_nodes=None, filter_routing_table=None,
+                      filter_metadata=None, filter_blocks=None,
+                      filter_indices=None):
         """
-        Retrieve the cluster state
+        Retrieve the :ref:`cluster state <es-guide-reference-api-admin-cluster-state>`.
+
+        :param filter_nodes: set to **true** to filter out the **nodes** part 
+                             of the response.                            
+        :param filter_routing_table: set to **true** to filter out the 
+                                     **routing_table** part of the response.                    
+        :param filter_metadata: set to **true** to filter out the **metadata** 
+                                part of the response.                         
+        :param filter_blocks: set to **true** to filter out the **blocks** 
+                              part of the response.                           
+        :param filter_indices: when not filtering metadata, a comma separated 
+                               list of indices to include in the response.   
+
         """
-        return self._send_request('GET', "/_cluster/state")
+        path = self._make_path(["_cluster", "state"])
+        parameters = {}
+
+        if filter_nodes is not None:
+            parameters['filter_nodes'] = filter_nodes
+
+        if filter_routing_table is not None:
+            parameters['filter_routing_table'] = filter_routing_table
+
+        if filter_metadata is not None:
+            parameters['filter_metadata'] = filter_metadata
+
+        if filter_blocks is not None:
+            parameters['filter_blocks'] = filter_blocks
+
+        if filter_blocks is not None:
+            if isinstance(filter_indices, basestring):
+                parameters['filter_indices'] = filter_indices
+            else:
+                parameters['filter_indices'] = ",".join(filter_indices)
+
+        return self._send_request('GET', path, params=parameters)
 
     def cluster_nodes(self, nodes=None):
         """
-        Retrieve the node infos
+        The cluster :ref:`nodes info <es-guide-reference-api-admin-cluster-state>` API allows to retrieve one or more (or all) of 
+        the cluster nodes information.
         """
         parts = ["_cluster", "nodes"]
         if nodes:
             parts.append(",".join(nodes))
+        path = self._make_path(parts)
+        return self._send_request('GET', path)
+
+    def cluster_stats(self, nodes=None):
+        """
+        The cluster :ref:`nodes info <es-guide-reference-api-admin-cluster-nodes-stats>` API allows to retrieve one or more (or all) of 
+        the cluster nodes information.
+        """
+        parts = ["_cluster", "nodes", "stats"]
+        if nodes:
+            parts = ["_cluster", "nodes", ",".join(nodes), "stats"]
+
         path = self._make_path(parts)
         return self._send_request('GET', path)
 

@@ -141,26 +141,22 @@ class RangeFilter(Filter):
 NumericRangeFilter = RangeFilter
 
 class PrefixFilter(Filter):
-    def __init__(self, field=None, prefix=None, boost=None, **kwargs):
+    _internal_name = "prefix"
+
+    def __init__(self, field=None, prefix=None, **kwargs):
         super(PrefixFilter, self).__init__(**kwargs)
         self._values = {}
 
         if field is not None and prefix is not None:
             self.add(field, prefix)
 
-    def add(self, field, prefix, boost=None):
-        match = {'prefix':prefix}
-        if boost:
-            if isinstance(boost, (float, int)):
-                match['boost'] = boost
-            else:
-                match['boost'] = float(boost)
-        self._values[field] = match
+    def add(self, field, prefix):
+        self._values[field] = prefix
 
     def serialize(self):
         if not self._values:
             raise RuntimeError("A least a field/prefix pair must be added")
-        return {"prefix":self._values}
+        return {self._internal_name:self._values}
 
 class ScriptFilter(Filter):
     _internal_name = "script"

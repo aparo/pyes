@@ -90,6 +90,7 @@ class Search(object):
                  explain=False,
                  facet=None,
                  version=None,
+                 track_scores=None,
                  index_boost={}):
         """
         fields: if is [], the _source is not returned
@@ -103,6 +104,7 @@ class Search(object):
         self.explain = explain
         self.facet = facet or FacetFactory()
         self.version = version
+        self.track_scores = track_scores
         self.index_boost = index_boost
 
     def get_facet_factory(self):
@@ -134,6 +136,8 @@ class Search(object):
             res['explain'] = self.explain
         if self.version:
             res['version'] = self.version
+        if self.track_scores:
+            res['track_scores'] = self.track_scores
         if self.index_boost:
             res['indices_boost'] = self.index_boost
         if self.facet.facets:
@@ -769,7 +773,7 @@ class PrefixQuery(Query):
         self._values = {}
 
         if field is not None and prefix is not None:
-            self.add(field, prefix)
+            self.add(field, prefix, boost)
 
     def add(self, field, prefix, boost=None):
         match = {'prefix':prefix}

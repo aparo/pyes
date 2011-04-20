@@ -1112,3 +1112,21 @@ class CustomScoreQuery(Query):
 
     def __repr__(self):
         return str(self.q)
+
+class IdsQuery(Query):
+    _internal_name = "ids"
+    def __init__(self, type, values, **kwargs):
+        super(IdsQuery, self).__init__(**kwargs)
+        self.type = type
+        self.values = values
+
+    def serialize(self):
+        data = {}
+        if self.type:
+            data['type'] = self.type        
+        if isinstance(self.values, basestring):
+            data['values'] = [self.values]
+        else:
+            data['values'] = self.values
+                    
+        return {self._internal_name:data}

@@ -761,6 +761,30 @@ class ES(object):
 
         path = self._make_path([index, doc_type, id])
         return self._send_request('DELETE', path)
+    
+    def deleteByQuery(self, indexes, doc_types, query, **request_params):
+        """
+        Delete documents from one or more indexes and one or more types based on a query.
+        """
+        querystring_args = request_params
+        indexes = self._validate_indexes(indexes)
+        if doc_types is None:
+            doc_types = []
+        if isinstance(doc_types, basestring):
+            doc_types = [doc_types]
+                        
+        if hasattr(query, 'to_query_json'):
+            # Then is a Query object.
+            body = query.to_query_json()
+        elif isinstance(query, dict):
+            # A direct set of search parameters.
+            body = json.dumps(query, cls=self.encoder)
+        else:
+            raise pyes.exceptions.InvalidQuery("deleteByQuery() must be supplied with a Query object, or a dict")
+
+        path = self._make_path([','.join(indexes), ','.join(doc_types), '_query'])
+        response = self._send_request('DELETE', path, body, querystring_args)
+        return response
 
     def delete_mapping(self, index, doc_type):
         """

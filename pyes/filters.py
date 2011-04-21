@@ -366,3 +366,22 @@ class HasChildFilter(Filter):
         if self._scope is not None:
             data['_scope'] = self._scope
         return {self._internal_name: data}
+    
+    
+class IdsFilter(Filter):
+    _internal_name = "ids"
+    def __init__(self, type, values, **kwargs):
+        super(IdsFilter, self).__init__(**kwargs)
+        self.type = type
+        self.values = values
+
+    def serialize(self):
+        data = {}
+        if self.type:
+            data['type'] = self.type        
+        if isinstance(self.values, basestring):
+            data['values'] = [self.values]
+        else:
+            data['values'] = self.values
+                    
+        return {self._internal_name:data}

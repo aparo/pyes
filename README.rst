@@ -151,6 +151,8 @@ parameters.
 
 v. 0.16.0:
 
+           Add IdsQuery, IdsFilter and deleteByQuery (aguereca).
+
            Bulk delete (acdha).
 
 v. 0.15.0:

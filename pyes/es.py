@@ -37,10 +37,10 @@ def file_to_attachment(filename):
     """
     Convert a file to attachment
     """
-#    return base64.b64encode(open(filename, 'rb').read())
-    return {'_name':filename,
-            'content':base64.b64encode(open(filename, 'rb').read())
-            }
+    with open(filename, 'rb') as _file:
+        return {'_name':filename,
+                'content':base64.b64encode(_file.read())
+                }
 
 class ESJsonEncoder(json.JSONEncoder):
     def default(self, value):
@@ -190,6 +190,7 @@ class ES(object):
         return self.servers
 
     def _send_request(self, method, path, body=None, params={}):
+        # prepare the request
         if not path.startswith("/"):
             path = "/" + path
         if not self.connection:
@@ -202,7 +203,11 @@ class ES(object):
         request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()], uri=path, parameters=params, headers={}, body=body)
         if self.dump_curl is not None:
             self._dump_curl_request(request)
+
+        # execute the request
         response = self.connection.execute(request)
+
+        # handle the response
         try:
             decoded = json.loads(response.body, cls=self.decoder)
         except ValueError:
@@ -695,6 +700,7 @@ class ES(object):
 
         if parent:
             querystring_args['parent'] = parent
+
         if version:
             querystring_args['version'] = version
 
@@ -917,6 +923,14 @@ class ES(object):
         path = self._make_path([index, doc_type, id, '_mlt'])
         query_params['fields'] = ','.join(fields)
         return self._send_request('GET', path, params=query_params)
+
+    def update_settings(self, index, newvalues):
+        """
+        Update Settings of an index.
+        
+        """
+        path = self._make_path([index, "_settings"])
+        return self._send_request('PUT', path, newvalues)
 
 def decode_json(data):
     """ Decode some json to dict"""

@@ -8,13 +8,11 @@ from pyes.tests import ESTestCase
 from pyes import decode_json
 from pyes.mappings import Mapper
 import os
-from datetime import datetime
 
 class MapperTestCase(ESTestCase):
     def setUp(self):
         super(MapperTestCase, self).setUp()
         self.datamap = decode_json(open(os.path.join("data", "map.json"), "rb").read())
-
 
     def test_parser(self):
         _ = Mapper(self.datamap)

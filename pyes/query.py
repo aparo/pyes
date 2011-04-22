@@ -16,7 +16,8 @@ from es import ESJsonEncoder
 from utils import clean_string, ESRange
 from facets import FacetFactory
 from highlight import HighLighter
-from pyes.exceptions import InvalidQuery, InvalidParameterQuery, QueryError
+from scriptfields import ScriptFields
+from pyes.exceptions import InvalidQuery, InvalidParameterQuery, QueryError, ScriptFieldsError
 log = logging.getLogger('pyes')
 
 class FieldParameter:
@@ -91,6 +92,7 @@ class Search(object):
                  facet=None,
                  version=None,
                  track_scores=None,
+                 script_fields=None,
                  index_boost={}):
         """
         fields: if is [], the _source is not returned
@@ -105,6 +107,7 @@ class Search(object):
         self.facet = facet or FacetFactory()
         self.version = version
         self.track_scores = track_scores
+        self.script_fields = script_fields
         self.index_boost = index_boost
 
     def get_facet_factory(self):
@@ -138,6 +141,11 @@ class Search(object):
             res['version'] = self.version
         if self.track_scores:
             res['track_scores'] = self.track_scores
+        if self.script_fields:
+            if isinstance(self.script_fields, ScriptFields):
+                res['script_fields'] = self.script_fields.serialize()
+            else:
+                raise ScriptFieldsError("Parameter script_fields should of type ScriptFields")
         if self.index_boost:
             res['indices_boost'] = self.index_boost
         if self.facet.facets:

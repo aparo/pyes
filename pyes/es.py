@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__author__ = 'Alberto Paro, Robert Eanes, Matt Dennewitz'
+__author__ = 'Alberto Paro'
 __all__ = ['ES', 'file_to_attachment', 'decode_json']
 
+from __future__ import with_statement
 try:
     # For Python >= 2.6
     import json
@@ -767,7 +768,7 @@ class ES(object):
 
         path = self._make_path([index, doc_type, id])
         return self._send_request('DELETE', path)
-    
+
     def deleteByQuery(self, indexes, doc_types, query, **request_params):
         """
         Delete documents from one or more indexes and one or more types based on a query.
@@ -778,7 +779,7 @@ class ES(object):
             doc_types = []
         if isinstance(doc_types, basestring):
             doc_types = [doc_types]
-                        
+
         if hasattr(query, 'to_query_json'):
             # Then is a Query object.
             body = query.to_query_json()
@@ -887,6 +888,15 @@ class ES(object):
             query = query.to_query_json()
         return self._query_call("_count", query, indexes, doc_types, **query_params)
 
+    def morelikethis(self, index, doc_type, id, fields, **query_params):
+        """
+        Execute a "more like this" search query against one or more fields and get back search hits.
+        """
+        path = self._make_path([index, doc_type, id, '_mlt'])
+        query_params['fields'] = ','.join(fields)
+        return self._send_request('GET', path, params=query_params)
+
+    #--- river management
     def create_river(self, river, river_name=None):
         """
         Create a river
@@ -904,6 +914,15 @@ class ES(object):
             river_name = river.name
         return self._send_request('DELETE', '/_river/%s/' % river_name)
 
+    #--- settings management
+    def update_settings(self, index, newvalues):
+        """
+        Update Settings of an index.
+        
+        """
+        path = self._make_path([index, "_settings"])
+        return self._send_request('PUT', path, newvalues)
+
 #    def terms(self, fields, indexes=None, **query_params):
 #        """
 #        Extract terms and their document frequencies from one or more fields.
@@ -916,21 +935,6 @@ class ES(object):
 #        query_params['fields'] = ','.join(fields)
 #        return self._send_request('GET', path, params=query_params)
 #    
-    def morelikethis(self, index, doc_type, id, fields, **query_params):
-        """
-        Execute a "more like this" search query against one or more fields and get back search hits.
-        """
-        path = self._make_path([index, doc_type, id, '_mlt'])
-        query_params['fields'] = ','.join(fields)
-        return self._send_request('GET', path, params=query_params)
-
-    def update_settings(self, index, newvalues):
-        """
-        Update Settings of an index.
-        
-        """
-        path = self._make_path([index, "_settings"])
-        return self._send_request('PUT', path, newvalues)
 
 def decode_json(data):
     """ Decode some json to dict"""

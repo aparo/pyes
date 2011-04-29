@@ -4,7 +4,8 @@
 Unit tests for pyes.  These require an es server with thrift plugin and the lang-javascript plugin running on the default port (localhost:9500).
 """
 from pyestest import ESTestCase
-from pyes.query *
+from pyes.query import *
+from pyes.filters import TermFilter, ANDFilter, ORFilter
 import unittest
 
 class QuerySearchTestCase(ESTestCase):

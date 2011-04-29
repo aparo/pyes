@@ -924,6 +924,58 @@ class ES(object):
         query_params['fields'] = ','.join(fields)
         return self._send_request('GET', path, params=query_params)
 
+    def create_percolator(self, index, name, query, **kwargs):
+        """
+        Create a percolator document
+
+        Any kwargs will be added to the document as extra properties.
+
+        """
+        path = self._make_path(['_percolator', index, name])
+        body = None
+
+        if hasattr(query, 'serialize'):
+            query = {'query': query.serialize()}
+
+        if isinstance(query, dict):
+            # A direct set of search parameters.
+            query.update(kwargs)
+            body = json.dumps(query, cls=self.encoder)
+        else:
+            raise pyes.exceptions.InvalidQuery("create_percolator() must be supplied with a Query object or dict")
+
+        return self._send_request('PUT', path, body=body)
+
+    def delete_percolator(self, index, name):
+        """
+        Delete a percolator document
+        """
+        return self.delete('_percolator', index, name)
+
+    def percolate(self, index, doc_types, query):
+        """
+        Match a query with a document
+        """
+
+        if doc_types is None:
+            raise RuntimeError('percolate() must be supplied with at least one doc_type')
+        elif not isinstance(doc_types, list):
+            doc_types = [doc_types]
+
+        path = self._make_path([index, ','.join(doc_types), '_percolate'])
+        body = None
+
+        if hasattr(query, 'to_query_json'):
+            # Then is a Query object.
+            body = query.to_query_json()
+        elif isinstance(query, dict):
+            # A direct set of search parameters.
+            body = json.dumps(query, cls=self.encoder)
+        else:
+            raise pyes.exceptions.InvalidQuery("percolate() must be supplied with a Query object, or a dict")
+
+        return self._send_request('GET', path, body=body)
+
     def update_settings(self, index, newvalues):
         """
         Update Settings of an index.

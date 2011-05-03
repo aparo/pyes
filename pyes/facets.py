@@ -174,6 +174,7 @@ class TermFacet(Facet):
         super(TermFacet, self).__init__(**kwargs)
         self.name = name
         self.field = field
+        self.fields = fields
         if name is None:
             self.name = field
         self.size = size

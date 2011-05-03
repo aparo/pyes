@@ -848,7 +848,7 @@ class ES(object):
         while True:
             scroll_id = results["_scroll_id"]
             results = self._send_request('GET', "_search/scroll", scroll_id, {"scroll":scroll_timeout})
-            total = results["hits"]["total"]
+            total = len(results["hits"]["hits"])
             if not total:
                 break
             yield results

@@ -142,7 +142,6 @@ class ES(object):
         self.bulk_items = 0
 
         self.info = {} #info about the current server
-        self.mappings = None #track mapping
         self.encoder = encoder
         if self.encoder is None:
             self.encoder = ESJsonEncoder
@@ -543,8 +542,6 @@ class ES(object):
         else:
             path = self._make_path([','.join(indexes), "_mapping"])
         result = self._send_request('GET', path)
-        #processing indexes
-        self.mappings = Mapper(result)
         return result
 
 

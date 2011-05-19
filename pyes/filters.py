@@ -193,6 +193,7 @@ class TermFilter(Filter):
     def serialize(self):
         if not self._values:
             raise RuntimeError("A least a field/value pair must be added")
+        result = {self._internal_name:self._values}
         if self._name:
             result[self._internal_name]['_name'] = self._name
         return {self._internal_name:self._values}

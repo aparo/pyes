@@ -1017,7 +1017,7 @@ class SpanNearQuery(Query):
         if self.collect_payloads is not None:
             data["collect_payloads"] = self.collect_payloads
 
-        data['clauses'] = [clause.serizialize() for clause in self.clauses]
+        data['clauses'] = [clause.serialize() for clause in self.clauses]
 
         return {self._internal_name:data}
 
@@ -1046,8 +1046,8 @@ class SpanNotQuery(Query):
 
         self._validate()
         data = {}
-        data['include'] = self.include.serizialize()
-        data['exclude'] = self.exclude.serizialize()
+        data['include'] = self.include.serialize()
+        data['exclude'] = self.exclude.serialize()
 
         return {self._internal_name:data}
 
@@ -1077,7 +1077,7 @@ class SpanOrQuery(Query):
     def serialize(self):
         if not self.clauses or len(self.clauses) == 0:
             raise RuntimeError("A least a Span*Query must be added to clauses")
-        clauses = [clause.serizialize() for clause in self.clauses]
+        clauses = [clause.serialize() for clause in self.clauses]
         return {self._internal_name:{"clauses":clauses}}
 
 class SpanTermQuery(TermQuery):

@@ -135,7 +135,6 @@ class DateHistogramFacet(Facet):
                     data['params'] = self.params
             else:
                 raise RuntimeError("Invalid key_field: value_field or value_script required")
-            self._add_interval(data)
 
         return {self.name:{self._internal_name:data}}
 

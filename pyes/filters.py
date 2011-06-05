@@ -179,9 +179,10 @@ class ScriptFilter(Filter):
 class TermFilter(Filter):
     _internal_name = "term"
 
-    def __init__(self, field=None, value=None, **kwargs):
+    def __init__(self, field=None, value=None, _name=None, **kwargs):
         super(TermFilter, self).__init__(**kwargs)
         self._values = {}
+        self._name = _name
 
         if field is not None and value is not None:
             self.add(field, value)
@@ -192,6 +193,9 @@ class TermFilter(Filter):
     def serialize(self):
         if not self._values:
             raise RuntimeError("A least a field/value pair must be added")
+        result = {self._internal_name:self._values}
+        if self._name:
+            result[self._internal_name]['_name'] = self._name
         return {self._internal_name:self._values}
 
 class ExistsFilter(TermFilter):
@@ -225,9 +229,10 @@ class RegexTermFilter(Filter):
 class TermsFilter(Filter):
     _internal_name = "terms"
 
-    def __init__(self, field=None, values=None, **kwargs):
+    def __init__(self, field=None, values=None, _name=None, **kwargs):
         super(TermsFilter, self).__init__(**kwargs)
         self._values = {}
+        self._name = _name
 
         if field is not None and values is not None:
             self.add(field, values)
@@ -239,6 +244,8 @@ class TermsFilter(Filter):
         if not self._values:
             raise RuntimeError("A least a field/value pair must be added")
         return {self._internal_name:self._values}
+        if self._name:
+            result[self._internal_name]['_name'] = self._name
 
 class QueryFilter(Filter):
     _internal_name = "query"

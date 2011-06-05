@@ -909,6 +909,7 @@ class StringQuery(Query):
                 fuzzy_min_sim=0.5,
                 phrase_slop=0,
                 boost=1.0,
+                analyze_wildcard=False,
                 use_dis_max=True,
                 tie_breaker=0,
                 clean_text=False,
@@ -927,6 +928,7 @@ class StringQuery(Query):
         self.fuzzy_min_sim = fuzzy_min_sim
         self.phrase_slop = phrase_slop
         self.boost = boost
+        self.analyze_wildcard = analyze_wildcard
         self.use_dis_max = use_dis_max
         self.tie_breaker = tie_breaker
 
@@ -970,6 +972,8 @@ class StringQuery(Query):
                     filters["tie_breaker"] = self.tie_breaker
         if self.boost != 1.0:
             filters["boost"] = self.boost
+        if self.analyze_wildcard:
+            filters["analyze_wildcard"] = self.analyze_wildcard
         if self.clean_text:
             query = clean_string(self.query)
             if not query:
@@ -1055,7 +1059,7 @@ class SpanNearQuery(Query):
         if self.collect_payloads is not None:
             data["collect_payloads"] = self.collect_payloads
 
-        data['clauses'] = [clause.serizialize() for clause in self.clauses]
+        data['clauses'] = [clause.serialize() for clause in self.clauses]
 
         return {self._internal_name:data}
 
@@ -1084,8 +1088,8 @@ class SpanNotQuery(Query):
 
         self._validate()
         data = {}
-        data['include'] = self.include.serizialize()
-        data['exclude'] = self.exclude.serizialize()
+        data['include'] = self.include.serialize()
+        data['exclude'] = self.exclude.serialize()
 
         return {self._internal_name:data}
 
@@ -1115,7 +1119,7 @@ class SpanOrQuery(Query):
     def serialize(self):
         if not self.clauses or len(self.clauses) == 0:
             raise RuntimeError("A least a Span*Query must be added to clauses")
-        clauses = [clause.serizialize() for clause in self.clauses]
+        clauses = [clause.serialize() for clause in self.clauses]
         return {self._internal_name:{"clauses":clauses}}
 
 class SpanTermQuery(TermQuery):

@@ -511,6 +511,13 @@ class ES(object):
         result = self._send_request('POST', path, params=params)
         self.refreshed = True
         return result
+    
+    def analyze(self, text, index=None):
+        """
+        Performs the analysis process on a text and return the tokens breakdown of the text
+        """
+        path = self._make_path([index, '_analyze'])
+        return self._send_request('POST', path, text)
 
     def gateway_snapshot(self, indexes=None):
         """

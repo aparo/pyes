@@ -26,7 +26,7 @@ class QuickRunTests(TestCommand):
         TestCommand.run(self, *args, **kwargs)
 
 
-install_requires = ["urllib3"]
+install_requires = []
 
 #if not sys.platform.startswith("java"):
 #    install_requires += [ "thrift", ]    

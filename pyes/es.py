@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import with_statement
 
 __author__ = 'Alberto Paro'
 __all__ = ['ES', 'file_to_attachment', 'decode_json']
 
-from __future__ import with_statement
 try:
     # For Python >= 2.6
     import json

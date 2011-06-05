@@ -847,6 +847,48 @@ class TermsQuery(TermQuery):
             else:
                 self._values['minimum_match'] = int(minimum_match)
 
+class TextQuery(Query):
+    """
+    A new family of text queries that accept text, analyzes it, and constructs a query out of it.
+    """
+    _internal_name = "text"
+    _valid_types = ['boolean', "phrase", "phrase_prefix"]
+    _valid_operators = ['or', "and"]
+
+    def __init__(self, text, type="boolean", slop=0, fuzziness=None,
+                 prefix_length=0, max_expansions=2147483647,
+                 operator="or", **kwargs):
+        super(TextQuery, self).__init__(**kwargs)
+        self.text = text
+        self.type = type
+        self.slop = slop
+        self.fuzziness = fuzziness
+        self.prefix_lenght = prefix_length
+        self.max_expansions = max_expansions
+        self.operator = operator
+
+    def serialize(self):
+
+        if self.type not in self._valid_types:
+            raise QueryError("Invalid value '%s' for type: allowed values are %s" % (self.type, self._valid_types))
+        if self.operator not in self._valid_operators:
+            raise QueryError("Invalid value '%s' for operator: allowed values are %s" % (self.operator, self._valid_operators))
+
+        options = {'type':self.type,
+                   "query":self.text}
+        if self.slop != 0:
+            options["slop"] = self.slop
+        if self.fuzziness is not None:
+            options["fuzziness"] = self.fuzziness
+        if self.slop != 0:
+            options["prefix_length"] = self.prefix_length
+        if self.max_expansions != 2147483647:
+            options["max_expansions"] = self.max_expansions
+        if self.operator:
+            options["operator"] = self.operator
+
+        return {self._internal_name:options}
+
 class RegexTermQuery(TermQuery):
     _internal_name = "regex_term"
 
@@ -1136,10 +1178,10 @@ class IdsQuery(Query):
     def serialize(self):
         data = {}
         if self.type:
-            data['type'] = self.type        
+            data['type'] = self.type
         if isinstance(self.values, basestring):
             data['values'] = [self.values]
         else:
             data['values'] = self.values
-                    
+
         return {self._internal_name:data}

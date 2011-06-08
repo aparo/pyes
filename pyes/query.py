@@ -1189,3 +1189,39 @@ class IdsQuery(Query):
             data['values'] = self.values
 
         return {self._internal_name:data}
+
+
+class PercolatorQuery(Query):
+    """A percolator query is used to determine which registered
+    PercolatorDoc's match the document supplied.
+
+    """
+
+    def __init__(self, doc, query=None, **kwargs):
+        """Constructor
+
+        doc - the doc to match against, dict
+        query - an additional query that can be used to filter the percolated
+        queries used to match against.
+        """
+        super(PercolatorQuery, self).__init__(**kwargs)
+        self.doc = doc
+        self.query = query
+
+    def serialize(self):
+        """Serialize the query to a structure using the query DSL.
+
+        """
+        data = {}
+        data['doc'] = self.doc
+        if hasattr(self.query, 'serialize'):
+            data['query'] = self.query.serialize()
+        return data
+
+    def search(self, **kwargs):
+        """Disable this as it is not allowed in percolator queries."""
+        raise NotImplementedError()
+
+    def to_search_json(self):
+        """Disable this as it is not allowed in percolator queries."""
+        raise NotImplementedError()

@@ -3,9 +3,6 @@
 
 __author__ = 'Alberto Paro'
 
-"""
-Work taken from pycassa
-"""
 import logging
 import random
 import socket
@@ -21,6 +18,10 @@ from pyesthrift import Rest
 from exceptions import NoServerAvailable
 
 __all__ = ['connect', 'connect_thread_local', 'NoServerAvailable']
+
+"""
+Work taken from pycassa
+"""
 
 DEFAULT_SERVER = '127.0.0.1:9500'
 #API_VERSION = VERSION.split('.')

@@ -4,10 +4,10 @@
 __author__ = 'Armando Guereca'
 
 class ScriptFields:
-    _internal_name = "script_fields"
     """
     This object create the script_fields definition
     """
+    _internal_name = "script_fields"
     def __init__(self, field_name, script, params = None):
         self.fields={}
         self.add_field(field_name, script, params or {})

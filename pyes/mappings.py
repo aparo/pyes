@@ -73,7 +73,7 @@ class AbstractField(object):
 
 class StringField(AbstractField):
     def __init__(self, null_value=None, include_in_all=None, *args, **kwargs):
-        super(StringField, self).__init__(**kwargs)
+        super(StringField, self).__init__(*args, **kwargs)
         self.null_value = null_value
         self.include_in_all = include_in_all
         self.type = "string"

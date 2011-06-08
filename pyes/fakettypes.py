@@ -173,7 +173,7 @@ class Status:
       "INSUFFICIENT_STORAGE": 506,
     }
 
-class RestRequest:
+class RestRequest(object):
     """
     Attributes:
      - method
@@ -183,7 +183,7 @@ class RestRequest:
      - body
     """
 
-    def __init__(self, method=None, uri=None, parameters=None, headers=None, body=None,):
+    def __init__(self, method=None, uri=None, parameters=None, headers=None, body=None):
         self.method = method
         self.uri = uri
         self.parameters = parameters
@@ -197,7 +197,7 @@ class RestResponse:
      - headers
      - body
     """
-    def __init__(self, status=None, headers=None, body=None,):
+    def __init__(self, status=None, headers=None, body=None):
         self.status = status
         self.headers = headers
         self.body = body

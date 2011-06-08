@@ -10,11 +10,11 @@ from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol, TProtocol
 try:
   from thrift.protocol import fastbinary
-except:
+except ImportError:
   fastbinary = None
 
 
-class Method:
+class Method(object):
   GET = 0
   PUT = 1
   POST = 2
@@ -40,7 +40,7 @@ class Method:
     "OPTIONS": 5,
   }
 
-class Status:
+class Status(object):
   CONT = 100
   SWITCHING_PROTOCOLS = 101
   OK = 200
@@ -181,7 +181,7 @@ class Status:
   }
 
 
-class RestRequest:
+class RestRequest(object):
   """
   Attributes:
    - method
@@ -200,7 +200,7 @@ class RestRequest:
     (5, TType.STRING, 'body', None, None, ), # 5
   )
 
-  def __init__(self, method=None, uri=None, parameters=None, headers=None, body=None,):
+  def __init__(self, method=None, uri=None, parameters=None, headers=None, body=None):
     self.method = method
     self.uri = uri
     self.parameters = parameters
@@ -312,7 +312,7 @@ class RestRequest:
   def __ne__(self, other):
     return not (self == other)
 
-class RestResponse:
+class RestResponse(object):
   """
   Attributes:
    - status
@@ -327,7 +327,7 @@ class RestResponse:
     (3, TType.STRING, 'body', None, None, ), # 3
   )
 
-  def __init__(self, status=None, headers=None, body=None,):
+  def __init__(self, status=None, headers=None, body=None):
     self.status = status
     self.headers = headers
     self.body = body

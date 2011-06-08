@@ -3,13 +3,14 @@
 
 __author__ = 'Alberto Paro'
 
-"""
-Unit tests for pyes.  These require an es server with thrift plugin running on the default port (localhost:9500).
-"""
 import unittest
 from pyes.tests import ESTestCase
 from pyes import TermQuery, clean_string, ResultSet
 from datetime import datetime
+
+"""
+Unit tests for pyes.  These require an es server with thrift plugin running on the default port (localhost:9500).
+"""
 
 class SerializationTestCase(ESTestCase):
     def setUp(self):

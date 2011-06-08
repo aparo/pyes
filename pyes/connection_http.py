@@ -3,9 +3,6 @@
 
 __author__ = 'Alberto Paro'
 
-"""
-Work taken from pycassa
-"""
 import logging
 import random
 import threading
@@ -19,6 +16,10 @@ from fakettypes import *
 import socket
 import sys
 __all__ = ['connect', 'connect_thread_local']
+
+"""
+Work taken from pycassa
+"""
 
 DEFAULT_SERVER = '127.0.0.1:9200'
 #API_VERSION = VERSION.split('.')

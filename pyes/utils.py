@@ -67,7 +67,7 @@ class ESRangeOp(ESRange):
         elif op == "lte":
             to_value = value
             include_upper = True
-        super(ESRangeOp, self).__init__(field, from_value, to_value, \
+        super(ESRangeOp, self).__init__(field, from_value, to_value,
                 include_lower, include_upper, boost)
 
 def clean_string(text):

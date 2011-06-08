@@ -11,14 +11,14 @@ from urllib3 import HTTPSConnectionPool
 log = getLogger(__name__)
 
 class NTLMConnectionPool(HTTPSConnectionPool):
-    '''Implements an NTLM authentication version of an urllib3 connection pool'''
+    """Implements an NTLM authentication version of an urllib3 connection pool"""
 
     scheme = 'https'
 
     def __init__(self, user, pw, authurl, *args, **kwargs):
-        '''authurl is a random URL on the server that is protected by NTLM.
+        """authurl is a random URL on the server that is protected by NTLM.
            user is the Windows user, probably in the DOMAIN\username format.
-           pw is the password for the user.'''
+           pw is the password for the user."""
         super(NTLMConnectionPool, self).__init__(*args, **kwargs)
         self.authurl = authurl
         self.rawuser = user

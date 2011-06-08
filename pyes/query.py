@@ -1037,7 +1037,7 @@ class SpanNearQuery(Query):
     def __init__(self, clauses=None, slop=None,
                  in_order=None,
                  collect_payloads=None, **kwargs):
-        super(SpanNotQuery, self).__init__(**kwargs)
+        super(SpanNearQuery, self).__init__(**kwargs)
         self.clauses = clauses or []
         self.slop = slop
         self.in_order = in_order

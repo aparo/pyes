@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 __author__ = 'Alberto Paro'
-__all__ = ['clean_string', 'ResultSet', "ESRange", "ESRangeOp", "string_b64encode", "string_b64decode"]
+__all__ = ['clean_string', "ESRange", "ESRangeOp", "string_b64encode", "string_b64decode"]
 import base64
 
 def string_b64encode(s):
@@ -77,63 +77,6 @@ def clean_string(text):
     if isinstance(text, unicode):
         return text.translate(UNI_SPECIAL_CHARS).strip()
     return text.translate(None, STR_SPECIAL_CHARS).strip()
-
-class ResultSet(object):
-    def __init__(self, results, fix_keys=True, clean_highlight=True):
-        """
-        results: an es query results dict
-        fix_keys: remove the "_" from every key, useful for django views
-        clean_highlight: removed empty highlight
-        """
-        self._results = results
-        self._total = None
-        self.valid = False
-        self.facets = results.get('facets', {})
-        if 'hits' in results:
-            self.valid = True
-            self.results = results['hits']['hits']
-        if fix_keys:
-            self.fix_keys()
-        if clean_highlight:
-            self.clean_highlight()
-
-    @property
-    def total(self):
-        if self._total is None:
-            self._total = 0
-            if self.valid:
-                self._total = self._results.get("hits", {}).get('total', 0)
-        return self._total
-
-    def fix_keys(self):
-        """
-        Remove the _ from the keys of the results
-        """
-        if not self.valid:
-            return
-
-        for hit in self._results['hits']['hits']:
-            for key, item in hit.items():
-                if key.startswith("_"):
-                    hit[key[1:]] = item
-                    del hit[key]
-
-    def clean_highlight(self):
-        """
-        Remove the empty highlight
-        """
-        if not self.valid:
-            return
-
-        for hit in self._results['hits']['hits']:
-            if 'highlight' in hit:
-                hl = hit['highlight']
-                for key, item in hl.items():
-                    if not item:
-                        del hl[key]
-
-    def __getattr__(self, name):
-        return self._results['hits'][name]
 
 def keys_to_string(data):
     """

@@ -5,7 +5,7 @@ __author__ = 'Alberto Paro'
 
 import unittest
 from pyes.tests import ESTestCase
-from pyes import TermQuery, clean_string, ResultSet
+from pyes import TermQuery
 from datetime import datetime
 
 """
@@ -44,21 +44,16 @@ class SerializationTestCase(ESTestCase):
         self.conn.index({"name":"Bill Baloney", "parsedtext":"Joe Testere nice guy", "uuid":"22222", "position":2, 'inserted':datetime(2010, 10, 22, 12, 12, 10)}, "test-index", "test-type", 2)
         self.conn.refresh(["test-index"])
 
+        #Sleep to allow ElasticSearch to set up 
+        #mapping and indices before running tests
+        #sleep(0.5)
+
     def test_TermQuery(self):
-        q = TermQuery("parsedtext", "joe")
-        result = self.conn.search(query=q, indexes="test-index")
-        self.dump(result)
-        result = ResultSet(result)
-        self.assertEquals(result.total, 2)
-        self.assertEquals(result.max_score, 0.15342641000000001)
+        q = TermQuery("name", "joe")
+        resultset = self.conn.search(query=q, indexes=["test-index"])
+        self.assertEquals(resultset.total, 1)
+        self.assertEquals(resultset.hits[0]['_source']['inserted'], datetime(2010, 10, 22, 12, 12, 12))
 
-#        self.assertEquals(result['hits']['hits'][0]['_source']['inserted'], datetime(2010, 10, 22, 12, 12, 12))
-
-    def test_cleanstring(self):
-        self.assertEquals(clean_string("senthil("), "senthil")
-        self.assertEquals(clean_string("senthil&"), "senthil")
-        self.assertEquals(clean_string("senthil-"), "senthil")
-        self.assertEquals(clean_string("senthil:"), "senthil")
 
 if __name__ == "__main__":
     unittest.main()

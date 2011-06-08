@@ -41,70 +41,73 @@ class QuerySearchTestCase(ESTestCase):
         self.conn.index({"name":"data2", "value":"value2"}, "test-index", "test-type2", 2, parent=2)
         self.conn.index({"name":"Bill Clinton", "parsedtext":"""Bill is not 
                 nice guy""", "uuid":"33333", "position":3}, "test-index", "test-type", 3)
-        self.conn.refresh(["test-index"])
+
+        self.conn.default_indexes=["test-index"]
+
+        self.conn.refresh()
 
     def test_TermQuery(self):
         q = TermQuery("name", "joe")
-        result = self.conn.search(query=q, indexes=["test-index"])
-        self.assertEquals(result['hits']['total'], 1)
+        resultset = self.conn.search(query=q, indexes=["test-index"])
+        self.assertEquals(resultset.total, 1)
 
         q = TermQuery("name", "joe", 3)
-        result = self.conn.search(query=q, indexes=["test-index"])
-        self.assertEquals(result['hits']['total'], 1)
+        resultset = self.conn.search(query=q, indexes=["test-index"])
+        self.assertEquals(resultset.total, 1)
 
         q = TermQuery("name", "joe", "3")
-        result = self.conn.search(query=q, indexes=["test-index"])
-        self.assertEquals(result['hits']['total'], 1)
+        resultset = self.conn.search(query=q, indexes=["test-index"])
+        self.assertEquals(resultset.total, 1)
 
     def test_WildcardQuery(self):
         q = WildcardQuery("name", "jo*")
-        result = self.conn.search(query=q, indexes=["test-index"])
-        self.assertEquals(result['hits']['total'], 1)
+        resultset = self.conn.search(query=q, indexes=["test-index"])
+        self.assertEquals(resultset.total, 1)
 
         q = WildcardQuery("name", "jo*", 3)
-        result = self.conn.search(query=q, indexes=["test-index"])
-        self.assertEquals(result['hits']['total'], 1)
+        resultset = self.conn.search(query=q, indexes=["test-index"])
+        self.assertEquals(resultset.total, 1)
 
         q = WildcardQuery("name", "jo*", "3")
-        result = self.conn.search(query=q, indexes=["test-index"])
-        self.assertEquals(result['hits']['total'], 1)
+        resultset = self.conn.search(query=q, indexes=["test-index"])
+        self.assertEquals(resultset.total, 1)
 
     def test_PrefixQuery(self):
         q = PrefixQuery("name", "jo")
-        result = self.conn.search(query=q, indexes=["test-index"])
-        self.assertEquals(result['hits']['total'], 1)
+        resultset = self.conn.search(query=q, indexes=["test-index"])
+        self.assertEquals(resultset.total, 1)
 
         q = PrefixQuery("name", "jo", 3)
-        result = self.conn.search(query=q, indexes=["test-index"])
-        self.assertEquals(result['hits']['total'], 1)
+        resultset = self.conn.search(query=q, indexes=["test-index"])
+        self.assertEquals(resultset.total, 1)
 
         q = PrefixQuery("name", "jo", "3")
-        result = self.conn.search(query=q, indexes=["test-index"])
-        self.assertEquals(result['hits']['total'], 1)
+        resultset = self.conn.search(query=q, indexes=["test-index"])
+        self.assertEquals(resultset.total, 1)
 
     def test_MatchAllQuery(self):
         q = MatchAllQuery()
-        result = self.conn.search(query=q, indexes=["test-index"], doc_types=["test-type"])
-        self.assertEquals(result['hits']['total'], 3)
+        resultset = self.conn.search(query=q, indexes=["test-index"], doc_types=["test-type"])
+        self.assertEquals(resultset.total, 3)
 
     def test_StringQuery(self):
         q = StringQuery("joe AND test")
-        result = self.conn.search(query=q, indexes=["test-index"])
-        self.assertEquals(result['hits']['total'], 0)
+        resultset = self.conn.search(query=q, indexes=["test-index"])
+        self.assertEquals(resultset.total, 0)
 
         q = StringQuery("joe OR test")
-        result = self.conn.search(query=q, indexes=["test-index"])
-        self.assertEquals(result['hits']['total'], 1)
+        resultset = self.conn.search(query=q, indexes=["test-index"])
+        self.assertEquals(resultset.total, 1)
 
         q1 = StringQuery("joe")
         q2 = StringQuery("test")
         q = BoolQuery(must=[q1, q2])
-        result = self.conn.search(query=q, indexes=["test-index"])
-        self.assertEquals(result['hits']['total'], 0)
+        resultset = self.conn.search(query=q, indexes=["test-index"])
+        self.assertEquals(resultset.total, 0)
 
         q = BoolQuery(should=[q1, q2])
-        result = self.conn.search(query=q, indexes=["test-index"])
-        self.assertEquals(result['hits']['total'], 1)
+        resultset = self.conn.search(query=q, indexes=["test-index"])
+        self.assertEquals(resultset.total, 1)
 
     def test_OR_AND_Filters(self):
         q1 = TermFilter("position", 1)
@@ -112,28 +115,28 @@ class QuerySearchTestCase(ESTestCase):
         andq = ANDFilter([q1, q2])
 
         q = FilteredQuery(MatchAllQuery(), andq)
-        result = self.conn.search(query=q, indexes=["test-index"])
-        self.assertEquals(result['hits']['total'], 0)
+        resultset = self.conn.search(query=q, indexes=["test-index"])
+        self.assertEquals(resultset.total, 0)
 
         orq = ORFilter([q1, q2])
         q = FilteredQuery(MatchAllQuery(), orq)
-        result = self.conn.search(query=q, indexes=["test-index"])
-        self.assertEquals(result['hits']['total'], 2)
+        resultset = self.conn.search(query=q, indexes=["test-index"])
+        self.assertEquals(resultset.total, 2)
 
     def test_FieldQuery(self):
         q = FieldQuery(FieldParameter("name", "+joe"))
-        result = self.conn.search(query=q, indexes=["test-index"])
-        self.assertEquals(result['hits']['total'], 1)
+        resultset = self.conn.search(query=q, indexes=["test-index"])
+        self.assertEquals(resultset.total, 1)
 
     def test_DisMaxQuery(self):
         q = DisMaxQuery(FieldQuery(FieldParameter("name", "+joe")))
-        result = self.conn.search(query=q, indexes=["test-index"])
-        self.assertEquals(result['hits']['total'], 1)
+        resultset = self.conn.search(query=q, indexes=["test-index"])
+        self.assertEquals(resultset.total, 1)
 
     def test_HasChildQuery(self):
         q = HasChildQuery(type="test-type2", query=TermQuery("name", "data1"))
-        result = self.conn.search(query=q, indexes=["test-index"])
-        self.assertEquals(result['hits']['total'], 1)
+        resultset = self.conn.search(query=q, indexes=["test-index"])
+        self.assertEquals(resultset.total, 1)
 
     def test_RegexTermQuery(self):
         # Don't run this test, because it depends on the RegexTermQuery
@@ -141,41 +144,41 @@ class QuerySearchTestCase(ESTestCase):
         return
 
         q = RegexTermQuery("name", "jo.")
-        result = self.conn.search(query=q, indexes=["test-index"])
-        self.assertEquals(result['hits']['total'], 1)
+        resultset = self.conn.search(query=q, indexes=["test-index"])
+        self.assertEquals(resultset.total, 1)
 
     def test_CustomScoreQueryMvel(self):
         q = CustomScoreQuery(query=MatchAllQuery(),
                              lang="mvel",
                              script="_score*(5+doc.position.value)"
                              )
-        result = self.conn.search(query=q, indexes=["test-index"], doc_types=["test-type"])
-        self.assertEquals(result['hits']['total'], 3)
-        self.assertEquals(result['hits']['hits'][0]['_score'], 8.0)
-        self.assertEquals(result['hits']['hits'][1]['_score'], 7.0)
-        self.assertEquals(result['hits']['max_score'], 8.0)
+        resultset = self.conn.search(query=q, indexes=["test-index"], doc_types=["test-type"])
+        self.assertEquals(resultset.total, 3)
+        self.assertEquals(resultset.hits[0]['_score'], 8.0)
+        self.assertEquals(resultset.hits[1]['_score'], 7.0)
+        self.assertEquals(resultset.max_score, 8.0)
 
     def test_CustomScoreQueryJS(self):
         q = CustomScoreQuery(query=MatchAllQuery(),
                              lang="js",
                              script="parseFloat(_score*(5+doc.position.value))"
                              )
-        result = self.conn.search(query=q, indexes=["test-index"], doc_types=["test-type"])
-        self.assertEquals(result['hits']['total'], 3)
-        self.assertEquals(result['hits']['hits'][0]['_score'], 8.0)
-        self.assertEquals(result['hits']['hits'][1]['_score'], 7.0)
-        self.assertEquals(result['hits']['max_score'], 8.0)
+        resultset = self.conn.search(query=q, indexes=["test-index"], doc_types=["test-type"])
+        self.assertEquals(resultset.total, 3)
+        self.assertEquals(resultset.hits[0]['_score'], 8.0)
+        self.assertEquals(resultset.hits[1]['_score'], 7.0)
+        self.assertEquals(resultset.max_score, 8.0)
 
     def test_CustomScoreQueryPython(self):
         q = CustomScoreQuery(query=MatchAllQuery(),
                              lang="python",
                              script="parseFloat(_score*(5+doc.position.value))"
                              )
-        result = self.conn.search(query=q, indexes=["test-index"], doc_types=["test-type"])
-        self.assertEquals(result['hits']['total'], 3)
-        self.assertEquals(result['hits']['hits'][0]['_score'], 8.0)
-        self.assertEquals(result['hits']['hits'][1]['_score'], 7.0)
-        self.assertEquals(result['hits']['max_score'], 8.0)
+        resultset = self.conn.search(query=q, indexes=["test-index"], doc_types=["test-type"])
+        self.assertEquals(resultset.total, 3)
+        self.assertEquals(resultset.hits[0]['_score'], 8.0)
+        self.assertEquals(resultset.hits[1]['_score'], 7.0)
+        self.assertEquals(resultset.max_score, 8.0)
 
 if __name__ == "__main__":
     unittest.main()

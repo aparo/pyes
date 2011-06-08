@@ -115,7 +115,7 @@ class IndexingTestCase(ESTestCase):
 
 
 #    def testSearchByField(self):
-#        result = self.conn.search("name:joe")
+#        resultset = self.conn.search("name:joe")
 #        self.assertResultContains(result, {'hits': {'hits': [{'_type': 'test-type', '_id': '1', '_source': {'name': 'Joe Tester'}, '_index': 'test-index'}], 'total': 1}})
 
 #    def testTermsByField(self):

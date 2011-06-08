@@ -42,8 +42,8 @@ class BulkTestCase(ESTestCase):
 
     def test_TermQuery(self):
         q = TermQuery("name", "bill")
-        result = self.conn.search(query=q, indexes=["test-index"])
-        self.assertEquals(result['hits']['total'], 2)
+        resultset = self.conn.search(query=q, indexes=["test-index"])
+        self.assertEquals(resultset.total, 2)
 
 if __name__ == "__main__":
     unittest.main()

@@ -41,34 +41,18 @@ For a single connection (which is _not_ thread-safe), pass a list of servers.
 
 For thrift:
 
-    >>> client = pyes.connect() # Defaults to connecting to the server at '127.0.0.1:9500'
-    >>> client = pyes.connect(['127.0.0.1:9500'])
+    >>> conn = pyes.ES() # Defaults to connecting to the server at '127.0.0.1:9500'
+    >>> conn = pyes.ES(['127.0.0.1:9500'])
 
 For http:
 
-    >>> client = pyes.connect(['127.0.0.1:9200'])
-
-
-With thrift protocol, framed transport is the default. You may disable it by passing framed_transport=False.
-
-    >>> client = pyes.connect(framed_transport=False)
-
-Thread-local connections opens a connection for every thread that calls an ElasticSearch function. It also automatically balances the number of connections between servers, unless round_robin=False.
-
-    >>> client = pyes.connect_thread_local() # Defaults to connecting to the server at '127.0.0.1:9500'
-    >>> client = pyes.connect_thread_local(['127.0.0.1:9500', 'other_server:9500']) # Round robin connections
-    >>> client = pyes.connect_thread_local(['127.0.0.1:9500', 'other_server:9500'], round_robin=False) # Connect in list order
-
-With http protocol transport:
-
-    >>> client = pyes.connect_thread_local(['127.0.0.1:9200', 'other_server:9200']) # Round robin connections
-    >>> client = pyes.connect_thread_local(['127.0.0.1:9200', 'other_server:9200'], round_robin=False) # Connect in list order
+    >>> conn = pyes.ES(['127.0.0.1:9200'])
 
 Connections are robust to server failures. Upon a disconnection, it will attempt to connect to each server in the list in turn. If no server is available, it will raise a NoServerAvailable exception.
 
 Timeouts are also supported and should be used in production to prevent a thread from freezing while waiting for the server to return.
 
-    >>> client = pyes.connect(timeout=3.5) # 3.5 second timeout
+    >>> conn = pyes.ES(timeout=3.5) # 3.5 second timeout
     (Make some pyes calls and the connection to the server suddenly becomes unresponsive.)
 
     Traceback (most recent call last):
@@ -150,6 +134,18 @@ lat].  Clients will need to update accordingly, or use an object with named
 parameters.
 
 v. 0.16.0:
+
+           Updated documentation
+
+           Added TextQuery and some clean up of code.
+
+           Added date_histogram facet  (zebuline).
+
+           Added script fields to Search object, also add "fields" to TermFacet  (aguereca).
+
+           Added analyze_wildcard param to StringQuery (available for ES 0.16.0) (zebuline).
+
+           Add ScriptFields object used as parameter script_fields of Search object (aguereca).
 
            Add IdsQuery, IdsFilter and deleteByQuery (aguereca).
 

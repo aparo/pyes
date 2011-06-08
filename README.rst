@@ -135,11 +135,13 @@ parameters.
 
 v. 0.16.0:
 
-           Updated documentation
+           Updated documentation.
 
            Added TextQuery and some clean up of code.
 
-           Added date_histogram facet  (zebuline).
+           Added percolator (matterkkila).
+
+           Added date_histogram facet (zebuline).
 
            Added script fields to Search object, also add "fields" to TermFacet  (aguereca).
 

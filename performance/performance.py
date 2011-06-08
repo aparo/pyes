@@ -1,7 +1,7 @@
 from pyes import ES
 from datetime import datetime
 import shelve
-conn = ES('127.0.0.1:9500')
+conn = ES('127.0.0.1:9200')
 try:
     conn.delete_index("test-index")
 except:

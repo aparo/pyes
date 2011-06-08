@@ -20,7 +20,7 @@ from scriptfields import ScriptFields
 from pyes.exceptions import InvalidQuery, InvalidParameterQuery, QueryError, ScriptFieldsError
 log = logging.getLogger('pyes')
 
-class FieldParameter:
+class FieldParameter(object):
 
     def __init__(self, field,
                  query,
@@ -813,8 +813,6 @@ class TermQuery(Query):
             self.add(field, value, boost)
 
     def add(self, field, value, boost=None):
-        if not value.strip():
-            raise InvalidParameterQuery("value %r must be valid text" % value)
         match = {'value':value}
         if boost:
             if isinstance(boost, (float, int)):

@@ -389,7 +389,7 @@ def get_field(name, data):
 
 class Mapper(object):
     def __init__(self, data):
-        self.indexes = {}
+        self.indices = {}
         self._process(data)
 
     def _process(self, data):
@@ -397,15 +397,15 @@ class Mapper(object):
         Process indexer data
         """
         for indexname, indexdata in data.items():
-            self.indexes[indexname] = {}
+            self.indices[indexname] = {}
             for docname, docdata in indexdata.items():
-                self.indexes[indexname][docname] = get_field(docname, docdata)
+                self.indices[indexname][docname] = get_field(docname, docdata)
 
     def get_doctype(self, index, name):
         """
         Returns a doctype given an index and a name
         """
-        return self.indexes[index][name]
+        return self.indices[index][name]
 
 #u'index_name': u'id',
 #u'precision_step': 4,

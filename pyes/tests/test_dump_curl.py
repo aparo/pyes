@@ -12,7 +12,7 @@ class DumpCurlTestCase(ESTestCase):
         super(DumpCurlTestCase, self).setUp()
 
     def testDumpCurl(self):
-        """Test errors thrown when creating or deleting indexes.
+        """Test errors thrown when creating or deleting indices.
 
         """
         dump = StringIO.StringIO()

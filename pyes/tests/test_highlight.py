@@ -42,7 +42,7 @@ class QuerySearchTestCase(ESTestCase):
         q = Search(StringQuery("joe"))
         q.add_highlight("parsedtext")
         q.add_highlight("name")
-        resultset = self.conn.search(q, indexes=["test-index"])
+        resultset = self.conn.search(q, indices=["test-index"])
         self.assertEquals(resultset.total, 2)
 
 if __name__ == "__main__":

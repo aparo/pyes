@@ -42,7 +42,7 @@ class BulkTestCase(ESTestCase):
 
     def test_TermQuery(self):
         q = TermQuery("name", "bill")
-        resultset = self.conn.search(query=q, indexes=["test-index"])
+        resultset = self.conn.search(query=q, indices=["test-index"])
         self.assertEquals(resultset.total, 2)
 
 if __name__ == "__main__":

@@ -110,19 +110,19 @@ class MultifieldTestCase(ESTestCase):
 
     def test_TermQuery(self):
         q = TermQuery("name", "joe")
-        resultset = self.conn.search(query=q, indexes=["test-index"])
+        resultset = self.conn.search(query=q, indices=["test-index"])
         self.assertEquals(resultset.total, 1)
 
         q = TermQuery("name", "joe", 3)
-        resultset = self.conn.search(query=q, indexes=["test-index"])
+        resultset = self.conn.search(query=q, indices=["test-index"])
         self.assertEquals(resultset.total, 1)
 
         q = TermQuery("name", "joe", "3")
-        resultset = self.conn.search(query=q, indexes=["test-index"])
+        resultset = self.conn.search(query=q, indices=["test-index"])
         self.assertEquals(resultset.total, 1)
 
         q = TermQuery("value", 43.32)
-        resultset = self.conn.search(query=q, indexes=["test-index"])
+        resultset = self.conn.search(query=q, indices=["test-index"])
         self.assertEquals(resultset.total, 1)
 
 

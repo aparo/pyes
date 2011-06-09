@@ -49,23 +49,23 @@ class GeoQuerySearchTestCase(ESTestCase):
     def test_GeoDistanceFilter(self):
         gq = GeoDistanceFilter("pin.location", {"lat" : 40, "lon" :70}, "200km")
         q = FilteredQuery(MatchAllQuery(), gq)
-        resultset = self.conn.search(query=q, indexes=["test-mindex"])
+        resultset = self.conn.search(query=q, indices=["test-mindex"])
         self.assertEquals(resultset.total, 1)
 
         gq = GeoDistanceFilter("pin.location", [70, 40], "200km")
         q = FilteredQuery(MatchAllQuery(), gq)
-        resultset = self.conn.search(query=q, indexes=["test-mindex"])
+        resultset = self.conn.search(query=q, indices=["test-mindex"])
         self.assertEquals(resultset.total, 1)
 
     def test_GeoBoundingBoxFilter(self):
         gq = GeoBoundingBoxFilter("pin.location", location_tl={"lat" : 40.717, "lon" : 70.99}, location_br={"lat" : 40.03, "lon" : 72.0})
         q = FilteredQuery(MatchAllQuery(), gq)
-        resultset = self.conn.search(query=q, indexes=["test-mindex"])
+        resultset = self.conn.search(query=q, indices=["test-mindex"])
         self.assertEquals(resultset.total, 1)
 
         gq = GeoBoundingBoxFilter("pin.location", [70.99, 40.717], [74.1, 40.03])
         q = FilteredQuery(MatchAllQuery(), gq)
-        result2 = self.conn.search(query=q, indexes=["test-mindex"])
+        result2 = self.conn.search(query=q, indices=["test-mindex"])
         self.assertEquals(result2.total, 1)
 #        del result['took']
 #        del result2['took']
@@ -77,7 +77,7 @@ class GeoQuerySearchTestCase(ESTestCase):
                                                 {"lat" : 80, "lon" :-90}]
                                                 )
         q = FilteredQuery(MatchAllQuery(), gq)
-        resultset = self.conn.search(query=q, indexes=["test-mindex"])
+        resultset = self.conn.search(query=q, indices=["test-mindex"])
         self.assertEquals(resultset.total, 1)
 
         gq = GeoPolygonFilter("pin.location", [[ -30, 50],
@@ -85,7 +85,7 @@ class GeoQuerySearchTestCase(ESTestCase):
                                               [ -90, 80]]
                                                 )
         q = FilteredQuery(MatchAllQuery(), gq)
-        resultset = self.conn.search(query=q, indexes=["test-mindex"])
+        resultset = self.conn.search(query=q, indices=["test-mindex"])
         self.assertEquals(resultset.total, 1)
 
 if __name__ == "__main__":

@@ -16,7 +16,7 @@ class ErrorReportingTestCase(ESTestCase):
         self.conn.delete_index_if_exists("test-index")
 
     def testCreateDelete(self):
-        """Test errors thrown when creating or deleting indexes.
+        """Test errors thrown when creating or deleting indices.
 
         """
         result = self.conn.create_index("test-index")

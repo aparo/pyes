@@ -69,7 +69,7 @@ class IndexingTestCase(ESTestCase):
         self.conn.delete_index("another-index")
 
     def testPutMapping(self):
-        result = self.conn.put_mapping("test-type", {"test-type" : {"properties" : {"name" : {"type" : "string", "store" : "yes"}}}}, indexes=["test-index"])
+        result = self.conn.put_mapping("test-type", {"test-type" : {"properties" : {"name" : {"type" : "string", "store" : "yes"}}}}, indices=["test-index"])
         self.assertResultContains(result, {'acknowledged': True, 'ok': True})
 
     def testIndexStatus(self):
@@ -110,7 +110,7 @@ class IndexingTestCase(ESTestCase):
         self.conn.index({"name":"Bill Baloney"}, "test-index", "test-type", 2)
         self.conn.refresh(["test-index"])
         q = TermQuery("name", "joe")
-        result = self.conn.count(q, indexes=["test-index"])
+        result = self.conn.count(q, indices=["test-index"])
         self.assertResultContains(result, {'count': 1})
 
 
@@ -123,7 +123,7 @@ class IndexingTestCase(ESTestCase):
 #        self.assertResultContains(result, {'docs': {'max_doc': 2, 'num_docs': 2, 'deleted_docs': 0}, 'fields': {'name': {'terms': [{'term': 'baloney', 'doc_freq': 1}, {'term': 'bill', 'doc_freq': 1}, {'term': 'joe', 'doc_freq': 1}, {'term': 'tester', 'doc_freq': 1}]}}})
 #        
 #    def testTermsByIndex(self):
-#        result = self.conn.terms(['name'], indexes=['test-index'])
+#        result = self.conn.terms(['name'], indices=['test-index'])
 #        self.assertResultContains(result, {'docs': {'max_doc': 2, 'num_docs': 2, 'deleted_docs': 0}, 'fields': {'name': {'terms': [{'term': 'baloney', 'doc_freq': 1}, {'term': 'bill', 'doc_freq': 1}, {'term': 'joe', 'doc_freq': 1}, {'term': 'tester', 'doc_freq': 1}]}}})
 #
 #    def testTermsMinFreq(self):

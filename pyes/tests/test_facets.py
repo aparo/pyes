@@ -66,7 +66,7 @@ class FacetSearchTestCase(ESTestCase):
         q = MatchAllQuery()
         q = q.search()
         q.facet.add_term_facet('tag')
-        resultset = self.conn.search(query=q, indexes=["test-index"], doc_types=["test-type"])
+        resultset = self.conn.search(query=q, indices=["test-index"], doc_types=["test-type"])
         self.assertEquals(resultset.total, 3)
         self.assertEquals(resultset.facets['tag']['terms'], [{u'count': 2, u'term': u'foo'},
                                                              {u'count': 1, u'term': u'bar'}])
@@ -76,7 +76,7 @@ class FacetSearchTestCase(ESTestCase):
         q = FilteredQuery(q, TermFilter('tag', 'foo'))
         q = q.search()
         q.facet.add_term_facet('tag')
-        resultset = self.conn.search(query=q, indexes=["test-index"], doc_types=["test-type"])
+        resultset = self.conn.search(query=q, indices=["test-index"], doc_types=["test-type"])
         self.assertEquals(resultset.total, 2)
         self.assertEquals(resultset.facets['tag']['terms'], [{u'count': 2, u'term': u'foo'}])
 
@@ -86,7 +86,7 @@ class FacetSearchTestCase(ESTestCase):
         q.facet.facets.append(DateHistogramFacet('date_facet',
                                                  field='date',
                                                  interval='month'))
-        resultset = self.conn.search(query=q, indexes=["test-index"], doc_types=["test-type"])
+        resultset = self.conn.search(query=q, indices=["test-index"], doc_types=["test-type"])
         self.assertEquals(resultset.total, 3)
         self.assertEquals(resultset.facets['date_facet']['entries'], [{u'count': 2, u'time': 1301616000000},
                                                                       {u'count': 1, u'time': 1304208000000}])
@@ -105,7 +105,7 @@ class FacetSearchTestCase(ESTestCase):
         q.facet.facets.append(DateHistogramFacet('date_facet',
                                                  field='date',
                                                  interval='month'))
-        resultset = self.conn.search(query=q, indexes=["test-index"], doc_types=["test-type"])
+        resultset = self.conn.search(query=q, indices=["test-index"], doc_types=["test-type"])
         self.assertEquals(resultset.total, 2)
         self.assertEquals(resultset.facets['date_facet']['entries'], [{u'count': 2, u'time': 1301616000000}])
 

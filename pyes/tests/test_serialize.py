@@ -50,7 +50,7 @@ class SerializationTestCase(ESTestCase):
 
     def test_TermQuery(self):
         q = TermQuery("name", "joe")
-        resultset = self.conn.search(query=q, indexes=["test-index"])
+        resultset = self.conn.search(query=q, indices=["test-index"])
         self.assertEquals(resultset.total, 1)
         self.assertEquals(resultset.hits[0]['_source']['inserted'], datetime(2010, 10, 22, 12, 12, 12))
 

@@ -71,12 +71,12 @@ class ErrorReportingTestCase(ESTestCase):
         self.assertEqual(sorted(self.conn.get_alias("test-alias")),
                          ['test-index', 'test-index2'])
 
-        # Check deleting multiple indexes from an alias.
+        # Check deleting multiple indices from an alias.
         self.conn.delete_alias("test-alias", ["test-index", "test-index2"])
         err = self.checkRaises(pyes.exceptions.IndexMissingException,
                                self.conn.get_alias, 'test-alias')
 
-        # Check deleting multiple indexes from a missing alias (still no error)
+        # Check deleting multiple indices from a missing alias (still no error)
         self.conn.delete_alias("test-alias", ["test-index", "test-index2"])
 
         # Check that we still get an error for a missing alias.

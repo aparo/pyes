@@ -1,4 +1,5 @@
 .. _es-guide-reference-api-search-index:
+.. _es-guide-reference-api-search:
 
 ======
 Search
@@ -58,7 +59,9 @@ The routing parameter can be multi valued represented as a comma separated strin
     index-boost
     indices-types
     named-filters
+    min-score
     query
+    preference
     request-body
     script-fields
     scroll

@@ -68,7 +68,7 @@ Memory Settings
  There is an option to use `mlockall <http://opengroup.org/onlinepubs/007908799/xsh/mlockall.html>`_  to try and lock the process address space so it won't be swapped. For this to work, the **bootstrap.mlockall** should be set to **true** and it is recommended to set both the min and max memory allocation to be the same. 
 
 
-In order to see if this works or not, set the **common.jna** logging to DEBUG level. A solution to "Unknown mloclall error 0" can be to set **ulimit -l unlimited**.
+In order to see if this works or not, set the **common.jna** logging to DEBUG level. A solution to "Unknown mlockall error 0" can be to set **ulimit -l unlimited**.
 
 
 Note, this is experimental feature, and might cause the JVM or shell session to exit if failing to allocate the memory (because not enough memory is available on the machine).

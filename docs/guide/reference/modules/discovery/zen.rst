@@ -50,7 +50,7 @@ The unicast discovery allows to perform the discovery when multicast is not enab
 **hosts**    Either an array setting or a comma delimited setting. Each value is either in the form of **host:port**, or in the form of **host[port1-port2]**.  
 ===========  ===================================================================================================================================================
 
-The unicast discovery uses the :ref:`transport <es-guide-reference-transport>`  module to perform the discovery.
+The unicast discovery uses the :ref:`transport <es-guide-reference-modules-transport>`  module to perform the discovery.
 
 
 Master Election

@@ -4,7 +4,7 @@
 Request Body
 ============
 
-The search request can be executed with a search DSL, which includes the :ref:`Query DSL <es-guide-reference-api-search-guide-reference-query-dsl>`,  within its body. Here is an example:
+The search request can be executed with a search DSL, which includes the :ref:`Query DSL <es-guide-reference-query-dsl>`,  within its body. Here is an example:
 
 
 .. code-block:: js

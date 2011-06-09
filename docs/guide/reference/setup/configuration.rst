@@ -10,8 +10,7 @@ Configuration
 Settings
 ========
 
-The configuration format is `YAML <http://www.yaml.org/>`_,  here is an example of changing the address all network based modules will use to bind and publish to:
-
+The configuration format is `YAML <http://www.yaml.org/>`_.   Here is an example of changing the address all network based modules will use to bind and publish to:
 
 .. code-block:: js
 
@@ -19,8 +18,24 @@ The configuration format is `YAML <http://www.yaml.org/>`_,  here is an example 
         host : 10.0.0.4
 
 
-Internally, all settings are collapsed into `namespaced" settings. For example, the above gets collapsed into **network.host**. This means that its easy to support other configuration formats, for example, "JSON <http://www.json.org>`_.  If JSON is a preferred configuration format, simply rename the **elasticsearch.yml** file to **elasticsearch.json** and add:
+In production use, you will almost certainly want to change paths for data and log files:
 
+.. code-block:: js
+
+    path:
+      logs: /var/log/elasticsearch
+      data: /var/data/elasticsearch
+
+
+Also, don't forget to give your production cluster a name, which is used to discover and auto-join other nodes:
+
+.. code-block:: js
+
+    cluster:
+      name: <NAME OF YOUR CLUSTER>
+
+
+Internally, all settings are collapsed into `namespaced" settings. For example, the above gets collapsed into **network.host**. This means that its easy to support other configuration formats, for example, "JSON <http://www.json.org>`_.  _.  If JSON is a preferred configuration format, simply rename the **elasticsearch.yml** file to **elasticsearch.json** and add:
 
 .. code-block:: js
 
@@ -94,7 +109,7 @@ This means that every index that gets created on the specific node started with 
     $ elasticsearch -f -Des.index.store.type=memory
 
 
-All of the index level configuration can be found within each :ref:`index module <es-guide-reference-setup-guide-reference-index-modules>`.  
+All of the index level configuration can be found within each :ref:`index module <es-guide-reference-index-modules>`.  
 
 Logging
 =======

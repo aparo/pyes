@@ -28,7 +28,7 @@ A specific histogram facet that can work with **date** field types enhancing it 
 Interval
 ========
 
-The **interval** allows to set the interval at which buckets will be created for each hit. It allows for the constant values of **year**, **month**, **day**, **hour**, **minute**.
+The **interval** allows to set the interval at which buckets will be created for each hit. It allows for the constant values of **year**, **month**, **week**, **day**, **hour**, **minute**.
 
 
 The specific constant values also support setting rounding by appending : to it, and then the rounding value. For example: day:ceiling. The values are:
@@ -46,10 +46,10 @@ It also support time setting like **1.5h** (up to **w** for weeks).
 Time Zone
 =========
 
-By default, times are stored as UTC milliseconds since the epoch. Thus, all computation and "bucketing" / "rounding" is done on UTC. It is possible to provide a **zone** value, which will cause all computations to take the relevant zone into account. The time returned for each bucket/entry is milliseconds since the epoch of the provided time zone.
+By default, times are stored as UTC milliseconds since the epoch. Thus, all computation and "bucketing" / "rounding" is done on UTC. It is possible to provide a **time_zone** value, which will cause all computations to take the relevant zone into account. The time returned for each bucket/entry is milliseconds since the epoch of the provided time zone.
 
 
-The zone value accepts either a numeric value for the hours offset, for example: **`zone" : -2**. It also accepts a format of hours and minutes, like **"zone" : "-02:30"**. Another option is to provide a time zone accepted as one of the values listed "here <http://joda-time.sourceforge.net/timezones.html>`_.  
+The zone value accepts either a numeric value for the hours offset, for example: **`time_zone" : -2**. It also accepts a format of hours and minutes, like **"time_zone" : "-02:30"**. Another option is to provide a time zone accepted as one of the values listed "here <http://joda-time.sourceforge.net/timezones.html>`_.  
 
 Value Field
 ===========

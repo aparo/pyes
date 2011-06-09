@@ -19,15 +19,17 @@ The **network.host** setting is a simple setting to automatically set both **net
 Both settings allows to be configured with either explicit host address or host name. The settings also accept logical setting values explained in the following table:
 
 
-==============================  ======================================================================================
- Logical Host Setting Value      Description                                                                          
-==============================  ======================================================================================
-**_local_**                     Will be resolved to the local ip address.                                             
-**_nonloopback_**               The first non loopback address.                                                       
-**_nonloopback:ipv4_**          The first non loopback IPv4 address.                                                  
-**_nonloopback:ipv6_**          The first non loopback IPv6 address.                                                  
-**_[netowrkInterface]_**        Resolves to the ip address of the provided network interface. For example **_en0_**.  
-==============================  ======================================================================================
+===============================  =============================================================================================
+ Logical Host Setting Value       Description                                                                                 
+===============================  =============================================================================================
+**_local_**                      Will be resolved to the local ip address.                                                    
+**_non_loopback_**               The first non loopback address.                                                              
+**_non_loopback:ipv4_**          The first non loopback IPv4 address.                                                         
+**_non_loopback:ipv6_**          The first non loopback IPv6 address.                                                         
+**_[networkInterface]_**         Resolves to the ip address of the provided network interface. For example **_en0_**.         
+**_[networkInterface]:ipv4_**    Resolves to the ipv4 address of the provided network interface. For example **_en0:ipv4_**.  
+**_[networkInterface]:ipv6_**    Resolves to the ipv6 address of the provided network interface. For example **_en0:ipv6_**.  
+===============================  =============================================================================================
 
 TCP Settings
 ============

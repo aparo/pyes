@@ -4,7 +4,7 @@
 Snowball Tokenfilter
 ====================
 
-A filter that stems words using a Snowball-generated stemmer. The **language** parameter controls the stemmer with the following available values: **Danish**, **Dutch**, **English**, **Finnish**, **French**, **German**, **German2**, **Hungarian**, **Italian**, **Kp**, **Lovins**, **Norwegian**, **Porter**, **Portuguese**, **Romanian**, **Russians**, **Spanish**, **Spanish**, **Swedish**, **Turkish**.
+A filter that stems words using a Snowball-generated stemmer. The **language** parameter controls the stemmer with the following available values: **Armenian**, **Basque**, **Catalan**, **Danish**, **Dutch**, **English**, **Finnish**, **French**, **German**, **German2**, **Hungarian**, **Italian**, **Kp**, **Lovins**, **Norwegian**, **Porter**, **Portuguese**, **Romanian**, **Russian**, **Spanish**, **Swedish**, **Turkish**.
 
 
 For example:

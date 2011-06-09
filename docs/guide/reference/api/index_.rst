@@ -56,7 +56,7 @@ Though explained on the :ref:`mapping <es-guide-reference-mapping>`  section, it
 Versioning
 ==========
 
-Each document indexed is versioned. When indexing a doc, the **version** that is associated with it is returned as part of the response. The index API allows for `optimistic concurrency control <http://en.wikipedia.org/wiki/Optimistic_concurrency_control>`_  by allowing to specify the version the index should be updated under. This is handy for example when doing read and update, and making sure no changes happened in the meantime. For example:
+Each document indexed is versioned. When indexing a doc, the **version** that is associated with it is returned as part of the response. The index API allows for `optimistic concurrency control <http://en.wikipedia.org/wiki/Optimistic_concurrency_control>`_  by allowing to specify the version the index should be updated under. This is handy for example when doing read and update, and making sure no changes happened in the meantime (when reading, make sure to set the **preference** to **_primary**). For example:
 
 
 .. code-block:: js
@@ -67,6 +67,12 @@ Each document indexed is versioned. When indexing a doc, the **version** that is
 
 
 Note, versioning are completely real time, and are not affect by the near real time aspect of get and search operations. If no version is provided, then the operation is forced to be executed without any checks.
+
+
+By default, an internal versioning systems will be used, but, the versioning can be provided as an external value (for example, if maintained in a database). It must be a numeric value, and when providing it, the **version_type** should be set to **external**. In this case, the check will be if the provided version is greater than the current document version. If so, it will be set as the document version value and the document will be indexed. If the current document version is higher than the provided version, a version conflict will be returned / thrown.
+
+
+This means that async indexing as a result of operations done against the database can use the database versioning scheme and there is no need to maintain strict ordering in the async indexing process. Or even the simple case of updating the db, and then indexing into elasticsearch is now simplified since if the indexing gets out of order, the external versioning can be used to make sure only the latest version is indexed.
 
 
 Operation Type

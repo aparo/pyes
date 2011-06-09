@@ -4,7 +4,7 @@
 Term Query
 ==========
 
-Matches documents that have fields that contain a a term (*not analyzed*). The term query maps to Lucene **TermQuery**. The following matches documents where the user field contains the term **kimchy**:
+Matches documents that have fields that contain a term (*not analyzed*). The term query maps to Lucene **TermQuery**. The following matches documents where the user field contains the term **kimchy**:
 
 
 .. code-block:: js

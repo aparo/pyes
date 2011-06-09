@@ -14,3 +14,6 @@ The delete index API allows to delete an existing index.
 
 The above example deletes an index called **twitter**.
 
+
+The delete index API can also be applied to more than one index, or on **_all** indices (be careful!). All indices will also be deleted when no specific index is provided.
+

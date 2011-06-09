@@ -1,4 +1,5 @@
 .. _es-guide-reference-index-modules-analysis-index:
+.. _es-guide-reference-index-modules-analysis:
 
 ========
 Analysis
@@ -47,6 +48,9 @@ Here is a sample configuration:
                     max : 2000
 
 
+All analyzers, tokenizers, and token filters can be configured with a **version** parameter to control which Lucene version behavior they should use. Possible values are: **2.9**, **3.0** and **3.1** (the highest version number is the default option).
+
+
 Types
 =====
 
@@ -80,7 +84,7 @@ Default Analyzers
 An analyzer is registered under a logical name and can then be referenced from mapping definitions or certain APIs. When none are defined, defaults are used. There is an option to define which analyzers will be used as default when none can be derived.
 
 
-The **default** logical name allows to configure an analyzer that will be used both for indexing and for searching APIs. The **default_index** logical name can be used to configure a default analyzer that will be used just when indexing, and the **default_search** can be used to configure a default analyzer that will be used just when indexing.
+The **default** logical name allows to configure an analyzer that will be used both for indexing and for searching APIs. The **default_index** logical name can be used to configure a default analyzer that will be used just when indexing, and the **default_search** can be used to configure a default analyzer that will be used just when searching.
 
 
 Aliasing Analyzers
@@ -118,22 +122,30 @@ Will allow the **standard** analyzer to also be referenced with **alias1** and *
     asciifolding-tokenfilter
     compound-word-tokenfilter
     edgengram-tokenfilter
+    elision-tokenfilter
     length-tokenfilter
     lowercase-tokenfilter
     ngram-tokenfilter
     phonetic-tokenfilter
     porterstem-tokenfilter
+    reverse-tokenfilter
     shingle-tokenfilter
     snowball-tokenfilter
     standard-tokenfilter
     standard-tokenizer
+    stemmer-tokenfilter
     stop-tokenfilter
+    synonym-tokenfilter
+    word-delimiter-tokenfilter
 
     edgengram-tokenizer
     keyword-tokenizer
     letter-tokenizer
     lowercase-tokenizer
     ngram-tokenizer
+    pathhierarchy-tokenizer
+    pattern-tokenizer
+    uaxurlemail-tokenizer
     whitespace-tokenizer
 
     htmlstrip-charfilter

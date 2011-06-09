@@ -24,7 +24,7 @@ The TCP transport is an implementation of the transport module using TCP. It all
 **transport.tcp.compress**           Set to **true** to enable compression (LZF) between all nodes. Defaults to **false**.  
 ===================================  =======================================================================================
 
-It also shares the uses the common :ref:`network settings <es-guide-reference-modules-node-network>`.  
+It also shares the uses the common :ref:`network settings <es-guide-reference-modules-network>`.  
 
 Local Transport
 ===============

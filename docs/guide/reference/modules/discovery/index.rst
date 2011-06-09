@@ -1,4 +1,5 @@
 .. _es-guide-reference-modules-discovery-index:
+.. _es-guide-reference-modules-discovery:
 
 =========
 Discovery

@@ -90,6 +90,23 @@ The following table lists all the attributes that can be used with the **string*
 **include_in_all**                  Should the field be included in the **_all** field (if enabled). Defaults to **true** or to the parent **object** type setting.                                                                                                                                                                                             
 ==================================  ============================================================================================================================================================================================================================================================================================================================
 
+The **string** type also support custom indexing parameters associated with the indexed value. For example:
+
+
+.. code-block:: js
+
+
+    {
+        "message" : {
+            :ref:`_value <es-guide-reference-mapping>`  ue <es-guide-reference-mapping>`   "boosted value",
+            :ref:`_boost <es-guide-reference-mapping>`  st <es-guide-reference-mapping>`   2.0
+        }
+    }
+
+
+The mapping is required to disambiguate the meaning of the document. Otherwise, the structure would interpret "message" as a value of type "object". The key **_value** (or **value**) in the inner document specifies the real string content that should eventually be indexed. The **_boost** (or **boost**) key specifies the per field document boost (here 2.0).
+
+
 Number
 ======
 
@@ -130,7 +147,7 @@ The following table lists all the attributes that can be used with a numbered ty
 Date
 ====
 
-The date type is a special type which maps to JSON string type. It follows a specific format that can be explicitly set. All dates are **UTC**. Internally, a date maps to a number type **long**, with the added parsing stage from string to long and from long to string. An example mapping:
+The date type is a special type which maps to JSON string type. It follows a specific format that can be explicitly set. All dates are **UTC**. as. Internally, a date maps to a number type **long**, with the added parsing stage from string to long and from long to string. An example mapping:
 
 
 .. code-block:: js
@@ -146,6 +163,9 @@ The date type is a special type which maps to JSON string type. It follows a spe
             }
         }
     }
+
+
+The date type will also accept a long number representing UTC milliseconds since the epoch, regardless of the format it can handle.
 
 
 The following table lists all the attributes that can be used with a date type:

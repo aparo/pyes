@@ -4,7 +4,7 @@
 Http
 ====
 
-The http module allows to expose *elasticsearch* :ref:`API <es-guide-reference-modules-guide-reference-api>`  over HTTP.
+The http module allows to expose *elasticsearch* :ref:`API <es-guide-reference-api>`  over HTTP.
 
 
 The http mechanism is completely asynchronous in nature, meaning that there is no blocking thread waiting for a response. The benefit of using asynchronous communication for HTTP is solving the `C10k problem <http://en.wikipedia.org/wiki/C10k_problem>`_.  
@@ -17,12 +17,13 @@ Settings
 The following are the settings the can be configured for HTTP:
 
 
-=============================  ===========================================================
- Setting                        Description                                               
-=============================  ===========================================================
-**http.port**                  A bind port range. Defaults to **9200-9300**.              
-**http.max_content_length**    The max content of an HTTP request. Defaults to **100mb**  
-=============================  ===========================================================
+=============================  =====================================================================================
+ Setting                        Description                                                                         
+=============================  =====================================================================================
+**http.port**                  A bind port range. Defaults to **9200-9300**.                                        
+**http.max_content_length**    The max content of an HTTP request. Defaults to **100mb**                            
+**http.compress**              Support for compression when possible (with Accept-Encoding). Defaults to **true**.  
+=============================  =====================================================================================
 
 It also shares the uses the common :ref:`network settings <es-guide-reference-modules-network>`.  
 

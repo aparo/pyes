@@ -1,4 +1,5 @@
 .. _es-guide-reference-mapping-index:
+.. _es-guide-reference-mapping:
 
 =======
 Mapping
@@ -31,5 +32,7 @@ Explicit mapping is defined on an index type level. By default, there isn't a ne
     parent-field
     root-object-type
     routing-field
+    size-field
     source-field
     type-field
+    uid-field

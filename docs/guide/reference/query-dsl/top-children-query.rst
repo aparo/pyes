@@ -48,7 +48,7 @@ A **_scope** can be defined on the query allowing to run facets on the same scop
 
     {
         "top_children" : {
-            "_score" : "my_scope",
+            "_scope" : "my_scope",
             :ref:`type <es-guide-reference-query-dsl>`  pe <es-guide-reference-query-dsl>`  "blog_tag",
             "query" : {
                 "term" : {

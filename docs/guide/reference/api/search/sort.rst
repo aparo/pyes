@@ -48,6 +48,25 @@ Sort Values
 The sort values for each document returned are also returned as part of the response.
 
 
+Missing Values
+==============
+
+Numeric fields support specific handling for missing fields in a doc. The **missing** value can be **_last**, **_first**, or a custom value (that will be used for missing docs as the sort value). For example:
+
+
+.. code-block:: js
+
+
+    {
+        "sort" : [
+            { "price" : {"missing" : "_last"} },
+        ],
+        "query" : {
+            "term" : { "user" : "kimchy" }
+        }
+    }
+
+
 Geo Distance Sorting
 ====================
 

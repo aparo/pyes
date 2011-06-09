@@ -49,7 +49,7 @@ Index templates are identified by a name (in the above case **template_1**) and 
     curl -XGET localhost:9200/_template/template_1
 
 
-To get list of all index templates you can use :ref:`Cluster State <es-guide-cluster-state>`  API and check for the metadata/templates section of the response.
+To get list of all index templates you can use :ref:`Cluster State <es-guide-reference-api-admin-cluster-state>`  API and check for the metadata/templates section of the response.
 
 
 Multiple Template Matching

@@ -1,4 +1,5 @@
 .. _es-guide-reference-modules-index:
+.. _es-guide-reference-modules:
 
 =======
 Modules
@@ -9,6 +10,7 @@ Modules
 
     discovery/index
     gateway/index
+    cluster
     http
     indices
     jmx

@@ -5,15 +5,14 @@ Clients
 =======
 
 Clients
-=======
+-------
 
 * `ElasticSearch.pm <http://github.com/clintongormley/ElasticSearch.pm>`_:  Perl client.
 * `pyes <http://github.com/aparo/pyes>`_:  Python client.
 * `pyelasticsearch <http://github.com/rhec/pyelasticsearch>`_:  Python client.
 * `em-elasticsearch <http://github.com/ichverstehe/em-elasticsearch>`_:  elasticsearch library for eventmachine.
 * `rubberband <http://github.com/grantr/rubberband>`_:  Ruby client.
-*  `ruby_elasticsearch <http://github.com/adrpac/elasticsearch>`_:  Ruby client.
-*  `slingshot <https://github.com/karmi/slingshot/>`_:  Ruby API & DSL.
+*  `tire <https://github.com/karmi/tire>`_:  Ruby API & DSL, with full ActiveModel compatibility.
 *  `elastic_searchable <https://github.com/wireframe/elastic_searchable/>`_:  Ruby client + Rails integration.
 * `erlastic_search <http://github.com/tsloughter/erlastic_search>`_:  Erlang client.
 * `Elastica <http://github.com/ruflin/Elastica>`_:  PHP client.
@@ -31,7 +30,14 @@ Integrations
 * `elasticflume <http://github.com/tallpsmith/elasticflume>`_:  `Flume <http://github.com/cloudera/flume>`_  ume sink implementation.
 * `Terrastore Search <http://code.google.com/p/terrastore/wiki/Search_Integration>`_:  `Terrastore <http://code.google.com/p/terrastore/>`_  re/ integration module with elasticsearch.
 * `Wonderdog <https://github.com/infochimps/wonderdog>`_:  Hadoop bulk loader into elasticsearch.
-* `Play! Framework <http://geeks.aretotally.in/play-framework-module-elastic-search-distributed-searching-with-json-http-rest-or-java>`_:  Integrate Elastic Search in a Play! Framework Application. This module uses JPA events to notify Elastic Search of events of their own. It embeds a running Elastic Search instance for Rapid Development.
+* `Play! Framework <http://geeks.aretotally.in/play-framework-module-elastic-search-distributed-searching-with-json-http-rest-or-java>`_:  Integrate with Play! Framework Application.
+
+Misc
+----
+
+* `Puppet <https://github.com/visibiz/puppet-elasticsearch>`_:  elasticsearch puppet module.
+* `elasticsearch-rpms <https://github.com/tavisto/elasticsearch-rpms>`_:  RPMs for elasticsearch.
+
 
 Front Ends
 ----------

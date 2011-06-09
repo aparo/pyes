@@ -7,3 +7,6 @@ Admin Indices Delete Mapping
 Allow to delete a mapping (type) along with its data. The REST endpoint is **/{index}/{type}** with **DELETE** method.
 
 
+Note, most times, it make more sense to reindex the data into a fresh index compared to delete large chunks of it.
+
+

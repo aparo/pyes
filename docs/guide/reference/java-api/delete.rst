@@ -15,7 +15,7 @@ The delete API allows to delete a typed JSON document from a specific index base
             .actionGet();
 
 
-For more information on the delete operation, check out the :ref:`delete API <es-guide-reference-java-api-guide-reference-api-delete>`  docs.
+For more information on the delete operation, check out the :ref:`delete API <es-guide-reference-java-api-delete>`  docs.
 
 
 Operation Threading

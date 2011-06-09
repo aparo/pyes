@@ -18,7 +18,7 @@ The count API allows to easily execute a query and get the number of matches for
             .actionGet();
 
 
-For more information on the count operation, check out the REST :doc:`count </elasticsearch/rest_api/count/index>`  docs.
+For more information on the count operation, check out the REST :ref:`count <es-guide-reference-java-api-count>`  docs.
 
 
 Operation Threading

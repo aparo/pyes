@@ -250,7 +250,7 @@ Note the params option, allowing to pass parameters to the script (resulting in 
 
 
 **geo_point** Type
-================
+==================
 
 The facet *requires* the **geo_point** type to be set on the relevant field.
 

@@ -56,3 +56,11 @@ Here is a sample mapping:
 
 The **_all** fields allows for **store**, **term_vector** and **analyzer** (with specific **index_analyzer** and **search_analyzer**) to be set.
 
+
+Highlighting
+------------
+
+For any field to allow :ref:`highlighting <es-guide-reference-api-search-highlighting>`  ch-highlighting`  it has to be either stored or part of the **_source** field. By default **_all** field does not qualify for either, so highlighting for it does not yield any data.
+
+Although it is possible to **store** the **_all** field, it is basically an aggregation of all fields, which means more data will be stored, and highlighting it might produce strange results.
+

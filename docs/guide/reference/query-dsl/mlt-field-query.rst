@@ -14,7 +14,7 @@ The **more_like_this_field** query is the same as the **more_like_this** query, 
         "more_like_this_field" : {
             "name.first" : {
                 "like_text" : "text like this one",
-                "min_query_freq" : 1,
+                "min_term_freq" : 1,
                 "max_query_terms" : 12
             }
         }

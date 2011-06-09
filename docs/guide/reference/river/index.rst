@@ -1,4 +1,5 @@
 .. _es-guide-reference-river-index:
+.. _es-guide-reference-river:
 
 =====
 River

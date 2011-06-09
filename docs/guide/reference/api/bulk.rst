@@ -52,13 +52,13 @@ If using the HTTP API, make sure that the client does not send HTTP chunks, as t
 Versioning
 ==========
 
-Each bulk item can include the version value using the **_version** field. It automatically follows the behavior of the index / delete operation based on the **_version** mapping.
+Each bulk item can include the version value using the **_version**/**version** field. It automatically follows the behavior of the index / delete operation based on the **_version** mapping. It also support the **version_type** when using **external** versioning.
 
 
 Routing
 =======
 
-Each bulk item can include the routing value using the **_routing** field. It automatically follows the behavior of the index / delete operation based on the **_routing** mapping.
+Each bulk item can include the routing value using the **_routing**/**routing** field. It automatically follows the behavior of the index / delete operation based on the **_routing** mapping.
 
 
 Percolator
@@ -70,7 +70,7 @@ Each index bulk item can include a percolate value using the **_percolate** fiel
 Parent
 ======
 
-Each bulk item can include the parent value using the **_parent** field. It automatically follows the behavior of the index / delete operation based on the **_parent** / **_routing** mapping.
+Each bulk item can include the parent value using the **_parent**/**parent** field. It automatically follows the behavior of the index / delete operation based on the **_parent** / **_routing** mapping.
 
 
 Write Consistency

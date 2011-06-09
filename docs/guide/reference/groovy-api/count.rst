@@ -4,7 +4,7 @@
 Count
 =====
 
-The count API is very similar to the :ref:`Java count API <es-guide-reference-groovy-api-guide-reference-java-api-count>`.  The Groovy extension allows to provide the query to execute as a **Closure** (similar to GORM criteria builder):
+The count API is very similar to the :ref:`Java count API <es-guide-reference-java-api-count>`.  The Groovy extension allows to provide the query to execute as a **Closure** (similar to GORM criteria builder):
 
 
 .. code-block:: js
@@ -20,4 +20,4 @@ The count API is very similar to the :ref:`Java count API <es-guide-reference-gr
     }
 
 
-The query follows the same :ref:`Query DSL <es-guide-reference-groovy-api-guide-reference-query-dsl>`.  
+The query follows the same :ref:`Query DSL <es-guide-reference-query-dsl>`.

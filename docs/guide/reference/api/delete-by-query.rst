@@ -37,6 +37,9 @@ Both above examples end up doing the same thing, which is delete all tweets from
     }
 
 
+Note, delete by query bypasses versioning support. Also, it is not recommended to delete "large chunks of the data in an index", many times, its better to simply reindex into a new index.
+
+
 Multiple Indices and Types
 ==========================
 

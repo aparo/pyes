@@ -10,7 +10,7 @@ Each shard has a transaction log or write ahead log associated with it. It allow
 =======================================  ===============================================================================
  Setting                                  Description                                                                   
 =======================================  ===============================================================================
-index.translog.flush_threshold_ops       After how many operations to flush. Defaults to **20000**.                     
+index.translog.flush_threshold_ops       After how many operations to flush. Defaults to **5000**.                      
 index.translog.flush_threshold_size      Once the translog hits this size, a flush will happen. Defaults to **500mb**.  
 index.translog.flush_threshold_period    The period with no flush happening to force a flush. Defaults to **60m**.      
 =======================================  ===============================================================================

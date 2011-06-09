@@ -27,7 +27,7 @@ The index API allows to index a typed JSON document into a specific index and ma
 The source to be indexed is a binary array representing the json to be indexed. It can be easily built using elasticsearch special **XContent** JSON Builder.
 
 
-For more information on the index operation, check out the REST :doc:`index </elasticsearch/rest_api/index/index>`  docs.
+For more information on the index operation, check out the REST :ref:`index <es-guide-reference-java-api-index_>`  docs.
 
 
 Source Parameter

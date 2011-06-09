@@ -1,4 +1,5 @@
 .. _es-guide-reference-api-index:
+.. _es-guide-reference-api:
 
 ===
 Api
@@ -71,6 +72,7 @@ You can also use the **source** query string parameter to substitute for the bod
     admin-indices-refresh
     admin-indices-status
     admin-indices-templates
+    admin-indices-get-settings
     admin-indices-update-settings
     bulk
     count

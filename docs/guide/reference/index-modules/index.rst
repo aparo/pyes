@@ -1,4 +1,5 @@
 .. _es-guide-reference-index-modules-index:
+.. _es-guide-reference-index-modules:
 
 =============
 Index Modules
@@ -26,6 +27,7 @@ index.refresh_interval       A time setting controlling how often the refresh op
     :maxdepth: 1
 
     analysis/index
+    cache
     mapper
     merge
     store

@@ -15,7 +15,7 @@ The get API allows to get a typed JSON document from the index based on its id. 
             .actionGet();
 
 
-For more information on the index operation, check out the REST :doc:`get </elasticsearch/rest_api/get/index>`  docs.
+For more information on the index operation, check out the REST :ref:`get <es-guide-reference-java-api-get>`  docs.
 
 
 Operation Threading

@@ -4,7 +4,7 @@
 Query
 =====
 
-The query element within the search request body allows to define a query using the :ref:`Query DSL <es-guide-reference-api-search-guide-reference-query-dsl>`.  
+The query element within the search request body allows to define a query using the :ref:`Query DSL <es-guide-reference-query-dsl>`.  
 
 .. code-block:: js
 

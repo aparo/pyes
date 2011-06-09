@@ -78,7 +78,8 @@ The histogram facet allows to use a different key and value. The key is used to 
 Script Key and Value
 ====================
 
-Sometimes, some munging of both the key and the value are needed. In the key case, before it is rounded into a bucket, and for the value, when the statistical data is computed per bucket :ref:`scripts <es-guide-modules-scripting>`  can be used. Here is an example:
+
+Sometimes, some munging of both the key and the value are needed. In the key case, before it is rounded into a bucket, and for the value, when the statistical data is computed per bucket :ref:`scripts <es-guide-reference-modules-scripting>`  can be used. Here is an example:
 
 
 .. code-block:: js

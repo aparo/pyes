@@ -4,7 +4,7 @@
 Script Filter
 =============
 
-A filter allowing to define :ref:`scripts <es-guide-reference-query-dsl-guide-refrence-modules-scripting>`  as filters. For example:
+A filter allowing to define :ref:`scripts <es-guide-reference-modules-scripting>`  as filters. For example:
 
 
 .. code-block:: js

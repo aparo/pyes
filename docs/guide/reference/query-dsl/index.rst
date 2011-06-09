@@ -1,4 +1,5 @@
 .. _es-guide-reference-query-dsl-index:
+.. _es-guide-reference-query-dsl:
 
 =========
 Query Dsl
@@ -7,10 +8,10 @@ Query Dsl
 *elasticsearch* provides a full query dsl based on JSON to define queries. In general, there are basic queries such as :ref:`term <es-guide-reference-query-dsl-term-query>`  or :ref:`prefix <es-guide-reference-query-dsl-prefix-query>`.  There are also compound queries like the :ref:`bool <es-guide-reference-query-dsl-bool-query>`  query. Queries can also have filters associated with them such as the :ref:`filtered <es-guide-reference-query-dsl-filtered-query>`  or :ref:`constant_score <es-guide-reference-query-dsl-constant-score-query>`  queries, with specific filter queries. 
 
 
-Think of the Query DSL as an AST of queries. Certain queries can contain other queries (like the :ref:`bool <es-guide-reference-query-dsl-bool-query>`  query), other can contain filters (like the :ref:`constant_score <es-guide-reference-query-dsl-constnat-score-query)>`,  and some can contain both a query and a filter (like the :ref:`filtered <es-guide-reference-query-dsl-filtered-query)>`.  Each of those can container *any* query of the list of queries or *any* filter from the list of filters, resulting in the ability to build quite complex (and interesting) queries.
+Think of the Query DSL as an AST of queries. Certain queries can contain other queries (like the :ref:`bool <es-guide-reference-query-dsl-bool-query>`  query), other can contain filters (like the :ref:`constant_score <es-guide-reference-query-dsl-constant-score-query>`,  and some can contain both a query and a filter (like the :ref:`filtered <es-guide-reference-query-dsl-filtered-query)>`.  Each of those can container *any* query of the list of queries or *any* filter from the list of filters, resulting in the ability to build quite complex (and interesting) queries.
 
 
-Both queries and filters can be used in different APIs. For example, within a :ref:`search query <es-guide-reference-query-dsl-guide-reference-api-search-query>`,  or as a :ref:`facet filter <es-guide-reference-query-dsl-guide-reference-api-search-facets>`.  This section explains the components (queries and filters) that can form the AST one can use.
+Both queries and filters can be used in different APIs. For example, within a :ref:`search query <es-guide-reference-api-search-query>`,  or as a :ref:`facet filter <es-guide-reference-api-search-facets>`.  This section explains the components (queries and filters) that can form the AST one can use.
 
 
 Note
@@ -48,6 +49,7 @@ Query:
     flt-query
     fuzzy-query
     has-child-query
+    ids-query
     match-all-query
     mlt-field-query
     mlt-query
@@ -61,6 +63,7 @@ Query:
     span-term-query
     term-query
     terms-query
+    text-query
     top-children-query
     wildcard-query
 
@@ -74,8 +77,11 @@ Filter:
     exists-filter
     geo-bounding-box-filter
     geo-distance-filter
+    geo-distance-range-filter
     geo-polygon-filter
     has-child-filter
+    ids-filter
+    limit-filter
     match-all-filter
     missing-filter
     not-filter
@@ -87,3 +93,4 @@ Filter:
     script-filter
     term-filter
     terms-filter
+    type-filter

@@ -14,7 +14,7 @@ More like this query find documents that are "like" provided text by running it 
         "more_like_this" : {
             "fields" : ["name.first", "name.last"],
             "like_text" : "text like this one",
-            "min_query_freq" : 1,
+            "min_term_freq" : 1,
             "max_query_terms" : 12
         }
     }

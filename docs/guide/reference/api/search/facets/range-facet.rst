@@ -20,8 +20,8 @@ Range Facet
                     "field" : "field_name",
                     "ranges" : [
                         { "to" : 50 },
-                        { "from" : 20, "to" : 70 }
-                        { "from" : 70, "to" : 120 }
+                        { "from" : 20, "to" : 70 },
+                        { "from" : 70, "to" : 120 },
                         { "from" : 150 }
                     ]
                 }
@@ -45,8 +45,8 @@ Another option which is a bit more DSL enabled is to provide the ranges on the a
                 "range" : {
                     "my_field" : [
                         { "to" : 50 },
-                        { "from" : 20, "to" : 70 }
-                        { "from" : 70, "to" : 120 }
+                        { "from" : 20, "to" : 70 },
+                        { "from" : 70, "to" : 120 },
                         { "from" : 150 }
                     ]
                 }
@@ -75,8 +75,8 @@ The **range** facet allow to use a different field to check if it doc falls with
                     "value_field" : "another_field_name",
                     "ranges" : [
                         { "to" : 50 },
-                        { "from" : 20, "to" : 70 }
-                        { "from" : 70, "to" : 120 }
+                        { "from" : 20, "to" : 70 },
+                        { "from" : 70, "to" : 120 },
                         { "from" : 150 }
                     ]
                 }
@@ -105,8 +105,8 @@ Sometimes, some munging of both the key and the value are needed. In the key cas
                     "value_script" : "doc['num1'].value",
                     "ranges" : [
                         { "to" : 50 },
-                        { "from" : 20, "to" : 70 }
-                        { "from" : 70, "to" : 120 }
+                        { "from" : 20, "to" : 70 },
+                        { "from" : 70, "to" : 120 },
                         { "from" : 150 }
                     ]
                 }

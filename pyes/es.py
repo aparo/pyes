@@ -391,8 +391,7 @@ class ES(object):
         """Add an alias to point to a set of indices.
 
         """
-        if isinstance(indices, basestring):
-            indices = [indices]
+        indeces = self._validate_indexes(indices)
         return self.change_aliases(['add', index, alias]
                                    for index in indices)
 
@@ -404,8 +403,7 @@ class ES(object):
         aren't present in the alias.
 
         """
-        if isinstance(indices, basestring):
-            indices = [indices]
+        indeces = self._validate_indexes(indices)
         return self.change_aliases(['remove', index, alias]
                                    for index in indices)
 
@@ -420,8 +418,7 @@ class ES(object):
         correctly set.
 
         """
-        if isinstance(indices, basestring):
-            indices = [indices]
+        indeces = self._validate_indexes(indices)
         try:
             old_indices = self.get_alias(alias)
         except pyes.exceptions.IndexMissingException:
@@ -535,16 +532,23 @@ class ES(object):
         path = self._make_path([','.join(indexes), '_gateway', 'snapshot'])
         return self._send_request('POST', path)
 
-    def put_mapping(self, doc_type, mapping, indexes=None):
+    def put_mapping(self, doc_type=None, mapping=None, indexes=None):
         """
         Register specific mapping definition for a specific type against one or more indices.
         """
         indexes = self._validate_indexes(indexes)
-        path = self._make_path([','.join(indexes), doc_type, "_mapping"])
+        if mapping is None:
+            mapping = {}
         if hasattr(mapping, "to_json"):
             mapping = mapping.to_json()
-        if doc_type not in mapping:
-            mapping = {doc_type:mapping}
+
+        if doc_type:
+            path = self._make_path([','.join(indexes), doc_type, "_mapping"])
+            if doc_type not in mapping:
+                mapping = {doc_type:mapping}
+        else:
+            path = self._make_path([','.join(indexes), "_mapping"])
+
         self.refreshed = False
         return self._send_request('PUT', path, mapping)
 

@@ -1,4 +1,5 @@
 .. _es-guide-reference-setup-index:
+.. _es-guide-reference-setup:
 
 =====
 Setup

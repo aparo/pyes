@@ -20,7 +20,7 @@ The search API allows to execute a search query and get back search hits that ma
             .actionGet();
 
 
-For more information on the search operation, check out the REST :doc:`search </elasticsearch/rest_api/search/index>`  docs.
+For more information on the search operation, check out the REST :ref:`search <es-guide-reference-java-api-search>`  docs.
 
 
 Operation Threading

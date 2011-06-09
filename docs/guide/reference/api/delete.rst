@@ -53,13 +53,13 @@ Many times, the routing value is not known when deleting a document. For those c
 Parent
 ======
 
-Though there isn't explicit parameter for parent when deleting, it is important to note that the routing is required to be set when deleting a doc (the routing should be set to the parent id).
+The **parent** parameter can be set, which will basically be the same as setting the routing parameter.
 
 
 Automatic for the Index
 =======================
 
-The delete operation automatically creates an index if it has not been created before (check out the :ref:`create index API <es-guide-reference-admin-indices-create_index>`  for manually creating an index), and also automatically creates a dynamic type mapping for the specific type if it has not been created before (check out the :ref:`put mapping <es-guide-reference-admin-indices-put_mapping>`  API for manually creating type mapping). 
+The delete operation automatically creates an index if it has not been created before (check out the :ref:`create index API <es-guide-reference-api-admin-indices-create-index>`  for manually creating an index), and also automatically creates a dynamic type mapping for the specific type if it has not been created before (check out the :ref:`put mapping <es-guide-reference-api-admin-indices-put-mapping>`  API for manually creating type mapping). 
 
 
 Distributed

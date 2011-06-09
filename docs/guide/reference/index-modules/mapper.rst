@@ -4,7 +4,7 @@
 Mapper
 ======
 
-The mapper module acts as a registry for the type mapping definitions added to an index either when creating it or by using the put mapping api. It also handles the dynamic mapping support for types that have no explicit mappings pre defined. For more information about mapping definitions, check out the :ref:`mapping section <es-guide-reference-index-modules-guide-reference-mapping>`.  
+The mapper module acts as a registry for the type mapping definitions added to an index either when creating it or by using the put mapping api. It also handles the dynamic mapping support for types that have no explicit mappings pre defined. For more information about mapping definitions, check out the :ref:`mapping section <es-guide-reference-mapping>`.  
 
 Dynamic / Default Mappings
 --------------------------

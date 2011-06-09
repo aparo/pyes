@@ -44,8 +44,7 @@ The get operation allows to specify a set of fields that will be returned (by de
     $ curl -XGET 'http://localhost:9200/twitter/tweet/1?fields=title,content'
 
 
-Note
-    The fields specified must be stored in order to retrieve them.
+The returned fields will either be loaded if they are stored, or fetched from the **_source** (parsed and extracted). Note, certain "json sub objects" can be returned by explicitly prefixing them with **_source.**, for example: **_source.obj1.obj2**.
 
 
 Routing
@@ -61,6 +60,18 @@ When indexing using the ability to control the routing, in order to get a docume
 
 The above will get a tweet with id 1, but will be routed based on the user. Note, issuing a get without the correct routing, will cause the document not to be fetched.
 
+
+Preference
+==========
+
+Controls a **preference** of which shard replicas to execute the get request on. By default, the operation is randomized between the each shard replicas.
+
+
+The **preference** can be set to:
+
+* **_primary**: The operation will go and be executed only on the primary shards.
+* **_local**: The operation will prefer to be executed on a local allocated shard is possible.
+* Custom (string) value: A custom value will be used to guarantee that the same shards will be used for the same custom value. This can help with "jumping values" when hitting different shards in different refresh states. A sample value can be something like the web session id, or the user name.
 
 Refresh
 =======

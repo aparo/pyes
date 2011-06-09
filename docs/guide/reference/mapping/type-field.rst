@@ -19,3 +19,16 @@ The **_type** field can be stored as well, for example:
         }
     }
 
+
+The **_type** field can also not be indexed, and all the APIs will still work except for specific queries (term queries / filters) or faceting done on the **_type** field.
+
+
+.. code-block:: js
+
+
+    {
+        "tweet" : {
+            "_type" : {"index" : "no"}
+        }
+    }
+

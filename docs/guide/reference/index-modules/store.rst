@@ -13,7 +13,7 @@ The storage module allows to store the index either in memory or using file syst
 When using local gateway (the default), file system storage with *no* in memory storage is required to provide full persistency. This is required since the local gateway constructs its state from the local index state of each node. When using shared gateway (like shared fs, s3), the index can be safely stored in memory (with replicas).
 
 
-Another important aspect of memory based storage is the fact that ElasticSearch supports storing the index in memory *outside of the JVM heap space* using the :ref:`Memory <es-guide-reference-index-modules-#Memory>`  storage type. It translates to the fact that there is no need for extra large JVM heaps (with their own consequences) for storing the index in memory.
+Another important aspect of memory based storage is the fact that ElasticSearch supports storing the index in memory *outside of the JVM heap space* using the :ref:`Memory <es-guide-reference-index-modules>`  storage type. It translates to the fact that there is no need for extra large JVM heaps (with their own consequences) for storing the index in memory.
 
 
 The following sections lists all the different storage types supported.
@@ -22,7 +22,7 @@ The following sections lists all the different storage types supported.
 File System
 ===========
 
-File system based storage, includes different internal types of how to work with the file system. This is the default storage used. Out of the different types, the best one suited will be automatically chosen (**niofs** on non windows, and **simplefs** on windows).
+File system based storage, includes different internal types of how to work with the file system. This is the default storage used. Out of the different types, the best one suited will be automatically chosen (**mmapfs** on solaris/windows 64bit, **simplefs** on windows 32bit, and **niofs** for the rest).
 
 
 The following are the different file system based storage types:

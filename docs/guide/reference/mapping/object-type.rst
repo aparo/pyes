@@ -24,7 +24,7 @@ JSON documents are hierarchal in nature, allowing to define inner "object"s with
     }
 
  
-The above shows an example where a tweet includes the actual **person** details. A **person** is an object, with an **sid**, and a **name** object which has **first_name** and **last_name**. Its important to note that **tweet** is also an object, though a special :ref:`root object type <es-guide-reference-root_object_type>`  which allows for additional mapping definitions.
+The above shows an example where a tweet includes the actual **person** details. A **person** is an object, with an **sid**, and a **name** object which has **first_name** and **last_name**. Its important to note that **tweet** is also an object, though a special :ref:`root object type <es-guide-reference-mapping-root-object-type>`  which allows for additional mapping definitions.
 
 
 The following is an example of explicit mapping for the above JSON:
@@ -60,7 +60,7 @@ In order to mark a mapping of type **object**, set the **type** to object. This 
 properties
 ==========
 
-An object mapping can optionally define one or more properties using the **properties** tag. Properties list the properties this field will have. Each property can be either another **object**, or one of the :ref:`core_types <es-guide-reference-mapping-core_types>`.  
+An object mapping can optionally define one or more properties using the **properties** tag. Properties list the properties this field will have. Each property can be either another **object**, or one of the :ref:`core_types <es-guide-reference-mapping-core-types>`.  
 
 dynamic
 =======
@@ -151,7 +151,7 @@ In the above, **name** and its content will not be indexed at all.
 path
 ====
 
-In the :ref:`core_types <es-guide-reference-core_types>`  section, a field can have a **index_name** associated with it in order to control the name of the field that will be stored within the index. When that field exists within an object(s) that are not the root object, the name of the field of the index can either include the full "path" to the field with its **index_name**, or just the **index_name**. For example (under mapping of _type_ **person**, removed the tweet type for clarity):
+In the :ref:`core_types <es-guide-reference-mapping-core-types>`  section, a field can have a **index_name** associated with it in order to control the name of the field that will be stored within the index. When that field exists within an object(s) that are not the root object, the name of the field of the index can either include the full "path" to the field with its **index_name**, or just the **index_name**. For example (under mapping of _type_ **person**, removed the tweet type for clarity):
 
 
 .. code-block:: js

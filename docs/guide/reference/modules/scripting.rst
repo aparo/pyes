@@ -28,6 +28,24 @@ Scripts can always be provided as part of the relevant API, but they can also be
 The name of the script is derived from the hierarchy of directories it exists under, and the file name without the lang extension. For example, a script placed under `config/scripts/group1/group2/test.py` will be named `group1_group2_test`.
 
 
+Native (Java) Scripts
+=====================
+
+Even though **mvel** is pretty fast, allow to register native Java based scripts for faster execution.
+
+
+In order to allow for scripts, the **NativeScriptFactory** needs to be implemented that constructs the script that will be executed. There are two main types, one that extends **AbstractExecutableScript** and one that extends **AbstractSearchScript** (probably the one most users will extend, with additional helper classes in **AbstractLongSearchScript**, **AbstractDoubleSearchScript**, and **AbstractFloatSearchScript**).
+
+
+Registering them can either be done by settings, for example: **script.native.my.type** set to **sample.MyNativeScriptFactory** will register a script named **my**. Another option is in a plugin, access **ScriptModule** and call **registerScript** on it.
+
+
+Executing the script is done by specifying the **lang** as **native**, and the name of the script as the **script**.
+
+
+Note, the scripts need to be in the classpath of elasticsearch. One simple way to do it is to create a directory under plugins (choose a descriptive name), and place the jar / classes files there, they will be automatically loaded.
+
+
 Score
 =====
 

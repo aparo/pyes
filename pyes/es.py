@@ -681,6 +681,17 @@ class ES(object):
         path = self._make_path(parts)
         return self._send_request('GET', path)
 
+    def index_raw_bulk(self, header, document):
+        """
+        Function helper for fast inserting
+
+        header and document must be string "\n" ended
+        """
+        self.bulk_data.write(header)
+        self.bulk_data.write(document)
+        self.bulk_items += 1
+        self.flush_bulk()
+
     def index(self, doc, index, doc_type, id=None, parent=None, force_insert=False, bulk=False, version=None, querystring_args=None):
         """
         Index a typed JSON document into a specific index and make it searchable.
@@ -742,7 +753,7 @@ class ES(object):
         Force executing of all bulk data
         """
         if self.bulk_items!=0:
-            self._send_request("POST", "/_bulk", self.bulk_data.getvalue())
+            res = self._send_request("POST", "/_bulk", self.bulk_data.getvalue())
             self.bulk_data = StringIO()
             self.bulk_items = 0
 
@@ -977,14 +988,7 @@ class ES(object):
 #        path = self._make_path([','.join(indices), "_terms"])
 #        query_params['fields'] = ','.join(fields)
 #        return self._send_request('GET', path, params=query_params)
-#    
-    def morelikethis(self, index, doc_type, id, fields, **query_params):
-        """
-        Execute a "more like this" search query against one or more fields and get back search hits.
-        """
-        path = self._make_path([index, doc_type, id, '_mlt'])
-        query_params['fields'] = ','.join(fields)
-        return self._send_request('GET', path, params=query_params)
+#
 
     def create_percolator(self, index, name, query, **kwargs):
         """
@@ -1035,14 +1039,6 @@ class ES(object):
             raise pyes.exceptions.InvalidQuery("percolate() must be supplied with a Query object, or a dict")
 
         return self._send_request('GET', path, body=body)
-
-    def update_settings(self, index, newvalues):
-        """
-        Update Settings of an index.
-        
-        """
-        path = self._make_path([index, "_settings"])
-        return self._send_request('PUT', path, newvalues)
 
 def decode_json(data):
     """ Decode some json to dict"""
@@ -1127,7 +1123,11 @@ class ResultSet(object):
                 self._do_search()
                 process_post_query = False
         else:
-            self._results = self.connection.search_scroll(self.scroller_id, self.scroller_parameters.get("scroll", "10m"))
+            try:
+                self._results = self.connection.search_scroll(self.scroller_id, self.scroller_parameters.get("scroll", "10m"))
+            except pyes.exceptions.ReduceSearchPhaseException:
+                #bad hack, should be not hits on the last iteration
+                self._results['hits']['hits'] = []
 
         if process_post_query:
             self.facets = self._results.get('facets', {})
@@ -1195,8 +1195,6 @@ class ResultSet(object):
             res = self.hits[self.iterpos]
             self.iterpos +=1
             return res
-        if len(self.hits)<self.chuck_size:
-            raise StopIteration
         self._do_search(auto_increment=True)
         self.iterpos = 0
         if len(self.hits)==0:

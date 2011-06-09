@@ -18,6 +18,7 @@ __all__ = ['NoServerAvailable',
            "ClusterBlockException",
            "MapperParsingException",
            "ElasticSearchException",
+           'ReduceSearchPhaseException'
           ]
 
 class NoServerAvailable(Exception):
@@ -77,4 +78,7 @@ class ClusterBlockException(ElasticSearchException):
     pass
 
 class MapperParsingException(ElasticSearchException):
+    pass
+
+class ReduceSearchPhaseException(ElasticSearchException):
     pass

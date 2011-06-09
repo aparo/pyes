@@ -853,39 +853,41 @@ class TextQuery(Query):
     _valid_types = ['boolean', "phrase", "phrase_prefix"]
     _valid_operators = ['or', "and"]
 
-    def __init__(self, text, type="boolean", slop=0, fuzziness=None,
+    def __init__(self, field, text, type="boolean", slop=0, fuzziness=None,
                  prefix_length=0, max_expansions=2147483647,
-                 operator="or", **kwargs):
+                 operator="or", analyzer=None, **kwargs):
         super(TextQuery, self).__init__(**kwargs)
-        self.text = text
-        self.type = type
-        self.slop = slop
-        self.fuzziness = fuzziness
-        self.prefix_lenght = prefix_length
-        self.max_expansions = max_expansions
-        self.operator = operator
+        self.queries = {}
+        self.add_query(field, text, type, slop, fuzziness,
+                 prefix_length, max_expansions,
+                 operator, analyzer)
+
+    def add_query(self, field, text, type="boolean", slop=0, fuzziness=None,
+                 prefix_length=0, max_expansions=2147483647,
+                 operator="or", analyzer=None):
+
+        if type not in self._valid_types:
+            raise QueryError("Invalid value '%s' for type: allowed values are %s" % (type, self._valid_types))
+        if operator not in self._valid_operators:
+            raise QueryError("Invalid value '%s' for operator: allowed values are %s" % (operator, self._valid_operators))
+
+        query = {'type':type,
+                'query':text}
+        if slop != 0:
+            query["slop"] = slop
+        if fuzziness is not None:
+            query["fuzziness"] = fuzziness
+        if slop != 0:
+            query["prefix_length"] = prefix_length
+        if max_expansions != 2147483647:
+            query["max_expansions"] = max_expansions
+#        if operator:
+#            query["operator"] = operator
+
+        self.queries[field] = query
 
     def serialize(self):
-
-        if self.type not in self._valid_types:
-            raise QueryError("Invalid value '%s' for type: allowed values are %s" % (self.type, self._valid_types))
-        if self.operator not in self._valid_operators:
-            raise QueryError("Invalid value '%s' for operator: allowed values are %s" % (self.operator, self._valid_operators))
-
-        options = {'type':self.type,
-                   "query":self.text}
-        if self.slop != 0:
-            options["slop"] = self.slop
-        if self.fuzziness is not None:
-            options["fuzziness"] = self.fuzziness
-        if self.slop != 0:
-            options["prefix_length"] = self.prefix_length
-        if self.max_expansions != 2147483647:
-            options["max_expansions"] = self.max_expansions
-        if self.operator:
-            options["operator"] = self.operator
-
-        return {self._internal_name:options}
+        return {self._internal_name:self.queries}
 
 class RegexTermQuery(TermQuery):
     _internal_name = "regex_term"

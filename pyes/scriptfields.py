@@ -3,7 +3,7 @@
 
 __author__ = 'Armando Guereca'
 
-class ScriptFields:
+class ScriptFields(object):
     """
     This object create the script_fields definition
     """

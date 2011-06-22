@@ -7,7 +7,10 @@ Contents:
 .. toctree::
     :maxdepth: 2
 	
-	manual/index
+    manual/installation
+    manual/usage
+    manual/connections
+    manual/queries
     faq
     references/index
     changelog

@@ -1,5 +1,12 @@
 Changelog
 =========
+Trunk (v.0.17.0)
+
+    API BREAKING: Added new searcher iterator API. (To use the old code rename ".search" in ".search_raw")
+
+    API BREAKING: renamed indexes in indices. To be complaint to ES documentation.
+
+    Tests refactory.
 
 v. 0.16.0:
 

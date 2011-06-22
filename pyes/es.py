@@ -101,6 +101,7 @@ class ES(object):
                  encoder=None, decoder=None,
                  max_retries=3, autorefresh=False,
                  default_indices=['_all'],
+                 default_types=None,
                  dump_curl=False):
         """
         Init a es object
@@ -143,6 +144,7 @@ class ES(object):
         self.bulk_items = 0
 
         self.info = {} #info about the current server
+        self.mappings = None #track mapping
         self.encoder = encoder
         if self.encoder is None:
             self.encoder = ESJsonEncoder
@@ -154,6 +156,7 @@ class ES(object):
         else:
             self.servers = server
         self.default_indices = default_indices
+        self.default_types = default_types or []
         self._init_connection()
 
     def __del__(self):
@@ -248,7 +251,7 @@ class ES(object):
         querystring_args = query_params
         indices = self._validate_indices(indices)
         if doc_types is None:
-            doc_types = []
+            doc_types = self.default_types
         if isinstance(doc_types, basestring):
             doc_types = [doc_types]
         body = query
@@ -281,7 +284,9 @@ class ES(object):
         """
         Retrieve the status of one or more indices
         """
-        indices = self._validate_indices(indices)
+        if not indices:
+            indices = ["_all"]
+#        indices = self._validate_indices(indices)
         path = self._make_path([','.join(indices), '_status'])
         return self._send_request('GET', path)
 
@@ -752,8 +757,8 @@ class ES(object):
         """
         Force executing of all bulk data
         """
-        if self.bulk_items!=0:
-            res = self._send_request("POST", "/_bulk", self.bulk_data.getvalue())
+        if self.bulk_items != 0:
+            self._send_request("POST", "/_bulk", self.bulk_data.getvalue())
             self.bulk_data = StringIO()
             self.bulk_items = 0
 
@@ -942,14 +947,6 @@ class ES(object):
             query = query.to_query_json()
         return self._query_call("_count", query, indices, doc_types, **query_params)
 
-    def morelikethis(self, index, doc_type, id, fields, **query_params):
-        """
-        Execute a "more like this" search query against one or more fields and get back search hits.
-        """
-        path = self._make_path([index, doc_type, id, '_mlt'])
-        query_params['fields'] = ','.join(fields)
-        return self._send_request('GET', path, params=query_params)
-
     #--- river management
     def create_river(self, river, river_name=None):
         """
@@ -988,7 +985,14 @@ class ES(object):
 #        path = self._make_path([','.join(indices), "_terms"])
 #        query_params['fields'] = ','.join(fields)
 #        return self._send_request('GET', path, params=query_params)
-#
+#    
+    def morelikethis(self, index, doc_type, id, fields, **query_params):
+        """
+        Execute a "more like this" search query against one or more fields and get back search hits.
+        """
+        path = self._make_path([index, doc_type, id, '_mlt'])
+        query_params['fields'] = ','.join(fields)
+        return self._send_request('GET', path, params=query_params)
 
     def create_percolator(self, index, name, query, **kwargs):
         """
@@ -1059,14 +1063,14 @@ class ResultSet(object):
         self.connection = connection
         self.indices = indices
         self.doc_types = doc_types
-        self.query_params= query_params or {}
-        self.scroller_parameters =  {}
+        self.query_params = query_params or {}
+        self.scroller_parameters = {}
         self.scroller_id = None
         self._results = None
         self._total = None
         self.valid = False
-        self.facets = {}
-        self.auto_fix_keys= auto_fix_keys
+        self._facets = {}
+        self.auto_fix_keys = auto_fix_keys
         self.auto_clean_highlight = auto_clean_highlight
         self.query = query
         self.iterpos = 0 #keep track of iterator position
@@ -1107,7 +1111,7 @@ class ResultSet(object):
 
             self._results = self.connection.search_raw(self.query, indices=self.indices,
                                                        doc_types=self.doc_types, **self.query_params)
-            if 'search_type' in self.query_params and self.query_params['search_type']=="scan":
+            if 'search_type' in self.query_params and self.query_params['search_type'] == "scan":
                 self.scroller_parameters['search_type'] = self.query_params['search_type']
                 del self.query_params['search_type']
                 if 'scroll' in self.query_params:
@@ -1116,10 +1120,10 @@ class ResultSet(object):
                 if 'size' in self.query_params:
                     self.scroller_parameters['size'] = self.query_params['size']
                     del self.query_params['size']
-                    self.chuck_size=self.scroller_parameters['size']
+                    self.chuck_size = self.scroller_parameters['size']
             if '_scroll_id' in self._results:
                 #scan query, let's load the first bulk of data
-                self.scroller_id=self._results['_scroll_id']
+                self.scroller_id = self._results['_scroll_id']
                 self._do_search()
                 process_post_query = False
         else:
@@ -1129,13 +1133,14 @@ class ResultSet(object):
                 #bad hack, should be not hits on the last iteration
                 self._results['hits']['hits'] = []
 
+
         if process_post_query:
             self.facets = self._results.get('facets', {})
             if 'hits' in self._results:
                 self.valid = True
                 self.hits = self._results['hits']['hits']
             else:
-                self.hits=[]
+                self.hits = []
             if self.auto_fix_keys:
                 self._fix_keys()
             if self.auto_clean_highlight:
@@ -1184,23 +1189,25 @@ class ResultSet(object):
     def __getattr__(self, name):
         if self._results is None:
             self._do_search()
+        if name == "facets":
+            return self._facets
         return self._results['hits'][name]
 
     def next(self):
         if self._results is None:
             self._do_search()
-        if len(self.hits)==0:
+        if len(self.hits) == 0:
             raise StopIteration
-        if self.iterpos<len(self.hits):
+        if self.iterpos < len(self.hits):
             res = self.hits[self.iterpos]
-            self.iterpos +=1
+            self.iterpos += 1
             return res
         self._do_search(auto_increment=True)
         self.iterpos = 0
-        if len(self.hits)==0:
+        if len(self.hits) == 0:
             raise StopIteration
         res = self.hits[self.iterpos]
-        self.iterpos +=1
+        self.iterpos += 1
         return res
 
     def __iter__(self):

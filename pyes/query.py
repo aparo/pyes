@@ -93,7 +93,8 @@ class Search(object):
                  version=None,
                  track_scores=None,
                  script_fields=None,
-                 index_boost={}):
+                 index_boost={},
+                 min_score=None):
         """
         fields: if is [], the _source is not returned
         """
@@ -148,6 +149,8 @@ class Search(object):
                 raise ScriptFieldsError("Parameter script_fields should of type ScriptFields")
         if self.index_boost:
             res['indices_boost'] = self.index_boost
+        if self.min_score:
+            res['min_score'] = self.min_score
         if self.facet.facets:
             res.update(self.facet.q)
         return res

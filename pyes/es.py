@@ -884,22 +884,23 @@ class ES(object):
             raise pyes.exceptions.InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
         return ResultSet(connection=self, query = query, indices=indices, doc_types=doc_types, query_params=query_params)
 
-    def scan(self, query, indices=None, doc_types=None, scroll_timeout="10m", **query_params):
-        """Return a generator which will scan against one or more indices and iterate over the search hits. (currently support only by ES Master)
-
-        `query` must be a Search object, a Query object, or a custom
-        dictionary of search parameters using the query DSL to be passed
-        directly.
-
-        """
-        results = self.search(query=query, indices=indices, doc_types=doc_types, search_type="scan", scroll=scroll_timeout, **query_params)
-        while True:
-            scroll_id = results["_scroll_id"]
-            results = self._send_request('GET', "_search/scroll", scroll_id, {"scroll":scroll_timeout})
-            total = len(results["hits"]["hits"])
-            if not total:
-                break
-            yield results
+#    scan method is no longer working due to change in ES.search behavior.  May no longer warrant its own method.
+#    def scan(self, query, indices=None, doc_types=None, scroll_timeout="10m", **query_params):
+#        """Return a generator which will scan against one or more indices and iterate over the search hits. (currently support only by ES Master)
+#
+#        `query` must be a Search object, a Query object, or a custom
+#        dictionary of search parameters using the query DSL to be passed
+#        directly.
+#
+#        """
+#        results = self.search(query=query, indices=indices, doc_types=doc_types, search_type="scan", scroll=scroll_timeout, **query_params)
+#        while True:
+#            scroll_id = results["_scroll_id"]
+#            results = self._send_request('GET', "_search/scroll", scroll_id, {"scroll":scroll_timeout})
+#            total = len(results["hits"]["hits"])
+#            if not total:
+#                break
+#            yield results
 
     def search_scroll(self, scroll_id, scroll_timeout="10m"):
         """

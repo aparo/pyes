@@ -36,7 +36,7 @@ class TimeoutHttpConnectionPool(urllib3.HTTPConnectionPool):
         if sys.version_info < (2, 6):
             return HTTPConnection(host=self.host, port=int(self.port))
         return HTTPConnection(host=self.host, port=self.port, timeout=self.timeout)
-        
+
 
 class ClientTransport(object):
     """Encapsulation of a client session."""
@@ -57,7 +57,7 @@ class ClientTransport(object):
         uri = request.uri
         if request.parameters:
             uri += '?' + urllib.urlencode(request.parameters)
-        response = self.client.urlopen(Method._VALUES_TO_NAMES[request.method], uri, body=request.body, headers=request.headers)    
+        response = self.client.urlopen(Method._VALUES_TO_NAMES[request.method], uri, body=request.body, headers=request.headers)
         return RestResponse(status=response.status, body=response.data, headers=response.headers)
 
 def connect(servers=None, framed_transport=False, timeout=None,
@@ -94,7 +94,7 @@ def connect(servers=None, framed_transport=False, timeout=None,
 
               Default: None (Never recycle)
     max_retries: int
-              Max retry time on connection down              
+              Max retry time on connection down
 
     round_robin: bool
               *DEPRECATED*
@@ -122,7 +122,7 @@ class ServerSet(object):
         self._servers = list(servers)
         self._retry_time = retry_time
         self._dead = []
-        
+
     def get(self):
         self._lock.acquire()
         try:

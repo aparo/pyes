@@ -3,6 +3,8 @@
 
 __author__ = 'Armando Guereca'
 
+from pyes.exceptions import ScriptFieldsError
+
 class ScriptFields(object):
     """
     This object create the script_fields definition

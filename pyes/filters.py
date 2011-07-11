@@ -30,6 +30,9 @@ class FilterList(Filter):
             raise RuntimeError("A least a filter must be declared")
         return {self._internal_name:[filter.serialize() for filter in self.filters]}
 
+    def __iter__(self):
+        return iter(self.filters)
+
 
 class ANDFilter(FilterList):
     _internal_name = "and"

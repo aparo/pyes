@@ -110,6 +110,7 @@ class Search(object):
         self.track_scores = track_scores
         self.script_fields = script_fields
         self.index_boost = index_boost
+        self.min_score = min_score
 
     def get_facet_factory(self):
         """

@@ -373,8 +373,8 @@ class ES(object):
         Otherwise, returns a list of index names.
 
         """
-        status = self.status(alias)
-        return status['indices'].keys()
+        status  = self.cluster_state()['metadata']['indices']
+        return [ index for index in status.keys() if alias in status[index]['aliases'] ]
 
     def change_aliases(self, commands):
         """Change the aliases stored.

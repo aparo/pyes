@@ -365,6 +365,18 @@ class ES(object):
                     alias_obj['alias_for'] = [index]
         return result
 
+    def get_closed_indices(self):
+        """
+        Get all closed indices.
+        """
+        state = self.cluster_state()
+        status = self.status()
+        
+        indices_metadata = set(state['metadata']['indices'].keys())
+        indices_status = set(status['indices'].keys())
+
+        return indices_metadata.difference(indices_status)
+
     def get_alias(self, alias):
         """Get the index or indices pointed to by a given alias.
 

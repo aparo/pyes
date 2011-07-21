@@ -967,6 +967,11 @@ class ES(object):
         return self._send_request('DELETE', '/_river/%s/' % river_name)
 
     #--- settings management
+    def get_settings(self, index=None):
+        """Return the current settings for an index."""
+        return self._send_request(
+            'GET', self._make_path([index, "_settings"]))
+
     def update_settings(self, index, newvalues):
         """
         Update Settings of an index.

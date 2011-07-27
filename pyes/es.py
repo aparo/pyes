@@ -256,8 +256,7 @@ class ES(object):
             doc_types = [doc_types]
         body = query
         path = self._make_path([','.join(indices), ','.join(doc_types), query_type])
-        response = self._send_request('GET', path, body, querystring_args)
-        return response
+        return self._send_request('GET', path, body, params=querystring_args)
 
     def _validate_indices(self, indices=None):
         """Return a valid list of indices.
@@ -371,7 +370,7 @@ class ES(object):
         """
         state = self.cluster_state()
         status = self.status()
-        
+
         indices_metadata = set(state['metadata']['indices'].keys())
         indices_status = set(status['indices'].keys())
 
@@ -385,7 +384,7 @@ class ES(object):
         Otherwise, returns a list of index names.
 
         """
-        status  = self.cluster_state()['metadata']['indices']
+        status = self.cluster_state()['metadata']['indices']
         return [ index for index in status.keys() if alias in status[index]['aliases'] ]
 
     def change_aliases(self, commands):
@@ -533,7 +532,7 @@ class ES(object):
         result = self._send_request('POST', path, params=params)
         self.refreshed = True
         return result
-    
+
     def analyze(self, text, index=None):
         """
         Performs the analysis process on a text and return the tokens breakdown of the text
@@ -899,7 +898,7 @@ class ES(object):
             pass
         else:
             raise pyes.exceptions.InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
-        return ResultSet(connection=self, query = query, indices=indices, doc_types=doc_types, query_params=query_params)
+        return ResultSet(connection=self, query=query, indices=indices, doc_types=doc_types, query_params=query_params)
 
 #    scan method is no longer working due to change in ES.search behavior.  May no longer warrant its own method.
 #    def scan(self, query, indices=None, doc_types=None, scroll_timeout="10m", **query_params):
@@ -1142,7 +1141,7 @@ class ResultSet(object):
         else:
             try:
                 self._results = self.connection.search_scroll(self.scroller_id, self.scroller_parameters.get("scroll", "10m"))
-                self.scroller_id=self._results['_scroll_id']
+                self.scroller_id = self._results['_scroll_id']
             except pyes.exceptions.ReduceSearchPhaseException:
                 #bad hack, should be not hits on the last iteration
                 self._results['hits']['hits'] = []

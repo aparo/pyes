@@ -142,6 +142,7 @@ class ES(object):
         self.bulk_size = bulk_size #size of the bulk
         self.bulk_data = StringIO()
         self.bulk_items = 0
+        self.last_bulk_response = None #last response of a bulk insert
 
         self.info = {} #info about the current server
         self.mappings = None #track mapping
@@ -769,7 +770,7 @@ class ES(object):
         Force executing of all bulk data
         """
         if self.bulk_items != 0:
-            self._send_request("POST", "/_bulk", self.bulk_data.getvalue())
+            self.last_bulk_response = self._send_request("POST", "/_bulk", self.bulk_data.getvalue())
             self.bulk_data = StringIO()
             self.bulk_items = 0
 

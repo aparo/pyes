@@ -707,7 +707,7 @@ class ES(object):
         self.bulk_data.write(header)
         self.bulk_data.write(document)
         self.bulk_items += 1
-        self.flush_bulk()
+        return self.flush_bulk()
 
     def index(self, doc, index, doc_type, id=None, parent=None, force_insert=False, bulk=False, version=None, querystring_args=None):
         """

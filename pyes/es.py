@@ -767,13 +767,19 @@ class ES(object):
 
     def force_bulk(self):
         """
-        Force executing of all bulk data
+        Force executing of all bulk data.
+        
+        Return the bulk response
+        
+        If not item self.last_bulk_response to None and returns None
         """
         if self.bulk_items != 0:
             self.last_bulk_response = self._send_request("POST", "/_bulk", self.bulk_data.getvalue())
             self.bulk_data = StringIO()
             self.bulk_items = 0
-
+        else:
+            self.last_bulk_response = None
+        return self.last_bulk_response
     def put_file(self, filename, index, doc_type, id=None):
         """
         Store a file in a index

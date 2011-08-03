@@ -736,9 +736,7 @@ class ES(object):
             self.bulk_data.write(doc)
             self.bulk_data.write("\n")
             self.bulk_items += 1
-            self.flush_bulk()
-            return
-
+            return self.flush_bulk()
 
         if force_insert:
             querystring_args['opType'] = 'create'
@@ -762,8 +760,8 @@ class ES(object):
         Wait to process all pending operations
         """
         if not forced and self.bulk_items < self.bulk_size:
-            return
-        self.force_bulk()
+            return None
+        return self.force_bulk()
 
     def force_bulk(self):
         """
@@ -780,6 +778,7 @@ class ES(object):
         else:
             self.last_bulk_response = None
         return self.last_bulk_response
+
     def put_file(self, filename, index, doc_type, id=None):
         """
         Store a file in a index

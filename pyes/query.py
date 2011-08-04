@@ -160,7 +160,8 @@ class Search(object):
             res.update(self.facet.q)
         return res
 
-    def add_highlight(self, field, fragment_size=None, number_of_fragments=None):
+    def add_highlight(self, field, fragment_size=None,
+                      number_of_fragments=None, fragment_offset=None):
         """Add a highlight field.
 
         The Search object will be returned, so calls to this can be chained.
@@ -168,7 +169,7 @@ class Search(object):
         """
         if self.highlight is None:
             self.highlight = HighLighter("<b>", "</b>")
-        self.highlight.add_field(field, fragment_size, number_of_fragments)
+        self.highlight.add_field(field, fragment_size, number_of_fragments, fragment_offset)
         return self
 
     def add_index_boost(self, index, boost):

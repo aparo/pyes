@@ -142,6 +142,7 @@ class ES(object):
         self.bulk_size = bulk_size #size of the bulk
         self.bulk_data = StringIO()
         self.bulk_items = 0
+        self.last_bulk_response = None #last response of a bulk insert
 
         self.info = {} #info about the current server
         self.mappings = None #track mapping
@@ -256,8 +257,7 @@ class ES(object):
             doc_types = [doc_types]
         body = query
         path = self._make_path([','.join(indices), ','.join(doc_types), query_type])
-        response = self._send_request('GET', path, body, querystring_args)
-        return response
+        return self._send_request('GET', path, body, params=querystring_args)
 
     def _validate_indices(self, indices=None):
         """Return a valid list of indices.
@@ -371,7 +371,7 @@ class ES(object):
         """
         state = self.cluster_state()
         status = self.status()
-        
+
         indices_metadata = set(state['metadata']['indices'].keys())
         indices_status = set(status['indices'].keys())
 
@@ -385,7 +385,7 @@ class ES(object):
         Otherwise, returns a list of index names.
 
         """
-        status  = self.cluster_state()['metadata']['indices']
+        status = self.cluster_state()['metadata']['indices']
         return [ index for index in status.keys() if alias in status[index]['aliases'] ]
 
     def change_aliases(self, commands):
@@ -533,7 +533,7 @@ class ES(object):
         result = self._send_request('POST', path, params=params)
         self.refreshed = True
         return result
-    
+
     def analyze(self, text, index=None):
         """
         Performs the analysis process on a text and return the tokens breakdown of the text
@@ -707,7 +707,7 @@ class ES(object):
         self.bulk_data.write(header)
         self.bulk_data.write(document)
         self.bulk_items += 1
-        self.flush_bulk()
+        return self.flush_bulk()
 
     def index(self, doc, index, doc_type, id=None, parent=None, force_insert=False, bulk=False, version=None, querystring_args=None):
         """
@@ -736,9 +736,7 @@ class ES(object):
             self.bulk_data.write(doc)
             self.bulk_data.write("\n")
             self.bulk_items += 1
-            self.flush_bulk()
-            return
-
+            return self.flush_bulk()
 
         if force_insert:
             querystring_args['opType'] = 'create'
@@ -762,17 +760,24 @@ class ES(object):
         Wait to process all pending operations
         """
         if not forced and self.bulk_items < self.bulk_size:
-            return
-        self.force_bulk()
+            return None
+        return self.force_bulk()
 
     def force_bulk(self):
         """
-        Force executing of all bulk data
+        Force executing of all bulk data.
+        
+        Return the bulk response
+        
+        If not item self.last_bulk_response to None and returns None
         """
         if self.bulk_items != 0:
-            self._send_request("POST", "/_bulk", self.bulk_data.getvalue())
+            self.last_bulk_response = self._send_request("POST", "/_bulk", self.bulk_data.getvalue())
             self.bulk_data = StringIO()
             self.bulk_items = 0
+        else:
+            self.last_bulk_response = None
+        return self.last_bulk_response
 
     def put_file(self, filename, index, doc_type, id=None):
         """
@@ -899,7 +904,7 @@ class ES(object):
             pass
         else:
             raise pyes.exceptions.InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
-        return ResultSet(connection=self, query = query, indices=indices, doc_types=doc_types, query_params=query_params)
+        return ResultSet(connection=self, query=query, indices=indices, doc_types=doc_types, query_params=query_params)
 
 #    scan method is no longer working due to change in ES.search behavior.  May no longer warrant its own method.
 #    def scan(self, query, indices=None, doc_types=None, scroll_timeout="10m", **query_params):
@@ -1142,7 +1147,7 @@ class ResultSet(object):
         else:
             try:
                 self._results = self.connection.search_scroll(self.scroller_id, self.scroller_parameters.get("scroll", "10m"))
-                self.scroller_id=self._results['_scroll_id']
+                self.scroller_id = self._results['_scroll_id']
             except pyes.exceptions.ReduceSearchPhaseException:
                 #bad hack, should be not hits on the last iteration
                 self._results['hits']['hits'] = []

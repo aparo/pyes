@@ -97,7 +97,7 @@ class ES(object):
     ES connection object.
     """
 
-    def __init__(self, server, timeout=5.0, bulk_size=400,
+    def __init__(self, server="localhost:9200", timeout=5.0, bulk_size=400,
                  encoder=None, decoder=None,
                  max_retries=3, autorefresh=False,
                  default_indices=['_all'],

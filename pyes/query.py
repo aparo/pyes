@@ -83,6 +83,7 @@ class Search(object):
     """
     def __init__(self,
                  query=None,
+                 filter=None,
                  fields=None,
                  start=None,
                  size=None,
@@ -99,6 +100,7 @@ class Search(object):
         fields: if is [], the _source is not returned
         """
         self.query = query
+        self.filter = filter
         self.fields = fields
         self.start = start
         self.size = size
@@ -127,6 +129,8 @@ class Search(object):
 
         """
         res = {"query": self.query.serialize()}
+        if self.filter:
+            res['filter'] = self.filter.serialize()
         if self.fields is not None:
             res['fields'] = self.fields
         if self.size is not None:
@@ -380,7 +384,7 @@ class ConstantScoreQuery(Query):
 
     def is_empty(self):
         """Returns True if the query is empty.
-        
+
         """
         if self.filters:
             return False
@@ -1029,12 +1033,12 @@ class SpanFirstQuery(TermQuery):
 
 class SpanNearQuery(Query):
     """
-    Matches spans which are near one another. One can specify _slop_, 
-    the maximum number of intervening unmatched positions, as well as 
+    Matches spans which are near one another. One can specify _slop_,
+    the maximum number of intervening unmatched positions, as well as
     whether matches are required to be in-order.
-    
-    The clauses element is a list of one or more other span type queries and 
-    the slop controls the maximum number of intervening unmatched positions 
+
+    The clauses element is a list of one or more other span type queries and
+    the slop controls the maximum number of intervening unmatched positions
     permitted.
     """
     _internal_name = "span_near"
@@ -1070,10 +1074,10 @@ class SpanNearQuery(Query):
 
 class SpanNotQuery(Query):
     """
-    Removes matches which overlap with another span query. 
-    
-    The include and exclude clauses can be any span type query. The include 
-    clause is the span query whose matches are filtered, and the exclude 
+    Removes matches which overlap with another span query.
+
+    The include and exclude clauses can be any span type query. The include
+    clause is the span query whose matches are filtered, and the exclude
     clause is the span query whose matches must not overlap those returned.
     """
     _internal_name = "span_not"
@@ -1106,8 +1110,8 @@ def is_a_spanquery(obj):
 
 class SpanOrQuery(Query):
     """
-    Matches the union of its span clauses. 
-    
+    Matches the union of its span clauses.
+
     The clauses element is a list of one or more other span type queries.
     """
     _internal_name = "span_or"
@@ -1230,3 +1234,4 @@ class PercolatorQuery(Query):
     def to_search_json(self):
         """Disable this as it is not allowed in percolator queries."""
         raise NotImplementedError()
+

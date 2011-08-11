@@ -1204,14 +1204,13 @@ class ResultSet(object):
         else:
             try:
                 self._results = self.connection.search_scroll(self.scroller_id, self.scroller_parameters.get("scroll", "10m"))
-                self.scroller_id = self._results['_scroll_id']
             except pyes.exceptions.ReduceSearchPhaseException:
                 #bad hack, should be not hits on the last iteration
                 self._results['hits']['hits'] = []
 
 
         if process_post_query:
-            self.facets = self._results.get('facets', {})
+            self._facets = self._results.get('facets', {})
             if 'hits' in self._results:
                 self.valid = True
                 self.hits = self._results['hits']['hits']
@@ -1268,6 +1267,41 @@ class ResultSet(object):
         if name == "facets":
             return self._facets
         return self._results['hits'][name]
+
+    def __getitem__(self, val):
+        query = None
+        if hasattr(self.query, 'to_search_json'):
+            query = self.query.serialize()
+        elif isinstance(self.query, dict):
+            # A direct set of search parameters.
+            query = copy.deepcopy(self.query)
+        else:
+            raise InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
+        if isinstance(val, slice):
+            start = val.start
+            if not start:
+                start = 0
+            else:
+                start -= 1
+            end = val.stop or self.total()
+            if end < 0:
+                end = self.total() + end
+
+            query['from'] = start
+            query['size'] = end - start
+        else:
+            query['from'] = val
+            query['size'] = 1
+
+        results = self.connection.search_raw(query, indices=self.indices,
+                        doc_types=self.doc_types, **self.query_params)
+
+        hits = results['hits']['hits']
+        if not isinstance(val, slice):
+            if len(hits) == 1:
+                return hits[0]
+            raise IndexError
+        return hits
 
     def next(self):
         if self._results is None:

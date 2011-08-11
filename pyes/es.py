@@ -879,6 +879,43 @@ class ES(object):
             get_params["routing"] = routing
         return self._send_request('GET', path, params=get_params)
 
+    def mget(self, ids, index=None, doc_type=None, routing=None, **get_params):
+        """
+        Get multi JSON documents.
+        
+        ids can be:
+            list of tuple: (index, type, id)
+            list of ids: index and doc_type are required
+        
+        """
+        if len(ids) == 0:
+            return []
+
+        body = []
+        for value in ids:
+            if isinstance(value, tuple):
+                a, b, c = value
+                body.append({"_index":a,
+                             "_type":b,
+                             "_id":c})
+            else:
+                if index is None:
+                    raise InvalidQuery("index value is required for id")
+                if doc_type is None:
+                    raise InvalidQuery("doc_type value is required for id")
+                body.append({"_index":index,
+                             "_type":doc_type,
+                             "_id":value})
+
+        if routing:
+            get_params["routing"] = routing
+        results = self._send_request('GET', "/_mget",
+                                  body={'docs':body},
+                                  params=get_params)
+        if 'docs' in results:
+            return [r for r in results['docs']]
+        return []
+
     def search_raw(self, query, indices=None, doc_types=None, **query_params):
         """Execute a search against one or more indices to get the search hits.
 

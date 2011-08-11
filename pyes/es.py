@@ -1121,7 +1121,7 @@ class ResultSet(object):
                 body = self.query.to_search_json()
             elif isinstance(self.query, dict):
                 # A direct set of search parameters.
-                self.query['start'] = self.start
+                self.query['from'] = self.start
                 self.query['size'] = self.chuck_size
                 body = json.dumps(self.query, cls=self.connection.encoder)
             else:

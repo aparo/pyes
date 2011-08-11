@@ -216,6 +216,11 @@ class ES(object):
         # execute the request
         response = self.connection.execute(request)
 
+        if method == "HEAD":
+            if response.status != 200:
+                return False
+            return True
+
         # handle the response
         try:
             decoded = json.loads(response.body, cls=self.decoder)
@@ -314,6 +319,12 @@ class ES(object):
 
         """
         return self._send_request('DELETE', index)
+
+    def exists_index(self, index):
+        """
+        Check if an index exists.
+        """
+        return self._send_request('HEAD', index)
 
     def delete_index_if_exists(self, index):
         """Deletes an index if it exists.
@@ -578,9 +589,7 @@ class ES(object):
             path = self._make_path([','.join(indices), doc_type, "_mapping"])
         else:
             path = self._make_path([','.join(indices), "_mapping"])
-        result = self._send_request('GET', path)
-        return result
-
+        return self._send_request('GET', path)
 
     def collect_info(self):
         """
@@ -709,7 +718,10 @@ class ES(object):
         self.bulk_items += 1
         return self.flush_bulk()
 
-    def index(self, doc, index, doc_type, id=None, parent=None, force_insert=False, bulk=False, version=None, querystring_args=None):
+    def index(self, doc, index, doc_type, id=None, parent=None,
+              force_insert=False,
+              op_type=None,
+              bulk=False, version=None, querystring_args=None):
         """
         Index a typed JSON document into a specific index and make it searchable.
         """
@@ -719,16 +731,18 @@ class ES(object):
         self.refreshed = False
 
         if bulk:
-            optype = "index"
+            if op_type is None:
+                op_type = "index"
+            op_type = "index"
             if force_insert:
-                optype = "create"
-            cmd = { optype : { "_index" : index, "_type" : doc_type}}
+                op_type = "create"
+            cmd = { op_type : { "_index" : index, "_type" : doc_type}}
             if parent:
-                cmd[optype]['_parent'] = parent
+                cmd[op_type]['_parent'] = parent
             if version:
-                cmd[optype]['_version'] = version
+                cmd[op_type]['_version'] = version
             if id:
-                cmd[optype]['_id'] = id
+                cmd[op_type]['_id'] = id
             self.bulk_data.write(json.dumps(cmd, cls=self.encoder))
             self.bulk_data.write("\n")
             if isinstance(doc, dict):
@@ -739,12 +753,18 @@ class ES(object):
             return self.flush_bulk()
 
         if force_insert:
-            querystring_args['opType'] = 'create'
+            querystring_args['op_type'] = 'create'
+        if op_type:
+            querystring_args['op_type'] = op_type
 
         if parent:
+            if not isinstance(parent, basestring):
+                parent = str(parent)
             querystring_args['parent'] = parent
 
         if version:
+            if not isinstance(version, basestring):
+                version = str(version)
             querystring_args['version'] = version
 
         if id is None:

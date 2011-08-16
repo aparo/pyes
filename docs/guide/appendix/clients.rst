@@ -16,7 +16,7 @@ Clients
 *  `elastic_searchable <https://github.com/wireframe/elastic_searchable/>`_:  Ruby client + Rails integration.
 * `erlastic_search <http://github.com/tsloughter/erlastic_search>`_:  Erlang client.
 * `Elastica <http://github.com/ruflin/Elastica>`_:  PHP client.
-* `elasitcsearch <http://github.com/nervetattoo/elasticsearch>`_  `_  PHP client.
+* `elasitcsearch <http://github.com/nervetattoo/elasticsearch>`_: PHP client.
 * `NEST <https://github.com/Mpdreamz/NEST>`_:  .NET client.
 * `ElasticSearch.NET <https://github.com/medcl/ElasticSearch.Net>`_:  .NET client.
 

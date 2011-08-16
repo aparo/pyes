@@ -13,7 +13,7 @@ After :ref:`downloading <es-guide-reference-setup-download>`  the latest release
     $ bin/elasticsearch
 
 
-Under *nix system, the command will start the process in the background. To run it in the foreground, add the -f switch to it:
+Under \*nix system, the command will start the process in the background. To run it in the foreground, add the -f switch to it:
 
 .. code-block:: bash
 
@@ -21,7 +21,7 @@ Under *nix system, the command will start the process in the background. To run 
     $ bin/elasticsearch -f
 
 
-ElasticSearch is built using Java, and requires `Java 6 <http://java.sun.com/javase/downloads/index.jsp>`_  `_  in order to run. The version of Java that will be used can be set by setting the **JAVA_HOME** environment variable.
+ElasticSearch is built using Java, and requires `Java 6 <http://java.sun.com/javase/downloads/index.jsp>`_  in order to run. The version of Java that will be used can be set by setting the **JAVA_HOME** environment variable.
 
 Environment Variables
 =====================
@@ -35,8 +35,8 @@ Most times it is better to leave the default **JAVA_OPTS** as they are, and use 
 The **ES_MIN_MEM** and **ES_MAX_MEM** environment variables to set the minimum and maximum memory allocation for the JVM (set in mega bytes). It defaults to **256m** and **1g** respectively.
 
 
-*NIX
-----
+\*NIX
+-----
 
 There are added features when using the **elasticsearch** shell script. The first, which was explained earlier, is the ability to easily run the process either in the foreground or the background.
 

@@ -16,7 +16,7 @@ The filter cache is responsible to cache the results of filters (used in the que
 Node Filter Cache
 -----------------
 
-The **node** filter cache allows to configure either a percentage (of the total memory allocated to the process) or an exact value of the cache used for filter cache. All shards allocated on that node will use this cache (thats why its called **node**`), and evicted based on LRU logic.
+The **node** filter cache allows to configure either a percentage (of the total memory allocated to the process) or an exact value of the cache used for filter cache. All shards allocated on that node will use this cache (thats why its called **node**), and evicted based on LRU logic.
 
 
 The setting that allows to control the memory size for the filter cache is **indices.cache.filter.size** and it defaults to **20%**. *Note*, this is *not* an index level setting but a node level setting (can be configured in the node configuration).

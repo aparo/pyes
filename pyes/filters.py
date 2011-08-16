@@ -372,6 +372,25 @@ class HasChildFilter(Filter):
             data['_scope'] = self._scope
         return {self._internal_name: data}
 
+class NestedFilter(Filter):
+    """
+    A nested filter, works in a similar fashion to the nested query, except 
+    used as a filter. It follows exactly the same structure, but also allows 
+    to cache the results (set _cache to true), and have it named 
+    (set the _name value).    """
+    _internal_name = "filter"
+
+    def __init__(self, path, filter, **kwargs):
+        super(NestedFilter, self).__init__(**kwargs)
+        self.path = path
+        self.filter = filter
+
+    def serialize(self):
+
+        data = {
+             'path':self.path,
+             'query':self.filter.serialize()}
+        return {self._internal_name:data}
 
 class IdsFilter(Filter):
     _internal_name = "ids"

@@ -453,6 +453,42 @@ class TopChildrenQuery(ConstantScoreQuery):
                                      'factor':self.factor,
                                      "incremental_factor":self.incremental_factor}}
 
+class NestedQuery(Query):
+    """
+    Nested query allows to query nested objects / docs (see nested mapping). 
+    The query is executed against the nested objects / docs as if they were 
+    indexed as separate docs (they are, internally) and resulting in the root 
+    parent doc (or parent nested mapping).
+    
+    The query path points to the nested object path, and the query (or filter) 
+    includes the query that will run on the nested docs matching the direct 
+    path, and joining with the root parent docs.
+
+    The score_mode allows to set how inner children matching affects scoring of 
+    parent. It defaults to avg, but can be total, max and none.
+
+    Multi level nesting is automatically supported, and detected, resulting in 
+    an inner nested query to automatically match the relevant nesting level 
+    (and not root) if it exists within another nested query.
+    """
+    _internal_name = "nested"
+
+    def __init__(self, path, query, score_mode="avg", **kwargs):
+        super(NestedQuery, self).__init__(**kwargs)
+        self.path = path
+        self.score_mode = score_mode
+        self.query = query
+
+    def serialize(self):
+
+        if self.score_mode and self.score_mode not in ['avg', "total", "max"]:
+            raise InvalidParameterQuery("Invalid scory_mode: %s" % self.score_mode)
+        data = {
+             'path':self.path,
+             'scory_mode':self.score_mode,
+             'query':self.query.serialize()}
+        return {self._internal_name:data}
+
 class DisMaxQuery(Query):
     _internal_name = "dis_max"
 

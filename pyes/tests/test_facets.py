@@ -40,35 +40,38 @@ class FacetSearchTestCase(ESTestCase):
                            'index': 'not_analyzed',
                            'store': 'yes',
                            'type': u'string'}}
-        self.conn.create_index("test-index")
-        self.conn.put_mapping("test-type", {'properties':mapping}, ["test-index"])
+        self.conn.create_index(self.index_name)
+        self.conn.put_mapping(self.document_type, {'properties':mapping}, self.index_name)
         self.conn.index({"name": "Joe Tester",
                          "parsedtext": "Joe Testere nice guy",
                          "uuid": "11111",
                          "position": 1,
                          "tag": "foo",
-                         "date": datetime.date(2011, 5, 16)}, "test-index", "test-type", 1)
+                         "date": datetime.date(2011, 5, 16)},
+                        self.index_name, self.document_type, 1)
         self.conn.index({"name":" Bill Baloney",
                          "parsedtext": "Bill Testere nice guy",
                          "uuid": "22222",
                          "position": 2,
                          "tag": "foo",
-                         "date": datetime.date(2011, 4, 16)}, "test-index", "test-type", 2)
+                         "date": datetime.date(2011, 4, 16)},
+                        self.index_name, self.document_type, 2)
         self.conn.index({"name": "Bill Clinton",
                          "parsedtext": "Bill is not nice guy",
                          "uuid": "33333",
                          "position": 3,
                          "tag": "bar",
-                         "date": datetime.date(2011, 4, 28)}, "test-index", "test-type", 3)
-        self.conn.refresh(["test-index"])
+                         "date": datetime.date(2011, 4, 28)},
+                        self.index_name, self.document_type, 3)
+        self.conn.refresh(self.index_name)
 
     def test_terms_facet(self):
         q = MatchAllQuery()
         q = q.search()
         q.facet.add_term_facet('tag')
-        resultset = self.conn.search(query=q, indices=["test-index"], doc_types=["test-type"])
+        resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
         self.assertEquals(resultset.total, 3)
-        self.assertEquals(resultset.facets['tag']['terms'], [{u'count': 2, u'term': u'foo'},
+        self.assertEquals(resultset.facets.tag.terms, [{u'count': 2, u'term': u'foo'},
                                                              {u'count': 1, u'term': u'bar'}])
 
     def test_terms_facet_filter(self):
@@ -76,9 +79,10 @@ class FacetSearchTestCase(ESTestCase):
         q = FilteredQuery(q, TermFilter('tag', 'foo'))
         q = q.search()
         q.facet.add_term_facet('tag')
-        resultset = self.conn.search(query=q, indices=["test-index"], doc_types=["test-type"])
+        resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
         self.assertEquals(resultset.total, 2)
         self.assertEquals(resultset.facets['tag']['terms'], [{u'count': 2, u'term': u'foo'}])
+        self.assertEquals(resultset.facets.tag.terms, [{u'count': 2, u'term': u'foo'}])
 
     def test_date_facet(self):
         q = MatchAllQuery()
@@ -86,13 +90,13 @@ class FacetSearchTestCase(ESTestCase):
         q.facet.facets.append(DateHistogramFacet('date_facet',
                                                  field='date',
                                                  interval='month'))
-        resultset = self.conn.search(query=q, indices=["test-index"], doc_types=["test-type"])
+        resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
         self.assertEquals(resultset.total, 3)
-        self.assertEquals(resultset.facets['date_facet']['entries'], [{u'count': 2, u'time': 1301616000000},
+        self.assertEquals(resultset.facets.date_facet.entries, [{u'count': 2, u'time': 1301616000000},
                                                                       {u'count': 1, u'time': 1304208000000}])
-        self.assertEquals(datetime.datetime.fromtimestamp(1301616000000/1000.).date(),
+        self.assertEquals(datetime.datetime.fromtimestamp(1301616000000 / 1000.).date(),
                           datetime.date(2011, 04, 01))
-        self.assertEquals(datetime.datetime.fromtimestamp(1304208000000/1000.).date(),
+        self.assertEquals(datetime.datetime.fromtimestamp(1304208000000 / 1000.).date(),
                           datetime.date(2011, 05, 01))
 
     def test_date_facet_filter(self):
@@ -105,7 +109,7 @@ class FacetSearchTestCase(ESTestCase):
         q.facet.facets.append(DateHistogramFacet('date_facet',
                                                  field='date',
                                                  interval='month'))
-        resultset = self.conn.search(query=q, indices=["test-index"], doc_types=["test-type"])
+        resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
         self.assertEquals(resultset.total, 2)
         self.assertEquals(resultset.facets['date_facet']['entries'], [{u'count': 2, u'time': 1301616000000}])
 

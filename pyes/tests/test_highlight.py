@@ -31,19 +31,20 @@ class QuerySearchTestCase(ESTestCase):
                            'index': 'not_analyzed',
                            'store': 'yes',
                            'type': u'string'}}
-        self.conn.create_index("test-index")
-        self.conn.put_mapping("test-type", {'properties':mapping}, ["test-index"])
-        self.conn.index({"name":"Joe Tester", "parsedtext":"Joe Testere nice guy", "uuid":"11111", "position":1}, "test-index", "test-type", 1)
-        self.conn.index({"name":"Bill Baloney", "parsedtext":"Joe Testere nice guy", "uuid":"22222", "position":2}, "test-index", "test-type", 2)
-        self.conn.index({"parsedtext":"Joe Testere nice guy", "uuid":"22222", "position":2}, "test-index", "test-type", 2)
-        self.conn.refresh(["test-index"])
+        self.conn.create_index(self.index_name)
+        self.conn.put_mapping(self.document_type, {'properties':mapping}, self.index_name)
+        self.conn.index({"name":"Joe Tester", "parsedtext":"Joe Testere nice guy", "uuid":"11111", "position":1}, self.index_name, self.document_type, 1)
+        self.conn.index({"name":"Bill Baloney", "parsedtext":"Joe Testere nice guy", "uuid":"22222", "position":2}, self.index_name, self.document_type, 2)
+        self.conn.index({"parsedtext":"Joe Testere nice guy", "uuid":"22222", "position":2}, self.index_name, self.document_type, 2)
+        self.conn.refresh(self.index_name)
 
     def test_QueryHighlight(self):
         q = Search(StringQuery("joe"))
         q.add_highlight("parsedtext")
         q.add_highlight("name")
-        resultset = self.conn.search(q, indices=["test-index"])
+        resultset = self.conn.search(q, indices=self.index_name)
         self.assertEquals(resultset.total, 2)
+        self.assertNotEqual(resultset[0].meta.highlight, None)
 
 if __name__ == "__main__":
     unittest.main()

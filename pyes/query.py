@@ -1234,4 +1234,3 @@ class PercolatorQuery(Query):
     def to_search_json(self):
         """Disable this as it is not allowed in percolator queries."""
         raise NotImplementedError()
-

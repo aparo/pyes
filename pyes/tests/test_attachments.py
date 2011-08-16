@@ -18,16 +18,16 @@ class TestFileSaveTestCase(ESTestCase):
                                         "title" : {'store': "yes"}, }
                                       }
                    }
-        self.conn.create_index("test-index")
-        self.conn.put_mapping("test-type", {"test-type":{'properties':mapping}}, ["test-index"])
-        self.conn.refresh(["test-index"])
-        self.conn.get_mapping("test-type", ["test-index"])
+        self.conn.create_index(self.index_name)
+        self.conn.put_mapping(self.document_type, {self.document_type:{'properties':mapping}}, self.index_name)
+        self.conn.refresh(self.index_name)
+        self.conn.get_mapping(self.document_type, self.index_name)
         name = "__init__.py"
         content = open(name, "rb").read()
-        self.conn.put_file(name, "test-index", "test-type", 1)
-        self.conn.refresh(["test-index"])
-        _ = self.conn.get_mapping("test-type", ["test-index"])
-        nname, ncontent = self.conn.get_file("test-index", "test-type", 1)
+        self.conn.put_file(name, self.index_name, self.document_type, 1)
+        self.conn.refresh(self.index_name)
+        _ = self.conn.get_mapping(self.document_type, self.index_name)
+        nname, ncontent = self.conn.get_file(self.index_name, self.document_type, 1)
         self.assertEquals(name, nname)
         self.assertEquals(content, ncontent)
 
@@ -50,7 +50,7 @@ class QueryAttachmentTestCase(ESTestCase):
                            'type': u'string'}
                    }
 #        mapping = {
-#            "test-type": {
+#            self.document_type: {
 #                "_index": {"enabled": "yes"},
 #                "_id": {"store": "yes"},
 #                "properties": {
@@ -69,16 +69,16 @@ class QueryAttachmentTestCase(ESTestCase):
 #            }
 #        }
         self.conn.debug_dump = True
-        self.conn.create_index("test-index")
-        self.conn.put_mapping("test-type", {"test-type":{'properties':mapping}}, ["test-index"])
-        self.conn.refresh(["test-index"])
-        self.conn.get_mapping("test-type", ["test-index"])
-        self.conn.index({"attachment":file_to_attachment(os.path.join("data", "testXHTML.html")), "uuid":"1" }, "test-index", "test-type", 1)
-        self.conn.refresh(["test-index"])
+        self.conn.create_index(self.index_name)
+        self.conn.put_mapping(self.document_type, {self.document_type:{'properties':mapping}}, self.index_name)
+        self.conn.refresh(self.index_name)
+        self.conn.get_mapping(self.document_type, self.index_name)
+        self.conn.index({"attachment":file_to_attachment(os.path.join("data", "testXHTML.html")), "uuid":"1" }, self.index_name, self.document_type, 1)
+        self.conn.refresh(self.index_name)
 
     def test_TermQuery(self):
         q = TermQuery("uuid", "1").search(fields=['attachment', 'attachment.author', 'attachment.title', 'attachment.date'])
 #        q = TermQuery("uuid", "1", fields=['*'])
-        resultset = self.conn.search(query=q, indices=["test-index"])
+        resultset = self.conn.search(query=q, indices=self.index_name)
         self.assertEquals(resultset.total, 1)
         self.assertEquals(resultset.hits[0]['fields']['attachment.author'], u'Tika Developers')

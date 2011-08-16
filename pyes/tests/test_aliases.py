@@ -21,7 +21,7 @@ class ErrorReportingTestCase(ESTestCase):
         """Test errors thrown when creating or deleting aliases.
 
         """
-        self.assertTrue('ok' in self.conn.create_index("test-index"))
+        self.assertTrue('ok' in self.conn.create_index(self.index_name))
 
         # Check initial output of get_indices.
         result = self.conn.get_indices(include_aliases=True)
@@ -35,7 +35,7 @@ class ErrorReportingTestCase(ESTestCase):
         self.assertEqual(str(err), '[test-alias] missing')
 
         # Check deleting a missing alias (doesn't return a error).
-        self.conn.delete_alias("test-alias", "test-index")
+        self.conn.delete_alias("test-alias", self.index_name)
 
         # Add an alias from test-alias to test-index
         self.conn.change_aliases([['add', 'test-index', 'test-alias']])
@@ -72,12 +72,12 @@ class ErrorReportingTestCase(ESTestCase):
                          ['test-index', 'test-index2'])
 
         # Check deleting multiple indices from an alias.
-        self.conn.delete_alias("test-alias", ["test-index", "test-index2"])
+        self.conn.delete_alias("test-alias", [self.index_name, "test-index2"])
         err = self.checkRaises(pyes.exceptions.IndexMissingException,
                                self.conn.get_alias, 'test-alias')
 
         # Check deleting multiple indices from a missing alias (still no error)
-        self.conn.delete_alias("test-alias", ["test-index", "test-index2"])
+        self.conn.delete_alias("test-alias", [self.index_name, "test-index2"])
 
         # Check that we still get an error for a missing alias.
         err = self.checkRaises(pyes.exceptions.IndexMissingException,
@@ -85,7 +85,7 @@ class ErrorReportingTestCase(ESTestCase):
         self.assertEqual(str(err), '[test-alias] missing')
 
     def testWriteToAlias(self):
-        self.assertTrue('ok' in self.conn.create_index("test-index"))
+        self.assertTrue('ok' in self.conn.create_index(self.index_name))
         self.assertTrue('ok' in self.conn.create_index("test-index2"))
         self.assertTrue('ok' in self.conn.set_alias("test-alias", ['test-index']))
         self.assertTrue('ok' in self.conn.set_alias("test-alias2", ['test-index', 'test-index2']))

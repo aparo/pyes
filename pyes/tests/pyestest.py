@@ -12,12 +12,15 @@ def get_conn(*args, **kwargs):
     return ES('127.0.0.1:9200', *args, **kwargs)
 
 class ESTestCase(unittest.TestCase):
+
     def setUp(self):
         self.conn = get_conn()
-        self.conn.delete_index_if_exists("test-index")
+        self.index_name = "test-index"
+        self.document_type = "test-type"
+        self.conn.delete_index_if_exists(self.index_name)
 
     def tearDown(self):
-        self.conn.delete_index_if_exists("test-index")
+        self.conn.delete_index_if_exists(self.index_name)
 
     def assertResultContains(self, result, expected):
         for (key, value) in expected.items():
@@ -41,5 +44,33 @@ class ESTestCase(unittest.TestCase):
         dump to stdout the result
         """
         pprint(result)
+
+    def init_default_index(self):
+        settings = SettingsBuilder()
+        settings.add_mapping({self.document_type:{'properties':
+                { u'parsedtext': {'boost': 1.0,
+                                 'index': 'analyzed',
+                                 'store': 'yes',
+                                 'type': u'string',
+                                 "term_vector" : "with_positions_offsets"},
+                         u'name': {'boost': 1.0,
+                                    'index': 'analyzed',
+                                    'store': 'yes',
+                                    'type': u'string',
+                                    "term_vector" : "with_positions_offsets"},
+                         u'title': {'boost': 1.0,
+                                    'index': 'analyzed',
+                                    'store': 'yes',
+                                    'type': u'string',
+                                    "term_vector" : "with_positions_offsets"},
+                         u'pos': {'store': 'yes',
+                                    'type': u'integer'},
+                         u'uuid': {'boost': 1.0,
+                                   'index': 'not_analyzed',
+                                   'store': 'yes',
+                                   'type': u'string'}}
+                          }}, name=self.document_type)
+
+        self.conn.create_index(self.index_name, settings)
 
 main = unittest.main

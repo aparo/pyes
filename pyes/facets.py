@@ -12,6 +12,10 @@ class FacetFactory(object):
         """Add a term factory"""
         self.facets.append(TermFacet(*args, **kwargs))
 
+    def add(self, facet):
+        """Add a term factory"""
+        self.facets.append(facet)
+
     @property
     def q(self):
         res = {}

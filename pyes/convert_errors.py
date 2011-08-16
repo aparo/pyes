@@ -24,6 +24,8 @@ exceptions_by_name = dict((name, getattr(pyes.exceptions, name))
         'ClusterBlockException',
         'MapperParsingException',
         'ReduceSearchPhaseException',
+        "VersionConflictEngineException",
+        "DocumentAlreadyExistsEngineException"
     )
 )
 

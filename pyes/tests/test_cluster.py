@@ -30,13 +30,13 @@ class ClusterTestCase(ESTestCase):
                            'index': 'not_analyzed',
                            'store': 'yes',
                            'type': u'string'}}
-        self.conn.create_index("test-index")
-        self.conn.put_mapping("test-type", {'properties':mapping}, ["test-index"])
-        self.conn.index({"name":"Joe Tester", "parsedtext":"Joe Testere nice guy", "uuid":"11111", "position":1}, "test-index", "test-type", 1)
-        self.conn.index({"name":"Bill Baloney", "parsedtext":"Bill Testere nice guy", "uuid":"22222", "position":2}, "test-index", "test-type", 2)
+        self.conn.create_index(self.index_name)
+        self.conn.put_mapping(self.document_type, {'properties':mapping}, self.index_name)
+        self.conn.index({"name":"Joe Tester", "parsedtext":"Joe Testere nice guy", "uuid":"11111", "position":1}, self.index_name, self.document_type, 1)
+        self.conn.index({"name":"Bill Baloney", "parsedtext":"Bill Testere nice guy", "uuid":"22222", "position":2}, self.index_name, self.document_type, 2)
         self.conn.index({"name":"Bill Clinton", "parsedtext":"""Bill is not 
-                nice guy""", "uuid":"33333", "position":3}, "test-index", "test-type", 3)
-        self.conn.refresh(["test-index"])
+                nice guy""", "uuid":"33333", "position":3}, self.index_name, self.document_type, 3)
+        self.conn.refresh(self.index_name)
 
     def test_ClusterState(self):
         result = self.conn.cluster_state()

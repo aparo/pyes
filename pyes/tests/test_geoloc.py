@@ -4,7 +4,7 @@
 Unit tests for pyes.  These require an es server with thrift plugin running on the default port (localhost:9500).
 """
 import unittest
-from pyes.tests import ESTestCase, get_conn
+from pyes.tests import ESTestCase
 from pyes import GeoBoundingBoxFilter, GeoDistanceFilter, GeoPolygonFilter, FilteredQuery, MatchAllQuery
 
 #--- Geo Queries Test case
@@ -23,7 +23,7 @@ class GeoQuerySearchTestCase(ESTestCase):
         }
         self.conn.delete_index_if_exists("test-mindex")
         self.conn.create_index("test-mindex")
-        self.conn.put_mapping("test-type", {'properties':mapping}, ["test-mindex"])
+        self.conn.put_mapping(self.document_type, {'properties':mapping}, ["test-mindex"])
         self.conn.index({
             "pin" : {
                 "location" : {
@@ -31,7 +31,7 @@ class GeoQuerySearchTestCase(ESTestCase):
                     "lon" :-71.34
                 }
             }
-        }, "test-mindex", "test-type", 1)
+        }, "test-mindex", self.document_type, 1)
         self.conn.index({
             "pin" : {
                 "location" : {
@@ -39,7 +39,7 @@ class GeoQuerySearchTestCase(ESTestCase):
                     "lon" : 71.34
                 }
             }
-        }, "test-mindex", "test-type", 2)
+        }, "test-mindex", self.document_type, 2)
 
         self.conn.refresh(["test-mindex"])
 

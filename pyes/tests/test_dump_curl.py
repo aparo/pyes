@@ -17,7 +17,7 @@ class DumpCurlTestCase(ESTestCase):
         """
         dump = StringIO.StringIO()
         conn = get_conn(dump_curl=dump)
-        result = conn.index(dict(title="Hi"), "test-index", "test-type")
+        result = conn.index(dict(title="Hi"), self.index_name, self.document_type)
         self.assertTrue('ok' in result)
         self.assertTrue('error' not in result)
 

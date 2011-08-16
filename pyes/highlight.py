@@ -3,7 +3,7 @@
 
 __author__ = 'Alberto Paro'
 
-class HighLighter:
+class HighLighter(object):
     """
     This object manage the highlighting
     """

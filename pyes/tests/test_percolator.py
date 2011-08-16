@@ -31,8 +31,8 @@ class PercolatorTestCase(ESTestCase):
                            'index': 'not_analyzed',
                            'store': 'yes',
                            'type': u'string'}}
-        self.conn.create_index("test-index")
-        self.conn.put_mapping("test-type", {'properties':mapping}, ["test-index"])
+        self.conn.create_index(self.index_name)
+        self.conn.put_mapping(self.document_type, {'properties':mapping}, self.index_name)
         self.conn.create_percolator(
             'test-index',
             'test-perc1',
@@ -48,7 +48,7 @@ class PercolatorTestCase(ESTestCase):
             'test-perc3',
             StringQuery(query='apple AND iphone', search_fields='_all')
         )
-        self.conn.refresh(["test-index"])
+        self.conn.refresh(self.index_name)
 
     def test_percolator(self):
         results = self.conn.percolate('test-index', 'test-type', PercolatorQuery({'name': 'iphone'}))

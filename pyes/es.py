@@ -34,7 +34,7 @@ from mappings import Mapper
 
 from convert_errors import raise_if_error
 from pyes.exceptions import (InvalidParameter,
-        EchidnaSearchException, IndexAlreadyExistsException,
+        ElasticSearchException, IndexAlreadyExistsException,
         IndexMissingException, NotFoundException, InvalidQuery,
         ReduceSearchPhaseException
         )

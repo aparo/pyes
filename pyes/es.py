@@ -33,7 +33,12 @@ log = logging.getLogger('pyes')
 from mappings import Mapper
 
 from convert_errors import raise_if_error
-import pyes.exceptions
+from pyes.exceptions import (InvalidParameter,
+        EchidnaSearchException, IndexAlreadyExistsException,
+        IndexMissingException, NotFoundException, InvalidQuery,
+        ReduceSearchPhaseException
+        )
+
 
 def file_to_attachment(filename):
     """
@@ -236,7 +241,7 @@ class ES(object):
                 # parsed as JSON is when no handler is found for a request URI.
                 # In this case, the body is actually a good message to return
                 # in the exception.
-                raise pyes.exceptions.ElasticSearchException(response.body, response.status, response.body)
+                raise ElasticSearchException(response.body, response.status, response.body)
         if response.status != 200:
             raise_if_error(response.status, decoded)
         if isinstance(decoded, dict):
@@ -317,12 +322,11 @@ class ES(object):
         """
         try:
             return self.create_index(index, settings)
-        except pyes.exceptions.IndexAlreadyExistsException, e:
+        except IndexAlreadyExistsException, e:
             return e.result
 
     def delete_index(self, index):
         """Deletes an index.
-
         """
         return self._send_request('DELETE', index)
 
@@ -338,9 +342,9 @@ class ES(object):
         """
         try:
             return self.delete_index(index)
-        except pyes.exceptions.IndexMissingException:
+        except IndexMissingException:
             pass
-        except pyes.exceptions.NotFoundException, e:
+        except NotFoundException, e:
             return e.result
 
     def get_indices(self, include_aliases=False):
@@ -455,7 +459,7 @@ class ES(object):
         indices = self._validate_indices(indices)
         try:
             old_indices = self.get_alias(alias)
-        except pyes.exceptions.IndexMissingException:
+        except IndexMissingException:
             old_indices = []
         commands = [['remove', index, alias] for index in old_indices]
         commands.extend([['add', index, alias] for index in indices])
@@ -861,7 +865,7 @@ class ES(object):
             # A direct set of search parameters.
             body = json.dumps(query, cls=self.encoder)
         else:
-            raise pyes.exceptions.InvalidQuery("deleteByQuery() must be supplied with a Query object, or a dict")
+            raise InvalidQuery("deleteByQuery() must be supplied with a Query object, or a dict")
 
         path = self._make_path([','.join(indices), ','.join(doc_types), '_query'])
         return self._send_request('DELETE', path, body, querystring_args)
@@ -942,7 +946,7 @@ class ES(object):
             # A direct set of search parameters.
             body = json.dumps(query, cls=self.encoder)
         else:
-            raise pyes.exceptions.InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
+            raise InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
 
         return self._query_call("_search", body, indices, doc_types, **query_params)
 
@@ -965,7 +969,7 @@ class ES(object):
         if hasattr(query, 'to_search_json') or isinstance(query, dict):
             pass
         else:
-            raise pyes.exceptions.InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
+            raise InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
         return ResultSet(connection=self, query=query, indices=indices, doc_types=doc_types, query_params=query_params)
 
 #    scan method is no longer working due to change in ES.search behavior.  May no longer warrant its own method.
@@ -1087,7 +1091,7 @@ class ES(object):
             query = {'query': query.serialize()}
 
         if not isinstance(query, dict):
-            raise pyes.exceptions.InvalidQuery("create_percolator() must be supplied with a Query object or dict")
+            raise InvalidQuery("create_percolator() must be supplied with a Query object or dict")
         # A direct set of search parameters.
         query.update(kwargs)
         body = json.dumps(query, cls=self.encoder)
@@ -1120,7 +1124,7 @@ class ES(object):
             # A direct set of search parameters.
             body = json.dumps(query, cls=self.encoder)
         else:
-            raise pyes.exceptions.InvalidQuery("percolate() must be supplied with a Query object, or a dict")
+            raise InvalidQuery("percolate() must be supplied with a Query object, or a dict")
 
         return self._send_request('GET', path, body=body)
 
@@ -1187,7 +1191,7 @@ class ResultSet(object):
                 self.query['size'] = self.chuck_size
                 body = json.dumps(self.query, cls=self.connection.encoder)
             else:
-                raise pyes.exceptions.InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
+                raise InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
 
             self._results = self.connection.search_raw(self.query, indices=self.indices,
                                                        doc_types=self.doc_types, **self.query_params)
@@ -1209,7 +1213,7 @@ class ResultSet(object):
         else:
             try:
                 self._results = self.connection.search_scroll(self.scroller_id, self.scroller_parameters.get("scroll", "10m"))
-            except pyes.exceptions.ReduceSearchPhaseException:
+            except ReduceSearchPhaseException:
                 #bad hack, should be not hits on the last iteration
                 self._results['hits']['hits'] = []
 

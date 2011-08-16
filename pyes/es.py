@@ -18,6 +18,7 @@ import base64
 import time
 from StringIO import StringIO
 from decimal import Decimal
+import copy
 
 try:
     from connection import connect as thrift_connect
@@ -90,7 +91,7 @@ class ESJsonDecoder(json.JSONDecoder):
                     pass
             elif isinstance(v, list):
                 d[k] = [self.string_to_datetime(elem) for elem in v]
-        return d
+        return DotDict(d)
 
 class ES(object):
     """
@@ -204,6 +205,9 @@ class ES(object):
         if not self.connection:
             self._init_connection()
         if body:
+            if not isinstance(body, dict) and hasattr(body, "as_dict"):
+                body = body.as_dict()
+
             if isinstance(body, dict):
                 body = json.dumps(body, cls=self.encoder)
         else:
@@ -235,6 +239,8 @@ class ES(object):
                 raise pyes.exceptions.ElasticSearchException(response.body, response.status, response.body)
         if response.status != 200:
             raise_if_error(response.status, decoded)
+        if isinstance(decoded, dict):
+            decoded = DotDict(decoded)
         return  decoded
 
     def _make_path(self, path_components):
@@ -858,8 +864,7 @@ class ES(object):
             raise pyes.exceptions.InvalidQuery("deleteByQuery() must be supplied with a Query object, or a dict")
 
         path = self._make_path([','.join(indices), ','.join(doc_types), '_query'])
-        response = self._send_request('DELETE', path, body, querystring_args)
-        return response
+        return self._send_request('DELETE', path, body, querystring_args)
 
     def delete_mapping(self, index, doc_type):
         """
@@ -1269,6 +1274,29 @@ class ResultSet(object):
         return self._results['hits'][name]
 
     def __getitem__(self, val):
+        def get_start_end(val):
+            if isinstance(val, slice):
+                start = val.start
+                if not start:
+                    start = 0
+                else:
+                    start -= 1
+                end = val.stop or self.total()
+                if end < 0:
+                    end = self.total() + end
+                return start, end
+            return val, val + 1
+
+        start, end = get_start_end(val)
+
+        if self._results:
+            if start >= self.start and end < self.start + self.chuck_size:
+                if not isinstance(val, slice):
+                    return DotDict(self.connection, self._results['hits']['hits'][val - self.start])
+                else:
+                    return [DotDict(self.connection, hit) for hit in self._results['hits']['hits'][start:end]]
+
+
         query = None
         if hasattr(self.query, 'to_search_json'):
             query = self.query.serialize()
@@ -1277,21 +1305,9 @@ class ResultSet(object):
             query = copy.deepcopy(self.query)
         else:
             raise InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
-        if isinstance(val, slice):
-            start = val.start
-            if not start:
-                start = 0
-            else:
-                start -= 1
-            end = val.stop or self.total()
-            if end < 0:
-                end = self.total() + end
 
-            query['from'] = start
-            query['size'] = end - start
-        else:
-            query['from'] = val
-            query['size'] = 1
+        query['from'] = start
+        query['size'] = end - start
 
         results = self.connection.search_raw(query, indices=self.indices,
                         doc_types=self.doc_types, **self.query_params)
@@ -1299,9 +1315,9 @@ class ResultSet(object):
         hits = results['hits']['hits']
         if not isinstance(val, slice):
             if len(hits) == 1:
-                return hits[0]
+                return DotDict(hits[0])
             raise IndexError
-        return hits
+        return [DotDict(hit) for hit in hits]
 
     def next(self):
         if self._results is None:
@@ -1311,14 +1327,23 @@ class ResultSet(object):
         if self.iterpos < len(self.hits):
             res = self.hits[self.iterpos]
             self.iterpos += 1
-            return res
+            return DotDict(res)
         self._do_search(auto_increment=True)
         self.iterpos = 0
         if len(self.hits) == 0:
             raise StopIteration
         res = self.hits[self.iterpos]
         self.iterpos += 1
-        return res
+        return DotDict(res)
 
     def __iter__(self):
         return self
+
+class DotDict(dict):
+    def __getattr__(self, attr):
+        return self.get(attr, None)
+
+    __setattr__ = dict.__setitem__
+
+    __delattr__ = dict.__delitem__
+

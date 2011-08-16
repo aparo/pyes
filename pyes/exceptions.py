@@ -12,13 +12,16 @@ __all__ = ['NoServerAvailable',
            "SearchPhaseExecutionException",
            "InvalidQuery",
            "InvalidParameterQuery",
+           "InvalidParameter",
            "QueryParameterError",
            "ScriptFieldsError",
            "ReplicationShardOperationFailedException",
            "ClusterBlockException",
            "MapperParsingException",
            "ElasticSearchException",
-           'ReduceSearchPhaseException'
+           'ReduceSearchPhaseException',
+           "VersionConflictEngineException",
+           'DocumentAlreadyExistsEngineException'
           ]
 
 class NoServerAvailable(Exception):
@@ -38,6 +41,9 @@ class QueryParameterError(Exception):
     pass
 
 class ScriptFieldsError(Exception):
+    pass
+
+class InvalidParameter(Exception):
     pass
 
 class ElasticSearchException(Exception):
@@ -82,3 +88,10 @@ class MapperParsingException(ElasticSearchException):
 
 class ReduceSearchPhaseException(ElasticSearchException):
     pass
+
+class VersionConflictEngineException(ElasticSearchException):
+    pass
+
+class DocumentAlreadyExistsEngineException(ElasticsSearchException):
+    pass
+

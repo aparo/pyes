@@ -38,6 +38,7 @@ from pyes.exceptions import (InvalidParameter,
         IndexMissingException, NotFoundException, InvalidQuery,
         ReduceSearchPhaseException
         )
+import collections
 
 
 def file_to_attachment(filename):
@@ -886,7 +887,22 @@ class ES(object):
             get_params["fields"] = ",".join(fields)
         if routing:
             get_params["routing"] = routing
-        return self._send_request('GET', path, params=get_params)
+        return ElasticSearchModel(self, self._send_request('GET', path, params=get_params))
+
+    def factory_object(self, index, doc_type, data=None, vertex=False):
+        """
+        Create a stub object to be manipulated
+        """
+        data = data or {}
+        obj = ElasticSearchModel()
+        obj.meta.index = index
+        obj.meta.type = doc_type
+        obj.meta.connection = self
+        if data:
+            obj.update(data)
+        if vertex:
+            obj.force_vertex()
+        return obj
 
     def mget(self, ids, index=None, doc_type=None, routing=None, **get_params):
         """
@@ -922,7 +938,7 @@ class ES(object):
                                   body={'docs':body},
                                   params=get_params)
         if 'docs' in results:
-            return [r for r in results['docs']]
+            return [ElasticSearchModel(self, item) for item in results['docs']]
         return []
 
     def search_raw(self, query, indices=None, doc_types=None, **query_params):
@@ -1296,9 +1312,9 @@ class ResultSet(object):
         if self._results:
             if start >= self.start and end < self.start + self.chuck_size:
                 if not isinstance(val, slice):
-                    return DotDict(self.connection, self._results['hits']['hits'][val - self.start])
+                    return ElasticSearchModel(self.connection, self._results['hits']['hits'][val - self.start])
                 else:
-                    return [DotDict(self.connection, hit) for hit in self._results['hits']['hits'][start:end]]
+                    return [ElasticSearchModel(self.connection, hit) for hit in self._results['hits']['hits'][start:end]]
 
 
         query = None
@@ -1319,9 +1335,9 @@ class ResultSet(object):
         hits = results['hits']['hits']
         if not isinstance(val, slice):
             if len(hits) == 1:
-                return DotDict(hits[0])
+                return ElasticSearchModel(self.connection, hits[0])
             raise IndexError
-        return [DotDict(hit) for hit in hits]
+        return [ElasticSearchModel(self.connection, hit) for hit in hits]
 
     def next(self):
         if self._results is None:
@@ -1331,14 +1347,14 @@ class ResultSet(object):
         if self.iterpos < len(self.hits):
             res = self.hits[self.iterpos]
             self.iterpos += 1
-            return DotDict(res)
+            return ElasticSearchModel(self.connection, res)
         self._do_search(auto_increment=True)
         self.iterpos = 0
         if len(self.hits) == 0:
             raise StopIteration
         res = self.hits[self.iterpos]
         self.iterpos += 1
-        return DotDict(res)
+        return ElasticSearchModel(self.connection, res)
 
     def __iter__(self):
         return self
@@ -1351,3 +1367,52 @@ class DotDict(dict):
 
     __delattr__ = dict.__delitem__
 
+class ElasticSearchModel(collections.MutableMapping):
+    def __init__(self, *args, **kwargs):
+        self.store = DotDict()
+        self.meta = DotDict()
+        if len(args) == 2 and isinstance(args[0], ES):
+            item = args[1]
+            self.store = item.pop("_source", DotDict())
+            self.store.update(item.pop("_fields", {}))
+            self.meta = DotDict([(k.lstrip("_"), v) for k, v in item.items()])
+            self.meta.connection = args[0]
+        else:
+            self.update(dict(*args, **kwargs))
+
+    def __getattr__(self, attr):
+        if attr == "meta":
+            return self.meta
+        return self.store.get(attr, None)
+
+    def __getitem__(self, key):
+        return self.store.get(key, None)
+
+    def __setitem__(self, key, value):
+        self.store[key] = value
+
+    def __delitem__(self, key):
+        del self.store[key]
+
+    def __iter__(self):
+        return iter(self.store)
+
+    def __len__(self):
+        return len(self.store)
+
+    def save(self, bulk=False, id=None):
+        """
+        Save the object and returns id
+        """
+        meta = self.meta
+        conn = meta.connection
+        id = id or meta.id
+        version = None
+        if meta.version:
+            version = meta.version
+        res = conn.index(self.store, meta.index, meta.type, id, bulk=bulk, version=version)
+        if not bulk:
+            self.meta.id = res._id
+            self.meta.version = res._version
+            return res._id
+        return id

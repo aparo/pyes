@@ -6,13 +6,13 @@ Installation
 You can install PyES either via the Python Package Index (PyPI)
 or from source.
 
-To install using `pip`,::
+To install using `pip`,
 
 .. code-block:: sh
 
     $ pip install pyes
 
-To install using `easy_install`,::
+To install using `easy_install`,
 
 .. code-block:: sh
 
@@ -26,7 +26,7 @@ Downloading and installing from source
 Download the latest version of PyES from
 http://pypi.python.org/pypi/pyes/
 
-You can install it by doing the following,::
+You can install it by doing the following,
 
 .. code-block:: sh
 
@@ -40,7 +40,7 @@ You can install it by doing the following,::
 Using the development version
 -----------------------------
 
-You can clone the repository by doing the following::
+You can clone the repository by doing the following
 
 .. code-block:: sh
 
@@ -48,7 +48,9 @@ You can clone the repository by doing the following::
     $ cd pyes
     $ python setup.py develop
 
-To update, ::
+To update:
+
+.. code-block:: sh
 
     $ cd pyes
     $ git pull origin master

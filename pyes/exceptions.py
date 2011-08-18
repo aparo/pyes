@@ -92,6 +92,6 @@ class ReduceSearchPhaseException(ElasticSearchException):
 class VersionConflictEngineException(ElasticSearchException):
     pass
 
-class DocumentAlreadyExistsEngineException(ElasticsSearchException):
+class DocumentAlreadyExistsEngineException(ElasticSearchException):
     pass
 

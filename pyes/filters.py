@@ -378,7 +378,7 @@ class NestedFilter(Filter):
     used as a filter. It follows exactly the same structure, but also allows 
     to cache the results (set _cache to true), and have it named 
     (set the _name value).    """
-    _internal_name = "filter"
+    _internal_name = "nested"
 
     def __init__(self, path, filter, **kwargs):
         super(NestedFilter, self).__init__(**kwargs)

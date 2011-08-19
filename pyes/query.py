@@ -482,7 +482,7 @@ class NestedQuery(Query):
     def serialize(self):
 
         if self.score_mode and self.score_mode not in ['avg', "total", "max"]:
-            raise InvalidParameterQuery("Invalid scory_mode: %s" % self.score_mode)
+            raise InvalidParameterQuery("Invalid score_mode: %s" % self.score_mode)
         data = {
              'path':self.path,
              'scory_mode':self.score_mode,

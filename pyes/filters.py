@@ -274,12 +274,13 @@ class GeoDistanceFilter(Filter):
     """
     _internal_name = "geo_distance"
 
-    def __init__(self, field, location, distance, distance_type="arc", **kwargs):
+    def __init__(self, field, location, distance, distance_type="arc", distance_unit=None, **kwargs):
         super(GeoDistanceFilter, self).__init__(**kwargs)
         self.field = field
         self.location = location
         self.distance = distance
         self.distance_type = distance_type
+        self.distance_unit = distance_unit
 
     def serialize(self):
         if self.distance_type not in ["arc", "plane"]:
@@ -288,6 +289,11 @@ class GeoDistanceFilter(Filter):
         params = {"distance":self.distance, self.field:self.location}
         if self.distance_type != "arc":
             params['distance_type'] = self.distance_type
+
+        if self.distance_unit:
+            if self.distance_unit not in ["km", "mi", "miles"]:
+                raise QueryParameterError("Invalid distance_unit")
+            params['distance_unit'] = self.distance_unit
 
         return {self._internal_name:params}
 

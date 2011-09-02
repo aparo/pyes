@@ -7,6 +7,7 @@ Unit tests for pyes.  These require an es server with thrift plugin running on t
 import unittest
 from pyes import ES
 from pprint import pprint
+from pyes.helpers import SettingsBuilder
 
 def get_conn(*args, **kwargs):
     return ES('127.0.0.1:9200', *args, **kwargs)

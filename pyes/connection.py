@@ -20,7 +20,11 @@ from exceptions import NoServerAvailable
 __all__ = ['connect', 'connect_thread_local', 'NoServerAvailable']
 
 """
-Work taken from pycassa
+Work taken from pycassa.
+
+You need installed "thrift" to use this.
+Just do a "pip install thrift".
+
 """
 
 DEFAULT_SERVER = '127.0.0.1:9500'

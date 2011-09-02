@@ -7,7 +7,9 @@ Trunk (v.0.17.0)
     API BREAKING: renamed indexes in indices. To be complaint to ES documentation.
 
     Tests refactory.
-
+    
+    Add model object to objetify a dict.
+    
 v. 0.16.0:
 
            Updated documentation.

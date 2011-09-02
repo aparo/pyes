@@ -24,8 +24,14 @@ class ElasticSearchModelTestCase(ESTestCase):
         self.assertEqual(obj.meta.id, None)
         obj.meta.id = "dasdas"
         self.assertEqual(obj.meta.id, "dasdas")
-        self.assertEqual(sorted(obj.keys()), ["name", "val"])
+        self.assertEqual(sorted(obj.keys()), ["meta", "name", "val"])
         obj.save()
+        obj.name = "test2"
+        obj.save()
+
+        reloaded = self.conn.get(self.index_name, self.document_type, obj.meta.id)
+        self.assertEqual(reloaded.name, "test2")
+
 
 if __name__ == "__main__":
     unittest.main()

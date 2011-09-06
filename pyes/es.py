@@ -752,6 +752,8 @@ class ES(object):
                 cmd[op_type]['_parent'] = parent
             if version:
                 cmd[op_type]['_version'] = version
+            if 'routing' in querystring_args:
+                cmd[op_type]['_routing'] = querystring_args['routing']
             if id:
                 cmd[op_type]['_id'] = id
             self.bulk_data.write(json.dumps(cmd, cls=self.encoder))

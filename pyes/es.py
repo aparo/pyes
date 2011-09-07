@@ -836,6 +836,8 @@ class ES(object):
                 cmd[op_type]['_parent'] = parent
             if version:
                 cmd[op_type]['_version'] = version
+            if 'routing' in querystring_args:
+                cmd[op_type]['_routing'] = querystring_args['routing']
             if id:
                 cmd[op_type]['_id'] = id
             self.bulk_data.write(json.dumps(cmd, cls=self.encoder))
@@ -915,11 +917,12 @@ class ES(object):
         data = self.get(index, doc_type, id)
         return data["_source"]['_name'], base64.standard_b64decode(data["_source"]['content'])
 
-    def delete(self, index, doc_type, id, bulk=False):
+    def delete(self, index, doc_type, id, bulk=False, querystring_args=None):
         """
         Delete a typed JSON document from a specific index based on its id.
         If bulk is True, the delete operation is put in bulk mode.
         """
+        querystring_args = querystring_args or {}
         if bulk:
             cmd = { "delete" : { "_index" : index, "_type" : doc_type,
                                 "_id": id}}
@@ -930,7 +933,7 @@ class ES(object):
             return
 
         path = self._make_path([index, doc_type, id])
-        return self._send_request('DELETE', path)
+        return self._send_request('DELETE', path, params=querystring_args)
 
     def deleteByQuery(self, indices, doc_types, query, **request_params):
         """

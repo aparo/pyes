@@ -67,6 +67,9 @@ class ElasticSearchModel(DotDict):
     def __repr__(self):
         return repr(self)
 
+    def get_data(self):
+        return dict([(k, v) for k, v in self.items() if k != "meta"])
+
     def save(self, bulk=False, id=None):
         """
         Save the object and returns id
@@ -77,7 +80,7 @@ class ElasticSearchModel(DotDict):
         version = None
         if 'version' in meta:
             version = meta['version']
-        res = conn.index(dict([(k, v) for k, v in self.items() if k != "meta"]),
+        res = conn.index(self.get_data(),
                          meta.index, meta.type, id, bulk=bulk, version=version)
         if not bulk:
             self.meta.id = res._id

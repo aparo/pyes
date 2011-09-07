@@ -18,7 +18,6 @@ import base64
 import time
 from StringIO import StringIO
 from decimal import Decimal
-import copy
 
 try:
     from connection import connect as thrift_connect
@@ -28,17 +27,16 @@ except ImportError:
     from fakettypes import Method, RestRequest
     thrift_enable = False
 
-from connection_http import connect as http_connect
+from pyes.connection_http import connect as http_connect
 log = logging.getLogger('pyes')
-from mappings import Mapper
+from pyes.mappings import Mapper
 
-from convert_errors import raise_if_error
+from pyes.convert_errors import raise_if_error
 from pyes.exceptions import (InvalidParameter,
         ElasticSearchException, IndexAlreadyExistsException,
         IndexMissingException, NotFoundException, InvalidQuery,
         ReduceSearchPhaseException
         )
-import collections
 
 #
 # models

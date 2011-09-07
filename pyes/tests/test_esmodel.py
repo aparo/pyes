@@ -24,7 +24,7 @@ class ElasticSearchModelTestCase(ESTestCase):
         self.assertEqual(obj.meta.id, None)
         obj.meta.id = "dasdas"
         self.assertEqual(obj.meta.id, "dasdas")
-        self.assertEqual(sorted(obj.keys()), ["meta", "name", "val"])
+        self.assertEqual(sorted(obj.keys()), ["name", "val"])
         obj.save()
         obj.name = "test2"
         obj.save()

@@ -55,6 +55,7 @@ class DotDict(dict):
 class ElasticSearchModel(DotDict):
     def __init__(self, *args, **kwargs):
         self.meta = DotDict()
+        self.__initialised = True
         if len(args) == 2 and isinstance(args[0], ES):
             item = args[1]
             self.update(item.pop("_source", DotDict()))
@@ -64,11 +65,16 @@ class ElasticSearchModel(DotDict):
         else:
             self.update(dict(*args, **kwargs))
 
+    def __setattr__(self, key, value):
+        if not self.__dict__.has_key('_ElasticSearchModel__initialised'):  # this test allows attributes to be set in the __init__ method
+            return dict.__setattr__(self, key, value)
+        elif self.__dict__.has_key(key):       # any normal attributes are handled normally
+            dict.__setattr__(self, key, value)
+        else:
+            self.__setitem__(key, value)
+
     def __repr__(self):
         return repr(self)
-
-    def get_data(self):
-        return dict([(k, v) for k, v in self.items() if k != "meta"])
 
     def save(self, bulk=False, id=None):
         """
@@ -80,7 +86,7 @@ class ElasticSearchModel(DotDict):
         version = None
         if 'version' in meta:
             version = meta['version']
-        res = conn.index(self.get_data(),
+        res = conn.index(self,
                          meta.index, meta.type, id, bulk=bulk, version=version)
         if not bulk:
             self.meta.id = res._id
@@ -111,7 +117,7 @@ class ElasticSearchModel(DotDict):
             cmd[op_type]['_id'] = meta.id
         result.append(json.dumps(cmd, cls=self.meta.connection.encoder))
         result.append("\n")
-        result.append(json.dumps(self.store, cls=self.meta.connection.encoder))
+        result.append(json.dumps(self, cls=self.meta.connection.encoder))
         result.append("\n")
         return ''.join(result)
 

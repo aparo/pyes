@@ -15,7 +15,7 @@ class MapperTestCase(ESTestCase):
         self.datamap = decode_json(open(os.path.join("data", "map.json"), "rb").read())
 
     def test_parser(self):
-        _ = Mapper(self.datamap)
+        mapper = Mapper(self.datamap, True)
 
         mapping = self.conn.get_mapping()
         self.dump(mapping)

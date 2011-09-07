@@ -3,12 +3,9 @@
 
 __author__ = 'Alberto Paro'
 
-import threading
-
-_thread_locals = threading.local()
-#store threadsafe data
 from pyes.utils import keys_to_string
-
+from pyes.models import DotDict
+from pyes.exceptions import InvalidParameter
 check_values = {
                 'index': ['no', 'analyzed', 'not_analyzed'],
                 'term_vector': ['no', 'yes', 'with_offsets', 'with_positions', 'with_positions_offsets'],
@@ -19,177 +16,143 @@ check_values = {
                 }
 
 
-class AbstractField(object):
-    def __init__(self, index="not_analyzed", store="no", boost=1.0,
-                 term_vector="no", omit_norms=True,
-                 omit_term_freq_and_positions=True,
-                 type=None, index_name=None,
-                 analyzer=None,
-                 index_analyzer=None,
-                 search_analyzer=None,
-                 name=None):
-        self.store = store
-        self.boost = boost
-        self.term_vector = term_vector
-        self.index = index
-        self.omit_norms = omit_norms
-        self.omit_term_freq_and_positions = omit_term_freq_and_positions
-        self.index_name = index_name
-        self.type = type
-        self.analyzer = analyzer
-        self.index_analyzer = index_analyzer
-        self.search_analyzer = search_analyzer
-        self.name = name
+class AbstractField(DotDict):
+    def __init__(self, **kwargs):
+        self._valid_fields = {"index":["yes", "no"],
+                            "store":["yes", "no"],
+                            "boost":[],
+                            "type":[],
+                            "index_name":[],
+                            "name":[],
+                            }
+        self.__initialised = True
 
-    def as_dict(self):
-        result = {"type":self.type,
-                  'index':self.index}
-        if self.store != "no":
-            if isinstance(self.store, bool):
-                if self.store:
-                    result['store'] = "yes"
-                else:
-                    result['store'] = "no"
-            else:
-                result['store'] = self.store
-        if self.boost != 1.0:
-            result['boost'] = self.boost
-        if self.term_vector != "no":
-            result['term_vector'] = self.term_vector
-        if self.omit_norms != True:
-            result['omit_norms'] = self.omit_norms
-        if self.omit_term_freq_and_positions != True:
-            result['omit_term_freq_and_positions'] = self.omit_term_freq_and_positions
-        if self.index_name:
-            result['index_name'] = self.index_name
-        if self.analyzer:
-            result['analyzer'] = self.analyzer
-        if self.index_analyzer:
-            result['index_analyzer'] = self.index_analyzer
-        if self.search_analyzer:
-            result['search_analyzer'] = self.search_analyzer
+    def __setattr__(self, key, value):
+        if not self.__dict__.has_key('_AbstractField__initialised'):
+            return dict.__setattr__(self, key, value)
+        elif self.__dict__.has_key(key):
+            dict.__setattr__(self, key, value)
+        else:
+            if key not in self._valid_fields:
+                raise InvalidParameter("Invalid parameter:%s" % key)
+            if self._valid_fields[key] and value not in self._valid_fields[key]:
+                raise InvalidParameter('Invalid value "%s" for parameter %s' % (value, key))
 
-        return result
+            self.__setitem__(key, value)
+
 
 class StringField(AbstractField):
-    def __init__(self, null_value=None, include_in_all=None, *args, **kwargs):
-        super(StringField, self).__init__(*args, **kwargs)
-        self.null_value = null_value
-        self.include_in_all = include_in_all
+    """The text based string type is the most basic type, and contains one or more characters.
+
+    The following table lists all the attributes that can be used with the **string** type:
+    
+    ==================================  ============================================================================================================================================================================================================================================================================================================================
+     Attribute                           Description                                                                                                                                                                                                                                                                                                                
+    ==================================  ============================================================================================================================================================================================================================================================================================================================
+    **index_name**                      The name of the field that will be stored in the index. Defaults to the property/field name.                                                                                                                                                                                                                                
+    **store**                           Set to **yes** the store actual field in the index, **no** to not store it. Defaults to **no** (note, the JSON document itself is stored, and it can be retrieved from it).                                                                                                                                                 
+    **index**                           Set to **analyzed** for the field to be indexed and searchable after being broken down into token using an analyzer. **not_analyzed** means that its still searchable, but does not go through any analysis process or broken down into tokens. **no** means that it won't be searchable at all. Defaults to **analyzed**.  
+    **term_vector**                     Possible values are **no**, **yes**, **with_offsets**, **with_positions**, **with_positions_offsets**. Defaults to **no**.                                                                                                                                                                                                  
+    **boost**                           The boost value. Defaults to **1.0**.                                                                                                                                                                                                                                                                                       
+    **null_value**                      When there is a (JSON) null value for the field, use the **null_value** as the field value. Defaults to not adding the field at all.                                                                                                                                                                                        
+    **omit_norms**                      Boolean value if norms should be omitted or not. Defaults to **false**.                                                                                                                                                                                                                                                     
+    **omit_term_freq_and_positions**    Boolean value if term freq and positions should be omitted. Defaults to **false**.                                                                                                                                                                                                                                          
+    **analyzer**                        The analyzer used to analyze the text contents when **analyzed** during indexing and when searching using a query string. Defaults to the globally configured analyzer.                                                                                                                                                     
+    **index_analyzer**                  The analyzer used to analyze the text contents when **analyzed** during indexing.                                                                                                                                                                                                                                           
+    **search_analyzer**                 The analyzer used to analyze the field when part of a query string.                                                                                                                                                                                                                                                         
+    **include_in_all**                  Should the field be included in the **_all** field (if enabled). Defaults to **true** or to the parent **object** type setting.                                                                                                                                                                                             
+    ==================================  ============================================================================================================================================================================================================================================================================================================================
+    """
+    def __init__(self, **kwargs):
+        super(StringField, self).__init__()
+        self._valid_fields.update({"index":['no', 'analyzed', 'not_analyzed'],
+                                    "null_value":[],
+                                    "include_in_all":[],
+                                    "omit_norms":[False, True],
+                                    "omit_term_freq_and_positions":[False, True],
+                                    "index_analyzer":[],
+                                    "search_analyzer":[],
+                                    "term_vector":['no', 'yes', 'with_offsets', 'with_positions', 'with_positions_offsets'],
+                                    "analyzer":[],
+                                    })
+        self.update(kwargs)
         self.type = "string"
 
-    def as_dict(self):
-        result = super(StringField, self).as_dict()
-        if self.null_value is not None:
-            result['null_value'] = self.null_value
-        if self.include_in_all is not None:
-            result['include_in_all'] = self.include_in_all
-        return result
 
 class GeoPointField(AbstractField):
-    def __init__(self, null_value=None, include_in_all=None,
-                 lat_lon=None, geohash=None, geohash_precision=None,
-                 *args, **kwargs):
-        super(GeoPointField, self).__init__(**kwargs)
-        self.null_value = null_value
-        self.include_in_all = include_in_all
-        self.lat_lon = lat_lon
-        self.geohash = geohash
-        self.geohash_precision = geohash_precision
+    def __init__(self, **kwargs):
+        super(GeoPointField, self).__init__()
+        self._valid_fields.update({ "null_value":[],
+                                    "include_in_all":[],
+                                    "lat_lon":[],
+                                    "geohash":[], #must be an integer
+                                    "geohash_precision":[],
+                                    })
+        self.update(kwargs)
         self.type = "geo_point"
-
-    def as_dict(self):
-        result = super(GeoPointField, self).as_dict()
-        if self.null_value is not None:
-            result['null_value'] = self.null_value
-        if self.include_in_all is not None:
-            result['include_in_all'] = self.include_in_all
-        if self.lat_lon is not None:
-            result['lat_lon'] = self.lat_lon
-        if self.geohash is not None:
-            result['geohash'] = self.geohash
-        if self.geohash_precision is not None:
-            try:
-                int(self.geohash_precision)
-            except ValueError:
-                raise ValueError("geohash_precision must be an integer")
-            result['geohash_precision'] = self.geohash_precision
-        return result
 
 class NumericFieldAbstract(AbstractField):
     def __init__(self, null_value=None, include_in_all=None, precision_step=4,
                  **kwargs):
         super(NumericFieldAbstract, self).__init__(**kwargs)
-        self.null_value = null_value
-        self.include_in_all = include_in_all
-        self.precision_step = precision_step
-
-    def as_dict(self):
-        result = super(NumericFieldAbstract, self).as_dict()
-        if self.null_value is not None:
-            result['null_value'] = self.null_value
-        if self.include_in_all is not None:
-            result['include_in_all'] = self.include_in_all
-        if self.precision_step != 4:
-            result['precision_step'] = self.precision_step
-        return result
+        self._valid_fields.update({ "null_value":[],
+                                    "include_in_all":[],
+                                    "precision_step":[],
+                                    })
 
 class IpField(NumericFieldAbstract):
-    def __init__(self, *args, **kwargs):
-        super(IpField, self).__init__(*args, **kwargs)
+    def __init__(self, **kwargs):
+        super(IpField, self).__init__(**kwargs)
+        self.update(kwargs)
         self.type = "ip"
 
 class ShortField(NumericFieldAbstract):
-    def __init__(self, *args, **kwargs):
-        super(ShortField, self).__init__(*args, **kwargs)
+    def __init__(self, **kwargs):
+        super(ShortField, self).__init__(**kwargs)
+        self.update(kwargs)
         self.type = "short"
 
 class IntegerField(NumericFieldAbstract):
-    def __init__(self, *args, **kwargs):
-        super(IntegerField, self).__init__(*args, **kwargs)
+    def __init__(self, **kwargs):
+        super(IntegerField, self).__init__(**kwargs)
+        self.update(kwargs)
         self.type = "integer"
 
 class LongField(NumericFieldAbstract):
-    def __init__(self, *args, **kwargs):
-        super(LongField, self).__init__(*args, **kwargs)
+    def __init__(self, **kwargs):
+        super(LongField, self).__init__(**kwargs)
+        self.update(kwargs)
         self.type = "long"
 
 class FloatField(NumericFieldAbstract):
-    def __init__(self, *args, **kwargs):
-        super(FloatField, self).__init__(*args, **kwargs)
+    def __init__(self, **kwargs):
+        super(FloatField, self).__init__(**kwargs)
+        self.update(kwargs)
         self.type = "float"
 
 class DoubleField(NumericFieldAbstract):
-    def __init__(self, *args, **kwargs):
-        super(DoubleField, self).__init__(*args, **kwargs)
+    def __init__(self, **kwargs):
+        super(DoubleField, self).__init__(**kwargs)
+        self.update(kwargs)
         self.type = "double"
 
 class DateField(NumericFieldAbstract):
-    def __init__(self, format=None, **kwargs):
+    def __init__(self, **kwargs):
         super(DateField, self).__init__(**kwargs)
-        self.format = format
+        self._valid_fields.update({ "format":[],
+                                    })
+        self.update(kwargs)
         self.type = "date"
 
-    def as_dict(self):
-        result = super(DateField, self).as_dict()
-        if self.format:
-            result['format'] = self.format
-        return result
-
 class BooleanField(AbstractField):
-    def __init__(self, null_value=None, include_in_all=None, *args, **kwargs):
-        super(BooleanField, self).__init__(*args, **kwargs)
-        self.null_value = null_value
-        self.include_in_all = include_in_all
-        self.type = "boolean"
+    def __init__(self, **kwargs):
+        super(BooleanField, self).__init__(**kwargs)
+        self._valid_fields.update({ "null_value":[],
+                                    "include_in_all":[],
+                                    })
+        self.update(kwargs)
+        self.type = "date"
 
-    def as_dict(self):
-        result = super(BooleanField, self).as_dict()
-        if self.null_value is not None:
-            result['null_value'] = self.null_value
-        if self.include_in_all is not None:
-            result['include_in_all'] = self.include_in_all
-        return result
 
 class MultiField(object):
     def __init__(self, name, type=None, path=None, fields=None):
@@ -230,33 +193,54 @@ class AttachmentField(object):
             result['path'] = self.path
         return result
 
-class ObjectField(object):
-    def __init__(self, name=None, type=None, path=None, properties=None,
-                 dynamic=None, enabled=None, include_in_all=None, dynamic_templates=None,
-                 _id=False, _type=False, _source=None, _all=None,
-                 _analyzer=None, _boost=None,
-                 _parent=None, _index=None, _routing=None):
-        self.name = name
+class ObjectField(DotDict):
+    def __init__(self, **kwargs):
+#        name=None, type=None, path=None, properties=None,
+#                 dynamic=None, enabled=None, include_in_all=None, dynamic_templates=None,
+#                 _id=False, _type=False, _source=None, _all=None,
+#                 _analyzer=None, _boost=None,
+#                 _parent=None, _index=None, _routing=None):
+        self._valid_fields = {
+                              "name":[],
+                              "type":[],
+                              "path":[],
+                              "properties":[],
+                              "include_in_all":[],
+                              "include_in_all":[],
+                              "dynamic":[],
+                              "dynamic_templates":[],
+                              "enabled":[],
+                              "_id":[],
+                              "_type":[],
+                              "_source":[],
+                              "_all":[],
+                              "_analyzer":[],
+                              "_boost":[],
+                              "_parent":[],
+                              "_index":[],
+                              "_routing":[],
+                            }
+        self.__initialised = True
+        properties = kwargs.pop("properties", None)
+
+        self.update(kwargs)
         self.type = "object"
-        self.path = path
-        self.properties = properties
-        self.include_in_all = include_in_all
-        self.dynamic = dynamic
-        self.dynamic_templates = dynamic_templates or []
-        self.enabled = enabled
-        self._id = _id
-        self._type = _type
-        self._source = _source
-        self._all = _all
-        self._analyzer = _analyzer
-        self._boost = _boost
-        self._parent = _parent
-        self._index = _index
-        self._routing = _routing
         if properties:
             self.properties = dict([(name, get_field(name, data)) for name, data in properties.items()])
+
+
+    def __setattr__(self, key, value):
+        if not self.__dict__.has_key('_ObjectField__initialised'):
+            return dict.__setattr__(self, key, value)
+        elif self.__dict__.has_key(key):
+            dict.__setattr__(self, key, value)
         else:
-            self.properties = {}
+            if key not in self._valid_fields:
+                raise InvalidParameter("Invalid parameter:%s" % key)
+            if self._valid_fields[key] and value not in self._valid_fields[key]:
+                raise InvalidParameter('Invalid value "%s" for parameter %s' % (value, key))
+
+            self.__setitem__(key, value)
 
     def add_property(self, prop):
         """
@@ -264,97 +248,9 @@ class ObjectField(object):
         """
         self.properties[prop.name] = prop
 
-    def as_dict(self):
-        result = {"type": self.type,
-                  "properties": {}}
-        if self._id:
-            result['_id'] = {"store":True}
-        if self._type:
-            result['_type'] = {"store":True}
-        if self._source is not None:
-            result['_source'] = self._source
-        if self._all is not None:
-            result['_all'] = self._all
-        if self._analyzer is not None:
-            result['_analyzer'] = self._analyzer
-        if self._boost is not None:
-            result['_boost'] = self._boost
-        if self._parent is not None:
-            result['_parent'] = self._parent
-        if self._index:
-            result['_index'] = {"store":True}
-        if self._routing is not None:
-            result['_routing'] = self._routing
-        if self.dynamic is not None:
-            result['dynamic'] = self.dynamic
-        if self.enabled is not None:
-            result['enabled'] = self.enabled
-        if self.include_in_all is not None:
-            result['include_in_all'] = self.include_in_all
-        if self.path is not None:
-            result['path'] = self.path
 
-        if self.properties:
-            for name, value in self.properties.items():
-                result['properties'][name] = value.as_dict()
-        return result
-
-    def __str__(self):
-        return str(self.as_dict())
-
-class DocumentObjectField(object):
-    def __init__(self, name=None, type=None, path=None, properties=None,
-                 dynamic=None, enabled=None, _all=None, _boost=None, _id=None,
-                 _index=None, _source=None, _type=None, date_formats=None,
-                 _parent=None):
-        self.name = name
-        self.type = "object"
-        self.path = path
-        self.properties = properties or {}
-        self.dynamic = dynamic
-        self.enabled = enabled
-        self._all = _all
-        self._boost = _boost
-        self._id = _id
-        self._index = _index
-        self._source = _source
-        self._type = _type
-        self._parent = _parent
-        self.date_formats = date_formats
-        if properties:
-            self.properties = dict([(name, get_field(name, data)) for name, data in properties.items()])
-
-    def as_dict(self):
-        result = {"type": self.type,
-                  "properties": {}}
-        if self.dynamic is not None:
-            result['dynamic'] = self.dynamic
-        if self.enabled is not None:
-            result['enabled'] = self.enabled
-        if self.path is not None:
-            result['path'] = self.path
-        if self._all is not None:
-            result['_all'] = self._all
-        if self._boost is not None:
-            result['_boost'] = self._boost
-        if self._id is not None:
-            result['_id'] = self._id
-        if self._index is not None:
-            result['_index'] = self._index
-        if self._source is not None:
-            result['_source'] = self._source
-        if self._type is not None:
-            result['_type'] = self._type
-        if self._parent is not None:
-            result['_parent'] = self._parent
-
-        if self.properties:
-            for name, value in self.properties.items():
-                result['properties'][name] = value.as_dict()
-        return result
-
-    def __unicode__(self):
-        return "<DocumentObjectField:%s>" % self.as_dict()
+class DocumentObjectField(ObjectField):
+    pass
 
 def get_field(name, data):
     """
@@ -396,24 +292,24 @@ def get_field(name, data):
     raise RuntimeError("Invalid type: %s" % type)
 
 class Mapper(object):
-    def __init__(self, data, is_mapping=False):
+    def __init__(self, data, has_indices=False):
         self.indices = {}
         self.mappings = {}
-        self.is_mapping = is_mapping
+        self.has_indices = has_indices
         self._process(data)
 
     def _process(self, data):
         """
         Process indexer data
         """
-        if self.is_mapping:
-            for docname, docdata in data.items():
-                self.mappings[docname] = get_field(docname, docdata)
-        else:
+        if self.has_indices:
             for indexname, indexdata in data.items():
                 self.indices[indexname] = {}
                 for docname, docdata in indexdata.items():
                     self.indices[indexname][docname] = get_field(docname, docdata)
+        else:
+            for docname, docdata in data.items():
+                self.mappings[docname] = get_field(docname, docdata)
 
     def get_doctype(self, index, name):
         """

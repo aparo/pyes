@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import with_statement
+import threading
 
 __author__ = 'Alberto Paro'
 __all__ = ['ES', 'file_to_attachment', 'decode_json']
@@ -99,6 +100,11 @@ class ESJsonDecoder(json.JSONDecoder):
                 d[k] = [self.string_to_datetime(elem) for elem in v]
         return DotDict(d)
 
+current = threading.local()
+current.bulk_data = StringIO()
+current.bulk_items = 0
+current.last_bulk_response = None
+
 class ES(object):
     """
     ES connection object.
@@ -150,6 +156,7 @@ class ES(object):
         self.bulk_data = StringIO()
         self.bulk_items = 0
         self.last_bulk_response = None #last response of a bulk insert
+        self.bulk_lock = threading.Lock()
 
         self.info = {} #info about the current server
         self.mappings = None #track mapping
@@ -804,12 +811,17 @@ class ES(object):
         
         If not item self.last_bulk_response to None and returns None
         """
-        if self.bulk_items != 0:
-            self.last_bulk_response = self._send_request("POST", "/_bulk", self.bulk_data.getvalue())
-            self.bulk_data = StringIO()
-            self.bulk_items = 0
-        else:
-            self.last_bulk_response = None
+        locked = self.bulk_lock.acquire(False)
+        if locked:
+            try:
+                if self.bulk_items != 0:
+                    self.last_bulk_response = self._send_request("POST", "/_bulk", self.bulk_data.getvalue())
+                    self.bulk_data = StringIO()
+                    self.bulk_items = 0
+                else:
+                    self.last_bulk_response = None
+            finally:
+              self.bulk_lock.release()
         return self.last_bulk_response
 
     def put_file(self, filename, index, doc_type, id=None):

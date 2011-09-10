@@ -262,6 +262,18 @@ class QueryFilter(Filter):
             raise RuntimeError("A least a field/value pair must be added")
         return {self._internal_name : self._query.serialize()}
 
+class TypeFilter(Filter):
+    _internal_name = "type"
+
+    def __init__(self, type, **kwargs):
+        super(TypeFilter, self).__init__(**kwargs)
+        self._type = type
+
+    def serialize(self):
+        if not self._type:
+            raise RuntimeError("A least a field/value pair must be added")
+        return {self._internal_name : {'value': self._type}}
+
 #
 #--- Geo Queries
 #http://www.elasticsearch.com/blog/2010/08/16/geo_location_and_search.html

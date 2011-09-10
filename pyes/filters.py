@@ -2,15 +2,93 @@
 # -*- coding: utf-8 -*-
 
 __author__ = 'Alberto Paro'
-from exceptions import QueryParameterError
-from utils import ESRange
-from es import encode_json
+from pyes.exceptions import QueryParameterError, InvalidParameter
 
-class Filter(object):
-    def __init__(self, **kwargs):
+from pyes.es import encode_json
+from pyes.models import DotDict
+
+FILTER_PARAMETERS = {
+                    "GeoDistanceFilter":{
+                                   "field":{"type":basestring},
+                                   "location":{},
+                                   "distance":{"type":basestring},
+                                   "distance_type":{"type":basestring, "default":'arc', "values":["arc", "plane"]},
+                                   "distance_unit":{"type":basestring, "values":["km", "mi", "miles"]},
+                                   },
+
+                    "IdsFilter":{
+                                      "type":{"type":basestring},
+                                      "values":{"type":list},
+                                      },
+                    "NestedFilter":{
+                                   "path":{"type":basestring},
+                                   "query":{"type":dict},
+                                   "score_mode":{"type":basestring, "default":'avg', "values":["avg", "total", "max"]}
+                                   },
+                     "ScriptFilter":{
+                                   "script":{"type":basestring},
+                                   "params":{"type":dict},
+                                     }
+                     }
+
+class Filter(DotDict):
+
+    def __setattr__(self, key, value):
+        if not self.__dict__.has_key('_' + self.__class__.__name__ + '__initialised'):
+            return dict.__setattr__(self, key, value)
+        elif self.__dict__.has_key(key):
+            dict.__setattr__(self, key, value)
+        else:
+            #case value is None
+            if value is None:
+                try:
+                    del self[value]
+                except KeyError:
+                    #key not present
+                    pass
+                return
+
+            parameters = FILTER_PARAMETERS.get(self.__class__.__name__, {})
+            if parameters:
+                if key not in parameters:
+                    raise InvalidParameter("Invalid parameter: % s" % key)
+                parameter = parameters[key]
+                #check type
+                _type = parameter.get("type", None)
+                if _type:
+                    if not isinstance(value, _type):
+                        raise InvalidParameter("Invalid parameter value '%s' for '%s' valid types are % s" % (value, key, _type))
+
+                #check default and remove 
+                if 'default' in parameter:
+                    if value == parameter['default']:
+                        try:
+                            del self[key]
+                        except KeyError:
+                            #key not present
+                            pass
+                        return
+
+                #check values 
+                if 'values' in parameter and value not in parameter['values']:
+                    raise InvalidParameter('Invalid value " % s" for parameter %s: valid values are:%s' % (value, key, parameter['values']))
+                key, value = self._validate_field(key, value)
+                if key:
+                    self.__setitem__(key, value)
+            else:
+                self.__setitem__(key, value)
+
+    def _validate_field(self, key, value):
         """
-        Base Object for every Filter Object
+        If key is None, remove from fields
         """
+        return key, value
+
+    def serialize(self):
+        """Serialize the query to a structure using the query DSL.
+
+        """
+        return {self.filter_name:self}
 
     @property
     def q(self):
@@ -20,24 +98,22 @@ class Filter(object):
     def to_json(self):
         return encode_json(self.q)
 
-class FilterList(Filter):
+class FilterList(object):
     def __init__(self, filters, **kwargs):
         super(FilterList, self).__init__(**kwargs)
         self.filters = filters
 
+
+
+class ANDFilter(Filter):
+    filter_name = "and"
+    def __init__(self, filters):
+        super(ANDFilter, self).__init__()
+        self.__initialised = True
+        self[self.filter_name] = [f.serialize() for f in filters]
+
     def serialize(self):
-        if not self.filters:
-            raise RuntimeError("A least a filter must be declared")
-        return {self._internal_name:[filter.serialize() for filter in self.filters]}
-
-    def __iter__(self):
-        return iter(self.filters)
-
-
-class ANDFilter(FilterList):
-    _internal_name = "and"
-    def __init__(self, *args, **kwargs):
-        super(ANDFilter, self).__init__(*args, **kwargs)
+        return self
 
 class BoolFilter(Filter):
     """
@@ -46,13 +122,11 @@ class BoolFilter(Filter):
     other filters. Can be placed within queries that accept a filter.
     """
 
-    def __init__(self, must=None, must_not=None, should=None, **kwargs):
-        super(BoolFilter, self).__init__(**kwargs)
+    def __init__(self, must=None, must_not=None, should=None, minimum_number_should_match=1):
+        super(BoolFilter, self).__init__()
+        self.__initialised = True
 
-        self._must = []
-        self._must_not = []
-        self._should = []
-
+        self.minimum_number_should_match = minimum_number_should_match
         if must:
             self.add_must(must)
 
@@ -63,22 +137,56 @@ class BoolFilter(Filter):
             self.add_should(should)
 
     def add_must(self, queries):
-        if isinstance(queries, list):
-            self._must.extend(queries)
-        else:
-            self._must.append(queries)
+        """Add a filter to the "must" clause of the filter.
 
-    def add_must_not(self, queries):
-        if isinstance(queries, list):
-            self._must_not.extend(queries)
-        else:
-            self._must_not.append(queries)
+        The BoolFilter object will be returned, so calls to this can be chained.
+
+        """
+        if self.must is None:
+            self.must = []
+        if not isinstance(queries, list):
+            queries = [queries]
+        for query in queries:
+            if isinstance(query, Filter):
+                self.must.append(query.serialize())
+            else:
+                self.must.append(query)
+        return self
 
     def add_should(self, queries):
-        if isinstance(queries, list):
-            self._should.extend(queries)
-        else:
-            self._should.append(queries)
+        """Add a filter to the "should" clause of the filter.
+
+        The BoolFilter object will be returned, so calls to this can be chained.
+
+        """
+        if self.should is None:
+            self.should = []
+        if not isinstance(queries, list):
+            queries = [queries]
+        for query in queries:
+            if isinstance(query, Filter):
+                self.should.append(query.serialize())
+            else:
+                self.should.append(query)
+        return self
+
+    def add_must_not(self, queries):
+        """Add a filter to the "must_not" clause of the filter.
+
+        The BoolFilter object will be returned, so calls to this can be chained.
+
+        """
+        if self.must_not is None:
+            self.must_not = []
+        if not isinstance(queries, list):
+            queries = [queries]
+        for query in queries:
+            if isinstance(query, Filter):
+                self.must_not.append(query.serialize())
+            else:
+                self.must_not.append(query)
+        return self
+
 
     def is_empty(self):
         if self._must:
@@ -90,178 +198,138 @@ class BoolFilter(Filter):
         return True
 
 
+class ORFilter(Filter):
+    filter_name = "or"
+
+    def __init__(self, filters):
+        super(ORFilter, self).__init__()
+        self.__initialised = True
+        self[self.filter_name] = [f.serialize() for f in filters]
+
     def serialize(self):
-        filters = {}
-        if self._must:
-            filters['must'] = [f.serialize() for f in self._must]
-        if self._must_not:
-            filters['must_not'] = [f.serialize() for f in self._must_not]
-        if self._should:
-            filters['should'] = [f.serialize() for f in self._should]
-            filters['minimum_number_should_match'] = self.minimum_number_should_match
-        if not filters:
-            raise RuntimeError("A least a filter must be declared")
-        return {"bool":filters}
-
-class ORFilter(FilterList):
-    _internal_name = "or"
-    def __init__(self, *args, **kwargs):
-        super(ORFilter, self).__init__(*args, **kwargs)
-
+        return self
 
 class NotFilter(Filter):
-    _internal_name = "not"
+    filter_name = "not"
     def __init__(self, filter, **kwargs):
         super(NotFilter, self).__init__(**kwargs)
+        self.__initialised = True
         self.filter = filter
 
-    def serialize(self):
-        if not isinstance(self.filter, Filter):
-            raise RuntimeError("NotFilter argument should be a Filter")
-        return {self._internal_name: {"filter": self.filter.serialize()}}
+    def _validate_field(self, key, value):
+        """
+        If key is None, remove from fields
+        """
+        if key == "filter":
+            if isinstance(value, Filter):
+                return key, value.serialize()
+        return key, value
 
 class RangeFilter(Filter):
 
-    def __init__(self, qrange=None, **kwargs):
+    def __init__(self, ranges, **kwargs):
         super(RangeFilter, self).__init__(**kwargs)
-
-        self.ranges = []
-        if qrange:
-            self.add(qrange)
+        self.__initialised = True
+        self.range = []
+        self.add(ranges)
 
     def add(self, qrange):
+        from pyes.query import ESRange
         if isinstance(qrange, list):
-            self.ranges.extend(qrange)
+            for r in qrange:
+                self.range.append(r.serialize())
         elif isinstance(qrange, ESRange):
-            self.ranges.append(qrange)
-
-    def serialize(self):
-        if not self.ranges:
-            raise RuntimeError("A least a range must be declared")
-        filters = dict([r.serialize() for r in self.ranges])
-        return {"range":filters}
+            self.range.append(qrange.serialize())
 
 NumericRangeFilter = RangeFilter
 
 class PrefixFilter(Filter):
-    _internal_name = "prefix"
+    filter_name = "prefix"
 
-    def __init__(self, field=None, prefix=None, **kwargs):
+    def __init__(self, field, prefix, **kwargs):
         super(PrefixFilter, self).__init__(**kwargs)
-        self._values = {}
-
-        if field is not None and prefix is not None:
-            self.add(field, prefix)
+        self.__initialised = True
+        self.add(field, prefix)
 
     def add(self, field, prefix):
-        self._values[field] = prefix
-
-    def serialize(self):
-        if not self._values:
-            raise RuntimeError("A least a field/prefix pair must be added")
-        return {self._internal_name:self._values}
+        self[field] = prefix
 
 class ScriptFilter(Filter):
-    _internal_name = "script"
+    filter_name = "script"
 
-    def __init__(self, script, params=None, **kwargs):
-        super(ScriptFilter, self).__init__(**kwargs)
+    def __init__(self, script, params=None):
+        super(ScriptFilter, self).__init__()
+        self.__initialised = True
         self.script = script
         self.params = params
 
-
-    def add(self, field, value):
-        self._values[field] = {'value':value}
-
-    def serialize(self):
-        data = {'script':self.script}
-        if self.params is not None:
-            data['params'] = self.params
-        return {self._internal_name:data}
-
 class TermFilter(Filter):
-    _internal_name = "term"
+    filter_name = "term"
 
-    def __init__(self, field=None, value=None, _name=None, **kwargs):
-        super(TermFilter, self).__init__(**kwargs)
-        self._values = {}
+    def __init__(self, field, value, _name=None):
+        super(TermFilter, self).__init__()
+        self.__initialised = True
         self._name = _name
 
-        if field is not None and value is not None:
-            self.add(field, value)
+        self.add(field, value)
 
     def add(self, field, value):
-        self._values[field] = value
-
-    def serialize(self):
-        if not self._values:
-            raise RuntimeError("A least a field/value pair must be added")
-        result = {self._internal_name:self._values}
-        if self._name:
-            result[self._internal_name]['_name'] = self._name
-        return {self._internal_name:self._values}
+        self[field] = value
 
 class ExistsFilter(TermFilter):
-    _internal_name = "exists"
+    filter_name = "exists"
     def __init__(self, field=None, **kwargs):
+        self.__initialised = True
         super(ExistsFilter, self).__init__(field="field", value=field, **kwargs)
 
 class MissingFilter(TermFilter):
-    _internal_name = "missing"
+    filter_name = "missing"
     def __init__(self, field=None, **kwargs):
+        self.__initialised = True
         super(MissingFilter, self).__init__(field="field", value=field, **kwargs)
 
 class RegexTermFilter(Filter):
-    _internal_name = "regex_term"
+    filter_name = "regex_term"
 
-    def __init__(self, field=None, value=None, **kwargs):
-        super(RegexTermFilter, self).__init__(**kwargs)
-        self._values = {}
-
-        if field is not None and value is not None:
-            self.add(field, value)
+    def __init__(self, field, value):
+        super(RegexTermFilter, self).__init__()
+        self.__initialised = True
+        self.add(field, value)
 
     def add(self, field, value):
-        self._values[field] = value
-
-    def serialize(self):
-        if not self._values:
-            raise RuntimeError("A least a field/value pair must be added")
-        return {self._internal_name:self._values}
+        self[field] = value
 
 class TermsFilter(Filter):
-    _internal_name = "terms"
+    filter_name = "terms"
 
-    def __init__(self, field=None, values=None, _name=None, **kwargs):
-        super(TermsFilter, self).__init__(**kwargs)
-        self._values = {}
+    def __init__(self, field, values, _name=None):
+        super(TermsFilter, self).__init__()
+        self.__initialised = True
         self._name = _name
 
-        if field is not None and values is not None:
-            self.add(field, values)
+        self.add(field, values)
 
     def add(self, field, values):
-        self._values[field] = values
+        self[field] = values
 
-    def serialize(self):
-        if not self._values:
-            raise RuntimeError("A least a field/value pair must be added")
-        return {self._internal_name:self._values}
-        if self._name:
-            result[self._internal_name]['_name'] = self._name
 
 class QueryFilter(Filter):
-    _internal_name = "query"
+    filter_name = "query"
 
-    def __init__(self, query, **kwargs):
-        super(QueryFilter, self).__init__(**kwargs)
-        self._query = query
+    def __init__(self, query):
+        super(QueryFilter, self).__init__()
+        self.__initialised = True
+        self.query = query
 
-    def serialize(self):
-        if not self._query:
-            raise RuntimeError("A least a field/value pair must be added")
-        return {self._internal_name : self._query.serialize()}
-
+    def _validate_field(self, key, value):
+        """
+        If key is None, remove from fields
+        """
+        if key == "query":
+            from pyes.query import Query
+            if isinstance(value, Query):
+                return key, value.serialize()
+        return key, value
 #
 #--- Geo Queries
 #http://www.elasticsearch.com/blog/2010/08/16/geo_location_and_search.html
@@ -272,32 +340,16 @@ class GeoDistanceFilter(Filter):
     http://github.com/elasticsearch/elasticsearch/issues/279
     
     """
-    _internal_name = "geo_distance"
+    filter_name = "geo_distance"
 
-    def __init__(self, field, location, distance, distance_type="arc", distance_unit=None, **kwargs):
-        super(GeoDistanceFilter, self).__init__(**kwargs)
+    def __init__(self, field, location, distance, distance_type="arc", distance_unit=None):
+        super(GeoDistanceFilter, self).__init__()
+        self.__initialised = True
         self.field = field
         self.location = location
         self.distance = distance
         self.distance_type = distance_type
         self.distance_unit = distance_unit
-
-    def serialize(self):
-        if self.distance_type not in ["arc", "plane"]:
-            raise QueryParameterError("Invalid distance_type")
-
-        params = {"distance":self.distance, self.field:self.location}
-        if self.distance_type != "arc":
-            params['distance_type'] = self.distance_type
-
-        if self.distance_unit:
-            if self.distance_unit not in ["km", "mi", "miles"]:
-                raise QueryParameterError("Invalid distance_unit")
-            params['distance_unit'] = self.distance_unit
-
-        return {self._internal_name:params}
-
-
 
 class GeoBoundingBoxFilter(Filter):
     """
@@ -305,23 +357,13 @@ class GeoBoundingBoxFilter(Filter):
     http://github.com/elasticsearch/elasticsearch/issues/290
     
     """
-    _internal_name = "geo_bounding_box"
+    filter_name = "geo_bounding_box"
 
-    def __init__(self, field, location_tl, location_br, **kwargs):
-        super(GeoBoundingBoxFilter, self).__init__(**kwargs)
-        self.field = field
-        self.location_tl = location_tl
-        self.location_br = location_br
-
-    def serialize(self):
-
-        return {self._internal_name:{
-                                     self.field:{
-                                                 "top_left":self.location_tl,
-                                                 "bottom_right":self.location_br
-                                                 }
-                                     }
-        }
+    def __init__(self, field, location_tl, location_br):
+        super(GeoBoundingBoxFilter, self).__init__()
+        self.__initialised = True
+        self[field] = DotDict(top_left=location_tl,
+                            bottom_right=location_br)
 
 class GeoPolygonFilter(Filter):
     """
@@ -329,54 +371,43 @@ class GeoPolygonFilter(Filter):
     http://github.com/elasticsearch/elasticsearch/issues/294
     
     """
-    _internal_name = "geo_polygon"
+    filter_name = "geo_polygon"
 
-    def __init__(self, field, points, **kwargs):
-        super(GeoPolygonFilter, self).__init__(**kwargs)
-        self.field = field
-        self.points = points
-
-    def serialize(self):
-
-        return {self._internal_name:{
-                                     self.field:{
-                                                 "points":self.points,
-                                                 }
-                                     }
-        }
+    def __init__(self, field, points):
+        super(GeoPolygonFilter, self).__init__()
+        self.__initialised = True
+        self[field] = DotDict(points=points)
 
 class MatchAllFilter(Filter):
     """
     A filter that matches on all documents
     """
-    _internal_name = "match_all"
-    def __init__(self, **kwargs):
-        super(MatchAllFilter, self).__init__(**kwargs)
-
-    def serialize(self):
-        return {self._internal_name:{}}
-
+    filter_name = "match_all"
+    def __init__(self):
+        super(MatchAllFilter, self).__init__()
+        self.__initialised = True
 
 class HasChildFilter(Filter):
     """
     The has_child filter accepts a query and the child type to run against, 
     and results in parent documents that have child docs matching the query
     """
-    _internal_name = "has_child"
-    def __init__(self, type, filter, _scope=None, **kwargs):
-        super(HasChildFilter, self).__init__(**kwargs)
+    filter_name = "has_child"
+    def __init__(self, type, filter, _scope=None):
+        self.__initialised = True
+        super(HasChildFilter, self).__init__()
         self.filter = filter
         self.type = type
         self._scope = _scope
 
-    def serialize(self):
-        if not isinstance(self.filter, Filter):
-            raise RuntimeError("NotFilter argument should be a Filter")
-        data = {"query": self.filter.serialize(),
-                "type":self.type}
-        if self._scope is not None:
-            data['_scope'] = self._scope
-        return {self._internal_name: data}
+    def _validate_field(self, key, value):
+        """
+        If key is None, remove from fields
+        """
+        if key == "filter":
+            if isinstance(value, Filter):
+                return key, value.serialize()
+        return key, value
 
 class NestedFilter(Filter):
     """
@@ -384,34 +415,18 @@ class NestedFilter(Filter):
     used as a filter. It follows exactly the same structure, but also allows 
     to cache the results (set _cache to true), and have it named 
     (set the _name value).    """
-    _internal_name = "nested"
+    filter_name = "nested"
 
     def __init__(self, path, filter, **kwargs):
         super(NestedFilter, self).__init__(**kwargs)
+        self.__initialised = True
         self.path = path
         self.filter = filter
 
-    def serialize(self):
-
-        data = {
-             'path':self.path,
-             'query':self.filter.serialize()}
-        return {self._internal_name:data}
-
 class IdsFilter(Filter):
-    _internal_name = "ids"
+    filter_name = "ids"
     def __init__(self, type, values, **kwargs):
         super(IdsFilter, self).__init__(**kwargs)
+        self.__initialised = True
         self.type = type
         self.values = values
-
-    def serialize(self):
-        data = {}
-        if self.type:
-            data['type'] = self.type
-        if isinstance(self.values, basestring):
-            data['values'] = [self.values]
-        else:
-            data['values'] = self.values
-
-        return {self._internal_name:data}

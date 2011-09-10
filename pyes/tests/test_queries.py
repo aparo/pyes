@@ -130,6 +130,8 @@ class QuerySearchTestCase(ESTestCase):
 
     def test_DisMaxQuery(self):
         q = DisMaxQuery(FieldQuery(FieldParameter("name", "+joe")))
+#        self.assertEquals(str(q.serialize()), "{'dis_max': {'queries': [{'field': {'name': '+joe'}}]}}")
+#        print q
         resultset = self.conn.search(query=q, indices=self.index_name)
         self.assertEquals(resultset.total, 1)
 

@@ -969,9 +969,9 @@ class ES(object):
         elif isinstance(doc_types, basestring):
             doc_types = [doc_types]
 
-        if hasattr(query, 'to_search_json'):
+        if hasattr(query, 'to_json'):
             # Common case - a Search or Query object.
-            body = query.to_search_json()
+            body = query.to_json()
         elif isinstance(query, dict):
             # A direct set of search parameters.
             body = json.dumps(query, cls=self.encoder)
@@ -993,10 +993,8 @@ class ES(object):
             doc_types = []
         elif isinstance(doc_types, basestring):
             doc_types = [doc_types]
-        if hasattr(query, 'search'):
-            query = query.search()
 
-        if hasattr(query, 'to_search_json') or isinstance(query, dict):
+        if hasattr(query, 'to_json') or isinstance(query, dict):
             pass
         else:
             raise InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
@@ -1320,10 +1318,9 @@ class ResultSet(object):
                 else:
                     return [model(self.connection, hit) for hit in self._results['hits']['hits'][start:end]]
 
-
-        query = self.query.serialize()
+        query = self.query
         query['from'] = start
-        query['size'] = end - start
+        query.size = end - start
 
         results = self.connection.search_raw(query, indices=self.indices,
                         doc_types=self.doc_types, **self.query_params)

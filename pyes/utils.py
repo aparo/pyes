@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 __author__ = 'Alberto Paro'
-__all__ = ['clean_string', "ESRange", "ESRangeOp", "string_b64encode", "string_b64decode"]
+__all__ = ['clean_string', "string_b64encode", "string_b64decode"]
 import base64
 
 def string_b64encode(s):
@@ -21,54 +21,6 @@ def string_b64decode(s):
 SPECIAL_CHARS = [33, 34, 38, 40, 41, 42, 45, 58, 63, 91, 92, 93, 94, 123, 124, 125, 126]
 UNI_SPECIAL_CHARS = dict((c, None) for c in SPECIAL_CHARS)
 STR_SPECIAL_CHARS = ''.join([chr(c) for c in SPECIAL_CHARS])
-
-class ESRange(object):
-    def __init__(self, field, from_value=None, to_value=None, include_lower=None,
-                 include_upper=None, boost=None, **kwargs):
-        """
-        type can be "gt", "gte", "lt", "lte"
-        
-        """
-        self.field = field
-        self.from_value = from_value
-        self.to_value = to_value
-        self.type = type
-        self.include_lower = include_lower
-        self.include_upper = include_upper
-        self.boost = boost
-
-    def serialize(self):
-
-        filters = {}
-        if self.from_value is not None:
-            filters['from'] = self.from_value
-        if self.to_value is not None:
-            filters['to'] = self.to_value
-        if self.include_lower is not None:
-            filters['include_lower'] = self.include_lower
-        if self.include_upper is not None:
-            filters['include_upper'] = self.include_upper
-        if self.boost is not None:
-            filters['boost'] = self.boost
-        return self.field, filters
-
-class ESRangeOp(ESRange):
-    def __init__(self, field, op, value, boost=None):
-        from_value = to_value = include_lower = include_upper = None
-        if op == "gt":
-            from_value = value
-            include_lower = False
-        elif op == "gte":
-            from_value = value
-            include_lower = True
-        if op == "lt":
-            to_value = value
-            include_upper = False
-        elif op == "lte":
-            to_value = value
-            include_upper = True
-        super(ESRangeOp, self).__init__(field, from_value, to_value,
-                include_lower, include_upper, boost)
 
 def clean_string(text):
     """

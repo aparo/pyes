@@ -9,7 +9,9 @@ Trunk (v.0.17.0)
     Tests refactory.
     
     Add model object to objetify a dict.
-    
+
+    Add TypeFilter
+
 v. 0.16.0:
 
            Updated documentation.

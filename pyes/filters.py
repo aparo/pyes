@@ -43,12 +43,14 @@ class BoolFilter(Filter):
     other filters. Can be placed within queries that accept a filter.
     """
 
-    def __init__(self, must=None, must_not=None, should=None, **kwargs):
+    def __init__(self, must=None, must_not=None, should=None, \
+            minimum_number_should_match=1, **kwargs):
         super(BoolFilter, self).__init__(**kwargs)
 
         self._must = []
         self._must_not = []
         self._should = []
+        self.minimum_number_should_match=minimum_number_should_match
 
         if must:
             self.add_must(must)
@@ -78,14 +80,7 @@ class BoolFilter(Filter):
             self._should.append(queries)
 
     def is_empty(self):
-        if self._must:
-            return False
-        if self._must_not:
-            return False
-        if self._should:
-            return False
-        return True
-
+        return not any([self._must, self._must_not, self._should])
 
     def serialize(self):
         filters = {}

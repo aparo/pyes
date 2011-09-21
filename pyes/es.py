@@ -65,7 +65,7 @@ class ElasticSearchModel(DotDict):
             self.update(dict(*args, **kwargs))
 
     def __repr__(self):
-        return repr(self)
+        return DotDict.__repr__(self)
 
     def save(self, bulk=False, id=None):
         """

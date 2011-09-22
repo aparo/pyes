@@ -64,9 +64,6 @@ class ElasticSearchModel(DotDict):
         else:
             self.update(dict(*args, **kwargs))
 
-    def __repr__(self):
-        return DotDict.__repr__(self)
-
     def save(self, bulk=False, id=None):
         """
         Save the object and returns id

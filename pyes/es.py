@@ -1306,6 +1306,7 @@ class ResultSet(object):
         else:
             try:
                 self._results = self.connection.search_scroll(self.scroller_id, self.scroller_parameters.get("scroll", "10m"))
+                self.scroller_id = self._results['_scroll_id']
             except ReduceSearchPhaseException:
                 #bad hack, should be not hits on the last iteration
                 self._results['hits']['hits'] = []

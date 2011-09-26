@@ -60,22 +60,22 @@ class ElasticSearchModel(DotDict):
             self.update(item.pop("_source", DotDict()))
             self.update(item.pop("fields", {}))
             self.meta = DotDict([(k.lstrip("_"), v) for k, v in item.items()])
+            self.meta.parent = self.pop("_parent", None) 
             self.meta.connection = args[0]
         else:
             self.update(dict(*args, **kwargs))
 
-    def save(self, bulk=False, id=None):
+    def save(self, bulk=False, id=None, parent=None):
         """
         Save the object and returns id
         """
         meta = self.meta
         conn = meta['connection']
-        id = id or meta.get("id", None)
-        version = None
-        if 'version' in meta:
-            version = meta['version']
+        id = id or meta.get("id")
+        parent = parent or meta.get('parent')
+        version = meta.get('version')
         res = conn.index(dict([(k, v) for k, v in self.items() if k != "meta"]),
-                         meta.index, meta.type, id, bulk=bulk, version=version)
+                         meta.index, meta.type, id, parent=parent, bulk=bulk, version=version)
         if not bulk:
             self.meta.id = res._id
             self.meta.version = res._version

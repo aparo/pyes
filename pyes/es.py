@@ -70,10 +70,8 @@ class ElasticSearchModel(DotDict):
         """
         meta = self.meta
         conn = meta['connection']
-        id = id or meta.get("id", None)
-        version = None
-        if 'version' in meta:
-            version = meta['version']
+        id = id or meta.get("id")
+        version = meta.get('version')
         res = conn.index(dict([(k, v) for k, v in self.items() if k != "meta"]),
                          meta.index, meta.type, id, bulk=bulk, version=version)
         if not bulk:

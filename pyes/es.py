@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import with_statement
+import threading
 
 __author__ = 'Alberto Paro'
 __all__ = ['ES', 'file_to_attachment', 'decode_json']
@@ -225,9 +226,9 @@ class ES(object):
 
         #used in bulk
         self.bulk_size = bulk_size #size of the bulk
-        self.bulk_data = StringIO()
-        self.bulk_items = 0
+        self.bulk_data = []
         self.last_bulk_response = None #last response of a bulk insert
+        self.bulk_lock = threading.Lock()
 
         self.info = {} #info about the current server
         self.mappings = None #track mapping
@@ -802,9 +803,7 @@ class ES(object):
 
         header and document must be string "\n" ended
         """
-        self.bulk_data.write(header)
-        self.bulk_data.write(document)
-        self.bulk_items += 1
+        self.bulk_data.append("%s%s" % (header, document))
         return self.flush_bulk()
 
     def index(self, doc, index, doc_type, id=None, parent=None,
@@ -834,13 +833,11 @@ class ES(object):
                 cmd[op_type]['_routing'] = querystring_args['routing']
             if id:
                 cmd[op_type]['_id'] = id
-            self.bulk_data.write(json.dumps(cmd, cls=self.encoder))
-            self.bulk_data.write("\n")
+
             if isinstance(doc, dict):
                 doc = json.dumps(doc, cls=self.encoder)
-            self.bulk_data.write(doc)
-            self.bulk_data.write("\n")
-            self.bulk_items += 1
+            command = "%s\n%s" % (json.dumps(cmd, cls=self.encoder), doc)
+            self.bulk_data.append(command)
             return self.flush_bulk()
 
         if force_insert:
@@ -870,7 +867,7 @@ class ES(object):
         """
         Wait to process all pending operations
         """
-        if not forced and self.bulk_items < self.bulk_size:
+        if not forced and len(self.bulk_data) < self.bulk_size:
             return None
         return self.force_bulk()
 
@@ -882,12 +879,17 @@ class ES(object):
         
         If not item self.last_bulk_response to None and returns None
         """
-        if self.bulk_items != 0:
-            self.last_bulk_response = self._send_request("POST", "/_bulk", self.bulk_data.getvalue())
-            self.bulk_data = StringIO()
-            self.bulk_items = 0
-        else:
-            self.last_bulk_response = None
+        locked = self.bulk_lock.acquire(False)
+        if locked:
+            try:
+                if len(self.bulk_data):
+                    batch = self.bulk_data
+                    self.bulk_data = []
+                    self.last_bulk_response = self._send_request("POST", "/_bulk", "\n".join(batch))
+                else:
+                    self.last_bulk_response = None
+            finally:
+              self.bulk_lock.release()
         return self.last_bulk_response
 
     def put_file(self, filename, index, doc_type, id=None):
@@ -920,9 +922,7 @@ class ES(object):
         if bulk:
             cmd = { "delete" : { "_index" : index, "_type" : doc_type,
                                 "_id": id}}
-            self.bulk_data.write(json.dumps(cmd, cls=self.encoder))
-            self.bulk_data.write("\n")
-            self.bulk_items += 1
+            self.bulk_data.append(json.dumps(cmd, cls=self.encoder))
             self.flush_bulk()
             return
 

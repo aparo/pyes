@@ -250,7 +250,7 @@ class ES(object):
         """
         Destructor
         """
-        if self.bulk_items > 0:
+        if len(self.bulk_data) > 0:
             self.flush()
 
     def _init_connection(self):

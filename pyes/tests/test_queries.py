@@ -5,7 +5,7 @@ Unit tests for pyes.  These require an es server with thrift plugin and the lang
 """
 from pyestest import ESTestCase
 from pyes.query import *
-from pyes.filters import TermFilter, ANDFilter, ORFilter
+from pyes.filters import TermFilter, ANDFilter, ORFilter, TypeFilter
 import unittest
 
 class QuerySearchTestCase(ESTestCase):
@@ -123,6 +123,12 @@ class QuerySearchTestCase(ESTestCase):
         resultset = self.conn.search(query=q, indices=self.index_name)
         self.assertEquals(resultset.total, 2)
 
+    def test_TypeFilter(self):
+        typeq = TypeFilter("test-type2")
+        q = FilteredQuery(MatchAllQuery(), typeq)
+        resultset = self.conn.search(query=q, indices=self.index_name)
+        self.assertEquals(resultset.total, 2)
+
     def test_FieldQuery(self):
         q = FieldQuery(FieldParameter("name", "+joe"))
         resultset = self.conn.search(query=q, indices=self.index_name)
@@ -130,8 +136,6 @@ class QuerySearchTestCase(ESTestCase):
 
     def test_DisMaxQuery(self):
         q = DisMaxQuery(FieldQuery(FieldParameter("name", "+joe")))
-#        self.assertEquals(str(q.serialize()), "{'dis_max': {'queries': [{'field': {'name': '+joe'}}]}}")
-#        print q
         resultset = self.conn.search(query=q, indices=self.index_name)
         self.assertEquals(resultset.total, 1)
 

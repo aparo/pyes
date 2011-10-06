@@ -299,6 +299,13 @@ class RegexTermFilter(Filter):
     def add(self, field, value):
         self[field] = value
 
+class TypeFilter(TermFilter):
+    filter_name = 'type'
+
+    def __init__(self, field=None, **kwargs):
+        self.__initialized = True
+        super(TypeFilter, self).__init__(field="value", value=field, **kwargs)
+
 class TermsFilter(Filter):
     filter_name = "terms"
 

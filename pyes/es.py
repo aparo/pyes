@@ -885,7 +885,7 @@ class ES(object):
                 if len(self.bulk_data):
                     batch = self.bulk_data
                     self.bulk_data = []
-                    self.last_bulk_response = self._send_request("POST", "/_bulk", "\n".join(batch))
+                    self.last_bulk_response = self._send_request("POST", "/_bulk", "\n".join(batch) + "\n")
                 else:
                     self.last_bulk_response = None
             finally:

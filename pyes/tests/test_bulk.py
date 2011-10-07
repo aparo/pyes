@@ -37,7 +37,8 @@ class BulkTestCase(ESTestCase):
         self.conn.index({"name":"Bill Baloney", "parsedtext":"Bill Testere nice guy", "uuid":"22222", "position":2}, self.index_name, self.document_type, 2, bulk=True)
         self.conn.index({"name":"Bill Clinton", "parsedtext":"""Bill is not 
                 nice guy""", "uuid":"33333", "position":3}, self.index_name, self.document_type, 3, bulk=True)
-        self.conn.force_bulk()
+        bulk_result = self.conn.force_bulk()
+        self.assertEquals(len(bulk_result['items']), 3)
         self.conn.refresh(self.index_name)
 
     def test_TermQuery(self):

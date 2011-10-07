@@ -831,6 +831,8 @@ class ES(object):
                 cmd[op_type]['_version'] = version
             if 'routing' in querystring_args:
                 cmd[op_type]['_routing'] = querystring_args['routing']
+            if 'percolate' in querystring_args:
+                cmd[op_type]['percolate'] = querystring_args['percolate']
             if id:
                 cmd[op_type]['_id'] = id
 

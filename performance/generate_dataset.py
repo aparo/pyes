@@ -20,17 +20,17 @@ def generate_datafile_old(number_items=1000):
     fo.write("SAMPLES = ")
     pprint(dataset, fo)
     fo.close()
-    print "%s generated with %d samples"%(filename, number_items)
+    print "%s generated with %d samples" % (filename, number_items)
 
-def generate_datafile(number_items=1000):
+def generate_datafile(number_items=20000):
     """
     Create the samples.py file
     """
     from utils import generate_dataset_shelve
     filename = "samples.shelve"
     dataset = generate_dataset_shelve(filename, number_items)
-    print "%s generated with %d samples"%(filename, number_items)
-    
+    print "%s generated with %d samples" % (filename, number_items)
+
 if __name__ == '__main__':
     """
     Usage: 
@@ -39,6 +39,6 @@ if __name__ == '__main__':
     (Dataset size defaults to 1000 if not specified)
     """
     try:
-       generate_datafile(int(sys.argv[1]))
+        generate_datafile(int(sys.argv[1]))
     except IndexError:
-       generate_datafile()
+        generate_datafile()

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import with_statement
+import threading
 
 __author__ = 'Alberto Paro'
 __all__ = ['ES', 'file_to_attachment', 'decode_json']
@@ -40,11 +41,83 @@ from pyes.exceptions import (InvalidParameter,
         )
 import collections
 
+#
+# models
+#
 
-def file_to_attachment(filename):
+class DotDict(dict):
+    def __getattr__(self, attr):
+        return self.get(attr, None)
+
+    __setattr__ = dict.__setitem__
+
+    __delattr__ = dict.__delitem__
+
+class ElasticSearchModel(DotDict):
+    def __init__(self, *args, **kwargs):
+        self.meta = DotDict()
+        if len(args) == 2 and isinstance(args[0], ES):
+            item = args[1]
+            self.update(item.pop("_source", DotDict()))
+            self.update(item.pop("fields", {}))
+            self.meta = DotDict([(k.lstrip("_"), v) for k, v in item.items()])
+            self.meta.parent = self.pop("_parent", None) 
+            self.meta.connection = args[0]
+        else:
+            self.update(dict(*args, **kwargs))
+
+    def save(self, bulk=False, id=None, parent=None):
+        """
+        Save the object and returns id
+        """
+        meta = self.meta
+        conn = meta['connection']
+        id = id or meta.get("id")
+        parent = parent or meta.get('parent')
+        version = meta.get('version')
+        res = conn.index(dict([(k, v) for k, v in self.items() if k != "meta"]),
+                         meta.index, meta.type, id, parent=parent, bulk=bulk, version=version)
+        if not bulk:
+            self.meta.id = res._id
+            self.meta.version = res._version
+            return res._id
+        return id
+
+    def get_id(self):
+        """ Force the object saveing to get an id"""
+        _id = self.meta.get("id", None)
+        if _id is None:
+            _id = self.save()
+        return _id
+
+    def get_bulk(self, create=False):
+        """Return bulk code"""
+        result = []
+        op_type = "index"
+        if create:
+            op_type = "create"
+        meta = self.meta
+        cmd = { op_type : { "_index" : meta.index, "_type" : meta.type}}
+        if meta.parent:
+            cmd[op_type]['_parent'] = meta.parent
+        if meta.version:
+            cmd[op_type]['_version'] = meta.version
+        if meta.id:
+            cmd[op_type]['_id'] = meta.id
+        result.append(json.dumps(cmd, cls=self.meta.connection.encoder))
+        result.append("\n")
+        result.append(json.dumps(self.store, cls=self.meta.connection.encoder))
+        result.append("\n")
+        return ''.join(result)
+
+def file_to_attachment(filename, filehandler=None):
     """
     Convert a file to attachment
     """
+    if filehandler:
+        return {'_name':filename,
+                'content':base64.b64encode(filehandler.read())
+                }
     with open(filename, 'rb') as _file:
         return {'_name':filename,
                 'content':base64.b64encode(_file.read())
@@ -109,7 +182,8 @@ class ES(object):
                  max_retries=3, autorefresh=False,
                  default_indices=['_all'],
                  default_types=None,
-                 dump_curl=False):
+                 dump_curl=False,
+                 model=ElasticSearchModel):
         """
         Init a es object
         
@@ -119,6 +193,7 @@ class ES(object):
         encoder: tojson encoder
         max_retries: number of max retries for server if a server is down
         autorefresh: check if need a refresh before a query
+        model: used to objectify the dictinary. If None, the raw dict is returned.
 
         dump_curl: If truthy, this will dump every query to a curl file.  If
         this is set to a string value, it names the file that output is sent
@@ -134,6 +209,10 @@ class ES(object):
         self.connection = None
         self.autorefresh = autorefresh
         self.refreshed = True
+
+        if model is None:
+            model = lambda connection, model: model
+        self.model = model
         if dump_curl:
             if isinstance(dump_curl, basestring):
                 self.dump_curl = open(dump_curl, "wb")
@@ -147,9 +226,9 @@ class ES(object):
 
         #used in bulk
         self.bulk_size = bulk_size #size of the bulk
-        self.bulk_data = StringIO()
-        self.bulk_items = 0
+        self.bulk_data = []
         self.last_bulk_response = None #last response of a bulk insert
+        self.bulk_lock = threading.Lock()
 
         self.info = {} #info about the current server
         self.mappings = None #track mapping
@@ -171,7 +250,7 @@ class ES(object):
         """
         Destructor
         """
-        if self.bulk_items > 0:
+        if len(self.bulk_data) > 0:
             self.flush()
 
     def _init_connection(self):
@@ -184,7 +263,7 @@ class ES(object):
             self.connection = http_connect(self.servers, timeout=self.timeout, max_retries=self.max_retries)
             return
         if not thrift_enable:
-            raise RuntimeError("If you want to use thrift, please install pythrift")
+            raise RuntimeError("If you want to use thrift, please install thrift. \"pip install thrift\"")
         self.connection = thrift_connect(self.servers, timeout=self.timeout, max_retries=self.max_retries)
 
     def _discovery(self):
@@ -407,8 +486,8 @@ class ES(object):
         Otherwise, returns a list of index names.
 
         """
-        status = self.cluster_state()['metadata']['indices']
-        return [ index for index in status.keys() if alias in status[index]['aliases'] ]
+        status = self.status(alias)
+        return status['indices'].keys()
 
     def change_aliases(self, commands):
         """Change the aliases stored.
@@ -724,9 +803,7 @@ class ES(object):
 
         header and document must be string "\n" ended
         """
-        self.bulk_data.write(header)
-        self.bulk_data.write(document)
-        self.bulk_items += 1
+        self.bulk_data.append("%s%s" % (header, document))
         return self.flush_bulk()
 
     def index(self, doc, index, doc_type, id=None, parent=None,
@@ -752,15 +829,15 @@ class ES(object):
                 cmd[op_type]['_parent'] = parent
             if version:
                 cmd[op_type]['_version'] = version
+            if 'routing' in querystring_args:
+                cmd[op_type]['_routing'] = querystring_args['routing']
             if id:
                 cmd[op_type]['_id'] = id
-            self.bulk_data.write(json.dumps(cmd, cls=self.encoder))
-            self.bulk_data.write("\n")
+
             if isinstance(doc, dict):
                 doc = json.dumps(doc, cls=self.encoder)
-            self.bulk_data.write(doc)
-            self.bulk_data.write("\n")
-            self.bulk_items += 1
+            command = "%s\n%s" % (json.dumps(cmd, cls=self.encoder), doc)
+            self.bulk_data.append(command)
             return self.flush_bulk()
 
         if force_insert:
@@ -790,7 +867,7 @@ class ES(object):
         """
         Wait to process all pending operations
         """
-        if not forced and self.bulk_items < self.bulk_size:
+        if not forced and len(self.bulk_data) < self.bulk_size:
             return None
         return self.force_bulk()
 
@@ -802,12 +879,17 @@ class ES(object):
         
         If not item self.last_bulk_response to None and returns None
         """
-        if self.bulk_items != 0:
-            self.last_bulk_response = self._send_request("POST", "/_bulk", self.bulk_data.getvalue())
-            self.bulk_data = StringIO()
-            self.bulk_items = 0
-        else:
-            self.last_bulk_response = None
+        locked = self.bulk_lock.acquire(False)
+        if locked:
+            try:
+                if len(self.bulk_data):
+                    batch = self.bulk_data
+                    self.bulk_data = []
+                    self.last_bulk_response = self._send_request("POST", "/_bulk", "\n".join(batch))
+                else:
+                    self.last_bulk_response = None
+            finally:
+              self.bulk_lock.release()
         return self.last_bulk_response
 
     def put_file(self, filename, index, doc_type, id=None):
@@ -831,22 +913,21 @@ class ES(object):
         data = self.get(index, doc_type, id)
         return data["_source"]['_name'], base64.standard_b64decode(data["_source"]['content'])
 
-    def delete(self, index, doc_type, id, bulk=False):
+    def delete(self, index, doc_type, id, bulk=False, querystring_args=None):
         """
         Delete a typed JSON document from a specific index based on its id.
         If bulk is True, the delete operation is put in bulk mode.
         """
+        querystring_args = querystring_args or {}
         if bulk:
             cmd = { "delete" : { "_index" : index, "_type" : doc_type,
                                 "_id": id}}
-            self.bulk_data.write(json.dumps(cmd, cls=self.encoder))
-            self.bulk_data.write("\n")
-            self.bulk_items += 1
+            self.bulk_data.append(json.dumps(cmd, cls=self.encoder))
             self.flush_bulk()
             return
 
         path = self._make_path([index, doc_type, id])
-        return self._send_request('DELETE', path)
+        return self._send_request('DELETE', path, params=querystring_args)
 
     def deleteByQuery(self, indices, doc_types, query, **request_params):
         """
@@ -887,9 +968,10 @@ class ES(object):
             get_params["fields"] = ",".join(fields)
         if routing:
             get_params["routing"] = routing
-        return ElasticSearchModel(self, self._send_request('GET', path, params=get_params))
+        return self.model(self, self._send_request('GET', path, params=get_params))
 
-    def factory_object(self, index, doc_type, data=None, vertex=False):
+
+    def factory_object(self, index, doc_type, data=None, id=None, vertex=False):
         """
         Create a stub object to be manipulated
         """
@@ -898,6 +980,8 @@ class ES(object):
         obj.meta.index = index
         obj.meta.type = doc_type
         obj.meta.connection = self
+        if id:
+            obj.meta.id = id
         if data:
             obj.update(data)
         if vertex:
@@ -938,7 +1022,8 @@ class ES(object):
                                   body={'docs':body},
                                   params=get_params)
         if 'docs' in results:
-            return [ElasticSearchModel(self, item) for item in results['docs']]
+            model = self.model
+            return [model(self, item) for item in results['docs']]
         return []
 
     def search_raw(self, query, indices=None, doc_types=None, **query_params):
@@ -1159,6 +1244,7 @@ class ResultSet(object):
         results: an es query results dict
         fix_keys: remove the "_" from every key, useful for django views
         clean_highlight: removed empty highlight
+        query can be a dict or a Search object.
         """
         self.connection = connection
         self.indices = indices
@@ -1172,22 +1258,20 @@ class ResultSet(object):
         self._facets = {}
         self.auto_fix_keys = auto_fix_keys
         self.auto_clean_highlight = auto_clean_highlight
-        self.query = query
-        self.iterpos = 0 #keep track of iterator position
-        self.start = 0
-        self.chuck_size = 0
-        self._store_query_data()
 
-    def _store_query_data(self):
-        """
-        Try to detect the start position
-        """
-        if isinstance(self.query, dict):
-            self.start = self.query.get("start", 0)
-            self.chuck_size = self.query.get("chuck_size", 10)
+        from pyes.query import Search, Query
+
+        if not isinstance(query, (Query, Search, dict)):
+            raise InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
+
+        if not isinstance(query, Search):
+            self.query = Search(query)
         else:
-            self.start = self.query.start or 0
-            self.chuck_size = self.query.size or 10
+            self.query = query
+
+        self.iterpos = 0 #keep track of iterator position
+        self.start = self.query.start or 0
+        self.chuck_size = self.query.size or 10
 
     def _do_search(self, auto_increment=False):
         self.iterpos = 0
@@ -1196,18 +1280,8 @@ class ResultSet(object):
             if auto_increment:
                 self.start += self.chuck_size
 
-            if hasattr(self.query, 'to_search_json'):
-                self.query.start = self.start
-                self.query.size = self.chuck_size
-                # Common case - a Search or Query object.
-                body = self.query.to_search_json()
-            elif isinstance(self.query, dict):
-                # A direct set of search parameters.
-                self.query['from'] = self.start
-                self.query['size'] = self.chuck_size
-                body = json.dumps(self.query, cls=self.connection.encoder)
-            else:
-                raise InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
+            self.query.start = self.start
+            self.query.size = self.chuck_size
 
             self._results = self.connection.search_raw(self.query, indices=self.indices,
                                                        doc_types=self.doc_types, **self.query_params)
@@ -1229,6 +1303,7 @@ class ResultSet(object):
         else:
             try:
                 self._results = self.connection.search_scroll(self.scroller_id, self.scroller_parameters.get("scroll", "10m"))
+                self.scroller_id = self._results['_scroll_id']
             except ReduceSearchPhaseException:
                 #bad hack, should be not hits on the last iteration
                 self._results['hits']['hits'] = []
@@ -1308,24 +1383,17 @@ class ResultSet(object):
             return val, val + 1
 
         start, end = get_start_end(val)
+        model = self.connection.model
 
         if self._results:
             if start >= self.start and end < self.start + self.chuck_size:
                 if not isinstance(val, slice):
-                    return ElasticSearchModel(self.connection, self._results['hits']['hits'][val - self.start])
+                    return model(self.connection, self._results['hits']['hits'][val - self.start])
                 else:
-                    return [ElasticSearchModel(self.connection, hit) for hit in self._results['hits']['hits'][start:end]]
+                    return [model(self.connection, hit) for hit in self._results['hits']['hits'][start:end]]
 
 
-        query = None
-        if hasattr(self.query, 'to_search_json'):
-            query = self.query.serialize()
-        elif isinstance(self.query, dict):
-            # A direct set of search parameters.
-            query = copy.deepcopy(self.query)
-        else:
-            raise InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
-
+        query = self.query.serialize()
         query['from'] = start
         query['size'] = end - start
 
@@ -1335,9 +1403,9 @@ class ResultSet(object):
         hits = results['hits']['hits']
         if not isinstance(val, slice):
             if len(hits) == 1:
-                return ElasticSearchModel(self.connection, hits[0])
+                return model(self.connection, hits[0])
             raise IndexError
-        return [ElasticSearchModel(self.connection, hit) for hit in hits]
+        return [model(self.connection, hit) for hit in hits]
 
     def next(self):
         if self._results is None:
@@ -1347,72 +1415,20 @@ class ResultSet(object):
         if self.iterpos < len(self.hits):
             res = self.hits[self.iterpos]
             self.iterpos += 1
-            return ElasticSearchModel(self.connection, res)
+            return self.connection.model(self.connection, res)
+
+        if self.iterpos == self.total:
+            raise StopIteration
         self._do_search(auto_increment=True)
         self.iterpos = 0
         if len(self.hits) == 0:
             raise StopIteration
         res = self.hits[self.iterpos]
         self.iterpos += 1
-        return ElasticSearchModel(self.connection, res)
+        return self.connection.model(self.connection, res)
 
     def __iter__(self):
+        self.iterpos = 0
+        self.start = 0
+        self._results = None
         return self
-
-class DotDict(dict):
-    def __getattr__(self, attr):
-        return self.get(attr, None)
-
-    __setattr__ = dict.__setitem__
-
-    __delattr__ = dict.__delitem__
-
-class ElasticSearchModel(collections.MutableMapping):
-    def __init__(self, *args, **kwargs):
-        self.store = DotDict()
-        self.meta = DotDict()
-        if len(args) == 2 and isinstance(args[0], ES):
-            item = args[1]
-            self.store = item.pop("_source", DotDict())
-            self.store.update(item.pop("_fields", {}))
-            self.meta = DotDict([(k.lstrip("_"), v) for k, v in item.items()])
-            self.meta.connection = args[0]
-        else:
-            self.update(dict(*args, **kwargs))
-
-    def __getattr__(self, attr):
-        if attr == "meta":
-            return self.meta
-        return self.store.get(attr, None)
-
-    def __getitem__(self, key):
-        return self.store.get(key, None)
-
-    def __setitem__(self, key, value):
-        self.store[key] = value
-
-    def __delitem__(self, key):
-        del self.store[key]
-
-    def __iter__(self):
-        return iter(self.store)
-
-    def __len__(self):
-        return len(self.store)
-
-    def save(self, bulk=False, id=None):
-        """
-        Save the object and returns id
-        """
-        meta = self.meta
-        conn = meta.connection
-        id = id or meta.id
-        version = None
-        if meta.version:
-            version = meta.version
-        res = conn.index(self.store, meta.index, meta.type, id, bulk=bulk, version=version)
-        if not bulk:
-            self.meta.id = res._id
-            self.meta.version = res._version
-            return res._id
-        return id

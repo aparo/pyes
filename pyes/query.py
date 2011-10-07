@@ -482,7 +482,7 @@ class NestedQuery(Query):
     def serialize(self):
 
         if self.score_mode and self.score_mode not in ['avg', "total", "max"]:
-            raise InvalidParameterQuery("Invalid scory_mode: %s" % self.score_mode)
+            raise InvalidParameterQuery("Invalid score_mode: %s" % self.score_mode)
         data = {
              'path':self.path,
              'scory_mode':self.score_mode,
@@ -706,12 +706,13 @@ class FuzzyLikeThisFieldQuery(Query):
 
     def __init__(self, field, like_text,
                      ignore_tf=False, max_query_terms=25,
-                     boost=1.0, **kwargs):
+                     boost=1.0, min_similarity=0.5, **kwargs):
         super(FuzzyLikeThisFieldQuery, self).__init__(**kwargs)
         self.field = field
         self.like_text = like_text
         self.ignore_tf = ignore_tf
         self.max_query_terms = max_query_terms
+        self.min_similarity = min_similarity
         self.boost = boost
 
     def serialize(self):
@@ -723,6 +724,8 @@ class FuzzyLikeThisFieldQuery(Query):
             filters["max_query_terms"] = self.max_query_terms
         if self.boost != 1.0:
             filters["boost"] = self.boost
+        if self.min_similarity != 0.5:
+            filters["min_similarity"] = self.min_similarity
         return {self._internal_name:{self.field:filters}}
 
 class MatchAllQuery(Query):

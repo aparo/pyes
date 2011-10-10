@@ -19,6 +19,7 @@ import base64
 import time
 from StringIO import StringIO
 from decimal import Decimal
+from urllib import quote
 import copy
 
 try:
@@ -332,7 +333,7 @@ class ES(object):
         """
         Smush together the path components. Empty components will be ignored.
         """
-        path_components = [str(component) for component in path_components if component]
+        path_components = [quote(str(component), "") for component in path_components if component]
         path = '/'.join(path_components)
         if not path.startswith('/'):
             path = '/' + path

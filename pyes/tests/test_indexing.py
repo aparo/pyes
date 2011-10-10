@@ -62,6 +62,12 @@ class IndexingTestCase(ESTestCase):
         result = self.conn.delete(self.index_name, self.document_type, 1)
         self.assertResultContains(result, {'_type': 'test-type', '_id': '1', 'ok': True, '_index': 'test-index'})
 
+    def testDeleteByIDWithEncoding(self):
+        self.conn.index({"name":"Joe Tester"}, self.index_name, self.document_type, "http://hello/?#'there")
+        self.conn.refresh(self.index_name)
+        result = self.conn.delete(self.index_name, self.document_type, "http://hello/?#'there")
+        self.assertResultContains(result, {'_type': 'test-type', '_id': 'http://hello/?#\'there', 'ok': True, '_index': 'test-index'})
+
     def testDeleteIndex(self):
         self.conn.create_index("another-index")
         result = self.conn.delete_index("another-index")

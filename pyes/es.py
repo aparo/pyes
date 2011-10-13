@@ -1372,6 +1372,10 @@ class ResultSet(object):
         return self._results['hits'][name]
 
     def __getitem__(self, val):
+        if not (isinstance(val, int) or isinstance(val, long) or isinstance(val, slice)):
+            raise TypeError('%s indices must be integers, not %s' % (
+                self.__class__.__name__, val.__class__.__name__))
+
         def get_start_end(val):
             if isinstance(val, slice):
                 start = val.start

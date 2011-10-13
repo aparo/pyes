@@ -1379,9 +1379,9 @@ class ResultSet(object):
                     start = 0
                 else:
                     start -= 1
-                end = val.stop or self.total()
+                end = val.stop or self.total
                 if end < 0:
-                    end = self.total() + end
+                    end = self.total + end
                 return start, end
             return val, val + 1
 

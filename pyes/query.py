@@ -277,7 +277,7 @@ class BoolQuery(Query):
         self._should = []
         self.boost = boost
         self.minimum_number_should_match = minimum_number_should_match
-        self.disable_coord = None
+        self.disable_coord = disable_coord
 
         if must:
             self.add_must(must)

@@ -128,7 +128,9 @@ class Search(object):
         """Serialize the search to a structure as passed for a search body.
 
         """
-        res = {"query": self.query.serialize()}
+        res = {}
+        if self.query:
+            res["query"] = self.query.serialize()
         if self.filter:
             res['filter'] = self.filter.serialize()
         if self.fields is not None:

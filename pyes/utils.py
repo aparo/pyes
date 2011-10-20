@@ -25,20 +25,14 @@ STR_SPECIAL_CHARS = ''.join([chr(c) for c in SPECIAL_CHARS])
 class ESRange(object):
     def __init__(self, field, from_value=None, to_value=None, include_lower=None,
                  include_upper=None, boost=None, **kwargs):
-        """
-        type can be "gt", "gte", "lt", "lte"
-        
-        """
         self.field = field
         self.from_value = from_value
         self.to_value = to_value
-        self.type = type
         self.include_lower = include_lower
         self.include_upper = include_upper
         self.boost = boost
 
     def serialize(self):
-
         filters = {}
         if self.from_value is not None:
             filters['from'] = self.from_value

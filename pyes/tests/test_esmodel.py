@@ -5,6 +5,8 @@ __author__ = 'Alberto Paro'
 
 import unittest
 from pyes.tests import ESTestCase
+from pyes.es import DotDict
+from copy import deepcopy
 
 """
 Unit tests for pyes.  These require an es server with thrift plugin running on the default port (localhost:9500).
@@ -32,6 +34,20 @@ class ElasticSearchModelTestCase(ESTestCase):
         reloaded = self.conn.get(self.index_name, self.document_type, obj.meta.id)
         self.assertEqual(reloaded.name, "test2")
 
+    def test_DotDict(self):
+        dotdict = DotDict(foo="bar")
+        dotdict2 = deepcopy(dotdict)
+        dotdict2["foo"] = "baz"
+        self.assertEqual(dotdict["foo"], "bar")
+        self.assertEqual(dotdict2["foo"], "baz")
+        self.assertEqual(type(dotdict2), DotDict)
+
+        dotdict = DotDict(foo="bar", bar=DotDict(baz="qux"))
+        dotdict2 = deepcopy(dotdict)
+        dotdict2["bar"]["baz"] = "foo"
+        self.assertEqual(dotdict["bar"]["baz"], "qux")
+        self.assertEqual(dotdict2["bar"]["baz"], "foo")
+        self.assertEqual(type(dotdict2), DotDict)
 
 if __name__ == "__main__":
     unittest.main()

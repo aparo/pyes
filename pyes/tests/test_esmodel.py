@@ -41,5 +41,11 @@ class ElasticSearchModelTestCase(ESTestCase):
         self.assertEqual(dotdict["foo"], "bar")
         self.assertEqual(dotdict2["foo"], "baz")
 
+        dotdict = DotDict(foo="bar", bar=DotDict(baz="qux"))
+        dotdict2 = deepcopy(dotdict)
+        dotdict2["bar"]["baz"] = "foo"
+        self.assertEqual(dotdict["bar"]["baz"], "qux")
+        self.assertEqual(dotdict2["bar"]["baz"], "foo")
+
 if __name__ == "__main__":
     unittest.main()

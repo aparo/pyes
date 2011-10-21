@@ -133,6 +133,12 @@ class QuerySearchTestCase(ESTestCase):
         resultset = self.conn.search(query=q, indices=self.index_name)
         self.assertEquals(resultset.total, 1)
 
+    def test_FuzzyQuery(self):
+        q = FuzzyQuery('name', 'data')
+        resultset = self.conn.search(query=q, indices=self.index_name)
+
+        self.assertEquals(resultset.total, 2)
+
     def test_HasChildQuery(self):
         q = HasChildQuery(type="test-type2", query=TermQuery("name", "data1"))
         resultset = self.conn.search(query=q, indices=self.index_name)

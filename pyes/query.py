@@ -694,14 +694,13 @@ class FuzzyQuery(Query):
 
     def serialize(self):
         data = {
-                'field':self.field,
                 'value':self.value,
                 'min_similarity':self.min_similarity,
                 'prefix_length':self.prefix_length,
                 }
         if self.boost:
             data['boost'] = self.boost
-        return {self._internal_name:data}
+        return {self._internal_name:{self.field:data}}
 
 class FuzzyLikeThisFieldQuery(Query):
     _internal_name = "fuzzy_like_this_field"

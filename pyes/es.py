@@ -1183,7 +1183,8 @@ class ES(object):
         """
         path = self._make_path([index, doc_type, id, '_mlt'])
         query_params['fields'] = ','.join(fields)
-        return self._send_request('GET', path, params=query_params)
+        body = query_params["body"] if query_params.has_key("body") else None
+        return self._send_request('GET', path, body=body, params=query_params)
 
     def create_percolator(self, index, name, query, **kwargs):
         """

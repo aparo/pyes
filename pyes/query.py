@@ -487,7 +487,7 @@ class NestedQuery(Query):
             raise InvalidParameterQuery("Invalid score_mode: %s" % self.score_mode)
         data = {
              'path':self.path,
-             'scory_mode':self.score_mode,
+             'score_mode':self.score_mode,
              'query':self.query.serialize()}
         return {self._internal_name:data}
 

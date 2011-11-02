@@ -35,7 +35,7 @@ class TimeoutHttpConnectionPool(urllib3.HTTPConnectionPool):
         log.info("Starting new HTTP connection (%d): %s" % (self.num_connections, self.host))
         if sys.version_info < (2, 6):
             return HTTPConnection(host=self.host, port=int(self.port))
-        return HTTPConnection(host=self.host, port=self.port, timeout=self.timeout)
+        return HTTPConnection(host=self.host, port=int(self.port), timeout=self.timeout)
 
 
 class ClientTransport(object):

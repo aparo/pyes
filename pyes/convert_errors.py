@@ -61,6 +61,10 @@ def raise_if_error(status, result):
         raise pyes.exceptions.ElasticSearchException("Unknown exception type", status, result)
 
     error = result['error']
+    if '; nested: ' in error:
+        error_list = error.split('; nested: ')
+        error = error_list[len(error_list)-1]
+                       
     bits = error.split('[', 1)
     if len(bits) == 2:
         excClass = exceptions_by_name.get(bits[0], None)

@@ -20,7 +20,7 @@ class HighLighter(object):
 
     Use this with a :py:class:`pyes.query.Search` like this::
 
-        h = HighLighter('<b>', '</b>')
+        h = HighLighter(['<b>'], ['</b>'])
         s = Search(TermQuery('foo'), highlight=h)
     """
     def __init__(self, pre_tags=None, post_tags=None, fields=None, fragment_size=None, number_of_fragments=None, fragment_offset=None):

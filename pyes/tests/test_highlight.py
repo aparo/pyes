@@ -5,7 +5,7 @@ Unit tests for pyes.  These require an es server with thrift plugin running on t
 """
 import unittest
 from pyes.tests import ESTestCase
-from pyes import Search, StringQuery
+from pyes import Search, StringQuery, HighLighter
 
 class QuerySearchTestCase(ESTestCase):
     def setUp(self):
@@ -43,8 +43,29 @@ class QuerySearchTestCase(ESTestCase):
         q.add_highlight("parsedtext")
         q.add_highlight("name")
         resultset = self.conn.search(q, indices=self.index_name)
+
+        print resultset[0].meta.highlight
+
         self.assertEquals(resultset.total, 2)
         self.assertNotEqual(resultset[0].meta.highlight, None)
+
+        self.assertEquals(resultset[0].meta.highlight[u"parsedtext"][0],
+                          u'<em>Joe</em> Testere nice guy ')
+
+    def test_QueryHighlightWithHighLighter(self):
+        h = HighLighter(['<b>'], ['</b>'])
+        q = Search(StringQuery("joe"), highlight=h)
+        q.add_highlight("parsedtext")
+        q.add_highlight("name")
+        resultset = self.conn.search(q, indices=self.index_name)
+
+        print resultset[0].meta.highlight
+
+        self.assertEquals(resultset.total, 2)
+        self.assertNotEqual(resultset[0].meta.highlight, None)
+
+        self.assertEquals(resultset[0].meta.highlight[u"parsedtext"][0],
+                          u'<b>Joe</b> Testere nice guy ')
 
 if __name__ == "__main__":
     unittest.main()

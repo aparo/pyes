@@ -6,6 +6,22 @@ __author__ = 'Alberto Paro'
 class HighLighter(object):
     """
     This object manage the highlighting
+
+    :arg pre_tags: list of tags before the highlighted text.
+        importance is ordered..  ex. ``['<b>']``
+    :arg post_tags: list of end tags after the highlighted text.
+        should line up with pre_tags.  ex. ``['</b>']``
+    :arg fields: list of fields to highlight
+    :arg fragment_size: the size of the grament
+    :arg number_or_fragments: the maximum number of fragments to
+        return; if 0, then no fragments are returned and instead the
+        entire field is returned and highlighted.
+    :arg fragment_offset: controls the margin to highlight from
+
+    Use this with a :py:class:`pyes.query.Search` like this::
+
+        h = HighLighter('<b>', '</b>')
+        s = Search(TermQuery('foo'), highlight=h)
     """
     def __init__(self, pre_tags=None, post_tags=None, fields=None, fragment_size=None, number_of_fragments=None, fragment_offset=None):
         self.pre_tags = pre_tags

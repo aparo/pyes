@@ -84,3 +84,18 @@ def keys_to_string(data):
                 del data[key]
                 data[key.encode("utf8", "ignore")] = val
     return data
+
+class EqualityComparableUsingAttributeDictionary(object):
+    """
+    Instances of classes inheriting from this class can be compared
+    using their attribute dictionary (__dict__). See GitHub issue
+    128 and http://stackoverflow.com/q/390640
+    """
+
+    def __eq__(self, other):
+        if type(other) is type(self):
+            return self.__dict__ == other.__dict__
+        return False
+
+    def __ne__(self, other):
+        return not self == other

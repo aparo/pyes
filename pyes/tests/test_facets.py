@@ -6,7 +6,7 @@ Unit tests for pyes.  These require an es server with thrift plugin and the lang
 from pyestest import ESTestCase
 from pyes.facets import DateHistogramFacet
 from pyes.filters import TermFilter, RangeFilter
-from pyes.query import FilteredQuery, MatchAllQuery
+from pyes.query import FilteredQuery, MatchAllQuery, Search
 from pyes.utils import ESRange
 import unittest
 
@@ -74,6 +74,19 @@ class FacetSearchTestCase(ESTestCase):
         self.assertEquals(resultset.facets.tag.terms, [{u'count': 2, u'term': u'foo'},
                                                              {u'count': 1, u'term': u'bar'}])
 
+        q2 = MatchAllQuery()
+        q2 = q2.search()
+        q2.facet.add_term_facet('tag')
+        q3 = MatchAllQuery()
+        q3 = q3.search()
+        q3.facet.add_term_facet('tag')
+        self.assertEquals(q2, q3)
+
+        q4 = MatchAllQuery()
+        q4 = q4.search()
+        q4.facet.add_term_facet('bag')
+        self.assertNotEquals(q2, q4)
+
     def test_terms_facet_filter(self):
         q = MatchAllQuery()
         q = FilteredQuery(q, TermFilter('tag', 'foo'))
@@ -83,6 +96,22 @@ class FacetSearchTestCase(ESTestCase):
         self.assertEquals(resultset.total, 2)
         self.assertEquals(resultset.facets['tag']['terms'], [{u'count': 2, u'term': u'foo'}])
         self.assertEquals(resultset.facets.tag.terms, [{u'count': 2, u'term': u'foo'}])
+
+        q2 = MatchAllQuery()
+        q2 = FilteredQuery(q2, TermFilter('tag', 'foo'))
+        q2 = q2.search()
+        q2.facet.add_term_facet('tag')
+        q3 = MatchAllQuery()
+        q3 = FilteredQuery(q3, TermFilter('tag', 'foo'))
+        q3 = q3.search()
+        q3.facet.add_term_facet('tag')
+        self.assertEquals(q2, q3)
+
+        q4 = MatchAllQuery()
+        q4 = FilteredQuery(q4, TermFilter('tag', 'foo'))
+        q4 = q4.search()
+        q4.facet.add_term_facet('bag')
+        self.assertNotEquals(q3, q4)
 
     def test_date_facet(self):
         q = MatchAllQuery()

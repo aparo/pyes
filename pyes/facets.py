@@ -3,8 +3,10 @@
 
 __author__ = 'Alberto Paro'
 
+from utils import EqualityComparableUsingAttributeDictionary
+
 #--- Facet
-class FacetFactory(object):
+class FacetFactory(EqualityComparableUsingAttributeDictionary):
     def __init__(self):
         self.facets = []
 
@@ -23,7 +25,7 @@ class FacetFactory(object):
             res.update(facet.serialize())
         return {"facets":res}
 
-class Facet(object):
+class Facet(EqualityComparableUsingAttributeDictionary):
     def __init__(self, *args, **kwargs):
         pass
 

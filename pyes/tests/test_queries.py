@@ -240,5 +240,23 @@ class QuerySearchTestCase(ESTestCase):
         self.assertEquals(resultset[1]._score, 7.0)
         self.assertEquals(resultset.max_score, 8.0)
 
+    def test_Search_equality(self):
+        self.assertEquals(Search(),
+                          Search())
+        self.assertNotEquals(Search(),
+                             Search(query=TermQuery("h", "ello")))
+        self.assertEquals(Search(query=TermQuery("h", "ello")),
+                          Search(query=TermQuery("h", "ello")))
+        self.assertNotEquals(Search(query=TermQuery("h", "ello")),
+                             Search(query=TermQuery("j", "ello")))
+        self.assertEquals(Search(filter=TermFilter("h", "ello")),
+                          Search(filter=TermFilter("h", "ello")))
+        self.assertNotEquals(Search(filter=TermFilter("h", "ello")),
+                             Search(filter=TermFilter("j", "ello")))
+        self.assertEquals(Search(query=TermQuery("h", "ello"), filter=TermFilter("h", "ello")),
+                          Search(query=TermQuery("h", "ello"), filter=TermFilter("h", "ello")))
+        self.assertNotEquals(Search(query=TermQuery("h", "ello"), filter=TermFilter("h", "ello")),
+                             Search(query=TermQuery("j", "ello"), filter=TermFilter("j", "ello")))
+
 if __name__ == "__main__":
     unittest.main()

@@ -13,14 +13,14 @@ except ImportError:
     import simplejson as json
 
 from es import ESJsonEncoder
-from utils import clean_string, ESRange
+from utils import clean_string, ESRange, EqualityComparableUsingAttributeDictionary
 from facets import FacetFactory
 from highlight import HighLighter
 from scriptfields import ScriptFields
 from pyes.exceptions import InvalidQuery, InvalidParameterQuery, QueryError, ScriptFieldsError
 log = logging.getLogger('pyes')
 
-class FieldParameter(object):
+class FieldParameter(EqualityComparableUsingAttributeDictionary):
 
     def __init__(self, field,
                  query,
@@ -74,7 +74,7 @@ class FieldParameter(object):
         return self.field, filters
 
 
-class Search(object):
+class Search(EqualityComparableUsingAttributeDictionary):
     """A search to be performed.
 
     This contains a query, and has additional parameters which are used to
@@ -200,7 +200,7 @@ class Search(object):
         return json.dumps(self.q, cls=ESJsonEncoder)
 
 
-class Query(object):
+class Query(EqualityComparableUsingAttributeDictionary):
     """Base class for all queries.
 
     """

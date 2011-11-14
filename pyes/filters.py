@@ -3,10 +3,10 @@
 
 __author__ = 'Alberto Paro'
 from exceptions import QueryParameterError
-from utils import ESRange
+from utils import ESRange, EqualityComparableUsingAttributeDictionary
 from es import encode_json
 
-class Filter(object):
+class Filter(EqualityComparableUsingAttributeDictionary):
     def __init__(self, **kwargs):
         """
         Base Object for every Filter Object

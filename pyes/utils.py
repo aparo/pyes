@@ -22,7 +22,22 @@ SPECIAL_CHARS = [33, 34, 38, 40, 41, 42, 45, 58, 63, 91, 92, 93, 94, 123, 124, 1
 UNI_SPECIAL_CHARS = dict((c, None) for c in SPECIAL_CHARS)
 STR_SPECIAL_CHARS = ''.join([chr(c) for c in SPECIAL_CHARS])
 
-class ESRange(object):
+class EqualityComparableUsingAttributeDictionary(object):
+    """
+    Instances of classes inheriting from this class can be compared
+    using their attribute dictionary (__dict__). See GitHub issue
+    128 and http://stackoverflow.com/q/390640
+    """
+
+    def __eq__(self, other):
+        if type(other) is type(self):
+            return self.__dict__ == other.__dict__
+        return False
+
+    def __ne__(self, other):
+        return not self == other
+
+class ESRange(EqualityComparableUsingAttributeDictionary):
     def __init__(self, field, from_value=None, to_value=None, include_lower=None,
                  include_upper=None, boost=None, **kwargs):
         self.field = field
@@ -84,18 +99,3 @@ def keys_to_string(data):
                 del data[key]
                 data[key.encode("utf8", "ignore")] = val
     return data
-
-class EqualityComparableUsingAttributeDictionary(object):
-    """
-    Instances of classes inheriting from this class can be compared
-    using their attribute dictionary (__dict__). See GitHub issue
-    128 and http://stackoverflow.com/q/390640
-    """
-
-    def __eq__(self, other):
-        if type(other) is type(self):
-            return self.__dict__ == other.__dict__
-        return False
-
-    def __ne__(self, other):
-        return not self == other

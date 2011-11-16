@@ -5,7 +5,8 @@ Unit tests for pyes.  These require an es server with thrift plugin and the lang
 """
 from pyestest import ESTestCase
 from pyes.query import *
-from pyes.filters import TermFilter, ANDFilter, ORFilter
+from pyes.filters import TermFilter, ANDFilter, ORFilter, RangeFilter
+from pyes.utils import ESRangeOp
 import unittest
 
 class QuerySearchTestCase(ESTestCase):
@@ -257,6 +258,40 @@ class QuerySearchTestCase(ESTestCase):
                           Search(query=TermQuery("h", "ello"), filter=TermFilter("h", "ello")))
         self.assertNotEquals(Search(query=TermQuery("h", "ello"), filter=TermFilter("h", "ello")),
                              Search(query=TermQuery("j", "ello"), filter=TermFilter("j", "ello")))
+        
+    def test_ESRange_equality(self):
+        self.assertEquals(RangeQuery(),
+          RangeQuery())
+        self.assertEquals(RangeQuery(ESRange("foo", 1, 2)),
+          RangeQuery(ESRange("foo", 1, 2)))
+        self.assertNotEquals(RangeQuery(ESRange("foo", 1, 2)),
+          RangeQuery(ESRange("bar", 1, 2)))
+        self.assertEquals(RangeFilter(),
+          RangeFilter())
+        self.assertEquals(RangeFilter(ESRange("foo", 1, 2)),
+          RangeFilter(ESRange("foo", 1, 2)))
+        self.assertNotEquals(RangeFilter(ESRange("foo", 1, 2)),
+          RangeFilter(ESRange("bar", 1, 2)))
+        self.assertEquals(ESRange("foo"),
+          ESRange("foo"))
+        self.assertNotEquals(ESRange("foo"),
+          ESRange("bar"))
+        self.assertEquals(ESRange("foo", 1),
+          ESRange("foo", 1))
+        self.assertNotEquals(ESRange("foo", 1),
+          ESRange("foo", 2))
+        self.assertEquals(ESRange("foo", 1, 2),
+          ESRange("foo", 1, 2))
+        self.assertNotEquals(ESRange("foo", 1, 2),
+          ESRange("foo", 1, 3))
+        self.assertEquals(ESRange("foo", 1, 2, True, False),
+          ESRange("foo", 1, 2, True, False))
+        self.assertNotEquals(ESRange("foo", 1, 2, True, False),
+          ESRange("foo", 1,2, False, True))
+        self.assertEquals(ESRangeOp("foo", "gt", 5),
+          ESRangeOp("foo", "gt", 5))
+        self.assertEquals(ESRangeOp("bar", "lt", 6),
+          ESRangeOp("bar", "lt", 6))
 
 if __name__ == "__main__":
     unittest.main()

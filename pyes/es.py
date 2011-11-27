@@ -7,10 +7,11 @@ __author__ = 'Alberto Paro'
 __all__ = ['ES', 'file_to_attachment', 'decode_json']
 
 try:
-    # For Python >= 2.6
-    import json
-except ImportError:
     # For Python < 2.6 or people using a newer version of simplejson
+    import simplejson
+    json = simplejson
+except ImportError:
+    # For Python >= 2.6
     import simplejson as json
 
 import logging

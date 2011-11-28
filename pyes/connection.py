@@ -32,6 +32,7 @@ DEFAULT_SERVER = '127.0.0.1:9500'
 
 log = logging.getLogger('pyes')
 
+
 class ClientTransport(object):
     """Encapsulation of a client session."""
 
@@ -39,7 +40,7 @@ class ClientTransport(object):
         host, port = server.split(":")
         socket = TSocket.TSocket(host, int(port))
         if timeout is not None:
-            socket.setTimeout(timeout*1000.0)
+            socket.setTimeout(timeout * 1000.0)
         if framed_transport:
             transport = TTransport.TFramedTransport(socket)
         else:
@@ -51,13 +52,15 @@ class ClientTransport(object):
 #        server_api_version = client.describe_version().split('.', 1)
 #        assert server_api_version[0] == API_VERSION[0], \
 #                "Thrift API version mismatch. " \
-#                 "(Client: %s, Server: %s)" % (API_VERSION[0], server_api_version[0])
+#                 "(Client: %s, Server: %s)" % (API_VERSION[0],
+#                                               server_api_version[0])
 
         self.client = client
         self.transport = transport
 
         if recycle:
-            self.recycle = time.time() + recycle + random.uniform(0, recycle * 0.1)
+            random_factor = random.uniform(0, recycle * 0.1)
+            self.recycle = time.time() + recycle + random_factor
         else:
             self.recycle = None
 
@@ -88,17 +91,19 @@ def connect(servers=None, framed_transport=False, timeout=None,
 
               Default: None (it will stall forever)
     retry_time: float
-              Minimum time in seconds until a failed server is reinstated. (e.g. 0.5)
+              Minimum time in seconds until a failed server is reinstated.
+              (e.g. 0.5)
 
               Default: 60
     recycle: float
-              Max time in seconds before an open connection is closed and returned to the pool.
+              Max time in seconds before an open connection is closed and
+              returned to the pool.
 
               Default: None (Never recycle)
 
     max_retries: int
               Max retry time on connection down
-              
+
     round_robin: bool
               *DEPRECATED*
 
@@ -165,7 +170,7 @@ class ThreadLocalConnection(object):
     def __getattr__(self, attr):
         def _client_call(*args, **kwargs):
 
-            for retry in xrange(self._max_retries+1):
+            for retry in xrange(self._max_retries + 1):
                 try:
                     conn = self._ensure_connection()
                     return getattr(conn.client, attr)(*args, **kwargs)
@@ -185,7 +190,8 @@ class ThreadLocalConnection(object):
         """Make certain we have a valid connection and return it."""
         conn = self.connect()
         if conn.recycle and conn.recycle < time.time():
-            log.debug('Client session expired after %is. Recycling.', self._recycle)
+            log.debug('Client session expired after %is. Recycling.',
+                      self._recycle)
             self.close()
             conn = self.connect()
         return conn
@@ -196,8 +202,10 @@ class ThreadLocalConnection(object):
             try:
                 server = self._servers.get()
                 log.debug('Connecting to %s', server)
-                self._local.conn = ClientTransport(server, self._framed_transport,
-                                                   self._timeout, self._recycle)
+                self._local.conn = ClientTransport(server,
+                                                   self._framed_transport,
+                                                   self._timeout,
+                                                   self._recycle)
             except (Thrift.TException, socket.timeout, socket.error):
                 log.warning('Connection to %s failed.', server)
                 self._servers.mark_dead(server)

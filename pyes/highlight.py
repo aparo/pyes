@@ -3,6 +3,7 @@
 
 __author__ = 'Alberto Paro'
 
+
 class HighLighter(object):
     """
     This object manage the highlighting
@@ -23,7 +24,9 @@ class HighLighter(object):
         h = HighLighter(['<b>'], ['</b>'])
         s = Search(TermQuery('foo'), highlight=h)
     """
-    def __init__(self, pre_tags=None, post_tags=None, fields=None, fragment_size=None, number_of_fragments=None, fragment_offset=None):
+    def __init__(self, pre_tags=None, post_tags=None, fields=None,
+                 fragment_size=None, number_of_fragments=None,
+                 fragment_offset=None):
         self.pre_tags = pre_tags
         self.post_tags = post_tags
         self.fields = fields or {}
@@ -31,7 +34,8 @@ class HighLighter(object):
         self.number_of_fragments = number_of_fragments
         self.fragment_offset = fragment_offset
 
-    def add_field(self, name, fragment_size=150, number_of_fragments=3, fragment_offset=None):
+    def add_field(self, name, fragment_size=150, number_of_fragments=3,
+                  fragment_offset=None):
         """
         Add a field to Highlinghter
         """
@@ -59,5 +63,5 @@ class HighLighter(object):
         if self.fields:
             res["fields"] = self.fields
         else:
-            res["fields"] = {"_all" : {}}
+            res["fields"] = {"_all": {}}
         return res

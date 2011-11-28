@@ -9,8 +9,10 @@ from pyes import TermQuery, clean_string
 from datetime import datetime
 
 """
-Unit tests for pyes.  These require an es server with thrift plugin running on the default port (localhost:9500).
+Unit tests for pyes.  These require an es server with thrift plugin running
+on the default port (localhost:9500).
 """
+
 
 class UtilsTestCase(ESTestCase):
 

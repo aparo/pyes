@@ -43,6 +43,7 @@ from pyes.exceptions import (InvalidParameter,
         )
 import collections
 
+
 #
 # models
 #
@@ -56,7 +57,9 @@ class DotDict(dict):
     __delattr__ = dict.__delitem__
 
     def __deepcopy__(self, memo):
-      return DotDict([(copy.deepcopy(k, memo), copy.deepcopy(v, memo)) for k, v in self.items()])
+        return DotDict([(copy.deepcopy(k, memo),
+                         copy.deepcopy(v, memo)) for k, v in self.items()])
+
 
 class ElasticSearchModel(DotDict):
     def __init__(self, *args, **kwargs):
@@ -66,7 +69,7 @@ class ElasticSearchModel(DotDict):
             self.update(item.pop("_source", DotDict()))
             self.update(item.pop("fields", {}))
             self.meta = DotDict([(k.lstrip("_"), v) for k, v in item.items()])
-            self.meta.parent = self.pop("_parent", None) 
+            self.meta.parent = self.pop("_parent", None)
             self.meta.connection = args[0]
         else:
             self.update(dict(*args, **kwargs))
@@ -80,8 +83,9 @@ class ElasticSearchModel(DotDict):
         id = id or meta.get("id")
         parent = parent or meta.get('parent')
         version = meta.get('version')
-        res = conn.index(dict([(k, v) for k, v in self.items() if k != "meta"]),
-                         meta.index, meta.type, id, parent=parent, bulk=bulk, version=version)
+        doc = dict([(k, v) for k, v in self.items() if k != "meta"])
+        res = conn.index(doc, meta.index, meta.type, id, parent=parent,
+                         bulk=bulk, version=version)
         if not bulk:
             self.meta.id = res._id
             self.meta.version = res._version
@@ -102,7 +106,7 @@ class ElasticSearchModel(DotDict):
         if create:
             op_type = "create"
         meta = self.meta
-        cmd = { op_type : { "_index" : meta.index, "_type" : meta.type}}
+        cmd = {op_type: {"_index": meta.index, "_type": meta.type}}
         if meta.parent:
             cmd[op_type]['_parent'] = meta.parent
         if meta.version:
@@ -115,24 +119,26 @@ class ElasticSearchModel(DotDict):
         result.append("\n")
         return ''.join(result)
 
+
 def file_to_attachment(filename, filehandler=None):
     """
     Convert a file to attachment
     """
     if filehandler:
-        return {'_name':filename,
-                'content':base64.b64encode(filehandler.read())
+        return {'_name': filename,
+                'content': base64.b64encode(filehandler.read()),
                 }
     with open(filename, 'rb') as _file:
-        return {'_name':filename,
-                'content':base64.b64encode(_file.read())
+        return {'_name': filename,
+                'content': base64.b64encode(_file.read()),
                 }
+
 
 class ESJsonEncoder(json.JSONEncoder):
     def default(self, value):
         """Convert rogue and mysterious data types.
         Conversion notes:
-        
+
         - ``datetime.date`` and ``datetime.datetime`` objects are
         converted into datetime strings.
         """
@@ -147,6 +153,7 @@ class ESJsonEncoder(json.JSONEncoder):
         else:
             # use no special encoding and hope for the best
             return value
+
 
 class ESJsonDecoder(json.JSONDecoder):
     def __init__(self, *args, **kwargs):
@@ -177,6 +184,7 @@ class ESJsonDecoder(json.JSONDecoder):
                 d[k] = [self.string_to_datetime(elem) for elem in v]
         return DotDict(d)
 
+
 class ES(object):
     """
     ES connection object.
@@ -190,15 +198,16 @@ class ES(object):
                  dump_curl=False,
                  model=ElasticSearchModel):
         """
-        Init a es object
-        
+        Init an es object
+
         server: the server name, it can be a list of servers
         timeout: timeout for a call
         bulk_size: size of bulk operation
         encoder: tojson encoder
         max_retries: number of max retries for server if a server is down
         autorefresh: check if need a refresh before a query
-        model: used to objectify the dictinary. If None, the raw dict is returned.
+        model: used to objectify the dictinary. If None, the raw dict is
+               returned.
 
         dump_curl: If truthy, this will dump every query to a curl file.  If
         this is set to a string value, it names the file that output is sent
@@ -230,13 +239,13 @@ class ES(object):
             self.dump_curl = None
 
         #used in bulk
-        self.bulk_size = bulk_size #size of the bulk
+        self.bulk_size = bulk_size  # size of the bulk
         self.bulk_data = []
-        self.last_bulk_response = None #last response of a bulk insert
+        self.last_bulk_response = None  # last response of a bulk insert
         self.bulk_lock = threading.Lock()
 
-        self.info = {} #info about the current server
-        self.mappings = None #track mapping
+        self.info = {}  # info about the current server
+        self.mappings = None  # track mapping
         self.encoder = encoder
         if self.encoder is None:
             self.encoder = ESJsonEncoder
@@ -265,11 +274,14 @@ class ES(object):
         #detect connectiontype
         port = self.servers[0].split(":")[1]
         if port.startswith("92"):
-            self.connection = http_connect(self.servers, timeout=self.timeout, max_retries=self.max_retries)
+            self.connection = http_connect(self.servers, timeout=self.timeout,
+                                           max_retries=self.max_retries)
             return
         if not thrift_enable:
-            raise RuntimeError("If you want to use thrift, please install thrift. \"pip install thrift\"")
-        self.connection = thrift_connect(self.servers, timeout=self.timeout, max_retries=self.max_retries)
+            raise RuntimeError("If you want to use thrift, please install "
+                               "thrift. \"pip install thrift\"")
+        self.connection = thrift_connect(self.servers, timeout=self.timeout,
+                                         max_retries=self.max_retries)
 
     def _discovery(self):
         """
@@ -278,13 +290,15 @@ class ES(object):
         data = self.cluster_nodes()
         self.cluster_name = data["cluster_name"]
         for _, nodedata in data["nodes"].items():
-            server = nodedata['http_address'].replace("]", "").replace("inet[", "http:/")
+            http_address = nodedata['http_address']
+            server = http_address.replace("]", "").replace("inet[", "http:/")
             if server not in self.servers:
                 self.servers.append(server)
         self._init_connection()
         return self.servers
 
-    def _send_request(self, method, path, body=None, params=None, headers=None):
+    def _send_request(self, method, path, body=None, params=None,
+                      headers=None):
         if params is None:
             params = {}
         if headers is None:
@@ -303,7 +317,8 @@ class ES(object):
         else:
             body = ""
         request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()],
-                              uri=path, parameters=params, headers=headers, body=body)
+                              uri=path, parameters=params, headers=headers,
+                              body=body)
         if self.dump_curl is not None:
             self._dump_curl_request(request)
 
@@ -326,7 +341,8 @@ class ES(object):
                 # parsed as JSON is when no handler is found for a request URI.
                 # In this case, the body is actually a good message to return
                 # in the exception.
-                raise ElasticSearchException(response.body, response.status, response.body)
+                raise ElasticSearchException(response.body, response.status,
+                                             response.body)
         if response.status != 200:
             raise_if_error(response.status, decoded)
         if isinstance(decoded, dict):
@@ -337,13 +353,15 @@ class ES(object):
         """
         Smush together the path components. Empty components will be ignored.
         """
-        path_components = [quote(str(component), "") for component in path_components if component]
+        path_components = [quote(str(component), "")
+                           for component in path_components if component]
         path = '/'.join(path_components)
         if not path.startswith('/'):
             path = '/' + path
         return path
 
-    def _query_call(self, query_type, query, indices=None, doc_types=None, **query_params):
+    def _query_call(self, query_type, query, indices=None, doc_types=None,
+                    **query_params):
         """
         This can be used for search and count calls.
         These are identical api calls, except for the type of query.
@@ -357,7 +375,8 @@ class ES(object):
         if isinstance(doc_types, basestring):
             doc_types = [doc_types]
         body = query
-        path = self._make_path([','.join(indices), ','.join(doc_types), query_type])
+        path = self._make_path([','.join(indices), ','.join(doc_types),
+                                query_type])
         return self._send_request('GET', path, body, params=querystring_args)
 
     def _validate_indices(self, indices=None):
@@ -374,7 +393,8 @@ class ES(object):
 
     def _dump_curl_request(self, request):
         self.dump_curl.write("# [%s]\n" % datetime.now().isoformat())
-        self.dump_curl.write("curl -X" + Method._VALUES_TO_NAMES[request.method])
+        method = Method._VALUES_TO_NAMES[request.method]
+        self.dump_curl.write("curl -X" + method)
         self.dump_curl.write(" '")
         self.dump_curl.write("http://" + self.servers[0] + request.uri)
         if request.parameters:
@@ -384,7 +404,8 @@ class ES(object):
                 self.dump_curl.write("%s=%s" % (param, params[param]))
         self.dump_curl.write("'")
         if request.body:
-            self.dump_curl.write(" -d '%s'" % request.body.replace("'", "'\\''"))
+            self.dump_curl.write(" -d '%s'" % request.body.replace("'",
+                                                                   "'\\''"))
         self.dump_curl.write("\n")
 
     #---- Admin commands
@@ -511,7 +532,7 @@ class ES(object):
         """
         body = {
             'actions': [
-                 {command: dict(index=index, alias=alias) }
+                 {command: dict(index=index, alias=alias)}
                  for (command, index, alias) in commands
             ]
         }
@@ -587,7 +608,7 @@ class ES(object):
     def refresh(self, indices=None, timesleep=1):
         """
         Refresh one or more indices
-        
+
         timesleep: seconds to wait
         """
         self.force_bulk()
@@ -599,7 +620,6 @@ class ES(object):
         self.cluster_health(wait_for_status='green')
         self.refreshed = True
         return result
-
 
     def optimize(self, indices=None,
                  wait_for_merge=False,
@@ -649,7 +669,8 @@ class ES(object):
 
     def analyze(self, text, index=None):
         """
-        Performs the analysis process on a text and return the tokens breakdown of the text
+        Performs the analysis process on a text and return the tokens break
+        down of the text
         """
         path = self._make_path([index, '_analyze'])
         return self._send_request('POST', path, text)
@@ -664,7 +685,8 @@ class ES(object):
 
     def put_mapping(self, doc_type=None, mapping=None, indices=None):
         """
-        Register specific mapping definition for a specific type against one or more indices.
+        Register specific mapping definition for a specific type against
+        one or more indices.
         """
         indices = self._validate_indices(indices)
         if mapping is None:
@@ -675,7 +697,7 @@ class ES(object):
         if doc_type:
             path = self._make_path([','.join(indices), doc_type, "_mapping"])
             if doc_type not in mapping:
-                mapping = {doc_type:mapping}
+                mapping = {doc_type: mapping}
         else:
             path = self._make_path([','.join(indices), "_mapping"])
 
@@ -684,7 +706,8 @@ class ES(object):
 
     def get_mapping(self, doc_type=None, indices=None):
         """
-        Register specific mapping definition for a specific type against one or more indices.
+        Register specific mapping definition for a specific type against
+        one or more indices.
         """
         indices = self._validate_indices(indices)
         if doc_type:
@@ -707,28 +730,30 @@ class ES(object):
         return self.info
 
     #--- cluster
-    def cluster_health(self, indices=None, level="cluster", wait_for_status=None,
-               wait_for_relocating_shards=None, timeout=30):
+    def cluster_health(self, indices=None, level="cluster",
+                       wait_for_status=None, wait_for_relocating_shards=None,
+                       timeout=30):
         """
-        Check the current :ref:`cluster health <es-guide-reference-api-admin-cluster-health>`.
+        Check the current
+        :ref:`cluster health <es-guide-reference-api-admin-cluster-health>`.
         Request Parameters
 
         The cluster health API accepts the following request parameters:
-        
-        :param level: Can be one of cluster, indices or shards. Controls the 
-                        details level of the health information returned. 
+
+        :param level: Can be one of cluster, indices or shards. Controls the
+                        details level of the health information returned.
                         Defaults to *cluster*.
-        :param wait_for_status: One of green, yellow or red. Will wait (until 
-                                the timeout provided) until the status of the 
-                                cluster changes to the one provided. 
+        :param wait_for_status: One of green, yellow or red. Will wait (until
+                                the timeout provided) until the status of the
+                                cluster changes to the one provided.
                                 By default, will not wait for any status.
-        :param wait_for_relocating_shards: A number controlling to how many 
-                                           relocating shards to wait for. 
-                                           Usually will be 0 to indicate to 
-                                           wait till all relocation have 
+        :param wait_for_relocating_shards: A number controlling to how many
+                                           relocating shards to wait for.
+                                           Usually will be 0 to indicate to
+                                           wait till all relocation have
                                            happened. Defaults to not to wait.
-        :param timeout: A time based parameter controlling how long to wait 
-                        if one of the wait_for_XXX are provided. 
+        :param timeout: A time based parameter controlling how long to wait
+                        if one of the wait_for_XXX are provided.
                         Defaults to 30s.
         """
         path = self._make_path(["_cluster", "health"])
@@ -739,7 +764,8 @@ class ES(object):
             mapping['level'] = level
         if wait_for_status:
             if wait_for_status not in ["green", "yellow", "red"]:
-                raise ValueError("Invalid wait_for_status: %s" % wait_for_status)
+                msg = "Invalid wait_for_status: %s" % wait_for_status
+                raise ValueError(msg)
             mapping['wait_for_status'] = wait_for_status
 
             mapping['timeout'] = "%ds" % timeout
@@ -749,18 +775,19 @@ class ES(object):
                       filter_metadata=None, filter_blocks=None,
                       filter_indices=None):
         """
-        Retrieve the :ref:`cluster state <es-guide-reference-api-admin-cluster-state>`.
+        Retrieve the
+        :ref:`cluster state <es-guide-reference-api-admin-cluster-state>`.
 
-        :param filter_nodes: set to **true** to filter out the **nodes** part 
-                             of the response.                            
-        :param filter_routing_table: set to **true** to filter out the 
-                                     **routing_table** part of the response.                    
-        :param filter_metadata: set to **true** to filter out the **metadata** 
-                                part of the response.                         
-        :param filter_blocks: set to **true** to filter out the **blocks** 
-                              part of the response.                           
-        :param filter_indices: when not filtering metadata, a comma separated 
-                               list of indices to include in the response.   
+        :param filter_nodes: set to **true** to filter out the **nodes** part
+                             of the response.
+        :param filter_routing_table: set to **true** to filter out the
+                                     **routing_table** part of the response.
+        :param filter_metadata: set to **true** to filter out the **metadata**
+                                part of the response.
+        :param filter_blocks: set to **true** to filter out the **blocks**
+                              part of the response.
+        :param filter_indices: when not filtering metadata, a comma separated
+                               list of indices to include in the response.
 
         """
         path = self._make_path(["_cluster", "state"])
@@ -788,8 +815,10 @@ class ES(object):
 
     def cluster_nodes(self, nodes=None):
         """
-        The cluster :ref:`nodes info <es-guide-reference-api-admin-cluster-state>` API allows to retrieve one or more (or all) of 
-        the cluster nodes information.
+        The cluster
+        :ref:`nodes info <es-guide-reference-api-admin-cluster-state>`
+        API allows to retrieve one or more (or all) of the cluster nodes
+        information.
         """
         parts = ["_cluster", "nodes"]
         if nodes:
@@ -799,8 +828,10 @@ class ES(object):
 
     def cluster_stats(self, nodes=None):
         """
-        The cluster :ref:`nodes info <es-guide-reference-api-admin-cluster-nodes-stats>` API allows to retrieve one or more (or all) of 
-        the cluster nodes information.
+        The cluster
+        :ref:`nodes info <es-guide-reference-api-admin-cluster-nodes-stats>`
+        API allows to retrieve one or more (or all) of the cluster nodes
+        information.
         """
         parts = ["_cluster", "nodes", "stats"]
         if nodes:
@@ -823,7 +854,8 @@ class ES(object):
               op_type=None,
               bulk=False, version=None, querystring_args=None):
         """
-        Index a typed JSON document into a specific index and make it searchable.
+        Index a typed JSON document into a specific index and make it
+        searchable.
         """
         if querystring_args is None:
             querystring_args = {}
@@ -836,7 +868,7 @@ class ES(object):
             op_type = "index"
             if force_insert:
                 op_type = "create"
-            cmd = { op_type : { "_index" : index, "_type" : doc_type}}
+            cmd = {op_type: {"_index": index, "_type": doc_type}}
             if parent:
                 cmd[op_type]['_parent'] = parent
             if version:
@@ -888,9 +920,9 @@ class ES(object):
     def force_bulk(self):
         """
         Force executing of all bulk data.
-        
+
         Return the bulk response
-        
+
         If not item self.last_bulk_response to None and returns None
         """
         locked = self.bulk_lock.acquire(False)
@@ -899,11 +931,14 @@ class ES(object):
                 if len(self.bulk_data):
                     batch = self.bulk_data
                     self.bulk_data = []
-                    self.last_bulk_response = self._send_request("POST", "/_bulk", "\n".join(batch) + "\n")
+                    body = "\n".join(batch) + "\n"
+                    self.last_bulk_response = self._send_request("POST",
+                                                                 "/_bulk",
+                                                                 body)
                 else:
                     self.last_bulk_response = None
             finally:
-              self.bulk_lock.release()
+                self.bulk_lock.release()
         return self.last_bulk_response
 
     def put_file(self, filename, index, doc_type, id=None):
@@ -925,7 +960,8 @@ class ES(object):
         Return the filename and memory data stream
         """
         data = self.get(index, doc_type, id)
-        return data["_source"]['_name'], base64.standard_b64decode(data["_source"]['content'])
+        return (data["_source"]['_name'],
+                base64.standard_b64decode(data["_source"]['content']))
 
     def delete(self, index, doc_type, id, bulk=False, querystring_args=None):
         """
@@ -934,8 +970,8 @@ class ES(object):
         """
         querystring_args = querystring_args or {}
         if bulk:
-            cmd = { "delete" : { "_index" : index, "_type" : doc_type,
-                                "_id": id}}
+            cmd = {"delete": {"_index": index, "_type": doc_type,
+                              "_id": id}}
             self.bulk_data.append(json.dumps(cmd, cls=self.encoder))
             self.flush_bulk()
             return
@@ -945,7 +981,8 @@ class ES(object):
 
     def deleteByQuery(self, indices, doc_types, query, **request_params):
         """
-        Delete documents from one or more indices and one or more types based on a query.
+        Delete documents from one or more indices and one or more types
+        based on a query.
         """
         querystring_args = request_params
         indices = self._validate_indices(indices)
@@ -961,9 +998,11 @@ class ES(object):
             # A direct set of search parameters.
             body = json.dumps(query, cls=self.encoder)
         else:
-            raise InvalidQuery("deleteByQuery() must be supplied with a Query object, or a dict")
+            raise InvalidQuery("deleteByQuery() must be supplied with a "
+                               "Query object, or a dict")
 
-        path = self._make_path([','.join(indices), ','.join(doc_types), '_query'])
+        path = self._make_path([','.join(indices), ','.join(doc_types),
+                                '_query'])
         return self._send_request('DELETE', path, body, querystring_args)
 
     def delete_mapping(self, index, doc_type):
@@ -973,7 +1012,8 @@ class ES(object):
         path = self._make_path([index, doc_type])
         return self._send_request('DELETE', path)
 
-    def get(self, index, doc_type, id, fields=None, routing=None, **get_params):
+    def get(self, index, doc_type, id, fields=None, routing=None,
+            **get_params):
         """
         Get a typed JSON document from an index based on its id.
         """
@@ -982,10 +1022,11 @@ class ES(object):
             get_params["fields"] = ",".join(fields)
         if routing:
             get_params["routing"] = routing
-        return self.model(self, self._send_request('GET', path, params=get_params))
+        return self.model(self,
+                          self._send_request('GET', path, params=get_params))
 
-
-    def factory_object(self, index, doc_type, data=None, id=None, vertex=False):
+    def factory_object(self, index, doc_type, data=None, id=None,
+                       vertex=False):
         """
         Create a stub object to be manipulated
         """
@@ -1002,14 +1043,15 @@ class ES(object):
             obj.force_vertex()
         return obj
 
-    def mget(self, ids, index=None, doc_type=None, routing=None, **get_params):
+    def mget(self, ids, index=None, doc_type=None, routing=None,
+             **get_params):
         """
         Get multi JSON documents.
-        
+
         ids can be:
             list of tuple: (index, type, id)
             list of ids: index and doc_type are required
-        
+
         """
         if len(ids) == 0:
             return []
@@ -1018,23 +1060,23 @@ class ES(object):
         for value in ids:
             if isinstance(value, tuple):
                 a, b, c = value
-                body.append({"_index":a,
-                             "_type":b,
-                             "_id":c})
+                body.append({"_index": a,
+                             "_type": b,
+                             "_id": c})
             else:
                 if index is None:
                     raise InvalidQuery("index value is required for id")
                 if doc_type is None:
                     raise InvalidQuery("doc_type value is required for id")
-                body.append({"_index":index,
-                             "_type":doc_type,
-                             "_id":value})
+                body.append({"_index": index,
+                             "_type": doc_type,
+                             "_id": value})
 
         if routing:
             get_params["routing"] = routing
         results = self._send_request('GET', "/_mget",
-                                  body={'docs':body},
-                                  params=get_params)
+                                     body={'docs': body},
+                                     params=get_params)
         if 'docs' in results:
             model = self.model
             return [model(self, item) for item in results['docs']]
@@ -1061,9 +1103,11 @@ class ES(object):
             # A direct set of search parameters.
             body = json.dumps(query, cls=self.encoder)
         else:
-            raise InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
+            raise InvalidQuery("search() must be supplied with a Search "
+                               "or Query object, or a dict")
 
-        return self._query_call("_search", body, indices, doc_types, **query_params)
+        return self._query_call("_search", body, indices, doc_types,
+                                **query_params)
 
     def search(self, query, indices=None, doc_types=None, **query_params):
         """Execute a search against one or more indices to get the resultset.
@@ -1084,22 +1128,32 @@ class ES(object):
         if hasattr(query, 'to_search_json') or isinstance(query, dict):
             pass
         else:
-            raise InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
-        return ResultSet(connection=self, query=query, indices=indices, doc_types=doc_types, query_params=query_params)
+            raise InvalidQuery("search() must be supplied with a Search "
+                               "or Query object, or a dict")
+        return ResultSet(connection=self, query=query, indices=indices,
+                         doc_types=doc_types, query_params=query_params)
 
-#    scan method is no longer working due to change in ES.search behavior.  May no longer warrant its own method.
-#    def scan(self, query, indices=None, doc_types=None, scroll_timeout="10m", **query_params):
-#        """Return a generator which will scan against one or more indices and iterate over the search hits. (currently support only by ES Master)
+#    scan method is no longer working due to change in ES.search behavior.
+#    May no longer warrant its own method.
+#    def scan(self, query, indices=None, doc_types=None, scroll_timeout="10m",
+#             **query_params):
+#        """Return a generator which will scan against one or more indices
+#        and iterate over the search hits. (currently support only by
+#        ES Master)
 #
 #        `query` must be a Search object, a Query object, or a custom
 #        dictionary of search parameters using the query DSL to be passed
 #        directly.
 #
 #        """
-#        results = self.search(query=query, indices=indices, doc_types=doc_types, search_type="scan", scroll=scroll_timeout, **query_params)
+#        results = self.search(query=query, indices=indices,
+#                              doc_types=doc_types, search_type="scan",
+#                              scroll=scroll_timeout, **query_params)
 #        while True:
 #            scroll_id = results["_scroll_id"]
-#            results = self._send_request('GET', "_search/scroll", scroll_id, {"scroll":scroll_timeout})
+#            results = self._send_request('GET', "_search/scroll",
+#                                         scroll_id,
+#                                         {"scroll":scroll_timeout})
 #            total = len(results["hits"]["hits"])
 #            if not total:
 #                break
@@ -1109,12 +1163,17 @@ class ES(object):
         """
         Executes a scrolling given an scroll_id
         """
-        return self._send_request('GET', "_search/scroll", scroll_id, {"scroll":scroll_timeout})
+        return self._send_request('GET', "_search/scroll", scroll_id,
+                                  {"scroll": scroll_timeout})
 
     def reindex(self, query, indices=None, doc_types=None, **query_params):
         """
-        Execute a search query against one or more indices and and reindex the hits.
-        query must be a dictionary or a Query object that will convert to Query DSL.
+        Execute a search query against one or more indices and and reindex
+        the hits.
+
+        query must be a dictionary or a Query object that will convert to
+        Query DSL.
+
         Note: reindex is only available in my ElasticSearch branch on github.
         """
         indices = self._validate_indices(indices)
@@ -1132,7 +1191,8 @@ class ES(object):
         querystring_args = query_params
         indices = self._validate_indices(indices)
         body = query
-        path = self._make_path([','.join(indices), ','.join(doc_types), "_reindexbyquery"])
+        path = self._make_path([','.join(indices), ','.join(doc_types),
+                                "_reindexbyquery"])
         return self._send_request('POST', path, body, querystring_args)
 
     def count(self, query, indices=None, doc_types=None, **query_params):
@@ -1144,7 +1204,8 @@ class ES(object):
             doc_types = []
         if hasattr(query, 'to_query_json'):
             query = query.to_query_json()
-        return self._query_call("_count", query, indices, doc_types, **query_params)
+        return self._query_call("_count", query, indices, doc_types,
+                                **query_params)
 
     #--- river management
     def create_river(self, river, river_name=None):
@@ -1154,7 +1215,8 @@ class ES(object):
         if hasattr(river, "q"):
             river_name = river.name
             river = river.q
-        return self._send_request('PUT', '/_river/%s/_meta' % river_name, river)
+        return self._send_request('PUT', '/_river/%s/_meta' % river_name,
+                                  river)
 
     def delete_river(self, river, river_name=None):
         """
@@ -1168,7 +1230,7 @@ class ES(object):
     def update_settings(self, index, newvalues):
         """
         Update Settings of an index.
-        
+
         """
         path = self._make_path([index, "_settings"])
         return self._send_request('PUT', path, newvalues)
@@ -1177,21 +1239,22 @@ class ES(object):
 #        """
 #        Extract terms and their document frequencies from one or more fields.
 #        The fields argument must be a list or tuple of fields.
-#        For valid query params see: 
+#        For valid query params see:
 #        http://www.elasticsearch.com/docs/elasticsearch/rest_api/terms/
 #        """
 #        indices = self._validate_indices(indices)
 #        path = self._make_path([','.join(indices), "_terms"])
 #        query_params['fields'] = ','.join(fields)
 #        return self._send_request('GET', path, params=query_params)
-#    
+#
     def morelikethis(self, index, doc_type, id, fields, **query_params):
         """
-        Execute a "more like this" search query against one or more fields and get back search hits.
+        Execute a "more like this" search query against one or more fields
+        and get back search hits.
         """
         path = self._make_path([index, doc_type, id, '_mlt'])
         query_params['fields'] = ','.join(fields)
-        body = query_params["body"] if query_params.has_key("body") else None
+        body = query_params["body"] if "body" in query_params else None
         return self._send_request('GET', path, body=body, params=query_params)
 
     def create_percolator(self, index, name, query, **kwargs):
@@ -1207,7 +1270,8 @@ class ES(object):
             query = {'query': query.serialize()}
 
         if not isinstance(query, dict):
-            raise InvalidQuery("create_percolator() must be supplied with a Query object or dict")
+            raise InvalidQuery("create_percolator() must be supplied with "
+                               "a Query object or dict")
         # A direct set of search parameters.
         query.update(kwargs)
         body = json.dumps(query, cls=self.encoder)
@@ -1226,7 +1290,8 @@ class ES(object):
         """
 
         if doc_types is None:
-            raise RuntimeError('percolate() must be supplied with at least one doc_type')
+            raise RuntimeError('percolate() must be supplied with at '
+                               'least one doc_type')
         elif not isinstance(doc_types, list):
             doc_types = [doc_types]
 
@@ -1240,21 +1305,26 @@ class ES(object):
             # A direct set of search parameters.
             body = json.dumps(query, cls=self.encoder)
         else:
-            raise InvalidQuery("percolate() must be supplied with a Query object, or a dict")
+            raise InvalidQuery("percolate() must be supplied with a Query "
+                               "object, or a dict")
 
         return self._send_request('GET', path, body=body)
+
 
 def decode_json(data):
     """ Decode some json to dict"""
     return json.loads(data, cls=ESJsonDecoder)
 
+
 def encode_json(data):
     """ Encode some json to dict"""
     return json.dumps(data, cls=ESJsonEncoder)
 
+
 class ResultSet(object):
-    def __init__(self, connection, query, indices=None, doc_types=None, query_params=None,
-                 auto_fix_keys=False, auto_clean_highlight=False):
+    def __init__(self, connection, query, indices=None, doc_types=None,
+                 query_params=None, auto_fix_keys=False,
+                 auto_clean_highlight=False):
         """
         results: an es query results dict
         fix_keys: remove the "_" from every key, useful for django views
@@ -1277,20 +1347,21 @@ class ResultSet(object):
         from pyes.query import Search, Query
 
         if not isinstance(query, (Query, Search, dict)):
-            raise InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
+            raise InvalidQuery("search() must be supplied with a Search "
+                               "or Query object, or a dict")
 
         if not isinstance(query, Search):
             self.query = Search(query)
         else:
             self.query = query
 
-        self.iterpos = 0 #keep track of iterator position
+        self.iterpos = 0  # keep track of iterator position
         self.start = self.query.start or 0
         self.chuck_size = self.query.size or 10
 
     def _do_search(self, auto_increment=False):
         self.iterpos = 0
-        process_post_query = True #used to skip results in first scan
+        process_post_query = True  # used to skip results in first scan
         if self.scroller_id is None:
             if auto_increment:
                 self.start += self.chuck_size
@@ -1298,18 +1369,23 @@ class ResultSet(object):
             self.query.start = self.start
             self.query.size = self.chuck_size
 
-            self._results = self.connection.search_raw(self.query, indices=self.indices,
-                                                       doc_types=self.doc_types, **self.query_params)
-            if 'search_type' in self.query_params and self.query_params['search_type'] == "scan":
-                self.scroller_parameters['search_type'] = self.query_params['search_type']
-                del self.query_params['search_type']
-                if 'scroll' in self.query_params:
-                    self.scroller_parameters['scroll'] = self.query_params['scroll']
-                    del self.query_params['scroll']
-                if 'size' in self.query_params:
-                    self.scroller_parameters['size'] = self.query_params['size']
-                    del self.query_params['size']
-                    self.chuck_size = self.scroller_parameters['size']
+            kwargs = {"indices": self.indices,
+                      "doc_types": self.doc_types}
+            kwargs.update(self.query_params)
+            self._results = self.connection.search_raw(self.query, **kwargs)
+            params = self.query_params
+            scroller_params = self.scroller_parameters
+
+            if 'search_type' in params and params['search_type'] == "scan":
+                scroller_params['search_type'] = params['search_type']
+                del params['search_type']
+                if 'scroll' in params:
+                    scroller_params['scroll'] = params['scroll']
+                    del params['scroll']
+                if 'size' in params:
+                    scroller_params['size'] = params['size']
+                    del params['size']
+                    self.chuck_size = scroller_params['size']
             if '_scroll_id' in self._results:
                 #scan query, let's load the first bulk of data
                 self.scroller_id = self._results['_scroll_id']
@@ -1317,12 +1393,14 @@ class ResultSet(object):
                 process_post_query = False
         else:
             try:
-                self._results = self.connection.search_scroll(self.scroller_id, self.scroller_parameters.get("scroll", "10m"))
+                scroll_time = self.scroller_parameters.get("scroll", "10m")
+                results = self.connection.search_scroll(self.scroller_id,
+                                                        scroll_time)
+                self._results = results
                 self.scroller_id = self._results['_scroll_id']
             except ReduceSearchPhaseException:
                 #bad hack, should be not hits on the last iteration
                 self._results['hits']['hits'] = []
-
 
         if process_post_query:
             self._facets = self._results.get('facets', {})
@@ -1406,11 +1484,12 @@ class ResultSet(object):
 
         if self._results:
             if start >= self.start and end < self.start + self.chuck_size:
+                hits = self._results['hits']['hits']
                 if not isinstance(val, slice):
-                    return model(self.connection, self._results['hits']['hits'][val - self.start])
+                    return model(self.connection, hits[val - self.start])
                 else:
-                    return [model(self.connection, hit) for hit in self._results['hits']['hits'][start:end]]
-
+                    return [model(self.connection, hit)
+                            for hit in hits[start:end]]
 
         query = self.query.serialize()
         query['from'] = start

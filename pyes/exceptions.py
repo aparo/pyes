@@ -24,6 +24,7 @@ __all__ = ['NoServerAvailable',
            'DocumentAlreadyExistsEngineException'
           ]
 
+
 class NoServerAvailable(Exception):
     pass
 
@@ -31,20 +32,26 @@ class NoServerAvailable(Exception):
 class InvalidQuery(Exception):
     pass
 
+
 class InvalidParameterQuery(InvalidQuery):
     pass
+
 
 class QueryError(Exception):
     pass
 
+
 class QueryParameterError(Exception):
     pass
+
 
 class ScriptFieldsError(Exception):
     pass
 
+
 class InvalidParameter(Exception):
     pass
+
 
 class ElasticSearchException(Exception):
     """Base class of exceptions raised as a result of parsing an error return
@@ -59,39 +66,50 @@ class ElasticSearchException(Exception):
         self.status = status
         self.result = result
 
+
 class ElasticSearchIllegalArgumentException(ElasticSearchException):
     pass
+
 
 class IndexMissingException(ElasticSearchException):
     pass
 
+
 class NotFoundException(ElasticSearchException):
     pass
+
 
 class AlreadyExistsException(ElasticSearchException):
     pass
 
+
 class IndexAlreadyExistsException(AlreadyExistsException):
     pass
+
 
 class SearchPhaseExecutionException(ElasticSearchException):
     pass
 
+
 class ReplicationShardOperationFailedException(ElasticSearchException):
     pass
+
 
 class ClusterBlockException(ElasticSearchException):
     pass
 
+
 class MapperParsingException(ElasticSearchException):
     pass
+
 
 class ReduceSearchPhaseException(ElasticSearchException):
     pass
 
+
 class VersionConflictEngineException(ElasticSearchException):
     pass
 
+
 class DocumentAlreadyExistsEngineException(ElasticSearchException):
     pass
-

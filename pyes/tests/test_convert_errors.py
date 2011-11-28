@@ -28,10 +28,11 @@ class RaiseIfErrorTestCase(ESTestCase):
             IndexAlreadyExistsException,
             convert_errors.raise_if_error,
             400, {u'status': 400,
-                  u'error': (u'RemoteTransportException[[name][inet' +
-                             u'[/127.0.0.1:9300]][indices/createIndex]]; ' +
-                             u'nested: IndexAlreadyExistsException['+
+                  u'error': (u'RemoteTransportException[[name][inet'
+                             u'[/127.0.0.1:9300]][indices/createIndex]]; '
+                             u'nested: IndexAlreadyExistsException['
                              u'[test-index] Already exists]; ')})
-        
+
+
 if __name__ == '__main__':
     unittest.main()

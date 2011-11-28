@@ -4,7 +4,7 @@
 __author__ = 'Alberto Paro'
 __all__ = ["get_values"]
 
-#useful to raise ad invali import
+#useful to raise an invalid import
 import django
 
 from types import NoneType
@@ -12,10 +12,11 @@ import datetime
 
 #--- taken from http://djangosnippets.org/snippets/2278/
 
+
 def get_values(instance, go_into={}, exclude=(), extra=(), skip_none=False):
     """
     Transforms a django model instance into an object that can be used for
-    serialization. 
+    serialization.
     @param instance(django.db.models.Model) - the model in question
     @param go_into(dict) - relations with other models that need expanding
     @param exclude(tuple) - fields that will be ignored
@@ -77,13 +78,14 @@ def get_values(instance, go_into={}, exclude=(), extra=(), skip_none=False):
         if skip_none and property is None:
             continue
 
-        if field in exclude or field[0] == '_' or isinstance(property, Manager):
-            # if it's in the exclude tuple, ignore it 
-            # if it's a "private" field, ignore it 
+        if field in exclude or field[0] == '_' or isinstance(property,
+                                                             Manager):
+            # if it's in the exclude tuple, ignore it
+            # if it's a "private" field, ignore it
             # if it's an instance of manager (this means a more complicated
-            # relationship), ignore it 
+            # relationship), ignore it
             continue
-        elif go_into.has_key(field):
+        elif field in go_into:
             # if it's in the go_into dict, make a recursive call for that field
             try:
                 field_go_into = go_into[field].get('go_into', {})

@@ -5,6 +5,7 @@ __author__ = 'Alberto Paro'
 
 from utils import EqualityComparableUsingAttributeDictionary
 
+
 #--- Facet
 class FacetFactory(EqualityComparableUsingAttributeDictionary):
     def __init__(self):
@@ -23,11 +24,13 @@ class FacetFactory(EqualityComparableUsingAttributeDictionary):
         res = {}
         for facet in self.facets:
             res.update(facet.serialize())
-        return {"facets":res}
+        return {"facets": res}
+
 
 class Facet(EqualityComparableUsingAttributeDictionary):
     def __init__(self, *args, **kwargs):
         pass
+
 
 class QueryFacet(Facet):
     _internal_name = "query"
@@ -38,7 +41,8 @@ class QueryFacet(Facet):
         self.query = query
 
     def serialize(self):
-        return {self.name:{self._internal_name:self.query.serialize()}}
+        return {self.name: {self._internal_name: self.query.serialize()}}
+
 
 class FilterFacet(Facet):
     _internal_name = "filter"
@@ -49,7 +53,8 @@ class FilterFacet(Facet):
         self.query = query
 
     def serialize(self):
-        return {self.name:{self._internal_name:self.query.serialize()}}
+        return {self.name: {self._internal_name: self.query.serialize()}}
+
 
 class HistogramFacet(Facet):
     _internal_name = "histogram"
@@ -76,7 +81,8 @@ class HistogramFacet(Facet):
         elif self.time_interval:
             data['time_interval'] = self.time_interval
         else:
-            raise RuntimeError("Invalid field: interval or time_interval required")
+            raise RuntimeError("Invalid field: interval or time_interval "
+                               "required")
 
     def serialize(self):
         data = {}
@@ -100,7 +106,8 @@ class HistogramFacet(Facet):
             if self.params:
                 data['params'] = self.params
 
-        return {self.name:{self._internal_name:data}}
+        return {self.name: {self._internal_name: data}}
+
 
 class DateHistogramFacet(Facet):
     _internal_name = "date_histogram"
@@ -140,9 +147,11 @@ class DateHistogramFacet(Facet):
                 if self.params:
                     data['params'] = self.params
             else:
-                raise RuntimeError("Invalid key_field: value_field or value_script required")
+                raise RuntimeError("Invalid key_field: value_field or "
+                                   "value_script required")
 
-        return {self.name:{self._internal_name:data}}
+        return {self.name: {self._internal_name: data}}
+
 
 class RangeFacet(Facet):
     _internal_name = "range"
@@ -188,7 +197,8 @@ class RangeFacet(Facet):
             if self.params:
                 data['params'] = self.params
 
-        return {self.name:{self._internal_name:data}}
+        return {self.name: {self._internal_name: data}}
+
 
 class StatisticalFacet(Facet):
     _internal_name = "statistical"
@@ -210,7 +220,8 @@ class StatisticalFacet(Facet):
             if self.params:
                 data['params'] = self.params
 
-        return {self.name:{self._internal_name:data}}
+        return {self.name: {self._internal_name: data}}
+
 
 class TermFacet(Facet):
     _internal_name = "terms"
@@ -234,18 +245,20 @@ class TermFacet(Facet):
 
     def serialize(self):
         if self.fields:
-            data = {'fields':self.fields}
+            data = {'fields': self.fields}
         else:
             if self.field:
-                data = {'field':self.field}
+                data = {'field': self.field}
             else:
-                raise RuntimeError("Field or Fields is required:%s" % self.order)
+                msg = "Field or Fields is required:%s" % self.order
+                raise RuntimeError(msg)
 
         if self.size:
             data['size'] = self.size
 
         if self.order:
-            if self.order not in ['count', 'term', 'reverse_count', 'reverse_term']:
+            if self.order not in ('count', 'term', 'reverse_count',
+                                  'reverse_term'):
                 raise RuntimeError("Invalid order value:%s" % self.order)
             data['order'] = self.order
         if self.exclude:
@@ -257,4 +270,4 @@ class TermFacet(Facet):
         elif self.script:
             data['script'] = self.script
 
-        return {self.name:{self._internal_name:data}}
+        return {self.name: {self._internal_name: data}}

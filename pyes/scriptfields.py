@@ -5,16 +5,18 @@ __author__ = 'Armando Guereca'
 
 from pyes.exceptions import ScriptFieldsError
 
+
 class ScriptFields(object):
     """
     This object create the script_fields definition
     """
     _internal_name = "script_fields"
-    def __init__(self, field_name, script, params = None):
-        self.fields={}
+
+    def __init__(self, field_name, script, params=None):
+        self.fields = {}
         self.add_field(field_name, script, params or {})
 
-    def add_field(self, field_name, script, params = None):
+    def add_field(self, field_name, script, params=None):
         """
         Add a field to script_fields
         """
@@ -22,13 +24,15 @@ class ScriptFields(object):
         if script:
             data['script'] = script
         else:
-            raise ScriptFieldsError("Script is required for script_fields definition")
+            raise ScriptFieldsError("Script is required for script_fields "
+                                    "definition")
         if params:
             if isinstance(params, dict):
                 if len(params):
                     data['params'] = params
             else:
-                raise ScriptFieldsError("Parameters should be a valid dictionary")
+                raise ScriptFieldsError("Parameters should be a valid "
+                                        "dictionary")
 
         self.fields[field_name] = data
 
@@ -36,12 +40,14 @@ class ScriptFields(object):
         """
         Add a parameter to a field into script_fields
 
-        The ScriptFields object will be returned, so calls to this can be chained.
+        The ScriptFields object will be returned, so calls to this can be
+        chained.
         """
         try:
             self.fields[field_name]['params'][param_name] = param_value
         except Exception as ex:
-            raise ScriptFieldsError("Error adding parameter %s with value %s :%s" % (param_name,param_value,ex))
+            msg = "Error adding parameter %s with value %s :%s"
+            raise ScriptFieldsError(msg % (param_name, param_value, ex))
 
         return self
 

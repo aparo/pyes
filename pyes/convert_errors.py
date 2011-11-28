@@ -37,6 +37,7 @@ exception_patterns_trailing = {
     '] Already exists': pyes.exceptions.AlreadyExistsException,
 }
 
+
 def raise_if_error(status, result):
     """Raise an appropriate exception if the result is an error.
 
@@ -45,8 +46,8 @@ def raise_if_error(status, result):
     The exception raised will either be an ElasticSearchException, or a more
     specific subclass of ElasticSearchException if the type is recognised.
 
-    The status code and result can be retrieved from the exception by accessing its
-    status and result properties.
+    The status code and result can be retrieved from the exception by
+    accessing its status and result properties.
 
     """
     assert isinstance(status, int)
@@ -55,16 +56,18 @@ def raise_if_error(status, result):
         return
 
     if status == 404 and isinstance(result, dict) and 'error' not in result:
-        raise pyes.exceptions.NotFoundException("Item not found", status, result)
+        msg = "Item not found"
+        raise pyes.exceptions.NotFoundException(msg, status, result)
 
     if not isinstance(result, dict) or 'error' not in result:
-        raise pyes.exceptions.ElasticSearchException("Unknown exception type", status, result)
+        msg = "Unknown exception type"
+        raise pyes.exceptions.ElasticSearchException(msg, status, result)
 
     error = result['error']
     if '; nested: ' in error:
         error_list = error.split('; nested: ')
-        error = error_list[len(error_list)-1]
-                       
+        error = error_list[len(error_list) - 1]
+
     bits = error.split('[', 1)
     if len(bits) == 2:
         excClass = exceptions_by_name.get(bits[0], None)

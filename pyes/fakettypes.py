@@ -3,6 +3,7 @@
 
 __author__ = 'Alberto Paro'
 
+
 #
 # Fake ttypes to use in http protocol to simulate thrift ones
 #
@@ -32,6 +33,7 @@ class Method:
                         "HEAD": 4,
                         "OPTIONS": 5,
                       }
+
 
 class Status:
     CONTINUE = 100
@@ -173,6 +175,7 @@ class Status:
       "INSUFFICIENT_STORAGE": 506,
     }
 
+
 class RestRequest(object):
     """
     Attributes:
@@ -183,12 +186,14 @@ class RestRequest(object):
      - body
     """
 
-    def __init__(self, method=None, uri=None, parameters=None, headers=None, body=None):
+    def __init__(self, method=None, uri=None, parameters=None, headers=None,
+                 body=None):
         self.method = method
         self.uri = uri
         self.parameters = parameters
         self.headers = headers
         self.body = body
+
 
 class RestResponse:
     """
@@ -201,5 +206,3 @@ class RestResponse:
         self.status = status
         self.headers = headers
         self.body = body
-
-

@@ -7,6 +7,7 @@ import unittest
 from pyes.tests import ESTestCase
 import pyes.exceptions
 
+
 class ErrorReportingTestCase(ESTestCase):
     def setUp(self):
         super(ErrorReportingTestCase, self).setUp()
@@ -58,7 +59,8 @@ class ErrorReportingTestCase(ESTestCase):
         self.assertTrue('test-index' in result)
         self.assertEqual(result['test-index'], {'num_docs': 0})
         self.assertTrue('test-alias' in result)
-        self.assertEqual(result['test-alias'], {'alias_for': ['test-index'], 'num_docs': 0})
+        self.assertEqual(result['test-alias'],
+                         {'alias_for': ['test-index'], 'num_docs': 0})
 
         result = self.conn.get_indices(include_aliases=False)
         self.assertTrue('test-index' in result)
@@ -87,8 +89,11 @@ class ErrorReportingTestCase(ESTestCase):
     def testWriteToAlias(self):
         self.assertTrue('ok' in self.conn.create_index(self.index_name))
         self.assertTrue('ok' in self.conn.create_index("test-index2"))
-        self.assertTrue('ok' in self.conn.set_alias("test-alias", ['test-index']))
-        self.assertTrue('ok' in self.conn.set_alias("test-alias2", ['test-index', 'test-index2']))
+        self.assertTrue('ok' in self.conn.set_alias("test-alias",
+                                                    ['test-index']))
+        self.assertTrue('ok' in self.conn.set_alias("test-alias2",
+                                                    ['test-index',
+                                                     'test-index2']))
 
         # Can write to aliases only if they point to exactly one index.
         self.conn.index(dict(title='doc1'), 'test-index', 'testtype')
@@ -98,13 +103,16 @@ class ErrorReportingTestCase(ESTestCase):
                          self.conn.index, dict(title='doc1'),
                          'test-alias2', 'testtype')
 
-        self.conn.refresh() # ensure that the documents have been indexed.
+        self.conn.refresh()  # ensure that the documents have been indexed.
         # Check the document counts for each index or alias.
         result = self.conn.get_indices(include_aliases=True)
         self.assertEqual(result['test-index'], {'num_docs': 2})
         self.assertEqual(result['test-index2'], {'num_docs': 1})
-        self.assertEqual(result['test-alias'], {'alias_for': ['test-index'], 'num_docs': 2})
-        self.assertEqual(result['test-alias2'], {'alias_for': ['test-index', 'test-index2'], 'num_docs': 3})
+        self.assertEqual(result['test-alias'],
+                         {'alias_for': ['test-index'], 'num_docs': 2})
+        self.assertEqual(result['test-alias2'],
+                         {'alias_for': ['test-index', 'test-index2'],
+                          'num_docs': 3})
 
 if __name__ == "__main__":
     unittest.main()

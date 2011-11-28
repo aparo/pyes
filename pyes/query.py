@@ -14,12 +14,15 @@ except ImportError:
     import json
 
 from es import ESJsonEncoder
-from utils import clean_string, ESRange, EqualityComparableUsingAttributeDictionary
+from utils import clean_string, ESRange
+from utils import EqualityComparableUsingAttributeDictionary
 from facets import FacetFactory
 from highlight import HighLighter
 from scriptfields import ScriptFields
-from pyes.exceptions import InvalidQuery, InvalidParameterQuery, QueryError, ScriptFieldsError
+from pyes.exceptions import InvalidQuery, InvalidParameterQuery
+from pyes.exceptions import QueryError, ScriptFieldsError
 log = logging.getLogger('pyes')
+
 
 class FieldParameter(EqualityComparableUsingAttributeDictionary):
 
@@ -58,7 +61,8 @@ class FieldParameter(EqualityComparableUsingAttributeDictionary):
         if not self.lowercase_expanded_terms:
             filters["lowercase_expanded_terms"] = self.lowercase_expanded_terms
         if not self.enable_position_increments:
-            filters["enable_position_increments"] = self.enable_position_increments
+            enable_pos_incs = self.enable_position_increments
+            filters["enable_position_increments"] = enable_pos_incs
         if self.fuzzy_prefix_length:
             filters["fuzzy_prefix_length"] = self.fuzzy_prefix_length
         if self.fuzzy_min_sim != 0.5:
@@ -156,7 +160,8 @@ class Search(EqualityComparableUsingAttributeDictionary):
             if isinstance(self.script_fields, ScriptFields):
                 res['script_fields'] = self.script_fields.serialize()
             else:
-                raise ScriptFieldsError("Parameter script_fields should of type ScriptFields")
+                raise ScriptFieldsError("Parameter script_fields should "
+                                        "of type ScriptFields")
         if self.index_boost:
             res['indices_boost'] = self.index_boost
         if self.min_score:
@@ -176,7 +181,8 @@ class Search(EqualityComparableUsingAttributeDictionary):
         """
         if self.highlight is None:
             self.highlight = HighLighter("<b>", "</b>")
-        self.highlight.add_field(field, fragment_size, number_of_fragments, fragment_offset)
+        self.highlight.add_field(field, fragment_size, number_of_fragments,
+                                 fragment_offset)
         return self
 
     def add_index_boost(self, index, boost):
@@ -186,7 +192,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
 
         """
         if boost is None:
-            if self.index_boost.has_key(index):
+            if index in self.index_boost:
                 del(self.index_boost[index])
         else:
             self.index_boost[index] = boost
@@ -212,7 +218,8 @@ class Query(EqualityComparableUsingAttributeDictionary):
 
     def __init__(self, *args, **kwargs):
         if len(args) > 0 or len(kwargs) > 0:
-            raise RuntimeWarning("No all parameters are processed by derivated query object")
+            raise RuntimeWarning("Not all parameters are processed by "
+                                 "derivated query object")
 
     def serialize(self):
         """Serialize the query to a structure using the query DSL.
@@ -348,14 +355,15 @@ class BoolQuery(Query):
             filters['must_not'] = [f.serialize() for f in self._must_not]
         if self._should:
             filters['should'] = [f.serialize() for f in self._should]
-            filters['minimum_number_should_match'] = self.minimum_number_should_match
+            min_num_should_match = self.minimum_number_should_match
+            filters['minimum_number_should_match'] = min_num_should_match
         if self.boost:
             filters['boost'] = self.boost
         if self.disable_coord is not None:
             filters['disable_coord'] = self.disable_coord
         if not filters:
             raise RuntimeError("A least a filter must be declared")
-        return {"bool":filters}
+        return {"bool": filters}
 
 
 class ConstantScoreQuery(Query):
@@ -411,7 +419,8 @@ class ConstantScoreQuery(Query):
         if not filters:
             raise QueryError("A filter is required")
         data['filter'] = filters
-        return {self._internal_name:data}
+        return {self._internal_name: data}
+
 
 class HasChildQuery(Query):
     _internal_name = "has_child"
@@ -423,12 +432,12 @@ class HasChildQuery(Query):
         self.query = query
 
     def serialize(self):
-        data = {
-             'type':self.type,
-             'query':self.query.serialize()}
+        data = {'type': self.type,
+                'query': self.query.serialize()}
         if self._scope is not None:
             data['_scope'] = self._scope
-        return {self._internal_name:data}
+        return {self._internal_name: data}
+
 
 class TopChildrenQuery(ConstantScoreQuery):
     _internal_name = "top_children"
@@ -451,31 +460,33 @@ class TopChildrenQuery(ConstantScoreQuery):
             filters.update(f.serialize())
 
         if self.score not in ["max", "min", "avg"]:
-            raise InvalidParameterQuery("Invalid value '%s' for score" % self.score)
+            msg = "Invalid value '%s' for score" % self.score
+            raise InvalidParameterQuery(msg)
 
-        return {self._internal_name:{
-                                     'type':self.type,
-                                     'query':filters,
-                                     'score':self.score,
-                                     'factor':self.factor,
-                                     "incremental_factor":self.incremental_factor}}
+        fields = {'type': self.type,
+                  'query': filters,
+                  'score': self.score,
+                  'factor': self.factor,
+                  "incremental_factor": self.incremental_factor}
+        return {self._internal_name: fields}
+
 
 class NestedQuery(Query):
     """
-    Nested query allows to query nested objects / docs (see nested mapping). 
-    The query is executed against the nested objects / docs as if they were 
-    indexed as separate docs (they are, internally) and resulting in the root 
+    Nested query allows to query nested objects / docs (see nested mapping).
+    The query is executed against the nested objects / docs as if they were
+    indexed as separate docs (they are, internally) and resulting in the root
     parent doc (or parent nested mapping).
-    
-    The query path points to the nested object path, and the query (or filter) 
-    includes the query that will run on the nested docs matching the direct 
+
+    The query path points to the nested object path, and the query (or filter)
+    includes the query that will run on the nested docs matching the direct
     path, and joining with the root parent docs.
 
-    The score_mode allows to set how inner children matching affects scoring of 
+    The score_mode allows to set how inner children matching affects scoring of
     parent. It defaults to avg, but can be total, max and none.
 
-    Multi level nesting is automatically supported, and detected, resulting in 
-    an inner nested query to automatically match the relevant nesting level 
+    Multi level nesting is automatically supported, and detected, resulting in
+    an inner nested query to automatically match the relevant nesting level
     (and not root) if it exists within another nested query.
     """
     _internal_name = "nested"
@@ -489,17 +500,19 @@ class NestedQuery(Query):
     def serialize(self):
 
         if self.score_mode and self.score_mode not in ['avg', "total", "max"]:
-            raise InvalidParameterQuery("Invalid score_mode: %s" % self.score_mode)
-        data = {
-             'path':self.path,
-             'score_mode':self.score_mode,
-             'query':self.query.serialize()}
-        return {self._internal_name:data}
+            msg = "Invalid score_mode: %s" % self.score_mode
+            raise InvalidParameterQuery(msg)
+        data = {'path': self.path,
+                'score_mode': self.score_mode,
+                'query': self.query.serialize()}
+        return {self._internal_name: data}
+
 
 class DisMaxQuery(Query):
     _internal_name = "dis_max"
 
-    def __init__(self, query=None, tie_breaker=0.0, boost=1.0, queries=None, **kwargs):
+    def __init__(self, query=None, tie_breaker=0.0, boost=1.0,
+                 queries=None, **kwargs):
         super(DisMaxQuery, self).__init__(**kwargs)
         self.queries = queries or []
         self.tie_breaker = tie_breaker
@@ -526,7 +539,8 @@ class DisMaxQuery(Query):
         filters["queries"] = [q.serialize() for q in self.queries]
         if not filters["queries"]:
             raise InvalidQuery("A least a query is required")
-        return {self._internal_name:filters}
+        return {self._internal_name: filters}
+
 
 class FieldQuery(Query):
     _internal_name = "field"
@@ -571,7 +585,8 @@ class FieldQuery(Query):
             val, filters = f.serialize()
             result[val] = filters
 
-        return {self._internal_name:result}
+        return {self._internal_name: result}
+
 
 class FilteredQuery(Query):
     _internal_name = "filtered"
@@ -582,12 +597,11 @@ class FilteredQuery(Query):
         self.filter = filter
 
     def serialize(self):
-        filters = {
-                   'query':self.query.serialize(),
-                   'filter':self.filter.serialize(),
-                   }
+        filters = {'query': self.query.serialize(),
+                   'filter': self.filter.serialize()}
 
-        return {self._internal_name:filters}
+        return {self._internal_name: filters}
+
 
 class MoreLikeThisFieldQuery(Query):
     _internal_name = "more_like_this_field"
@@ -619,7 +633,7 @@ class MoreLikeThisFieldQuery(Query):
         self.boost = boost
 
     def serialize(self):
-        filters = {'like_text':self.like_text}
+        filters = {'like_text': self.like_text}
 
         if self.percent_terms_to_match != 0.3:
             filters["percent_terms_to_match"] = self.percent_terms_to_match
@@ -642,7 +656,7 @@ class MoreLikeThisFieldQuery(Query):
 
         if self.boost != 1.0:
             filters["boost"] = self.boost
-        return {self._internal_name:{self.field:filters}}
+        return {self._internal_name: {self.field: filters}}
 
 
 class FuzzyLikeThisQuery(Query):
@@ -662,8 +676,8 @@ class FuzzyLikeThisQuery(Query):
         self.boost = boost
 
     def serialize(self):
-        filters = {'fields':self.fields,
-                   'like_text':self.like_text}
+        filters = {'fields': self.fields,
+                   'like_text': self.like_text}
 
         if self.ignore_tf:
             filters["ignore_tf"] = self.ignore_tf
@@ -675,14 +689,18 @@ class FuzzyLikeThisQuery(Query):
             filters["prefix_length"] = self.prefix_length
         if self.boost != 1.0:
             filters["boost"] = self.boost
-        return {self._internal_name:filters}
+        return {self._internal_name: filters}
+
 
 class FuzzyQuery(Query):
     """
-    A fuzzy based query that uses similarity based on Levenshtein (edit distance) algorithm.
+    A fuzzy based query that uses similarity based on Levenshtein (edit
+    distance) algorithm.
 
     Note
-        Warning: this query is not very scalable with its default prefix length of 0 - in this case, every term will be enumerated and cause an edit score calculation. Here is a simple example:
+        Warning: this query is not very scalable with its default prefix
+        length of 0 - in this case, every term will be enumerated and
+        cause an edit score calculation. Here is a simple example:
 
     """
     _internal_name = "fuzzy"
@@ -698,14 +716,13 @@ class FuzzyQuery(Query):
         self.prefix_length = prefix_length
 
     def serialize(self):
-        data = {
-                'value':self.value,
-                'min_similarity':self.min_similarity,
-                'prefix_length':self.prefix_length,
-                }
+        data = {'value': self.value,
+                'min_similarity': self.min_similarity,
+                'prefix_length': self.prefix_length}
         if self.boost:
             data['boost'] = self.boost
-        return {self._internal_name:{self.field:data}}
+        return {self._internal_name: {self.field: data}}
+
 
 class FuzzyLikeThisFieldQuery(Query):
     _internal_name = "fuzzy_like_this_field"
@@ -722,7 +739,7 @@ class FuzzyLikeThisFieldQuery(Query):
         self.boost = boost
 
     def serialize(self):
-        filters = {'like_text':self.like_text}
+        filters = {'like_text': self.like_text}
 
         if self.ignore_tf:
             filters["ignore_tf"] = self.ignore_tf
@@ -732,10 +749,12 @@ class FuzzyLikeThisFieldQuery(Query):
             filters["boost"] = self.boost
         if self.min_similarity != 0.5:
             filters["min_similarity"] = self.min_similarity
-        return {self._internal_name:{self.field:filters}}
+        return {self._internal_name: {self.field: filters}}
+
 
 class MatchAllQuery(Query):
     _internal_name = "match_all"
+
     def __init__(self, boost=None, **kwargs):
         super(MatchAllQuery, self).__init__(**kwargs)
         self.boost = boost
@@ -747,7 +766,8 @@ class MatchAllQuery(Query):
                 filters['boost'] = self.boost
             else:
                 filters['boost'] = float(self.boost)
-        return {self._internal_name:filters}
+        return {self._internal_name: filters}
+
 
 class MoreLikeThisQuery(Query):
     _internal_name = "more_like_this"
@@ -778,8 +798,8 @@ class MoreLikeThisQuery(Query):
         self.boost = boost
 
     def serialize(self):
-        filters = {'fields':self.fields,
-                   'like_text':self.like_text}
+        filters = {'fields': self.fields,
+                   'like_text': self.like_text}
 
         if self.percent_terms_to_match != 0.3:
             filters["percent_terms_to_match"] = self.percent_terms_to_match
@@ -802,7 +822,8 @@ class MoreLikeThisQuery(Query):
 
         if self.boost != 1.0:
             filters["boost"] = self.boost
-        return {self._internal_name:filters}
+        return {self._internal_name: filters}
+
 
 class FilterQuery(Query):
     _internal_name = "query"
@@ -824,10 +845,11 @@ class FilterQuery(Query):
         filters = [f.serialize() for f in self._filters]
         if not filters:
             raise RuntimeError("A least one filter must be declared")
-        return {self._internal_name:{"filter":filters}}
+        return {self._internal_name: {"filter": filters}}
 
     def __repr__(self):
         return str(self.q)
+
 
 class PrefixQuery(Query):
     def __init__(self, field=None, prefix=None, boost=None, **kwargs):
@@ -838,7 +860,7 @@ class PrefixQuery(Query):
             self.add(field, prefix, boost)
 
     def add(self, field, prefix, boost=None):
-        match = {'prefix':prefix}
+        match = {'prefix': prefix}
         if boost:
             if isinstance(boost, (float, int)):
                 match['boost'] = boost
@@ -849,7 +871,8 @@ class PrefixQuery(Query):
     def serialize(self):
         if not self._values:
             raise RuntimeError("A least a field/prefix pair must be added")
-        return {"prefix":self._values}
+        return {"prefix": self._values}
+
 
 class TermQuery(Query):
     """Match documents that have fields that contain a term (not analyzed).
@@ -867,7 +890,7 @@ class TermQuery(Query):
             self.add(field, value, boost)
 
     def add(self, field, value, boost=None):
-        match = {'value':value}
+        match = {'value': value}
         if boost:
             if isinstance(boost, (float, int)):
                 match['boost'] = boost
@@ -881,7 +904,8 @@ class TermQuery(Query):
     def serialize(self):
         if not self._values:
             raise RuntimeError("A least a field/value pair must be added")
-        return {self._internal_name:self._values}
+        return {self._internal_name: self._values}
+
 
 class TermsQuery(TermQuery):
     _internal_name = "terms"
@@ -899,9 +923,11 @@ class TermsQuery(TermQuery):
             else:
                 self._values['minimum_match'] = int(minimum_match)
 
+
 class TextQuery(Query):
     """
-    A new family of text queries that accept text, analyzes it, and constructs a query out of it.
+    A new family of text queries that accept text, analyzes it, and
+    constructs a query out of it.
     """
     _internal_name = "text"
     _valid_types = ['boolean', "phrase", "phrase_prefix"]
@@ -921,12 +947,14 @@ class TextQuery(Query):
                  operator="or", analyzer=None):
 
         if type not in self._valid_types:
-            raise QueryError("Invalid value '%s' for type: allowed values are %s" % (type, self._valid_types))
+            msg = "Invalid value '%s' for type: allowed values are %s"
+            raise QueryError(msg % (type, self._valid_types))
         if operator not in self._valid_operators:
-            raise QueryError("Invalid value '%s' for operator: allowed values are %s" % (operator, self._valid_operators))
+            msg = "Invalid value '%s' for operator: allowed values are %s"
+            raise QueryError(msg % (operator, self._valid_operators))
 
-        query = {'type':type,
-                'query':text}
+        query = {'type': type,
+                 'query': text}
         if slop != 0:
             query["slop"] = slop
         if fuzziness is not None:
@@ -941,13 +969,15 @@ class TextQuery(Query):
         self.queries[field] = query
 
     def serialize(self):
-        return {self._internal_name:self.queries}
+        return {self._internal_name: self.queries}
+
 
 class RegexTermQuery(TermQuery):
     _internal_name = "regex_term"
 
     def __init__(self, *args, **kwargs):
         super(RegexTermQuery, self).__init__(*args, **kwargs)
+
 
 class StringQuery(Query):
     _internal_name = "query_string"
@@ -986,12 +1016,12 @@ class StringQuery(Query):
         self.use_dis_max = use_dis_max
         self.tie_breaker = tie_breaker
 
-
     def serialize(self):
         filters = {}
         if self.default_field:
             filters["default_field"] = self.default_field
-            if not isinstance(self.default_field, (str, unicode)) and isinstance(self.default_field, list):
+            if not isinstance(self.default_field, (str, unicode)) and \
+               isinstance(self.default_field, list):
                 if not self.use_dis_max:
                     filters["use_dis_max"] = self.use_dis_max
                 if self.tie_breaker != 0:
@@ -1006,7 +1036,8 @@ class StringQuery(Query):
         if not self.lowercase_expanded_terms:
             filters["lowercase_expanded_terms"] = self.lowercase_expanded_terms
         if not self.enable_position_increments:
-            filters["enable_position_increments"] = self.enable_position_increments
+            enable_pos_incs = self.enable_position_increments
+            filters["enable_position_increments"] = enable_pos_incs
         if self.fuzzy_prefix_length:
             filters["fuzzy_prefix_length"] = self.fuzzy_prefix_length
         if self.fuzzy_min_sim != 0.5:
@@ -1037,7 +1068,8 @@ class StringQuery(Query):
             if not self.query.strip():
                 raise InvalidQuery("The query is empty")
             filters["query"] = self.query
-        return {self._internal_name:filters}
+        return {self._internal_name: filters}
+
 
 class RangeQuery(Query):
 
@@ -1058,7 +1090,8 @@ class RangeQuery(Query):
         if not self.ranges:
             raise RuntimeError("A least a range must be declared")
         filters = dict([r.serialize() for r in self.ranges])
-        return {"range":filters}
+        return {"range": filters}
+
 
 class SpanFirstQuery(TermQuery):
     _internal_name = "span_first"
@@ -1073,8 +1106,9 @@ class SpanFirstQuery(TermQuery):
     def serialize(self):
         if not self._values:
             raise RuntimeError("A least a field/value pair must be added")
-        return {self._internal_name:{"match":{"span_first":self._values},
-                                     "end":self.end}}
+        return {self._internal_name: {"match": {"span_first": self._values},
+                                                "end": self.end}}
+
 
 class SpanNearQuery(Query):
     """
@@ -1115,7 +1149,8 @@ class SpanNearQuery(Query):
 
         data['clauses'] = [clause.serialize() for clause in self.clauses]
 
-        return {self._internal_name:data}
+        return {self._internal_name: data}
+
 
 class SpanNotQuery(Query):
     """
@@ -1145,13 +1180,15 @@ class SpanNotQuery(Query):
         data['include'] = self.include.serialize()
         data['exclude'] = self.exclude.serialize()
 
-        return {self._internal_name:data}
+        return {self._internal_name: data}
+
 
 def is_a_spanquery(obj):
     """
     Returns if the object is a span query
     """
     return isinstance(obj, (SpanTermQuery, SpanFirstQuery, SpanOrQuery))
+
 
 class SpanOrQuery(Query):
     """
@@ -1174,7 +1211,8 @@ class SpanOrQuery(Query):
         if not self.clauses or len(self.clauses) == 0:
             raise RuntimeError("A least a Span*Query must be added to clauses")
         clauses = [clause.serialize() for clause in self.clauses]
-        return {self._internal_name:{"clauses":clauses}}
+        return {self._internal_name: {"clauses": clauses}}
+
 
 class SpanTermQuery(TermQuery):
     _internal_name = "span_term"
@@ -1183,12 +1221,12 @@ class SpanTermQuery(TermQuery):
         super(SpanTermQuery, self).__init__(**kwargs)
 
 
-
 class WildcardQuery(TermQuery):
     _internal_name = "wildcard"
 
     def __init__(self, *args, **kwargs):
         super(WildcardQuery, self).__init__(*args, **kwargs)
+
 
 class CustomScoreQuery(Query):
     _internal_name = "custom_score"
@@ -1221,13 +1259,15 @@ class CustomScoreQuery(Query):
             data['params'] = self.params
         if self.lang:
             data['lang'] = self.lang
-        return {self._internal_name:data}
+        return {self._internal_name: data}
 
     def __repr__(self):
         return str(self.q)
 
+
 class IdsQuery(Query):
     _internal_name = "ids"
+
     def __init__(self, type, values, **kwargs):
         super(IdsQuery, self).__init__(**kwargs)
         self.type = type
@@ -1242,7 +1282,7 @@ class IdsQuery(Query):
         else:
             data['values'] = self.values
 
-        return {self._internal_name:data}
+        return {self._internal_name: data}
 
 
 class PercolatorQuery(Query):

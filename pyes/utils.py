@@ -2,8 +2,10 @@
 # -*- coding: utf-8 -*-
 
 __author__ = 'Alberto Paro'
-__all__ = ['clean_string', "ESRange", "ESRangeOp", "string_b64encode", "string_b64decode"]
+__all__ = ['clean_string', "ESRange", "ESRangeOp", "string_b64encode",
+           "string_b64decode"]
 import base64
+
 
 def string_b64encode(s):
     """
@@ -12,15 +14,19 @@ def string_b64encode(s):
     """
     return base64.urlsafe_b64encode(s).strip('=')
 
+
 def string_b64decode(s):
     return base64.urlsafe_b64decode(s + '=' * (len(s) % 4))
+
 
 # Characters that are part of Lucene query syntax must be stripped
 # from user input: + - && || ! ( ) { } [ ] ^ " ~ * ? : \
 # See: http://lucene.apache.org/java/3_0_2/queryparsersyntax.html#Escaping
-SPECIAL_CHARS = [33, 34, 38, 40, 41, 42, 45, 58, 63, 91, 92, 93, 94, 123, 124, 125, 126]
+SPECIAL_CHARS = [33, 34, 38, 40, 41, 42, 45, 58, 63, 91, 92, 93, 94, 123,
+                 124, 125, 126]
 UNI_SPECIAL_CHARS = dict((c, None) for c in SPECIAL_CHARS)
 STR_SPECIAL_CHARS = ''.join([chr(c) for c in SPECIAL_CHARS])
+
 
 class EqualityComparableUsingAttributeDictionary(object):
     """
@@ -37,9 +43,11 @@ class EqualityComparableUsingAttributeDictionary(object):
     def __ne__(self, other):
         return not self == other
 
+
 class ESRange(EqualityComparableUsingAttributeDictionary):
-    def __init__(self, field, from_value=None, to_value=None, include_lower=None,
-                 include_upper=None, boost=None, **kwargs):
+    def __init__(self, field, from_value=None, to_value=None,
+                 include_lower=None, include_upper=None, boost=None,
+                 **kwargs):
         self.field = field
         self.from_value = from_value
         self.to_value = to_value
@@ -61,6 +69,7 @@ class ESRange(EqualityComparableUsingAttributeDictionary):
             filters['boost'] = self.boost
         return self.field, filters
 
+
 class ESRangeOp(ESRange):
     def __init__(self, field, op, value, boost=None):
         from_value = to_value = include_lower = include_upper = None
@@ -79,6 +88,7 @@ class ESRangeOp(ESRange):
         super(ESRangeOp, self).__init__(field, from_value, to_value,
                 include_lower, include_upper, boost)
 
+
 def clean_string(text):
     """
     Remove Lucene reserved characters from query string
@@ -86,6 +96,7 @@ def clean_string(text):
     if isinstance(text, unicode):
         return text.translate(UNI_SPECIAL_CHARS).strip()
     return text.translate(None, STR_SPECIAL_CHARS).strip()
+
 
 def keys_to_string(data):
     """

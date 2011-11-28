@@ -8,6 +8,7 @@ import unittest
 import pyes.exceptions as exc
 import pyes.scriptfields as sf
 
+
 class ScriptFieldsTest(unittest.TestCase):
 
     def test_scriptfieldserror_imported(self):

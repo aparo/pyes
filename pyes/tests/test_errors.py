@@ -1,11 +1,13 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-Unit tests for pyes.  These require an es server with thrift plugin running on the default port (localhost:9500).
+Unit tests for pyes.  These require an es server with thrift plugin running
+on the default port (localhost:9500).
 """
 import unittest
 from pyes.tests import ESTestCase
 import pyes.exceptions
+
 
 class ErrorReportingTestCase(ESTestCase):
     def setUp(self):
@@ -58,9 +60,11 @@ class ErrorReportingTestCase(ESTestCase):
         """
         err = self.checkRaises(pyes.exceptions.ElasticSearchException,
                                self.conn._send_request, 'GET', '_bad_request')
-        self.assertEqual(str(err), "No handler found for uri [/_bad_request] and method [GET]")
+        err_msg = "No handler found for uri [/_bad_request] and method [GET]"
+        self.assertEqual(str(err), err_msg)
+
         self.assertEqual(err.status, 400)
-        self.assertEqual(err.result, 'No handler found for uri [/_bad_request] and method [GET]')
+        self.assertEqual(err.result, err_msg)
 
     def testDelete(self):
         """Test error reported by deleting a missing document.

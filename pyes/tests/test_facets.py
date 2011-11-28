@@ -1,7 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """
-Unit tests for pyes.  These require an es server with thrift plugin and the lang-javascript plugin running on the default port (localhost:9500).
+Unit tests for pyes.  These require an es server with thrift plugin and the
+lang-javascript plugin running on the default port (localhost:9500).
 """
 from pyestest import ESTestCase
 from pyes.facets import DateHistogramFacet
@@ -12,36 +13,38 @@ import unittest
 
 import datetime
 
+
 class FacetSearchTestCase(ESTestCase):
     def setUp(self):
         super(FacetSearchTestCase, self).setUp()
-        mapping = { u'parsedtext': {'boost': 1.0,
-                         'index': 'analyzed',
-                         'store': 'yes',
-                         'type': u'string',
-                         "term_vector" : "with_positions_offsets"},
-                 u'name': {'boost': 1.0,
-                            'index': 'analyzed',
-                            'store': 'yes',
-                            'type': u'string',
-                            "term_vector" : "with_positions_offsets"},
-                 u'title': {'boost': 1.0,
-                            'index': 'analyzed',
-                            'store': 'yes',
-                            'type': u'string',
-                            "term_vector" : "with_positions_offsets"},
-                 u'position': {'store': 'yes',
-                               'type': u'integer'},
-                 u'tag': {'store': 'yes',
-                          'type': u'string'},
-                 u'date': {'store': 'yes',
-                           'type': u'date'},
-                 u'uuid': {'boost': 1.0,
-                           'index': 'not_analyzed',
-                           'store': 'yes',
-                           'type': u'string'}}
+        mapping = {u'parsedtext': {'boost': 1.0,
+                                   'index': 'analyzed',
+                                   'store': 'yes',
+                                   'type': u'string',
+                                   "term_vector": "with_positions_offsets"},
+                   u'name': {'boost': 1.0,
+                             'index': 'analyzed',
+                             'store': 'yes',
+                             'type': u'string',
+                             "term_vector": "with_positions_offsets"},
+                   u'title': {'boost': 1.0,
+                              'index': 'analyzed',
+                              'store': 'yes',
+                              'type': u'string',
+                              "term_vector": "with_positions_offsets"},
+                   u'position': {'store': 'yes',
+                                 'type': u'integer'},
+                   u'tag': {'store': 'yes',
+                            'type': u'string'},
+                   u'date': {'store': 'yes',
+                             'type': u'date'},
+                   u'uuid': {'boost': 1.0,
+                             'index': 'not_analyzed',
+                             'store': 'yes',
+                             'type': u'string'}}
         self.conn.create_index(self.index_name)
-        self.conn.put_mapping(self.document_type, {'properties':mapping}, self.index_name)
+        self.conn.put_mapping(self.document_type, {'properties': mapping},
+                              self.index_name)
         self.conn.index({"name": "Joe Tester",
                          "parsedtext": "Joe Testere nice guy",
                          "uuid": "11111",
@@ -49,7 +52,7 @@ class FacetSearchTestCase(ESTestCase):
                          "tag": "foo",
                          "date": datetime.date(2011, 5, 16)},
                         self.index_name, self.document_type, 1)
-        self.conn.index({"name":" Bill Baloney",
+        self.conn.index({"name": "Bill Baloney",
                          "parsedtext": "Bill Testere nice guy",
                          "uuid": "22222",
                          "position": 2,
@@ -69,10 +72,12 @@ class FacetSearchTestCase(ESTestCase):
         q = MatchAllQuery()
         q = q.search()
         q.facet.add_term_facet('tag')
-        resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
+        resultset = self.conn.search(query=q, indices=self.index_name,
+                                     doc_types=[self.document_type])
         self.assertEquals(resultset.total, 3)
-        self.assertEquals(resultset.facets.tag.terms, [{u'count': 2, u'term': u'foo'},
-                                                             {u'count': 1, u'term': u'bar'}])
+        self.assertEquals(resultset.facets.tag.terms,
+                          [{u'count': 2, u'term': u'foo'},
+                           {u'count': 1, u'term': u'bar'}])
 
         q2 = MatchAllQuery()
         q2 = q2.search()
@@ -92,10 +97,13 @@ class FacetSearchTestCase(ESTestCase):
         q = FilteredQuery(q, TermFilter('tag', 'foo'))
         q = q.search()
         q.facet.add_term_facet('tag')
-        resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
+        resultset = self.conn.search(query=q, indices=self.index_name,
+                                     doc_types=[self.document_type])
         self.assertEquals(resultset.total, 2)
-        self.assertEquals(resultset.facets['tag']['terms'], [{u'count': 2, u'term': u'foo'}])
-        self.assertEquals(resultset.facets.tag.terms, [{u'count': 2, u'term': u'foo'}])
+        self.assertEquals(resultset.facets['tag']['terms'],
+                          [{u'count': 2, u'term': u'foo'}])
+        self.assertEquals(resultset.facets.tag.terms,
+                          [{u'count': 2, u'term': u'foo'}])
 
         q2 = MatchAllQuery()
         q2 = FilteredQuery(q2, TermFilter('tag', 'foo'))
@@ -119,28 +127,35 @@ class FacetSearchTestCase(ESTestCase):
         q.facet.facets.append(DateHistogramFacet('date_facet',
                                                  field='date',
                                                  interval='month'))
-        resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
+        resultset = self.conn.search(query=q, indices=self.index_name,
+                                     doc_types=[self.document_type])
         self.assertEquals(resultset.total, 3)
-        self.assertEquals(resultset.facets.date_facet.entries, [{u'count': 2, u'time': 1301616000000},
-                                                                      {u'count': 1, u'time': 1304208000000}])
-        self.assertEquals(datetime.datetime.fromtimestamp(1301616000000 / 1000.).date(),
-                          datetime.date(2011, 04, 01))
-        self.assertEquals(datetime.datetime.fromtimestamp(1304208000000 / 1000.).date(),
-                          datetime.date(2011, 05, 01))
+        self.assertEquals(resultset.facets.date_facet.entries,
+                          [{u'count': 2, u'time': 1301616000000},
+                           {u'count': 1, u'time': 1304208000000}])
+        d1 = datetime.datetime.fromtimestamp(1301616000000 / 1000.).date()
+        d2 = datetime.datetime.fromtimestamp(1304208000000 / 1000.).date()
+        self.assertEquals(d1, datetime.date(2011, 04, 01))
+        self.assertEquals(d2, datetime.date(2011, 05, 01))
 
     def test_date_facet_filter(self):
         q = MatchAllQuery()
-        q = FilteredQuery(q, RangeFilter(qrange=ESRange('date',
-                                                        datetime.date(2011, 4, 1),
-                                                        datetime.date(2011, 5, 1),
-                                                        include_upper=False)))
+        range = ESRange('date',
+                        datetime.date(2011, 4, 1),
+                        datetime.date(2011, 5, 1),
+                        include_upper=False)
+
+        q = FilteredQuery(q, RangeFilter(qrange=range))
         q = q.search()
         q.facet.facets.append(DateHistogramFacet('date_facet',
                                                  field='date',
                                                  interval='month'))
-        resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
+        resultset = self.conn.search(query=q, indices=self.index_name,
+                                     doc_types=[self.document_type])
         self.assertEquals(resultset.total, 2)
-        self.assertEquals(resultset.facets['date_facet']['entries'], [{u'count': 2, u'time': 1301616000000}])
+        self.assertEquals(resultset.facets['date_facet']['entries'],
+                          [{u'count': 2, u'time': 1301616000000}])
+
 
 if __name__ == "__main__":
     unittest.main()

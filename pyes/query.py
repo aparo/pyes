@@ -95,7 +95,8 @@ class Search(EqualityComparableUsingAttributeDictionary):
                  track_scores=None,
                  script_fields=None,
                  index_boost={},
-                 min_score=None):
+                 min_score=None,
+                 stats=None):
         """
         fields: if is [], the _source is not returned
         """
@@ -113,6 +114,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
         self.script_fields = script_fields
         self.index_boost = index_boost
         self.min_score = min_score
+        self.stats = stats
 
     def get_facet_factory(self):
         """
@@ -160,6 +162,8 @@ class Search(EqualityComparableUsingAttributeDictionary):
             res['min_score'] = self.min_score
         if self.facet.facets:
             res.update(self.facet.q)
+        if self.stats:
+            res['stats'] = self.stats
         return res
 
     def add_highlight(self, field, fragment_size=None,

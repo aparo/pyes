@@ -240,6 +240,22 @@ class QuerySearchTestCase(ESTestCase):
         self.assertEquals(resultset[0]._score, 8.0)
         self.assertEquals(resultset[1]._score, 7.0)
         self.assertEquals(resultset.max_score, 8.0)
+        
+    def test_Search_stats(self):
+        no_stats_group = Search(TermQuery("foo", "bar"))
+        one_stats_group = Search(TermQuery("foo", "bar"), stats="hello")
+        many_stats_groups = Search(TermQuery("foo", "bar"), stats=["hello", "there", "test"])
+        
+        self.assertEquals(no_stats_group.stats, None)
+        self.assertEquals(one_stats_group.stats, "hello")
+        self.assertEquals(many_stats_groups.stats, ["hello", "there", "test"])
+        
+        self.assertEquals(no_stats_group.serialize(),
+          {"query": {"term": {"foo": "bar"}}})
+        self.assertEquals(one_stats_group.serialize(),
+          {"query": {"term": {"foo": "bar"}}, "stats": "hello"})
+        self.assertEquals(many_stats_groups.serialize(),
+          {"query": {"term": {"foo": "bar"}}, "stats": ["hello", "there", "test"]})
 
     def test_Search_equality(self):
         self.assertEquals(Search(),

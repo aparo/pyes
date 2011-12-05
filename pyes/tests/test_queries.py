@@ -5,7 +5,7 @@ Unit tests for pyes.  These require an es server with thrift plugin and the lang
 """
 from pyestest import ESTestCase
 from pyes.query import *
-from pyes.filters import TermFilter, ANDFilter, ORFilter, RangeFilter
+from pyes.filters import TermFilter, ANDFilter, ORFilter, RangeFilter, RawFilter, IdsFilter
 from pyes.utils import ESRangeOp
 import unittest
 
@@ -240,6 +240,22 @@ class QuerySearchTestCase(ESTestCase):
         self.assertEquals(resultset[0]._score, 8.0)
         self.assertEquals(resultset[1]._score, 7.0)
         self.assertEquals(resultset.max_score, 8.0)
+        
+    def test_Search_stats(self):
+        no_stats_group = Search(TermQuery("foo", "bar"))
+        one_stats_group = Search(TermQuery("foo", "bar"), stats="hello")
+        many_stats_groups = Search(TermQuery("foo", "bar"), stats=["hello", "there", "test"])
+        
+        self.assertEquals(no_stats_group.stats, None)
+        self.assertEquals(one_stats_group.stats, "hello")
+        self.assertEquals(many_stats_groups.stats, ["hello", "there", "test"])
+        
+        self.assertEquals(no_stats_group.serialize(),
+          {"query": {"term": {"foo": "bar"}}})
+        self.assertEquals(one_stats_group.serialize(),
+          {"query": {"term": {"foo": "bar"}}, "stats": "hello"})
+        self.assertEquals(many_stats_groups.serialize(),
+          {"query": {"term": {"foo": "bar"}}, "stats": ["hello", "there", "test"]})
 
     def test_Search_equality(self):
         self.assertEquals(Search(),
@@ -292,6 +308,31 @@ class QuerySearchTestCase(ESTestCase):
           ESRangeOp("foo", "gt", 5))
         self.assertEquals(ESRangeOp("bar", "lt", 6),
           ESRangeOp("bar", "lt", 6))
+        
+    def test_RawFilter_dict(self):
+        filter_ = dict(ids=dict(type="my_type", values=["1", "4", "100"]))
+        self.assertEqual(RawFilter(filter_), RawFilter(filter_))
+        self.assertEqual(RawFilter(filter_).serialize(), filter_)
+        self.assertEqual(RawFilter(filter_).serialize(),
+                         IdsFilter("my_type", ["1", "4", "100"]).serialize())
+  
+    def test_RawFilter_string(self):
+        filter_ = dict(ids=dict(type="my_type", values=["1", "4", "100"]))
+        filter_string = json.dumps(filter_)
+        self.assertEqual(RawFilter(filter_string), RawFilter(filter_string))
+        self.assertEqual(RawFilter(filter_string), RawFilter(filter_))
+        self.assertEqual(RawFilter(filter_string).serialize(), filter_)
+        self.assertEqual(RawFilter(filter_string).serialize(),
+                         IdsFilter("my_type", ["1", "4", "100"]).serialize())
+          
+    def test_RawFilter_search(self):
+        filter_ = dict(ids=dict(type="my_type", values=["1", "4", "100"]))
+        filter_string = json.dumps(filter_)
+    
+        self.assertEqual(Search(filter=RawFilter(filter_)).serialize(),
+          dict(filter=filter_))
+        self.assertEqual(Search(filter=RawFilter(filter_string)).serialize(),
+          dict(filter=filter_))
 
 if __name__ == "__main__":
     unittest.main()

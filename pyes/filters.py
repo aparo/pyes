@@ -4,7 +4,7 @@
 __author__ = 'Alberto Paro'
 from exceptions import QueryParameterError
 from utils import ESRange, EqualityComparableUsingAttributeDictionary
-from es import encode_json
+from es import encode_json, json
 
 class Filter(EqualityComparableUsingAttributeDictionary):
     def __init__(self, **kwargs):
@@ -410,3 +410,16 @@ class IdsFilter(Filter):
             data['values'] = self.values
 
         return {self._internal_name:data}
+
+class RawFilter(Filter):
+    """
+    Uses exactly the filter provided as an ES filter.
+    """
+    def __init__(self, filter_text_or_dict):
+      if isinstance(filter_text_or_dict, basestring):
+        self._filter = json.loads(filter_text_or_dict)
+      else:
+        self._filter = filter_text_or_dict
+
+    def serialize(self):
+      return self._filter

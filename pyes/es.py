@@ -374,9 +374,16 @@ class ES(object):
     def _dump_curl_request(self, request):
         self.dump_curl.write("# [%s]\n" % datetime.now().isoformat())
         self.dump_curl.write("curl -X" + Method._VALUES_TO_NAMES[request.method])
-        self.dump_curl.write(" http://" + self.servers[0] + request.uri)
+        self.dump_curl.write(" '")
+        self.dump_curl.write("http://" + self.servers[0] + request.uri)
+        if request.parameters:
+            params = request.parameters
+            self.dump_curl.write("?")
+            for param in params:
+                self.dump_curl.write("%s=%s" % (param, params[param]))
+        self.dump_curl.write("'")
         if request.body:
-            self.dump_curl.write(" -d \"%s\"" % request.body.replace('"', '\\"'))
+            self.dump_curl.write(" -d '%s'" % request.body.replace("'", "'\\''"))
         self.dump_curl.write("\n")
 
     #---- Admin commands

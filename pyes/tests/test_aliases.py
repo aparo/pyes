@@ -10,11 +10,13 @@ import pyes.exceptions
 class ErrorReportingTestCase(ESTestCase):
     def setUp(self):
         super(ErrorReportingTestCase, self).setUp()
-        self.conn.set_alias('test-alias', [])
+        #self.conn.set_alias('test-alias', ['_river'])
+        #self.conn.delete_alias('test-alias', ['_river'])
         self.conn.delete_index_if_exists('test-index2')
 
     def tearDown(self):
-        self.conn.set_alias('test-alias', [])
+        #self.conn.set_alias('test-alias', ['_river'])
+        #self.conn.delete_alias('test-alias', ['_river'])
         self.conn.delete_index_if_exists('test-index2')
 
     def testCreateDeleteAliases(self):

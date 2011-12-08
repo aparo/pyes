@@ -392,7 +392,8 @@ class ES(object):
         Retrieve the status of one or more indices
         """
         if not indices:
-            indices = ["_all"]
+            #indices = ["_all"]
+            indices = self.default_indices
 #        indices = self._validate_indices(indices)
         path = self._make_path([','.join(indices), '_status'])
         return self._send_request('GET', path)
@@ -497,7 +498,7 @@ class ES(object):
         Otherwise, returns a list of index names.
 
         """
-        status = self.status(alias)
+        status = self.status([alias])
         return status['indices'].keys()
 
     def change_aliases(self, commands):

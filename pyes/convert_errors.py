@@ -75,8 +75,10 @@ def raise_if_error(status, result, request=None):
             msg = bits[1]
             if msg.endswith(']'):
                 msg = msg[:-1]
+            '''
             if request:
                 msg += ' (' + str(request) + ')'
+            '''
             raise excClass(msg, status, result, request)
 
     for pattern, excClass in exception_patterns_trailing.iteritems():

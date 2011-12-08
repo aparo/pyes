@@ -6,7 +6,7 @@ Unit tests for pyes.  These require an es server with thrift plugin running on t
 import unittest
 from pyes.tests import ESTestCase
 from pyes import TermQuery
-from pyes.exceptions import IndexAlreadyExistsException
+from pyes.exceptions import IndexAlreadyExistsException, DocumentAlreadyExistsEngineException
 from time import sleep
 
 class IndexingTestCase(ESTestCase):

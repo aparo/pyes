@@ -925,7 +925,10 @@ class ES(object):
         Return the filename and memory data stream
         """
         data = self.get(index, doc_type, id)
-        return data["_source"]['_name'], base64.standard_b64decode(data["_source"]['content'])
+        if not data.has_key('_source'):
+            data['_source'] = { '_name': None }
+        return data["_source"]['_name'], base64.standard_b64decode(data['content'])
+        #return data["_source"]['_name'], base64.standard_b64decode(data["_source"]['content'])
 
     def delete(self, index, doc_type, id, bulk=False, querystring_args=None):
         """

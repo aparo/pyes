@@ -37,7 +37,7 @@ exception_patterns_trailing = {
     '] Already exists': pyes.exceptions.AlreadyExistsException,
 }
 
-def raise_if_error(status, result):
+def raise_if_error(status, result, request=None):
     """Raise an appropriate exception if the result is an error.
 
     Any result with a status code of 400 or higher is considered an error.
@@ -48,6 +48,9 @@ def raise_if_error(status, result):
     The status code and result can be retrieved from the exception by accessing its
     status and result properties.
 
+    Optionally, this can take the original RestRequest instance which generate this 
+    error, which will then get included in the exception.
+
     """
     assert isinstance(status, int)
 
@@ -55,10 +58,10 @@ def raise_if_error(status, result):
         return
 
     if status == 404 and isinstance(result, dict) and 'error' not in result:
-        raise pyes.exceptions.NotFoundException("Item not found", status, result)
+        raise pyes.exceptions.NotFoundException("Item not found", status, result, request)
 
     if not isinstance(result, dict) or 'error' not in result:
-        raise pyes.exceptions.ElasticSearchException("Unknown exception type", status, result)
+        raise pyes.exceptions.ElasticSearchException("Unknown exception type", status, result, request)
 
     error = result['error']
     if '; nested: ' in error:
@@ -72,13 +75,15 @@ def raise_if_error(status, result):
             msg = bits[1]
             if msg.endswith(']'):
                 msg = msg[:-1]
-            raise excClass(msg, status, result)
+            if request:
+                msg += ' (' + str(request) + ')'
+            raise excClass(msg, status, result, request)
 
     for pattern, excClass in exception_patterns_trailing.iteritems():
         if not error.endswith(pattern):
             continue
         # For these exceptions, the returned value is the whole descriptive
         # message.
-        raise excClass(error, status, result)
+        raise excClass(error, status, result, request)
 
-    raise pyes.exceptions.ElasticSearchException(error, status, result)
+    raise pyes.exceptions.ElasticSearchException(error, status, result, request)

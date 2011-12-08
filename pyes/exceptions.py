@@ -54,10 +54,14 @@ class ElasticSearchException(Exception):
     appropriate.
 
     """
-    def __init__(self, error, status=None, result=None):
+    def __init__(self, error, status=None, result=None, request=None):
         super(ElasticSearchException, self).__init__(error)
         self.status = status
-        self.result = result
+        if request:
+            self.result = str(result) + str(request)
+        else:
+            self.result = result
+        self.request = request
 
 class ElasticSearchIllegalArgumentException(ElasticSearchException):
     pass

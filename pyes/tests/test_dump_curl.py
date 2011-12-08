@@ -22,7 +22,8 @@ class DumpCurlTestCase(ESTestCase):
         self.assertTrue('error' not in result)
 
         dump = dump.getvalue()
-        self.assertTrue('test-index/test-type -d \"{\\"title\\": \\"Hi\\"}\"\n' in dump)
+        print dump
+        self.assertTrue('test-index/test-type\' -d \'{"title": "Hi"}\'\n' in dump)
 
 if __name__ == "__main__":
     unittest.main()

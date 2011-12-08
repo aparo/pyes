@@ -809,6 +809,19 @@ class ES(object):
         path = self._make_path(parts)
         return self._send_request('GET', path)
 
+    def index_stats(self, indices=None):
+        """
+        http://www.elasticsearch.org/guide/reference/api/admin-indices-stats.html
+        """
+        parts = ["_stats"]
+        if indices:
+            if isinstance(indices, basestring):
+                indices = [indices]
+            parts = [",".join(indices), "_stats"]
+
+        path = self._make_path(parts)
+        return self._send_request('GET', path)
+
     def index_raw_bulk(self, header, document):
         """
         Function helper for fast inserting

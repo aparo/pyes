@@ -934,8 +934,8 @@ class TextQuery(Query):
             query["prefix_length"] = prefix_length
         if max_expansions != 2147483647:
             query["max_expansions"] = max_expansions
-#        if operator:
-#            query["operator"] = operator
+        if operator:
+            query["operator"] = operator
 
         self.queries[field] = query
 

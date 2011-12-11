@@ -15,6 +15,8 @@ except ImportError:
 
 import logging
 from datetime import date, datetime
+from urllib import urlencode
+from urlparse import urlunsplit
 import base64
 import time
 from StringIO import StringIO
@@ -65,7 +67,7 @@ class ElasticSearchModel(DotDict):
             self.update(item.pop("_source", DotDict()))
             self.update(item.pop("fields", {}))
             self.meta = DotDict([(k.lstrip("_"), v) for k, v in item.items()])
-            self.meta.parent = self.pop("_parent", None) 
+            self.meta.parent = self.pop("_parent", None)
             self.meta.connection = args[0]
         else:
             self.update(dict(*args, **kwargs))
@@ -372,19 +374,15 @@ class ES(object):
         return indices
 
     def _dump_curl_request(self, request):
-        self.dump_curl.write("# [%s]\n" % datetime.now().isoformat())
-        self.dump_curl.write("curl -X" + Method._VALUES_TO_NAMES[request.method])
-        self.dump_curl.write(" '")
-        self.dump_curl.write("http://" + self.servers[0] + request.uri)
-        if request.parameters:
-            params = request.parameters
-            self.dump_curl.write("?")
-            for param in params:
-                self.dump_curl.write("%s=%s" % (param, params[param]))
-        self.dump_curl.write("'")
+        print >> self.dump_curl, "# [%s]" % datetime.now().isoformat()
+        params = {'pretty': 'true'}
+        params.update(request.parameters)
+        method = Method._VALUES_TO_NAMES[request.method]
+        url = urlunsplit(('http', self.servers[0], request.uri, urlencode(params), ''))
+        curl_cmd = "curl -X%s '%s'" % (method, url)
         if request.body:
-            self.dump_curl.write(" -d '%s'" % request.body.replace("'", "'\\''"))
-        self.dump_curl.write("\n")
+            curl_cmd += " -d '%s'" % request.body
+        print >> self.dump_curl, curl_cmd
 
     #---- Admin commands
     def status(self, indices=None):

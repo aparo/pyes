@@ -40,7 +40,7 @@ from convert_errors import raise_if_error
 from pyes.exceptions import (InvalidParameter,
         ElasticSearchException, IndexAlreadyExistsException,
         IndexMissingException, NotFoundException, InvalidQuery,
-        ReduceSearchPhaseException
+        ReduceSearchPhaseException, VersionConflictEngineException
         )
 import collections
 
@@ -923,6 +923,42 @@ class ES(object):
         """
         data = self.get(index, doc_type, id)
         return data["_source"]['_name'], base64.standard_b64decode(data["_source"]['content'])
+
+    def update(self, extra_doc, index, doc_type, id, querystring_args=None,
+               update_func=None, attempts=2):
+        """
+        Update an already indexed typed JSON document.
+
+        The update happens client-side, i.e. the current document is retrieved,
+        updated locally and finally pushed to the server. This may repeat up to
+        ``attempts`` times in case of version conflicts.
+
+        :param update_func: A callable ``update_func(current_doc, extra_doc)``
+            that computes and returns the updated doc. Alternatively it may
+            update ``current_doc`` in place and return None. The default
+            ``update_func`` is ``dict.update``.
+
+        :param attempts: How many times to retry in case of version conflict.
+        """
+        if querystring_args is None:
+            querystring_args = {}
+
+        if update_func is None:
+            update_func = dict.update
+
+        for attempt in xrange(attempts - 1, -1, -1):
+            current_doc = self.get(index, doc_type, id, **querystring_args)
+            new_doc = update_func(current_doc, extra_doc)
+            if new_doc is None:
+                new_doc = current_doc
+            meta = new_doc.pop('meta')
+            try:
+                return self.index(new_doc, index, doc_type, id,
+                                  version=meta.version, querystring_args=querystring_args)
+            except VersionConflictEngineException:
+                if i <= 0:
+                    raise
+                self.refresh(index)
 
     def delete(self, index, doc_type, id, bulk=False, querystring_args=None):
         """

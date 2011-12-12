@@ -108,6 +108,37 @@ class IndexingTestCase(ESTestCase):
         self.assertResultContains(result, {'ok': True})
 
 
+    def testUpdate(self):
+        self.conn.index({"name":"Joe Tester", "sex":"male"},
+                        self.index_name, self.document_type, 1)
+        self.conn.refresh(self.index_name)
+        self.conn.update({"name":"Joe The Tester", "age": 23},
+                         self.index_name, self.document_type, 1)
+        self.conn.refresh(self.index_name)
+        result = self.conn.get(self.index_name, self.document_type, 1)
+        self.assertResultContains(result, {"name": "Joe The Tester", "sex":"male", "age": 23})
+        self.assertResultContains(result["meta"],
+            {"index": "test-index", "type": "test-type", "id": "1"})
+
+    def testUpdateUsingFunc(self):
+        def update_list_values(current, extra):
+            for k, v in extra.iteritems():
+                if isinstance(current.get(k), list):
+                    current[k].extend(v)
+                else:
+                    current[k] = v
+        self.conn.index({"name":"Joe Tester", "age": 23, "skills":["QA"]},
+                        self.index_name, self.document_type, 1)
+        self.conn.refresh(self.index_name)
+        self.conn.update({"age": 24, "skills":["cooking"]}, self.index_name,
+                         self.document_type, 1, update_func=update_list_values)
+        self.conn.refresh(self.index_name)
+        result = self.conn.get(self.index_name, self.document_type, 1)
+        self.assertResultContains(result, {"name": "Joe Tester", "age":24,
+                                           "skills": ["QA", "cooking"]})
+        self.assertResultContains(result["meta"],
+            {"index": "test-index", "type": "test-type", "id": "1"})
+
     def testGetByID(self):
         self.conn.index({"name":"Joe Tester"}, self.index_name, self.document_type, 1)
         self.conn.index({"name":"Bill Baloney"}, self.index_name, self.document_type, 2)

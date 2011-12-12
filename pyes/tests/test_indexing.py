@@ -6,7 +6,9 @@ Unit tests for pyes.  These require an es server with thrift plugin running on t
 import unittest
 from pyes.tests import ESTestCase
 from pyes import TermQuery
-from pyes.exceptions import IndexAlreadyExistsException
+from pyes.exceptions import (IndexAlreadyExistsException,
+                             DocumentAlreadyExistsEngineException,
+                             VersionConflictEngineException)
 from time import sleep
 
 class IndexingTestCase(ESTestCase):
@@ -107,7 +109,6 @@ class IndexingTestCase(ESTestCase):
         self.conn.delete_index("another-index")
         self.assertResultContains(result, {'ok': True})
 
-
     def testUpdate(self):
         self.conn.index({"name":"Joe Tester", "sex":"male"},
                         self.index_name, self.document_type, 1)
@@ -144,7 +145,9 @@ class IndexingTestCase(ESTestCase):
         self.conn.index({"name":"Bill Baloney"}, self.index_name, self.document_type, 2)
         self.conn.refresh(self.index_name)
         result = self.conn.get(self.index_name, self.document_type, 1)
-        self.assertResultContains(result, {'_type': 'test-type', '_id': '1', '_source': {'name': 'Joe Tester'}, '_index': 'test-index'})
+        self.assertResultContains(result, {"name": "Joe Tester"})
+        self.assertResultContains(result["meta"], {"index": "test-index",
+                                                   "type": "test-type", "id": "1"})
 
     def testMultiGet(self):
         self.conn.index({"name":"Joe Tester"}, self.index_name, self.document_type, 1)
@@ -181,17 +184,17 @@ class IndexingTestCase(ESTestCase):
     def testMLT(self):
         self.conn.index({"name":"Joe Test"}, self.index_name, self.document_type, 1)
         self.conn.index({"name":"Joe Tester"}, self.index_name, self.document_type, 2)
-        self.conn.index({"name":"Joe Tested"}, self.index_name, self.document_type, 3)
+        self.conn.index({"name":"Joe did the test"}, self.index_name, self.document_type, 3)
         self.conn.refresh(self.index_name)
         sleep(0.5)
         result = self.conn.morelikethis(self.index_name, self.document_type, 1, ['name'], min_term_freq=1, min_doc_freq=1)
         del result[u'took']
         self.assertResultContains(result, {u'_shards': {u'successful': 5, u'failed': 0, u'total': 5}})
         self.assertTrue(u'hits' in result)
-        self.assertResultContains(result['hits'], {u'hits': [
-                                  {u'_score': 0.19178301, u'_type': u'test-type', u'_id': u'3', u'_source': {u'name': u'Joe Tested'}, u'_index': u'test-index', u'_version': 1},
-                                  {u'_score': 0.19178301, u'_type': u'test-type', u'_id': u'2', u'_source': {u'name': u'Joe Tester'}, u'_index': u'test-index', u'_version': 1}
-                                  ], u'total': 2, u'max_score': 0.19178301})
+        self.assertResultContains(result["hits"], {"hits": [
+            {"_score": 0.2169777, "_type": "test-type", "_id": "3", "_source": {"name": "Joe did the test"}, "_index": "test-index"},
+            {"_score": 0.19178301, "_type": "test-type", "_id": "2", "_source": {"name": "Joe Tester"}, "_index": "test-index"},
+        ], "total": 2, "max_score": 0.2169777})
 
     def testVersion(self):
         self.conn.index({"name":"Joe Test"}, self.index_name, self.document_type, 1, force_insert=True)
@@ -204,8 +207,8 @@ class IndexingTestCase(ESTestCase):
                           self.conn.index,
                           *({"name":"Joe Test2"}, self.index_name, self.document_type, 1), **{"version":2})
         item = self.conn.get(self.index_name, self.document_type, 1)
-        self.assertEqual(item["_version"], 3)
-        self.assertEqual(item._version, 3)
+        self.assertEqual(item["meta"]["version"], 3)
+        self.assertEqual(item.meta.version, 3)
 
 if __name__ == "__main__":
     unittest.main()

@@ -514,7 +514,7 @@ class ES(object):
         }
         return self._send_request('POST', "_aliases", body)
 
-    def add_alias(self, alias, indices):
+    def add_alias(self, alias, indices=None):
         """Add an alias to point to a set of indices.
 
         """
@@ -522,7 +522,7 @@ class ES(object):
         return self.change_aliases(['add', index, alias]
                                    for index in indices)
 
-    def delete_alias(self, alias, indices):
+    def delete_alias(self, alias, indices=None):
         """Delete an alias.
 
         The specified index or indices are deleted from the alias, if they are
@@ -534,7 +534,7 @@ class ES(object):
         return self.change_aliases(['remove', index, alias]
                                    for index in indices)
 
-    def set_alias(self, alias, indices):
+    def set_alias(self, alias, indices=None):
         """Set an alias.
 
         This handles removing the old list of indices pointed to by the alias.

@@ -368,7 +368,8 @@ class ES(object):
         If `indices` is not supplied, returns the default_indices.
 
         """
-        indices = indices or self.default_indices
+        if indices is None:
+            return self.default_indices
         if isinstance(indices, basestring):
             indices = [indices]
         return indices
@@ -383,6 +384,17 @@ class ES(object):
         if request.body:
             curl_cmd += " -d '%s'" % request.body
         print >> self.dump_curl, curl_cmd
+
+    def _get_default_indices(self):
+        return self._default_indices
+
+    def _set_default_indices(self, default_indices):
+        if default_indices is not None:
+            default_indices = self._validate_indices(default_indices)
+        self._default_indices = default_indices
+
+    default_indices = property(_get_default_indices, _set_default_indices)
+    del _get_default_indices, _set_default_indices
 
     #---- Admin commands
     def status(self, indices=None):

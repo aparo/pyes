@@ -183,7 +183,7 @@ class ES(object):
     ES connection object.
     """
 
-    def __init__(self, server="localhost:9200", timeout=5.0, bulk_size=400,
+    def __init__(self, server="localhost:9200", timeout=5.0, bulk_size=400, connection_type='http',
                  encoder=None, decoder=None,
                  max_retries=3, autorefresh=False,
                  default_indices=['_all'],
@@ -215,6 +215,7 @@ class ES(object):
         self.connection = None
         self.autorefresh = autorefresh
         self.refreshed = True
+        self.connection_type = connection_type
 
         if model is None:
             model = lambda connection, model: model
@@ -265,7 +266,8 @@ class ES(object):
         """
         #detect connectiontype
         port = self.servers[0].split(":")[1]
-        if port.startswith("92"):
+#        if port.startswith("92"):
+        if self.connection_type == 'http':
             self.connection = http_connect(self.servers, timeout=self.timeout, max_retries=self.max_retries)
             return
         if not thrift_enable:

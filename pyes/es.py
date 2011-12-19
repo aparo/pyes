@@ -69,7 +69,6 @@ class ElasticSearchModel(DotDict):
             self.meta = DotDict([(k.lstrip("_"), v) for k, v in item.items()])
             self.meta.parent = self.pop("_parent", None)
             self.meta.connection = args[0]
-            self.timeout = args[0].timeout
         else:
             self.update(dict(*args, **kwargs))
 
@@ -82,7 +81,6 @@ class ElasticSearchModel(DotDict):
         id = id or meta.get("id")
         parent = parent or meta.get('parent')
         version = meta.get('version')
-        querystring_args = {'timeout': '%dm' % (self.timeout / 60) }
 
         res = conn.index(dict([(k, v) for k, v in self.items() if k != "meta"]),
                          meta.index, meta.type, id, parent=parent, bulk=bulk, version=version, querystring_args=querystring_args)
@@ -831,7 +829,7 @@ class ES(object):
         Index a typed JSON document into a specific index and make it searchable.
         """
         if querystring_args is None:
-            querystring_args = {}
+            querystring_args = {'timeout': '%dm' % (self.timeout / 60)}
 
         self.refreshed = False
 

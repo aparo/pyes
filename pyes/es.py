@@ -69,6 +69,7 @@ class ElasticSearchModel(DotDict):
             self.meta = DotDict([(k.lstrip("_"), v) for k, v in item.items()])
             self.meta.parent = self.pop("_parent", None)
             self.meta.connection = args[0]
+            self.timeout = args[0].timeout
         else:
             self.update(dict(*args, **kwargs))
 
@@ -81,8 +82,10 @@ class ElasticSearchModel(DotDict):
         id = id or meta.get("id")
         parent = parent or meta.get('parent')
         version = meta.get('version')
+        querystring_args = {'timeout': '%dm' % (self.timeout / 60) }
+
         res = conn.index(dict([(k, v) for k, v in self.items() if k != "meta"]),
-                         meta.index, meta.type, id, parent=parent, bulk=bulk, version=version)
+                         meta.index, meta.type, id, parent=parent, bulk=bulk, version=version, querystring_args=querystring_args)
         if not bulk:
             self.meta.id = res._id
             self.meta.version = res._version
@@ -874,6 +877,7 @@ class ES(object):
             request_method = 'PUT'
 
         path = self._make_path([index, doc_type, id])
+        print path
         return self._send_request(request_method, path, doc, querystring_args)
 
     def flush_bulk(self, forced=False):

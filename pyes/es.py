@@ -308,11 +308,14 @@ class ES(object):
                 body = json.dumps(body, cls=self.encoder)
         else:
             body = ""
+        print params
         request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()],
                               uri=path, parameters=params, headers=headers, body=body)
         if self.dump_curl is not None:
             self._dump_curl_request(request)
 
+        print request.uri
+        print request.parameters
         # execute the request
         response = self.connection.execute(request)
 
@@ -877,7 +880,6 @@ class ES(object):
             request_method = 'PUT'
 
         path = self._make_path([index, doc_type, id])
-        print path
         return self._send_request(request_method, path, doc, querystring_args)
 
     def flush_bulk(self, forced=False):

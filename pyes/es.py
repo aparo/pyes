@@ -82,8 +82,9 @@ class ElasticSearchModel(DotDict):
         id = id or meta.get("id")
         parent = parent or meta.get('parent')
         version = meta.get('version')
+
         res = conn.index(dict([(k, v) for k, v in self.items() if k != "meta"]),
-                         meta.index, meta.type, id, parent=parent, bulk=bulk, version=version)
+                         meta.index, meta.type, id, parent=parent, bulk=bulk, version=version, querystring_args=querystring_args)
         if not bulk:
             self.meta.id = res._id
             self.meta.version = res._version
@@ -184,7 +185,7 @@ class ES(object):
     ES connection object.
     """
 
-    def __init__(self, server="localhost:9200", timeout=5.0, bulk_size=400,
+    def __init__(self, server="localhost:9200", timeout=5.0, bulk_size=400, connection_type='http',
                  encoder=None, decoder=None,
                  max_retries=3, autorefresh=False,
                  default_indices=['_all'],
@@ -216,6 +217,7 @@ class ES(object):
         self.connection = None
         self.autorefresh = autorefresh
         self.refreshed = True
+        self.connection_type = connection_type
 
         if model is None:
             model = lambda connection, model: model
@@ -266,7 +268,8 @@ class ES(object):
         """
         #detect connectiontype
         port = self.servers[0].split(":")[1]
-        if port.startswith("92"):
+#        if port.startswith("92"):
+        if self.connection_type == 'http':
             self.connection = http_connect(self.servers, timeout=self.timeout, max_retries=self.max_retries)
             return
         if not thrift_enable:
@@ -304,11 +307,14 @@ class ES(object):
                 body = json.dumps(body, cls=self.encoder)
         else:
             body = ""
+        print params
         request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()],
                               uri=path, parameters=params, headers=headers, body=body)
         if self.dump_curl is not None:
             self._dump_curl_request(request)
 
+        print request.uri
+        print request.parameters
         # execute the request
         response = self.connection.execute(request)
 
@@ -824,7 +830,7 @@ class ES(object):
         Index a typed JSON document into a specific index and make it searchable.
         """
         if querystring_args is None:
-            querystring_args = {}
+            querystring_args = {'timeout': '%dm' % (self.timeout / 60)}
 
         self.refreshed = False
 

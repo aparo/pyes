@@ -21,7 +21,8 @@ __all__ = ['NoServerAvailable',
            "ElasticSearchException",
            'ReduceSearchPhaseException',
            "VersionConflictEngineException",
-           'DocumentAlreadyExistsEngineException'
+           'DocumentAlreadyExistsEngineException',
+           "TypeMissingException"
           ]
 
 class NoServerAvailable(Exception):
@@ -93,5 +94,8 @@ class VersionConflictEngineException(ElasticSearchException):
     pass
 
 class DocumentAlreadyExistsEngineException(ElasticSearchException):
+    pass
+
+class TypeMissingException(ElasticSearchException):
     pass
 

@@ -1059,10 +1059,18 @@ class ES(object):
         body = []
         for value in ids:
             if isinstance(value, tuple):
-                a, b, c = value
-                body.append({"_index":a,
-                             "_type":b,
-                             "_id":c})
+                if len(value) == 3:
+                    a, b, c = value
+                    body.append({"_index":a,
+                                 "_type":b,
+                                 "_id":c})
+                elif len(value) == 4:
+                    a, b, c, d = value
+                    body.append({"_index":a,
+                                 "_type":b,
+                                 "_id":c,
+                                 "fields":d})
+
             else:
                 if index is None:
                     raise InvalidQuery("index value is required for id")

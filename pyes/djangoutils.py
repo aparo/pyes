@@ -9,6 +9,8 @@ import django
 
 from types import NoneType
 import datetime
+from django.db import models
+import uuid
 
 #--- taken from http://djangosnippets.org/snippets/2278/
 
@@ -123,3 +125,26 @@ def get_values(instance, go_into={}, exclude=(), extra=(), skip_none=False):
                     value[field] = repr(property)
 
     return value
+
+class EmbeddedModel(models.Model):
+    _embedded_in = None
+    class Meta:
+        abstract = True
+
+    def save(self, *args, **kwargs):
+        if self.pk is None:
+            self.pk = str(uuid.uuid4())
+        if self._embedded_in  is None:
+            raise RuntimeError("Invalid save")
+        self._embedded_in.save()
+
+    def serialize(self):
+        if self.pk is None:
+            self.pk = "TODO"
+            self.id = self.pk
+        result = {'_app':self._meta.app_label,
+            '_model':self._meta.module_name,
+            '_id':self.pk}
+        for field in self._meta.fields:
+            result[field.attname] = getattr(self, field.attname)
+        return result

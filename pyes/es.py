@@ -72,18 +72,28 @@ class ElasticSearchModel(DotDict):
             self.meta.connection = args[0]
         else:
             self.update(dict(*args, **kwargs))
+ 
+   def delete(self, bulk=False):
+        """
+        Delete the object
+        """
+        meta = self.meta
+        conn = meta['connection']
+        conn.delete(meta.index, meta.type, meta.id, bulk=bulk)
 
-    def save(self, bulk=False, id=None, parent=None):
+    def save(self, bulk=False, id=None, parent=None, force=False):
         """
         Save the object and returns id
         """
         meta = self.meta
         conn = meta['connection']
-        id = id or meta.get("id")
-        parent = parent or meta.get('parent')
-        version = meta.get('version')
+        id = id or meta.get("id", None)
+        parent = parent or meta.get('parent', None)
+        version = meta.get('version', None)
+        if force:
+            version = None
         res = conn.index(dict([(k, v) for k, v in self.items() if k != "meta"]),
-                         meta.index, meta.type, id, parent=parent, bulk=bulk, version=version)
+                         meta.index, meta.type, id, parent=parent, bulk=bulk, version=version, force_insert=force)
         if not bulk:
             self.meta.id = res._id
             self.meta.version = res._version
@@ -286,7 +296,7 @@ class ES(object):
         self._init_connection()
         return self.servers
 
-    def _send_request(self, method, path, body=None, params=None, headers=None):
+    def _send_request(self, method, path, body=None, params=None, headers=None, raw=False):
         if params is None:
             params = {}
         if headers is None:
@@ -331,7 +341,7 @@ class ES(object):
                 raise ElasticSearchException(response.body, response.status, response.body)
         if response.status != 200:
             raise_if_error(response.status, decoded)
-        if isinstance(decoded, dict):
+        if not raw and isinstance(decoded, dict):
             decoded = DotDict(decoded)
         return  decoded
 
@@ -430,12 +440,8 @@ class ES(object):
         """Deletes an index if it exists.
 
         """
-        try:
+        if self.exists_index(index):
             return self.delete_index(index)
-        except IndexMissingException:
-            pass
-        except NotFoundException, e:
-            return e.result
 
     def get_indices(self, include_aliases=False):
         """Get a dict holding an entry for each index which exists.
@@ -669,6 +675,8 @@ class ES(object):
             mapping = {}
         if hasattr(mapping, "to_json"):
             mapping = mapping.to_json()
+        if hasattr(mapping, "as_dict"):
+            mapping = mapping.as_dict()
 
         if doc_type:
             path = self._make_path([','.join(indices), doc_type, "_mapping"])
@@ -1429,9 +1437,9 @@ class ResultSet(object):
                     start = 0
                 else:
                     start -= 1
-                end = val.stop or self.total
+                end = val.stop or self.total()
                 if end < 0:
-                    end = self.total + end
+                    end = self.total() + end
                 return start, end
             return val, val + 1
 

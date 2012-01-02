@@ -37,6 +37,7 @@ class BulkTestCase(ESTestCase):
         self.conn.put_mapping(self.document_type, {'properties':mapping}, self.index_name)
         
     def test_force(self):
+        self.conn.raise_on_bulk_item_failure = False
         self.conn.index({"name":"Joe Tester", "parsedtext":"Joe Testere nice guy", "uuid":"11111", "position":1}, self.index_name, self.document_type, 1, bulk=True)
         self.conn.index({"name":"Bill Baloney", "parsedtext":"Bill Testere nice guy", "uuid":"22222", "position":2}, self.index_name, self.document_type, 2, bulk=True)
         self.conn.index({"name":"Bill Clinton", "parsedtext":"""Bill is not 
@@ -51,6 +52,7 @@ class BulkTestCase(ESTestCase):
     def test_automatic_flush(self):
         self.conn.force_bulk()
         self.conn.bulk_size = 3
+        self.conn.raise_on_bulk_item_failure = False
         
         self.assertIsNone(
             self.conn.index({"name":"Joe Tester", "parsedtext":"Joe Testere nice guy", "uuid":"11111", "position":1},
@@ -218,18 +220,24 @@ class BulkTestCase(ESTestCase):
         
         # now, try it against a real index...
         self.conn.force_bulk()
+        self.conn.raise_on_bulk_item_failure = False
+        self.conn.bulk_size = 1      
         
-        self.conn.bulk_size = 1
-        with self.assertRaises(BulkOperationException) as cm:
-            _raise_exception_if_bulk_item_failed(
-              self.conn.delete(
-                self.index_name, "#bogus", 9, bulk=True))
+        bulk_result = self.conn.delete(self.index_name, "#bogus", 9, bulk=True)
+        self.assertFalse(_is_bulk_item_ok(bulk_result["items"][0]))
+        
+        bulk_result = self.conn.index("invalid", self.index_name, self.document_type, 8, bulk=True)
+        self.assertFalse(_is_bulk_item_ok(bulk_result["items"][0]))
             
-        self.conn.bulk_size = 1
+        self.conn.raise_on_bulk_item_failure = True      
+        
         with self.assertRaises(BulkOperationException) as cm:
-            _raise_exception_if_bulk_item_failed(
-              self.conn.index(
-                "invalid", self.index_name, self.document_type, 8, bulk=True))
+            self.conn.delete(
+                self.index_name, "#bogus", 9, bulk=True)
+            
+        with self.assertRaises(BulkOperationException) as cm:
+            self.conn.index(
+                "invalid", self.index_name, self.document_type, 8, bulk=True)
 
 if __name__ == "__main__":
     unittest.main()

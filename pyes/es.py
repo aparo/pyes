@@ -153,7 +153,7 @@ def _is_bulk_item_ok(item):
 def _raise_exception_if_bulk_item_failed(bulk_result):
     errors = [item for item in bulk_result["items"] if not _is_bulk_item_ok(item)]
     if len(errors) > 0:
-      raise BulkOperationException(errors)
+      raise BulkOperationException(errors, bulk_result)
     return None
 
 class ESJsonEncoder(json.JSONEncoder):
@@ -216,7 +216,8 @@ class ES(object):
                  default_indices=['_all'],
                  default_types=None,
                  dump_curl=False,
-                 model=ElasticSearchModel):
+                 model=ElasticSearchModel,
+                 raise_on_bulk_item_failure=False):
         """
         Init a es object
         
@@ -227,11 +228,15 @@ class ES(object):
         max_retries: number of max retries for server if a server is down
         autorefresh: check if need a refresh before a query
         model: used to objectify the dictinary. If None, the raw dict is returned.
+        
 
         dump_curl: If truthy, this will dump every query to a curl file.  If
         this is set to a string value, it names the file that output is sent
         to.  Otherwise, it should be set to an object with a write() method,
         which output will be written to.
+        
+        raise_on_bulk_item_failure: raises an exception if an item in a
+        bulk operation fails
 
         """
         self.timeout = timeout
@@ -263,6 +268,7 @@ class ES(object):
         self.bulk_lock = threading.RLock()
         with self.bulk_lock:
             self.bulk_data = []
+        self.raise_on_bulk_item_failure = raise_on_bulk_item_failure
 
         self.info = {} #info about the current server
         self.mappings = None #track mapping
@@ -931,9 +937,15 @@ class ES(object):
         """
         with self.bulk_lock:
             if len(self.bulk_data) > 0:
-                batch = self.bulk_data
+                bulk_result = self._send_request("POST",
+                    "/_bulk",
+                    "\n".join(self.bulk_data) + "\n")
                 self.bulk_data = []
-                return self._send_request("POST", "/_bulk", "\n".join(batch) + "\n")
+                
+                if self.raise_on_bulk_item_failure:
+                  _raise_exception_if_bulk_item_failed(bulk_result)
+                  
+                return bulk_result
 
     def put_file(self, filename, index, doc_type, id=None):
         """

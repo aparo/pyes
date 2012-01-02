@@ -73,7 +73,7 @@ class ElasticSearchModel(DotDict):
         else:
             self.update(dict(*args, **kwargs))
  
-   def delete(self, bulk=False):
+    def delete(self, bulk=False):
         """
         Delete the object
         """

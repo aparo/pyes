@@ -188,27 +188,33 @@ class BulkTestCase(ESTestCase):
         
         with self.assertRaises(BulkOperationException) as cm:
             _raise_exception_if_bulk_item_failed(index_one_error)
-        self.assertEquals(cm.exception, BulkOperationException([index_error_1]))
+        self.assertEquals(cm.exception, BulkOperationException(
+            [index_error_1], index_one_error))
         
         with self.assertRaises(BulkOperationException) as cm:
             _raise_exception_if_bulk_item_failed(index_two_errors)
-        self.assertEquals(cm.exception, BulkOperationException([index_error_1, index_error_2]))
+        self.assertEquals(cm.exception, BulkOperationException(
+            [index_error_1, index_error_2], index_two_errors))
         
         with self.assertRaises(BulkOperationException) as cm:
             _raise_exception_if_bulk_item_failed(delete_one_error)
-        self.assertEquals(cm.exception, BulkOperationException([delete_error_1]))
+        self.assertEquals(cm.exception, BulkOperationException(
+            [delete_error_1], delete_one_error))
         
         with self.assertRaises(BulkOperationException) as cm:
             _raise_exception_if_bulk_item_failed(delete_two_errors)
-        self.assertEquals(cm.exception, BulkOperationException([delete_error_1, delete_error_2]))
+        self.assertEquals(cm.exception, BulkOperationException(
+            [delete_error_1, delete_error_2], delete_two_errors))
         
         with self.assertRaises(BulkOperationException) as cm:
             _raise_exception_if_bulk_item_failed(mixed_errors)
-        self.assertEquals(cm.exception, BulkOperationException([index_error_1, delete_error_1, delete_error_2]))
+        self.assertEquals(cm.exception, BulkOperationException(
+            [index_error_1, delete_error_1, delete_error_2], mixed_errors))
 
         with self.assertRaises(BulkOperationException) as cm:
             _raise_exception_if_bulk_item_failed(oops_all_errors)
-        self.assertEquals(cm.exception, BulkOperationException([index_error_1, delete_error_1, delete_error_2]))
+        self.assertEquals(cm.exception, BulkOperationException(
+            [index_error_1, delete_error_1, delete_error_2], oops_all_errors))
         
         # now, try it against a real index...
         self.conn.force_bulk()

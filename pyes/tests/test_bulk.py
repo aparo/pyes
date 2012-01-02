@@ -84,6 +84,23 @@ class BulkTestCase(ESTestCase):
         self.assertEqual(self.conn.bulk_data, [])
         
         self.conn.refresh(self.index_name)
+        
+    def test_error(self):
+        self.conn.force_bulk()
+        self.conn.bulk_size = 2
+        
+        self.assertIsNone(
+            self.conn.index({"name":"Bill Baloney", "parsedtext":"Bill Testere nice guy", "uuid":"22222", "position":2},
+                self.index_name, self.document_type, 7, bulk=True))
+        self.assertIsNone(self.conn.flush_bulk(False))
+        self.assertEqual(len(self.conn.bulk_data), 1)
+        
+        bulk_result = self.conn.index(
+            "invalid", self.index_name, self.document_type, 8, bulk=True)
+        self.assertEquals(len(bulk_result['items']), 2)
+        self.assertTrue(bulk_result["items"][0]["index"]["ok"])
+        self.assertTrue("error" in bulk_result["items"][1]["index"])
+        self.assertEqual(self.conn.bulk_data, [])
 
 if __name__ == "__main__":
     unittest.main()

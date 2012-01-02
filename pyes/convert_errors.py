@@ -58,7 +58,7 @@ def raise_if_error(status, result):
         raise pyes.exceptions.NotFoundException("Item not found", status, result)
 
     if not isinstance(result, dict) or 'error' not in result:
-        raise pyes.exceptions.ElasticSearchException("Unknown exception type", status, result)
+        raise pyes.exceptions.ElasticSearchException(u"Unknown exception type: %d, %s" % (status, result), status, result)
 
     error = result['error']
     if '; nested: ' in error:

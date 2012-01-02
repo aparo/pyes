@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from pyes.utils import EqualityComparableUsingAttributeDictionary
+
 __author__ = 'Alberto Paro'
 
 __all__ = ['NoServerAvailable',
@@ -21,7 +23,8 @@ __all__ = ['NoServerAvailable',
            "ElasticSearchException",
            'ReduceSearchPhaseException',
            "VersionConflictEngineException",
-           'DocumentAlreadyExistsEngineException'
+           'DocumentAlreadyExistsEngineException',
+           "BulkOperationException"
           ]
 
 class NoServerAvailable(Exception):
@@ -95,3 +98,8 @@ class VersionConflictEngineException(ElasticSearchException):
 class DocumentAlreadyExistsEngineException(ElasticSearchException):
     pass
 
+class BulkOperationException(ElasticSearchException, EqualityComparableUsingAttributeDictionary):
+    def __init__(self, errors, bulk_result):
+      super(BulkOperationException, self).__init__(u"At least one operation in the bulk request has failed: %s" % errors)
+      self.errors = errors
+      self.bulk_result = bulk_result

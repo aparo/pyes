@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
 from __future__ import with_statement
-import threading
 
 __author__ = 'Alberto Paro'
 __all__ = ['ES', 'file_to_attachment', 'decode_json']
@@ -23,6 +23,7 @@ import time
 from StringIO import StringIO
 from decimal import Decimal
 from urllib import quote
+import threading
 import copy
 
 try:
@@ -41,8 +42,8 @@ from convert_errors import raise_if_error
 from pyes.exceptions import (InvalidParameter,
         ElasticSearchException, IndexAlreadyExistsException,
         IndexMissingException, NotFoundException, InvalidQuery,
-        ReduceSearchPhaseException, VersionConflictEngineException
-        )
+        ReduceSearchPhaseException, VersionConflictEngineException,
+        BulkOperationException)
 import collections
 
 #
@@ -139,6 +140,21 @@ def file_to_attachment(filename, filehandler=None):
         return {'_name':filename,
                 'content':base64.b64encode(_file.read())
                 }
+
+def _is_bulk_item_ok(item):
+    if "index" in item:
+      return "ok" in item["index"]
+    elif "delete" in item:
+      return "ok" in item["delete"]
+    else:
+      # unknown response type; be conservative
+      return False
+
+def _raise_exception_if_bulk_item_failed(bulk_result):
+    errors = [item for item in bulk_result["items"] if not _is_bulk_item_ok(item)]
+    if len(errors) > 0:
+      raise BulkOperationException(errors)
+    return None
 
 class ESJsonEncoder(json.JSONEncoder):
     def default(self, value):

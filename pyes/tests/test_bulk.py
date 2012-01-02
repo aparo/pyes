@@ -6,6 +6,8 @@ Unit tests for pyes.  These require an es server with thrift plugin running on t
 import unittest
 from pyes.tests import ESTestCase
 from pyes import TermQuery
+from pyes.es import _raise_exception_if_bulk_item_failed, _is_bulk_item_ok
+from pyes.exceptions import BulkOperationException
 
 class BulkTestCase(ESTestCase):
     def setUp(self):
@@ -101,6 +103,127 @@ class BulkTestCase(ESTestCase):
         self.assertTrue(bulk_result["items"][0]["index"]["ok"])
         self.assertTrue("error" in bulk_result["items"][1]["index"])
         self.assertEqual(self.conn.bulk_data, [])
+        
+        self.conn.bulk_size = 2
+        self.assertIsNone(self.conn.delete(
+            self.index_name, self.document_type, 9, bulk=True))
+        bulk_result = self.conn.delete(
+            self.index_name, "#foo", 9, bulk=True)
+        self.assertEquals(len(bulk_result['items']), 2)
+        self.assertTrue(bulk_result["items"][0]["delete"]["ok"])
+        self.assertTrue("error" in bulk_result["items"][1]["delete"])
+        self.assertEqual(self.conn.bulk_data, [])
+
+    def test_raise_exception_if_bulk_item_failed(self):
+        index_ok_1 = {'index': {'_type': 'test-type', '_id': '4', 'ok': True, '_version': 1, '_index': 'test-index'}}
+        self.assertTrue(_is_bulk_item_ok(index_ok_1))
+        index_ok_2 = {'index': {'_type': 'test-type', '_id': '5', 'ok': True, '_version': 1, '_index': 'test-index'}}
+        self.assertTrue(_is_bulk_item_ok(index_ok_2))
+        index_ok_3 = {'index': {'_type': 'test-type', '_id': '6', 'ok': True, '_version': 1, '_index': 'test-index'}}
+        self.assertTrue(_is_bulk_item_ok(index_ok_3))
+        
+        index_error_1 = {'index': {'_type': 'test-type', '_id': '8', '_index': 'test-index',
+            'error': 'ElasticSearchParseException[Failed to derive xcontent from (offset=0, length=7): [105, 110, 118, 97, 108, 105, 100]]'}}
+        self.assertFalse(_is_bulk_item_ok(index_error_1))
+        index_error_2 = {'index': {'_type': 'test-type', '_id': '9', '_index': 'test-index',
+            'error': 'ElasticSearchParseException[Failed to derive xcontent from (offset=0, length=7): [105, 110, 118, 97, 108, 105, 100]]'}}
+        self.assertFalse(_is_bulk_item_ok(index_error_2))
+        
+        delete_ok_1 = {'delete': {'_type': 'test-type', '_id': '4', 'ok': True, '_version': 2, '_index': 'test-index'}}
+        self.assertTrue(_is_bulk_item_ok(delete_ok_1))
+        delete_ok_2 = {'delete': {'_type': 'test-type', '_id': '5', 'ok': True, '_version': 2, '_index': 'test-index'}}
+        self.assertTrue(_is_bulk_item_ok(delete_ok_2))
+        delete_ok_3 = {'delete': {'_type': 'test-type', '_id': '6', 'ok': True, '_version': 2, '_index': 'test-index'}}
+        self.assertTrue(_is_bulk_item_ok(delete_ok_3))
+        delete_error_1 = {'delete': {'_type': '#foo', '_id': '9', '_index': 'test-index',
+            'error': "InvalidTypeNameException[mapping type name [#foo] should not include '#' in it]"}}
+        self.assertFalse(_is_bulk_item_ok(delete_error_1))
+        delete_error_2 = {'delete': {'_type': '#foo', '_id': '10', '_index': 'test-index',
+            'error': "InvalidTypeNameException[mapping type name [#foo] should not include '#' in it]"}}
+        self.assertFalse(_is_bulk_item_ok(delete_error_1))
+        
+        index_all_ok = {'items': [
+            index_ok_1,
+            index_ok_2,
+            index_ok_3],
+            'took': 4}
+        delete_all_ok = {'items': [
+            delete_ok_1,
+            delete_ok_2,
+            delete_ok_3],
+            'took': 0}
+        index_one_error = {'items': [
+            index_ok_1,
+            index_error_1],
+            'took': 156}
+        index_two_errors = {'items': [
+            index_ok_2,
+            index_error_1,
+            index_error_2],
+            'took': 156}
+        delete_one_error = {'items': [
+            delete_ok_1,
+            delete_error_1],
+            'took': 1}
+        delete_two_errors = {'items': [
+            delete_ok_2,
+            delete_error_1,
+            delete_error_2],
+            'took': 1}
+        mixed_errors = {'items': [
+            delete_ok_3,
+            index_ok_1,
+            index_error_1,
+            delete_error_1,
+            delete_error_2],
+            'took': 1}
+        oops_all_errors = {'items': [
+            index_error_1,
+            delete_error_1,
+            delete_error_2],
+            'took': 1}
+        
+        self.assertIsNone(_raise_exception_if_bulk_item_failed(index_all_ok))
+        self.assertIsNone(_raise_exception_if_bulk_item_failed(delete_all_ok))
+        
+        with self.assertRaises(BulkOperationException) as cm:
+            _raise_exception_if_bulk_item_failed(index_one_error)
+        self.assertEquals(cm.exception, BulkOperationException([index_error_1]))
+        
+        with self.assertRaises(BulkOperationException) as cm:
+            _raise_exception_if_bulk_item_failed(index_two_errors)
+        self.assertEquals(cm.exception, BulkOperationException([index_error_1, index_error_2]))
+        
+        with self.assertRaises(BulkOperationException) as cm:
+            _raise_exception_if_bulk_item_failed(delete_one_error)
+        self.assertEquals(cm.exception, BulkOperationException([delete_error_1]))
+        
+        with self.assertRaises(BulkOperationException) as cm:
+            _raise_exception_if_bulk_item_failed(delete_two_errors)
+        self.assertEquals(cm.exception, BulkOperationException([delete_error_1, delete_error_2]))
+        
+        with self.assertRaises(BulkOperationException) as cm:
+            _raise_exception_if_bulk_item_failed(mixed_errors)
+        self.assertEquals(cm.exception, BulkOperationException([index_error_1, delete_error_1, delete_error_2]))
+
+        with self.assertRaises(BulkOperationException) as cm:
+            _raise_exception_if_bulk_item_failed(oops_all_errors)
+        self.assertEquals(cm.exception, BulkOperationException([index_error_1, delete_error_1, delete_error_2]))
+        
+        # now, try it against a real index...
+        self.conn.force_bulk()
+        
+        self.conn.bulk_size = 1
+        with self.assertRaises(BulkOperationException) as cm:
+            _raise_exception_if_bulk_item_failed(
+              self.conn.delete(
+                self.index_name, "#bogus", 9, bulk=True))
+            
+        self.conn.bulk_size = 1
+        with self.assertRaises(BulkOperationException) as cm:
+            _raise_exception_if_bulk_item_failed(
+              self.conn.index(
+                "invalid", self.index_name, self.document_type, 8, bulk=True))
 
 if __name__ == "__main__":
     unittest.main()

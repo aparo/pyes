@@ -6,12 +6,11 @@ __author__ = 'Alberto Paro'
 import logging
 
 try:
-    # For Python < 2.6 or people using a newer version of simplejson
-    import simplejson
-    json = simplejson
-except ImportError:
     # For Python >= 2.6
     import json
+except ImportError:
+    # For Python < 2.6 or people using a newer version of simplejson
+    import simplejson as json
 
 from es import ESJsonEncoder
 from utils import clean_string, ESRange, EqualityComparableUsingAttributeDictionary
@@ -1088,7 +1087,7 @@ class SpanNearQuery(Query):
     """
     _internal_name = "span_near"
 
-    def __init__(self, clauses=None, slop=None,
+    def __init__(self, clauses=None, slop=1,
                  in_order=None,
                  collect_payloads=None, **kwargs):
         super(SpanNearQuery, self).__init__(**kwargs)
@@ -1105,9 +1104,7 @@ class SpanNearQuery(Query):
     def serialize(self):
         if not self.clauses or len(self.clauses) == 0:
             raise RuntimeError("A least a Span*Query must be added to clauses")
-        data = {}
-        if self.slop is not None:
-            data["slop"] = self.slop
+        data = {"slop": self.slop}
         if self.in_order is not None:
             data["in_order"] = self.in_order
         if self.collect_payloads is not None:
@@ -1179,10 +1176,8 @@ class SpanOrQuery(Query):
 class SpanTermQuery(TermQuery):
     _internal_name = "span_term"
 
-    def __init__(self, **kwargs):
-        super(SpanTermQuery, self).__init__(**kwargs)
-
-
+    def __init__(self, *args, **kwargs):
+        super(SpanTermQuery, self).__init__(*args, **kwargs)
 
 class WildcardQuery(TermQuery):
     _internal_name = "wildcard"

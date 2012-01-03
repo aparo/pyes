@@ -197,15 +197,22 @@ class MultiField(object):
         self.type = "multi_field"
         self.path = path
         self.fields = {}
-        if fields and isinstance(fields, dict):
-            self.fields = dict([(name, get_field(name, data)) for name, data in fields.items()])
+        if fields:
+            if isinstance(fields, dict):
+                self.fields = dict([(name, get_field(name, data)) for name, data in fields.items()])
+            elif isinstance(fields, list):
+                for field in fields:
+                    self.fields[field.name] = field.as_dict()
 
     def as_dict(self):
         result = {"type": self.type,
                   "fields": {}}
         if self.fields:
             for name, value in self.fields.items():
-                result['fields'][name] = value.as_dict()
+                if isinstance(value, dict):
+                    result['fields'][name] = value
+                else:
+                    result['fields'][name] = value.as_dict()
         if self.path:
             result['path'] = self.path
         return result
@@ -235,7 +242,7 @@ class ObjectField(object):
                  dynamic=None, enabled=None, include_in_all=None, dynamic_templates=None,
                  _id=False, _type=False, _source=None, _all=None,
                  _analyzer=None, _boost=None,
-                 _parent=None, _index=None, _routing=None):
+                 _parent=None, _index=None, _routing=None, connection=None, index_name=None):
         self.name = name
         self.type = "object"
         self.path = path
@@ -253,6 +260,8 @@ class ObjectField(object):
         self._parent = _parent
         self._index = _index
         self._routing = _routing
+        self.connection = connection
+        self.index_name = index_name
         if properties:
             self.properties = dict([(name, get_field(name, data)) for name, data in properties.items()])
         else:
@@ -302,31 +311,58 @@ class ObjectField(object):
     def __str__(self):
         return str(self.as_dict())
 
+    def save(self):
+        if self.connection is None:
+            raise RuntimeError("No connection available")
+
+        self.connection.put_mapping(doc_type=self.name, mapping=self.as_dict(), indices=self.index_name)
+
+class NestedObject(ObjectField):
+    def __init__(self, *args, **kwargs):
+        super(NestedObject, self).__init__(*args, **kwargs)
+        self.type = "nested"
+
 class DocumentObjectField(object):
     def __init__(self, name=None, type=None, path=None, properties=None,
                  dynamic=None, enabled=None, _all=None, _boost=None, _id=None,
                  _index=None, _source=None, _type=None, date_formats=None,
-                 _parent=None):
+                 _parent=None, _timestamp=None, connection=None, index_name=None):
         self.name = name
         self.type = "object"
         self.path = path
         self.properties = properties or {}
         self.dynamic = dynamic
         self.enabled = enabled
+        self._timestamp = _timestamp
         self._all = _all
+        if self._all is None:
+            #tnp defaults
+            self._all = {"enabled" : False}
+
         self._boost = _boost
         self._id = _id
         self._index = _index
         self._source = _source
         self._type = _type
+        if self._type is None:
+            self._type = {"store" : "yes"}
+
         self._parent = _parent
         self.date_formats = date_formats
+        self.connection = connection
+        self.index_name = index_name
+
         if properties:
             self.properties = dict([(name, get_field(name, data)) for name, data in properties.items()])
 
+    def enable_compression(self, threshold="5kb"):
+        self._source.update({"compress":True, "compression_threshold":threshold})
+
     def as_dict(self):
         result = {"type": self.type,
-                  "properties": {}}
+                  "properties": {},
+                  '_source': self._source,
+                  '_type': self._type}
         if self.dynamic is not None:
             result['dynamic'] = self.dynamic
         if self.enabled is not None:
@@ -339,12 +375,10 @@ class DocumentObjectField(object):
             result['_boost'] = self._boost
         if self._id is not None:
             result['_id'] = self._id
+        if self._timestamp is not None:
+            result['_timestamp'] = self._timestamp
         if self._index is not None:
             result['_index'] = self._index
-        if self._source is not None:
-            result['_source'] = self._source
-        if self._type is not None:
-            result['_type'] = self._type
         if self._parent is not None:
             result['_parent'] = self._parent
 
@@ -356,50 +390,61 @@ class DocumentObjectField(object):
     def __unicode__(self):
         return "<DocumentObjectField:%s>" % self.as_dict()
 
-def get_field(name, data):
+    def save(self):
+        if self.connection is None:
+            raise RuntimeError("No connection available")
+        self.connection.put_mapping(doc_type=self.name, mapping=self.as_dict(), indices=self.index_name)
+
+def get_field(name, data, default="object"):
     """
     Return a valid Field by given data
     """
     if isinstance(data, AbstractField):
         return data
     data = keys_to_string(data)
-    type = data.get('type', 'object')
-    if type == "string":
+    _type = data.get('type', default)
+    if _type == "string":
         return StringField(name=name, **data)
-    elif type == "boolean":
+    elif _type == "boolean":
         return BooleanField(name=name, **data)
-    elif type == "short":
+    elif _type == "short":
         return ShortField(name=name, **data)
-    elif type == "integer":
+    elif _type == "integer":
         return IntegerField(name=name, **data)
-    elif type == "long":
+    elif _type == "long":
         return LongField(name=name, **data)
-    elif type == "float":
+    elif _type == "float":
         return FloatField(name=name, **data)
-    elif type == "double":
+    elif _type == "double":
         return DoubleField(name=name, **data)
-    elif type == "ip":
+    elif _type == "ip":
         return IpField(name=name, **data)
-    elif type == "date":
+    elif _type == "date":
         return DateField(name=name, **data)
-    elif type == "multi_field":
+    elif _type == "multi_field":
         return MultiField(name=name, **data)
-    elif type == "geo_point":
+    elif _type == "geo_point":
         return GeoPointField(name=name, **data)
-    elif type == "attachment":
+    elif _type == "attachment":
         return AttachmentField(name=name, **data)
-    elif type == "object":
+    elif _type == "document":
+        return DocumentObjectField(name=name, **data)
+
+    elif _type == "object":
         if '_all' in data:
             return DocumentObjectField(name=name, **data)
 
         return ObjectField(name=name, **data)
-    raise RuntimeError("Invalid type: %s" % type)
+    elif _type == "nested":
+        return NestedObject(name=name, **data)
+    raise RuntimeError("Invalid type: %s" % _type)
 
 class Mapper(object):
-    def __init__(self, data, is_mapping=False):
+    def __init__(self, data, connection=None, is_mapping=False):
         self.indices = {}
         self.mappings = {}
         self.is_mapping = is_mapping
+        self.connection = connection
         self._process(data)
 
     def _process(self, data):
@@ -408,12 +453,14 @@ class Mapper(object):
         """
         if self.is_mapping:
             for docname, docdata in data.items():
-                self.mappings[docname] = get_field(docname, docdata)
+                self.mappings[docname] = get_field(docname, docdata, "document")
         else:
             for indexname, indexdata in data.items():
                 self.indices[indexname] = {}
                 for docname, docdata in indexdata.items():
-                    self.indices[indexname][docname] = get_field(docname, docdata)
+                    o = get_field(docname, docdata)
+                    o.connection = self.connection
+                    self.indices[indexname][docname] = o
 
     def get_doctype(self, index, name):
         """

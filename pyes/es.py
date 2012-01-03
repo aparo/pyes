@@ -15,6 +15,7 @@ except ImportError:
     import json
 
 import logging
+import random
 from datetime import date, datetime
 from urllib import urlencode
 from urlparse import urlunsplit
@@ -59,7 +60,7 @@ class DotDict(dict):
     __delattr__ = dict.__delitem__
 
     def __deepcopy__(self, memo):
-      return DotDict([(copy.deepcopy(k, memo), copy.deepcopy(v, memo)) for k, v in self.items()])
+        return DotDict([(copy.deepcopy(k, memo), copy.deepcopy(v, memo)) for k, v in self.items()])
 
 class ElasticSearchModel(DotDict):
     def __init__(self, *args, **kwargs):
@@ -73,7 +74,7 @@ class ElasticSearchModel(DotDict):
             self.meta.connection = args[0]
         else:
             self.update(dict(*args, **kwargs))
- 
+
     def delete(self, bulk=False):
         """
         Delete the object
@@ -143,17 +144,17 @@ def file_to_attachment(filename, filehandler=None):
 
 def _is_bulk_item_ok(item):
     if "index" in item:
-      return "ok" in item["index"]
+        return "ok" in item["index"]
     elif "delete" in item:
-      return "ok" in item["delete"]
+        return "ok" in item["delete"]
     else:
-      # unknown response type; be conservative
-      return False
+        # unknown response type; be conservative
+        return False
 
 def _raise_exception_if_bulk_item_failed(bulk_result):
     errors = [item for item in bulk_result["items"] if not _is_bulk_item_ok(item)]
     if len(errors) > 0:
-      raise BulkOperationException(errors, bulk_result)
+        raise BulkOperationException(errors, bulk_result)
     return None
 
 class ESJsonEncoder(json.JSONEncoder):
@@ -212,30 +213,36 @@ class ES(object):
 
     def __init__(self, server="localhost:9200", timeout=5.0, bulk_size=400,
                  encoder=None, decoder=None,
-                 max_retries=3, autorefresh=False,
+                 max_retries=3,
                  default_indices=['_all'],
                  default_types=None,
                  dump_curl=False,
                  model=ElasticSearchModel,
                  raise_on_bulk_item_failure=False):
         """
-        Init a es object
+        Init a es object.
+        Servers can be defined in different forms:
         
-        server: the server name, it can be a list of servers
-        timeout: timeout for a call
-        bulk_size: size of bulk operation
-        encoder: tojson encoder
-        max_retries: number of max retries for server if a server is down
-        autorefresh: check if need a refresh before a query
-        model: used to objectify the dictinary. If None, the raw dict is returned.
+        - host:port with protocol guess (i.e. 127.0.0.1:9200 protocol -> http 
+                                            127.0.0.1:9500  protocol -> thrift )
+        - type://host:port (i.e. http://127.0.0.1:9200 thrift://127.0.0.1:9500)
+
+        - (type, host, port) (i.e. tuple ("http", "127.0.0.1", "9200") ("thrift", "127.0.0.1", "9500")). This is the prefered form.
+        
+        :param server: the server name, it can be a list of servers. 
+        :param timeout: timeout for a call
+        :param bulk_size: size of bulk operation
+        :param encoder: tojson encoder
+        :param max_retries: number of max retries for server if a server is down
+        :param model: used to objectify the dictinary. If None, the raw dict is returned.
         
 
-        dump_curl: If truthy, this will dump every query to a curl file.  If
+        :param dump_curl: If truthy, this will dump every query to a curl file.  If
         this is set to a string value, it names the file that output is sent
         to.  Otherwise, it should be set to an object with a write() method,
         which output will be written to.
         
-        raise_on_bulk_item_failure: raises an exception if an item in a
+        :param raise_on_bulk_item_failure: raises an exception if an item in a
         bulk operation fails
 
         """
@@ -245,8 +252,6 @@ class ES(object):
         self.debug_dump = False
         self.cluster_name = "undefined"
         self.connection = None
-        self.autorefresh = autorefresh
-        self.refreshed = True
 
         if model is None:
             model = lambda connection, model: model
@@ -280,10 +285,16 @@ class ES(object):
             self.decoder = ESJsonDecoder
         if isinstance(server, (str, unicode)):
             self.servers = [server]
+        elif isinstance(server, tuple):
+            self.servers = [server]
         else:
             self.servers = server
+
         self.default_indices = default_indices
         self.default_types = default_types or []
+        #check the servers variable
+        self._check_servers()
+        #init connections
         self._init_connection()
 
     def __del__(self):
@@ -302,18 +313,68 @@ class ES(object):
              # Do our best to save the client anyway...
              self.force_bulk()
 
+    def _check_servers(self):
+        """Check the servers variable and convert in a valid tuple form"""
+        new_servers = []
+        def check_format(host, port, _type=None):
+            try:
+                port = int(port)
+            except ValueError:
+                raise RuntimeError("Invalid port: \"%s\"" % port)
+            if _type is None:
+                if 9200 <= port <= 9299:
+                    _type = "http"
+                elif 9500 <= port <= 9599:
+                    _type = "thrift"
+                else:
+                    raise RuntimeError("Unable to recognize port-type: \"%s\"" % port)
+
+            if _type not in ["thrift", "http"]:
+                raise RuntimeError("Unable to recognize protocol: \"%s\"" % _type)
+
+            if _type == "thrift" and not thrift_enable:
+                raise RuntimeError("If you want to use thrift, please install thrift. \"pip install thrift\"")
+
+            new_servers.append((_type, host, port))
+
+        for server in self.servers:
+            if isinstance(server, (tuple, list)):
+                if len(list(server)) != 3:
+                    raise RuntimeError("Invalid server definition: \"%s\"" % server)
+                _type, host, port = server
+                check_format(host=host, port=port, _type=_type)
+            elif isinstance(server, basestring):
+                if server.startswith(("thrift:", "http:")):
+                    tokens = [t.strip("/") for t in server.split(":") if t.strip("/")]
+                    if len(tokens) == 3:
+                        check_format(tokens[1], tokens[2], tokens[0])
+                        continue
+                    else:
+                        raise RuntimeError("Invalid server definition: \"%s\"" % server)
+                else:
+                    tokens = [t for t in server.split(":") if t.strip()]
+                    if len(tokens) == 2:
+                        check_format(tokens[0], tokens[1])
+                        continue
+                    else:
+                        raise RuntimeError("Invalid server definition: \"%s\"" % server)
+
+        self.servers = new_servers
+
     def _init_connection(self):
         """
         Create initial connection pool
         """
         #detect connectiontype
-        port = self.servers[0].split(":")[1]
-        if port.startswith("92"):
-            self.connection = http_connect(self.servers, timeout=self.timeout, max_retries=self.max_retries)
+        if len(self.servers) == 0:
+            raise RuntimeError("No server defined")
+
+        _type, host, port = random.choice(self.servers)
+        if _type == "http":
+            self.connection = http_connect([(host, port) for _type, host, port in self.servers if _type == "http"], timeout=self.timeout, max_retries=self.max_retries)
             return
-        if not thrift_enable:
-            raise RuntimeError("If you want to use thrift, please install thrift. \"pip install thrift\"")
-        self.connection = thrift_connect(self.servers, timeout=self.timeout, max_retries=self.max_retries)
+        elif _type == "thrift":
+            self.connection = thrift_connect([(host, port) for _type, host, port in self.servers if _type == "thrift"], timeout=self.timeout, max_retries=self.max_retries)
 
     def _discovery(self):
         """
@@ -392,8 +453,6 @@ class ES(object):
         This can be used for search and count calls.
         These are identical api calls, except for the type of query.
         """
-        if self.autorefresh and self.refreshed == False:
-            self.refresh(indices)
         querystring_args = query_params
         indices = self._validate_indices(indices)
         if doc_types is None:
@@ -633,7 +692,6 @@ class ES(object):
         result = self._send_request('POST', path)
         time.sleep(timesleep)
         self.cluster_health(wait_for_status='green')
-        self.refreshed = True
         return result
 
 
@@ -680,7 +738,6 @@ class ES(object):
         if max_num_segments is not None:
             params['max_num_segments'] = max_num_segments
         result = self._send_request('POST', path, params=params)
-        self.refreshed = True
         return result
 
     def analyze(self, text, index=None):
@@ -717,7 +774,6 @@ class ES(object):
         else:
             path = self._make_path([','.join(indices), "_mapping"])
 
-        self.refreshed = False
         return self._send_request('PUT', path, mapping)
 
     def get_mapping(self, doc_type=None, indices=None):
@@ -846,11 +902,11 @@ class ES(object):
 
         path = self._make_path(parts)
         return self._send_request('GET', path)
-      
+
     def _add_to_bulk_queue(self, content):
         with self.bulk_lock:
             self.bulk_data.append(content)
-          
+
     def index_raw_bulk(self, header, document):
         """
         Function helper for fast inserting
@@ -869,8 +925,6 @@ class ES(object):
         """
         if querystring_args is None:
             querystring_args = {}
-
-        self.refreshed = False
 
         if bulk:
             if op_type is None:

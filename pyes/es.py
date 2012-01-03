@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
 from __future__ import with_statement
-import threading
 
 __author__ = 'Alberto Paro'
 __all__ = ['ES', 'file_to_attachment', 'decode_json']
@@ -23,6 +23,7 @@ import time
 from StringIO import StringIO
 from decimal import Decimal
 from urllib import quote
+import threading
 import copy
 
 try:
@@ -41,8 +42,8 @@ from convert_errors import raise_if_error
 from pyes.exceptions import (InvalidParameter,
         ElasticSearchException, IndexAlreadyExistsException,
         IndexMissingException, NotFoundException, InvalidQuery,
-        ReduceSearchPhaseException, VersionConflictEngineException
-        )
+        ReduceSearchPhaseException, VersionConflictEngineException,
+        BulkOperationException)
 import collections
 
 #
@@ -140,6 +141,21 @@ def file_to_attachment(filename, filehandler=None):
                 'content':base64.b64encode(_file.read())
                 }
 
+def _is_bulk_item_ok(item):
+    if "index" in item:
+      return "ok" in item["index"]
+    elif "delete" in item:
+      return "ok" in item["delete"]
+    else:
+      # unknown response type; be conservative
+      return False
+
+def _raise_exception_if_bulk_item_failed(bulk_result):
+    errors = [item for item in bulk_result["items"] if not _is_bulk_item_ok(item)]
+    if len(errors) > 0:
+      raise BulkOperationException(errors, bulk_result)
+    return None
+
 class ESJsonEncoder(json.JSONEncoder):
     def default(self, value):
         """Convert rogue and mysterious data types.
@@ -200,7 +216,8 @@ class ES(object):
                  default_indices=['_all'],
                  default_types=None,
                  dump_curl=False,
-                 model=ElasticSearchModel):
+                 model=ElasticSearchModel,
+                 raise_on_bulk_item_failure=False):
         """
         Init a es object
         
@@ -211,11 +228,15 @@ class ES(object):
         max_retries: number of max retries for server if a server is down
         autorefresh: check if need a refresh before a query
         model: used to objectify the dictinary. If None, the raw dict is returned.
+        
 
         dump_curl: If truthy, this will dump every query to a curl file.  If
         this is set to a string value, it names the file that output is sent
         to.  Otherwise, it should be set to an object with a write() method,
         which output will be written to.
+        
+        raise_on_bulk_item_failure: raises an exception if an item in a
+        bulk operation fails
 
         """
         self.timeout = timeout
@@ -243,9 +264,11 @@ class ES(object):
 
         #used in bulk
         self.bulk_size = bulk_size #size of the bulk
-        self.bulk_data = []
-        self.last_bulk_response = None #last response of a bulk insert
-        self.bulk_lock = threading.Lock()
+        # protects bulk_data
+        self.bulk_lock = threading.RLock()
+        with self.bulk_lock:
+            self.bulk_data = []
+        self.raise_on_bulk_item_failure = raise_on_bulk_item_failure
 
         self.info = {} #info about the current server
         self.mappings = None #track mapping
@@ -267,8 +290,17 @@ class ES(object):
         """
         Destructor
         """
-        if len(self.bulk_data) > 0:
-            self.flush()
+        with self.bulk_lock:
+            if len(self.bulk_data) > 0:
+                # It's not safe to rely on the destructor to flush the queue:
+                # the Python documentation explicitly states "It is not guaranteed 
+                # that __del__() methods are called for objects that still exist "
+                # when the interpreter exits."
+                log.error("pyes object %s is being destroyed, but bulk "
+                  "operations have not been flushed. Call force_bulk()!",
+                  self)
+                # Do our best to save the client anyway...
+                self.force_bulk()
 
     def _init_connection(self):
         """
@@ -814,14 +846,18 @@ class ES(object):
 
         path = self._make_path(parts)
         return self._send_request('GET', path)
-
+      
+    def _add_to_bulk_queue(self, content):
+        with self.bulk_lock:
+            self.bulk_data.append(content)
+          
     def index_raw_bulk(self, header, document):
         """
         Function helper for fast inserting
 
         header and document must be string "\n" ended
         """
-        self.bulk_data.append("%s%s" % (header, document))
+        self._add_to_bulk_queue(u"%s%s" % (header, document))
         return self.flush_bulk()
 
     def index(self, doc, index, doc_type, id=None, parent=None,
@@ -857,7 +893,7 @@ class ES(object):
             if isinstance(doc, dict):
                 doc = json.dumps(doc, cls=self.encoder)
             command = "%s\n%s" % (json.dumps(cmd, cls=self.encoder), doc)
-            self.bulk_data.append(command)
+            self._add_to_bulk_queue(command)
             return self.flush_bulk()
 
         if force_insert:
@@ -885,32 +921,31 @@ class ES(object):
 
     def flush_bulk(self, forced=False):
         """
-        Wait to process all pending operations
+        Send pending operations if forced or if the bulk threshold is exceeded.
         """
-        if not forced and len(self.bulk_data) < self.bulk_size:
-            return None
-        return self.force_bulk()
+        with self.bulk_lock:
+            if forced or len(self.bulk_data) >= self.bulk_size:
+                return self.force_bulk()
+            else:
+                return None
 
     def force_bulk(self):
         """
         Force executing of all bulk data.
         
         Return the bulk response
-        
-        If not item self.last_bulk_response to None and returns None
         """
-        locked = self.bulk_lock.acquire(False)
-        if locked:
-            try:
-                if len(self.bulk_data):
-                    batch = self.bulk_data
-                    self.bulk_data = []
-                    self.last_bulk_response = self._send_request("POST", "/_bulk", "\n".join(batch) + "\n")
-                else:
-                    self.last_bulk_response = None
-            finally:
-              self.bulk_lock.release()
-        return self.last_bulk_response
+        with self.bulk_lock:
+            if len(self.bulk_data) > 0:
+                bulk_result = self._send_request("POST",
+                    "/_bulk",
+                    "\n".join(self.bulk_data) + "\n")
+                self.bulk_data = []
+                
+                if self.raise_on_bulk_item_failure:
+                  _raise_exception_if_bulk_item_failed(bulk_result)
+                  
+                return bulk_result
 
     def put_file(self, filename, index, doc_type, id=None):
         """
@@ -978,9 +1013,9 @@ class ES(object):
         if bulk:
             cmd = { "delete" : { "_index" : index, "_type" : doc_type,
                                 "_id": id}}
-            self.bulk_data.append(json.dumps(cmd, cls=self.encoder))
-            self.flush_bulk()
-            return
+            with self.bulk_lock:
+                self._add_to_bulk_queue(json.dumps(cmd, cls=self.encoder))
+            return self.flush_bulk()
 
         path = self._make_path([index, doc_type, id])
         return self._send_request('DELETE', path, params=querystring_args)

@@ -289,7 +289,6 @@ class ES(object):
             self.servers = [server]
         else:
             self.servers = server
-
         self.default_indices = default_indices
         self.default_types = default_types or []
         #check the servers variable

@@ -26,6 +26,10 @@ class ResultsetTestCase(ESTestCase):
         self.assertEqual(resultset[10].uuid, "11111")
         self.assertEqual(resultset.total, 1000)
 
+    def test_iterator_reset(self):
+        resultset = self.conn.search(Search(MatchAllQuery(), size=200), self.index_name, self.document_type)
+        self.assertEqual(len([p for p in resultset]), 1000)
+        self.assertEqual(len([p for p in resultset]), 1000)
 
 
 if __name__ == "__main__":

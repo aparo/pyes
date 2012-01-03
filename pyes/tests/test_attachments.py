@@ -82,3 +82,6 @@ class QueryAttachmentTestCase(ESTestCase):
         resultset = self.conn.search(query=q, indices=self.index_name)
         self.assertEquals(resultset.total, 1)
         self.assertEquals(resultset.hits[0]['fields']['attachment.author'], u'Tika Developers')
+
+if __name__ == "__main__":
+    unittest.main()

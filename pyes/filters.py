@@ -46,7 +46,7 @@ class BoolFilter(Filter):
     other filters. Can be placed within queries that accept a filter.
     """
 
-    def __init__(self, must=None, must_not=None, should=None, 
+    def __init__(self, must=None, must_not=None, should=None,
             minimum_number_should_match=1, **kwargs):
         super(BoolFilter, self).__init__(**kwargs)
 

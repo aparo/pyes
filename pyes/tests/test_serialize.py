@@ -48,7 +48,8 @@ class SerializationTestCase(ESTestCase):
         q = TermQuery("name", "joe")
         resultset = self.conn.search(query=q, indices=self.index_name)
         self.assertEquals(resultset.total, 1)
-        self.assertEquals(resultset.hits[0]['_source']['inserted'], datetime(2010, 10, 22, 12, 12, 12))
+        hit = resultset[0]
+        self.assertEquals(hit.inserted, datetime(2010, 10, 22, 12, 12, 12))
 
 
 if __name__ == "__main__":

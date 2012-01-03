@@ -4,8 +4,6 @@
 
 """
 
-__author__ = 'Richard Boulton'
-
 __all__ = ['raise_if_error']
 
 import pyes.exceptions
@@ -25,7 +23,8 @@ exceptions_by_name = dict((name, getattr(pyes.exceptions, name))
         'MapperParsingException',
         'ReduceSearchPhaseException',
         "VersionConflictEngineException",
-        "DocumentAlreadyExistsEngineException"
+        "DocumentAlreadyExistsEngineException",
+        "TypeMissingException"
     )
 )
 

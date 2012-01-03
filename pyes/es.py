@@ -979,19 +979,10 @@ class ES(object):
         """
         with self.bulk_lock:
             if forced or len(self.bulk_data) >= self.bulk_size:
-                return self.force_bulk()
+                batch = self.bulk_data
+                self.bulk_data = []
             else:
                 return None
-
-    def force_bulk(self):
-        """
-        Force executing of all bulk data.
-        
-        Return the bulk response
-        """
-        with self.bulk_lock:
-            batch = self.bulk_data
-            self.bulk_data = []
 
         if len(batch) > 0:
             bulk_result = self._send_request("POST",
@@ -1002,6 +993,14 @@ class ES(object):
                 _raise_exception_if_bulk_item_failed(bulk_result)
 
             return bulk_result
+
+    def force_bulk(self):
+        """
+        Force executing of all bulk data.
+        
+        Return the bulk response
+        """
+        return self.flush_bulk(True)
 
     def put_file(self, filename, index, doc_type, id=None):
         """

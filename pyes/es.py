@@ -290,17 +290,17 @@ class ES(object):
         """
         Destructor
         """
-        with self.bulk_lock:
-            if len(self.bulk_data) > 0:
-                # It's not safe to rely on the destructor to flush the queue:
-                # the Python documentation explicitly states "It is not guaranteed 
-                # that __del__() methods are called for objects that still exist "
-                # when the interpreter exits."
-                log.error("pyes object %s is being destroyed, but bulk "
-                  "operations have not been flushed. Call force_bulk()!",
+        # Don't bother getting the lock
+        if len(self.bulk_data) > 0:
+             # It's not safe to rely on the destructor to flush the queue:
+             # the Python documentation explicitly states "It is not guaranteed 
+             # that __del__() methods are called for objects that still exist "
+             # when the interpreter exits."
+             log.error("pyes object %s is being destroyed, but bulk "
+                 "operations have not been flushed. Call force_bulk()!",
                   self)
-                # Do our best to save the client anyway...
-                self.force_bulk()
+             # Do our best to save the client anyway...
+             self.force_bulk()
 
     def _init_connection(self):
         """
@@ -936,16 +936,18 @@ class ES(object):
         Return the bulk response
         """
         with self.bulk_lock:
-            if len(self.bulk_data) > 0:
-                bulk_result = self._send_request("POST",
-                    "/_bulk",
-                    "\n".join(self.bulk_data) + "\n")
-                self.bulk_data = []
-                
-                if self.raise_on_bulk_item_failure:
-                  _raise_exception_if_bulk_item_failed(bulk_result)
-                  
-                return bulk_result
+            batch = self.bulk_data
+            self.bulk_data = []
+
+        if len(batch) > 0:
+            bulk_result = self._send_request("POST",
+                "/_bulk",
+                "\n".join(batch) + "\n")
+
+            if self.raise_on_bulk_item_failure:
+                _raise_exception_if_bulk_item_failed(bulk_result)
+
+            return bulk_result
 
     def put_file(self, filename, index, doc_type, id=None):
         """
@@ -1013,8 +1015,7 @@ class ES(object):
         if bulk:
             cmd = { "delete" : { "_index" : index, "_type" : doc_type,
                                 "_id": id}}
-            with self.bulk_lock:
-                self._add_to_bulk_queue(json.dumps(cmd, cls=self.encoder))
+            self._add_to_bulk_queue(json.dumps(cmd, cls=self.encoder))
             return self.flush_bulk()
 
         path = self._make_path([index, doc_type, id])

@@ -15,7 +15,7 @@ def get_conn(*args, **kwargs):
 class ESTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.conn = get_conn()
+        self.conn = get_conn(timeout=30.0)#incremented timeout for debugging
         self.index_name = "test-index"
         self.document_type = "test-type"
         self.conn.delete_index_if_exists(self.index_name)

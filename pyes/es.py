@@ -212,7 +212,7 @@ class ES(object):
 
     def __init__(self, server="localhost:9200", timeout=5.0, bulk_size=400,
                  encoder=None, decoder=None,
-                 max_retries=3, autorefresh=False,
+                 max_retries=3,
                  default_indices=['_all'],
                  default_types=None,
                  dump_curl=False,
@@ -221,21 +221,20 @@ class ES(object):
         """
         Init a es object
         
-        server: the server name, it can be a list of servers
-        timeout: timeout for a call
-        bulk_size: size of bulk operation
-        encoder: tojson encoder
-        max_retries: number of max retries for server if a server is down
-        autorefresh: check if need a refresh before a query
-        model: used to objectify the dictinary. If None, the raw dict is returned.
+        :param server: the server name, it can be a list of servers
+        :param timeout: timeout for a call
+        :param bulk_size: size of bulk operation
+        :param encoder: tojson encoder
+        :param max_retries: number of max retries for server if a server is down
+        :param model: used to objectify the dictinary. If None, the raw dict is returned.
         
 
-        dump_curl: If truthy, this will dump every query to a curl file.  If
+        :param dump_curl: If truthy, this will dump every query to a curl file.  If
         this is set to a string value, it names the file that output is sent
         to.  Otherwise, it should be set to an object with a write() method,
         which output will be written to.
         
-        raise_on_bulk_item_failure: raises an exception if an item in a
+        :param raise_on_bulk_item_failure: raises an exception if an item in a
         bulk operation fails
 
         """
@@ -245,8 +244,6 @@ class ES(object):
         self.debug_dump = False
         self.cluster_name = "undefined"
         self.connection = None
-        self.autorefresh = autorefresh
-        self.refreshed = True
 
         if model is None:
             model = lambda connection, model: model
@@ -392,8 +389,6 @@ class ES(object):
         This can be used for search and count calls.
         These are identical api calls, except for the type of query.
         """
-        if self.autorefresh and self.refreshed == False:
-            self.refresh(indices)
         querystring_args = query_params
         indices = self._validate_indices(indices)
         if doc_types is None:
@@ -633,7 +628,6 @@ class ES(object):
         result = self._send_request('POST', path)
         time.sleep(timesleep)
         self.cluster_health(wait_for_status='green')
-        self.refreshed = True
         return result
 
 
@@ -680,7 +674,6 @@ class ES(object):
         if max_num_segments is not None:
             params['max_num_segments'] = max_num_segments
         result = self._send_request('POST', path, params=params)
-        self.refreshed = True
         return result
 
     def analyze(self, text, index=None):
@@ -717,7 +710,6 @@ class ES(object):
         else:
             path = self._make_path([','.join(indices), "_mapping"])
 
-        self.refreshed = False
         return self._send_request('PUT', path, mapping)
 
     def get_mapping(self, doc_type=None, indices=None):
@@ -869,8 +861,6 @@ class ES(object):
         """
         if querystring_args is None:
             querystring_args = {}
-
-        self.refreshed = False
 
         if bulk:
             if op_type is None:

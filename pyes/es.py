@@ -15,6 +15,7 @@ except ImportError:
     import json
 
 import logging
+import random
 from datetime import date, datetime
 from urllib import urlencode
 from urlparse import urlunsplit
@@ -59,7 +60,7 @@ class DotDict(dict):
     __delattr__ = dict.__delitem__
 
     def __deepcopy__(self, memo):
-      return DotDict([(copy.deepcopy(k, memo), copy.deepcopy(v, memo)) for k, v in self.items()])
+        return DotDict([(copy.deepcopy(k, memo), copy.deepcopy(v, memo)) for k, v in self.items()])
 
 class ElasticSearchModel(DotDict):
     def __init__(self, *args, **kwargs):
@@ -219,9 +220,16 @@ class ES(object):
                  model=ElasticSearchModel,
                  raise_on_bulk_item_failure=False):
         """
-        Init a es object
+        Init a es object.
+        Servers can be defined in different forms:
         
-        :param server: the server name, it can be a list of servers
+        - host:port with protocol guess (i.e. 127.0.0.1:9200 protocol -> http 
+                                            127.0.0.1:9500  protocol -> thrift )
+        - type://host:port (i.e. http://127.0.0.1:9200 thrift://127.0.0.1:9500)
+
+        - (type, host, port) (i.e. tuple ("http", "127.0.0.1", "9200") ("thrift", "127.0.0.1", "9500")). This is the prefered form.
+        
+        :param server: the server name, it can be a list of servers. 
         :param timeout: timeout for a call
         :param bulk_size: size of bulk operation
         :param encoder: tojson encoder
@@ -277,10 +285,16 @@ class ES(object):
             self.decoder = ESJsonDecoder
         if isinstance(server, (str, unicode)):
             self.servers = [server]
+        elif isinstance(server, tuple):
+            self.servers = [server]
         else:
             self.servers = server
+
         self.default_indices = default_indices
         self.default_types = default_types or []
+        #check the servers variable
+        self._check_servers()
+        #init connections
         self._init_connection()
 
     def __del__(self):
@@ -299,18 +313,68 @@ class ES(object):
                 # Do our best to save the client anyway...
                 self.force_bulk()
 
+    def _check_servers(self):
+        """Check the servers variable and convert in a valid tuple form"""
+        new_servers = []
+        def check_format(host, port, _type=None):
+            try:
+                port = int(port)
+            except ValueError:
+                raise RuntimeError("Invalid port: \"%s\"" % port)
+            if _type is None:
+                if 9200 <= port <= 9299:
+                    _type = "http"
+                elif 9500 <= port <= 9599:
+                    _type = "thrift"
+                else:
+                    raise RuntimeError("Unable to recognize port-type: \"%s\"" % port)
+
+            if _type not in ["thrift", "http"]:
+                raise RuntimeError("Unable to recognize protocol: \"%s\"" % _type)
+
+            if _type == "thrift" and not thrift_enable:
+                raise RuntimeError("If you want to use thrift, please install thrift. \"pip install thrift\"")
+
+            new_servers.append((_type, host, port))
+
+        for server in self.servers:
+            if isinstance(server, (tuple, list)):
+                if len(list(server)) != 3:
+                    raise RuntimeError("Invalid server definition: \"%s\"" % server)
+                _type, host, port = server
+                check_format(host=host, port=port, _type=_type)
+            elif isinstance(server, basestring):
+                if server.startswith(("thrift:", "http:")):
+                    tokens = [t.strip("/") for t in server.split(":") if t.strip("/")]
+                    if len(tokens) == 3:
+                        check_format(tokens[1], tokens[2], tokens[0])
+                        continue
+                    else:
+                        raise RuntimeError("Invalid server definition: \"%s\"" % server)
+                else:
+                    tokens = [t for t in server.split(":") if t.strip()]
+                    if len(tokens) == 2:
+                        check_format(tokens[0], tokens[1])
+                        continue
+                    else:
+                        raise RuntimeError("Invalid server definition: \"%s\"" % server)
+
+        self.servers = new_servers
+
     def _init_connection(self):
         """
         Create initial connection pool
         """
         #detect connectiontype
-        port = self.servers[0].split(":")[1]
-        if port.startswith("92"):
-            self.connection = http_connect(self.servers, timeout=self.timeout, max_retries=self.max_retries)
+        if len(self.servers) == 0:
+            raise RuntimeError("No server defined")
+
+        _type, host, port = random.choice(self.servers)
+        if _type == "http":
+            self.connection = http_connect([(host, port) for _type, host, port in self.servers if _type == "http"], timeout=self.timeout, max_retries=self.max_retries)
             return
-        if not thrift_enable:
-            raise RuntimeError("If you want to use thrift, please install thrift. \"pip install thrift\"")
-        self.connection = thrift_connect(self.servers, timeout=self.timeout, max_retries=self.max_retries)
+        elif _type == "thrift":
+            self.connection = thrift_connect([(host, port) for _type, host, port in self.servers if _type == "thrift"], timeout=self.timeout, max_retries=self.max_retries)
 
     def _discovery(self):
         """

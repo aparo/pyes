@@ -21,7 +21,7 @@ __all__ = ['connect', 'connect_thread_local']
 Work taken from pycassa
 """
 
-DEFAULT_SERVER = '127.0.0.1:9200'
+DEFAULT_SERVER = ("127.0.0.1", 9200)
 #API_VERSION = VERSION.split('.')
 
 log = logging.getLogger('pyes')
@@ -42,7 +42,7 @@ class ClientTransport(object):
     """Encapsulation of a client session."""
 
     def __init__(self, server, framed_transport, timeout, recycle):
-        host, port = server.split(":")
+        host, port = server
         self.client = TimeoutHttpConnectionPool(host, port, timeout)
         setattr(self.client, "execute", self.execute)
         if recycle:
@@ -78,7 +78,7 @@ def connect(servers=None, framed_transport=False, timeout=None,
     servers : [server]
               List of ES servers with format: "hostname:port"
 
-              Default: ['127.0.0.1:9200']
+              Default: [("127.0.0.1", 9200)]
     framed_transport: bool
               If True, use a TFramedTransport instead of a TBufferedTransport
     timeout: float
@@ -162,7 +162,7 @@ class ThreadLocalConnection(object):
     def __getattr__(self, attr):
         def _client_call(*args, **kwargs):
 
-            for retry in xrange(self._max_retries+1):
+            for retry in xrange(self._max_retries + 1):
                 try:
                     conn = self._ensure_connection()
                     return getattr(conn.client, attr)(*args, **kwargs)

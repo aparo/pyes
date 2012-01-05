@@ -33,8 +33,10 @@ class IndexingTestCase(ESTestCase):
         """
         Testing collecting server info
         """
-        result = self.conn.collect_info()
+        self.conn.collect_info()
+        result = self.conn.info
         self.assertTrue(result.has_key('server'))
+        self.assertTrue(result.has_key('aliases'))
         self.assertTrue(result['server'].has_key('name'))
         self.assertTrue(result['server'].has_key('version'))
 

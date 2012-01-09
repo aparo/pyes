@@ -275,7 +275,6 @@ class ES(object):
             self.bulk_data = []
         self.raise_on_bulk_item_failure = raise_on_bulk_item_failure
 
-        self.info = {} #info about the current server
         self.mappings = None #track mapping
         self.encoder = encoder
         if self.encoder is None:
@@ -296,6 +295,8 @@ class ES(object):
         self._check_servers()
         #init connections
         self._init_connection()
+        self.collect_info()
+
 
     def __del__(self):
         """
@@ -495,6 +496,15 @@ class ES(object):
             indices = ["_all"]
 #        indices = self._validate_indices(indices)
         path = self._make_path([','.join(indices), '_status'])
+        return self._send_request('GET', path)
+
+    def aliases(self, indices=None):
+        """
+        Retrieve the aliases of one or more indices
+        """
+        if not indices:
+            indices = ["_all"]
+        path = self._make_path([','.join(indices), '_aliases'])
         return self._send_request('GET', path)
 
     def create_index(self, index, settings=None):
@@ -789,16 +799,22 @@ class ES(object):
 
     def collect_info(self):
         """
-        Collect info about the connection and fill the info dictionary
+        Collect info about the connection and fill the info dictionary.
         """
-        self.info = {}
-        res = self._send_request('GET', "/")
-        self.info['server'] = {}
-        self.info['server']['name'] = res['name']
-        self.info['server']['version'] = res['version']
-        self.info['allinfo'] = res
-        self.info['status'] = self.status(["_all"])
-        return self.info
+        try:
+            info = {}
+            res = self._send_request('GET', "/")
+            info['server'] = {}
+            info['server']['name'] = res['name']
+            info['server']['version'] = res['version']
+            info['allinfo'] = res
+            info['status'] = self.status(["_all"])
+            info['aliases'] = self.aliases()
+            self.info = info
+            return True
+        except:
+            self.info = {}
+            return False
 
     #--- cluster
     def cluster_health(self, indices=None, level="cluster", wait_for_status=None,

@@ -1603,6 +1603,5 @@ class ResultSet(object):
 
     def __iter__(self):
         self.iterpos = 0
-        self.start = 0
         self._results = None
         return self

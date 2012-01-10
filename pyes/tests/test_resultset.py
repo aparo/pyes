@@ -26,7 +26,23 @@ class ResultsetTestCase(ESTestCase):
         self.assertEqual(resultset[10].uuid, "11111")
         self.assertEqual(resultset.total, 1000)
 
+    def test_iterator_offset(self):
+        # Query for a block of 10, starting at position 10:
+        #
+        resultset = self.conn.search(Search(MatchAllQuery(), start=10, size=10, sort={ 'position': { 'order': 'asc' } }),
+                                     self.index_name, self.document_type,
+                                     start=10, size=10)
 
+        # Ensure that there are 1000 results:
+        #
+        self.assertEqual(len(resultset), 1000)
+
+        # Now check that we actually have records 10-19, rather than 0-9:
+        #
+        position = 0
+        for r in resultset:
+            self.assertEqual(r.position, position + 10)
+            position += 1
 
 if __name__ == "__main__":
     unittest.main()

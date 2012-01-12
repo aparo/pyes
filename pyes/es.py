@@ -37,7 +37,6 @@ except ImportError:
 
 from connection_http import connect as http_connect
 log = logging.getLogger('pyes')
-from mappings import Mapper
 
 from convert_errors import raise_if_error
 from pyes.exceptions import (InvalidParameter,
@@ -45,7 +44,6 @@ from pyes.exceptions import (InvalidParameter,
         IndexMissingException, NotFoundException, InvalidQuery,
         ReduceSearchPhaseException, VersionConflictEngineException,
         BulkOperationException)
-import collections
 
 #
 # models

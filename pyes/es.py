@@ -988,6 +988,21 @@ class ES(object):
         path = self._make_path([index, doc_type, id])
         return self._send_request(request_method, path, doc, querystring_args)
 
+
+    def index_stats(self, indices=None):
+        """
+        http://www.elasticsearch.org/guide/reference/api/admin-indices-stats.html
+        """
+        parts = ["_stats"]
+        if indices:
+            if isinstance(indices, basestring):
+                indices = [indices]
+            parts = [",".join(indices), "_stats"]
+
+        path = self._make_path(parts)
+        return self._send_request('GET', path)
+
+
     def flush_bulk(self, forced=False):
         """
         Send pending operations if forced or if the bulk threshold is exceeded.

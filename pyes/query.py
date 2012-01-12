@@ -1274,3 +1274,51 @@ class PercolatorQuery(Query):
     def to_search_json(self):
         """Disable this as it is not allowed in percolator queries."""
         raise NotImplementedError()
+
+
+class CustomFiltersScoreQuery(Query):
+    _internal_name = "custom_filters_score"
+    
+    class ScoreMode(object):
+        FIRST = "first"
+        MIN = "min"
+        MAX = "max"
+        TOTAL = "total"
+        AVG = "avg"
+        MULTIPLY = "multiply"
+
+    class Filter(EqualityComparableUsingAttributeDictionary):
+        def __init__(self, filter_, boost=None, script=None):
+            if (boost is None) == (script is None):
+              raise ValueError("Exactly one of boost and script must be specified")
+            
+            self.filter_ = filter_
+            self.boost = boost
+            self.script = script
+
+        def serialize(self):
+            data = {'filter': self.filter_.serialize()}
+            if self.boost is not None:
+              data['boost'] = self.boost
+            if self.script is not None:
+              data['script'] = self.script
+            return data
+
+    def __init__(self, query, filters, score_mode=None, params=None, lang=None, **kwargs):
+        super(CustomFiltersScoreQuery, self).__init__(**kwargs)
+        self.query = query
+        self.filters = filters
+        self.score_mode = score_mode
+        self.params = params
+        self.lang = lang
+
+    def serialize(self):
+        data = {'query':self.query.serialize()}
+        data['filters'] = [filter_.serialize() for filter_ in self.filters]
+        if self.score_mode is not None:
+            data['score_mode'] = self.score_mode
+        if self.params is not None:
+            data['params'] = self.params
+        if self.lang is not None:
+            data['lang'] = self.lang
+        return {self._internal_name: data}

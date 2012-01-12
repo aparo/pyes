@@ -7,14 +7,12 @@ import logging
 import random
 import threading
 import time
-import urllib
+import requests
 from pyes.exceptions import NoServerAvailable
-import urllib3
-import urllib
 from httplib import HTTPConnection
 from fakettypes import *
 import socket
-import sys
+import urllib
 __all__ = ['connect', 'connect_thread_local']
 
 """
@@ -26,25 +24,15 @@ DEFAULT_SERVER = ("127.0.0.1", 9200)
 
 log = logging.getLogger('pyes')
 
-class TimeoutHttpConnectionPool(urllib3.HTTPConnectionPool):
-    def _new_conn(self):
-        """
-        Return a fresh HTTPConnection with timeout passed
-        """
-        self.num_connections += 1
-        log.info("Starting new HTTP connection (%d): %s" % (self.num_connections, self.host))
-        if sys.version_info < (2, 6):
-            return HTTPConnection(host=self.host, port=int(self.port))
-        return HTTPConnection(host=self.host, port=int(self.port), timeout=self.timeout)
-
 
 class ClientTransport(object):
     """Encapsulation of a client session."""
 
     def __init__(self, server, framed_transport, timeout, recycle):
-        host, port = server
-        self.client = TimeoutHttpConnectionPool(host, port, timeout)
-        setattr(self.client, "execute", self.execute)
+        self.host, self.port = server
+        self.timeout = timeout
+        #self.client = TimeoutHttpConnectionPool(host, port, timeout)
+        #setattr(self.client, "execute", self.execute)
         if recycle:
             self.recycle = time.time() + recycle + random.uniform(0, recycle * 0.1)
         else:
@@ -54,11 +42,10 @@ class ClientTransport(object):
         """
         Execute a request and return a response
         """
-        uri = request.uri
-        if request.parameters:
-            uri += '?' + urllib.urlencode(request.parameters)
-        response = self.client.urlopen(Method._VALUES_TO_NAMES[request.method], uri, body=request.body, headers=request.headers)
-        return RestResponse(status=response.status, body=response.data, headers=response.headers)
+        response = requests.request(method=Method._VALUES_TO_NAMES[request.method],
+                                    url="http://%s:%s%s" % (self.host, self.port, request.uri), params=request.parameters,
+                                    data=request.body, headers=request.headers)
+        return RestResponse(status=response.status_code, body=response.content, headers=response.headers)
 
 def connect(servers=None, framed_transport=False, timeout=None,
             retry_time=60, recycle=None, round_robin=None, max_retries=3):
@@ -164,8 +151,7 @@ class ThreadLocalConnection(object):
 
             for retry in xrange(self._max_retries + 1):
                 try:
-                    conn = self._ensure_connection()
-                    return getattr(conn.client, attr)(*args, **kwargs)
+                    return getattr(self._ensure_connection(), attr)(*args, **kwargs)
                 except (socket.timeout, socket.error), exc:
                     log.exception('Client error: %s', exc)
                     self.close()

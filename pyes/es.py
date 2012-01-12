@@ -275,7 +275,6 @@ class ES(object):
             self.bulk_data = []
         self.raise_on_bulk_item_failure = raise_on_bulk_item_failure
 
-        self.info = {} #info about the current server
         self.mappings = None #track mapping
         self.encoder = encoder
         if self.encoder is None:
@@ -295,22 +294,24 @@ class ES(object):
         self._check_servers()
         #init connections
         self._init_connection()
+        self.collect_info()
+
 
     def __del__(self):
         """
         Destructor
         """
-        with self.bulk_lock:
-            if len(self.bulk_data) > 0:
-                # It's not safe to rely on the destructor to flush the queue:
-                # the Python documentation explicitly states "It is not guaranteed 
-                # that __del__() methods are called for objects that still exist "
-                # when the interpreter exits."
-                log.error("pyes object %s is being destroyed, but bulk "
-                  "operations have not been flushed. Call force_bulk()!",
+        # Don't bother getting the lock
+        if len(self.bulk_data) > 0:
+             # It's not safe to rely on the destructor to flush the queue:
+             # the Python documentation explicitly states "It is not guaranteed 
+             # that __del__() methods are called for objects that still exist "
+             # when the interpreter exits."
+             log.error("pyes object %s is being destroyed, but bulk "
+                 "operations have not been flushed. Call force_bulk()!",
                   self)
-                # Do our best to save the client anyway...
-                self.force_bulk()
+             # Do our best to save the client anyway...
+             self.force_bulk()
 
     def _check_servers(self):
         """Check the servers variable and convert in a valid tuple form"""
@@ -494,6 +495,15 @@ class ES(object):
             indices = ["_all"]
 #        indices = self._validate_indices(indices)
         path = self._make_path([','.join(indices), '_status'])
+        return self._send_request('GET', path)
+
+    def aliases(self, indices=None):
+        """
+        Retrieve the aliases of one or more indices
+        """
+        if not indices:
+            indices = ["_all"]
+        path = self._make_path([','.join(indices), '_aliases'])
         return self._send_request('GET', path)
 
     def create_index(self, index, settings=None):
@@ -788,16 +798,22 @@ class ES(object):
 
     def collect_info(self):
         """
-        Collect info about the connection and fill the info dictionary
+        Collect info about the connection and fill the info dictionary.
         """
-        self.info = {}
-        res = self._send_request('GET', "/")
-        self.info['server'] = {}
-        self.info['server']['name'] = res['name']
-        self.info['server']['version'] = res['version']
-        self.info['allinfo'] = res
-        self.info['status'] = self.status(["_all"])
-        return self.info
+        try:
+            info = {}
+            res = self._send_request('GET', "/")
+            info['server'] = {}
+            info['server']['name'] = res['name']
+            info['server']['version'] = res['version']
+            info['allinfo'] = res
+            info['status'] = self.status(["_all"])
+            info['aliases'] = self.aliases()
+            self.info = info
+            return True
+        except:
+            self.info = {}
+            return False
 
     #--- cluster
     def cluster_health(self, indices=None, level="cluster", wait_for_status=None,
@@ -978,9 +994,20 @@ class ES(object):
         """
         with self.bulk_lock:
             if forced or len(self.bulk_data) >= self.bulk_size:
-                return self.force_bulk()
+                batch = self.bulk_data
+                self.bulk_data = []
             else:
                 return None
+
+        if len(batch) > 0:
+            bulk_result = self._send_request("POST",
+                "/_bulk",
+                "\n".join(batch) + "\n")
+
+            if self.raise_on_bulk_item_failure:
+                _raise_exception_if_bulk_item_failed(bulk_result)
+
+            return bulk_result
 
     def force_bulk(self):
         """
@@ -988,17 +1015,7 @@ class ES(object):
         
         Return the bulk response
         """
-        with self.bulk_lock:
-            if len(self.bulk_data) > 0:
-                bulk_result = self._send_request("POST",
-                    "/_bulk",
-                    "\n".join(self.bulk_data) + "\n")
-                self.bulk_data = []
-
-                if self.raise_on_bulk_item_failure:
-                  _raise_exception_if_bulk_item_failed(bulk_result)
-
-                return bulk_result
+        return self.flush_bulk(True)
 
     def put_file(self, filename, index, doc_type, id=None):
         """
@@ -1066,8 +1083,7 @@ class ES(object):
         if bulk:
             cmd = { "delete" : { "_index" : index, "_type" : doc_type,
                                 "_id": id}}
-            with self.bulk_lock:
-                self._add_to_bulk_queue(json.dumps(cmd, cls=self.encoder))
+            self._add_to_bulk_queue(json.dumps(cmd, cls=self.encoder))
             return self.flush_bulk()
 
         path = self._make_path([index, doc_type, id])
@@ -1586,6 +1602,5 @@ class ResultSet(object):
 
     def __iter__(self):
         self.iterpos = 0
-        self.start = 0
         self._results = None
         return self

@@ -132,6 +132,8 @@ class Search(EqualityComparableUsingAttributeDictionary):
         """
         res = {}
         if self.query:
+            if isinstance(self.query, dict):
+                return self.query
             res["query"] = self.query.serialize()
         if self.filter:
             res['filter'] = self.filter.serialize()

@@ -20,10 +20,10 @@ class DumpCurlTestCase(ESTestCase):
         result = conn.index(dict(title="Hi"), self.index_name, self.document_type)
         self.assertTrue('ok' in result)
         self.assertTrue('error' not in result)
-
         dump = dump.getvalue()
-        print dump
-        self.assertTrue('test-index/test-type\' -d \'{"title": "Hi"}\'\n' in dump)
+        self.assertTrue("""
+            curl -XPOST 'http://127.0.0.1:9200/test-index/test-type?pretty=true' -d '{"title": "Hi"}'
+            """.strip() in dump)
 
 if __name__ == "__main__":
     unittest.main()

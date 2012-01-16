@@ -26,7 +26,7 @@ class QuickRunTests(TestCommand):
         TestCommand.run(self, *args, **kwargs)
 
 
-install_requires = []
+install_requires = ["requests"]
 
 #if not sys.platform.startswith("java"):
 #    install_requires += [ "thrift", ]    

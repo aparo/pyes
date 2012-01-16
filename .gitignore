@@ -1,3 +1,4 @@
 *.pyc
 docs/_build
+.*.swp
 pyes/tests/.noseids

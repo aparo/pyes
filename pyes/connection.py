@@ -27,7 +27,7 @@ Just do a "pip install thrift".
 
 """
 
-DEFAULT_SERVER = '127.0.0.1:9500'
+DEFAULT_SERVER = ("127.0.0.1", 9500)
 #API_VERSION = VERSION.split('.')
 
 log = logging.getLogger('pyes')
@@ -36,10 +36,10 @@ class ClientTransport(object):
     """Encapsulation of a client session."""
 
     def __init__(self, server, framed_transport, timeout, recycle):
-        host, port = server.split(":")
-        socket = TSocket.TSocket(host, int(port))
+        host, port = server
+        socket = TSocket.TSocket(host, port)
         if timeout is not None:
-            socket.setTimeout(timeout*1000.0)
+            socket.setTimeout(timeout * 1000.0)
         if framed_transport:
             transport = TTransport.TFramedTransport(socket)
         else:
@@ -80,7 +80,7 @@ def connect(servers=None, framed_transport=False, timeout=None,
     servers : [server]
               List of ES servers with format: "hostname:port"
 
-              Default: ['127.0.0.1:9500']
+              Default: [("127.0.0.1",9500)]
     framed_transport: bool
               If True, use a TFramedTransport instead of a TBufferedTransport
     timeout: float
@@ -165,7 +165,7 @@ class ThreadLocalConnection(object):
     def __getattr__(self, attr):
         def _client_call(*args, **kwargs):
 
-            for retry in xrange(self._max_retries+1):
+            for retry in xrange(self._max_retries + 1):
                 try:
                     conn = self._ensure_connection()
                     return getattr(conn.client, attr)(*args, **kwargs)

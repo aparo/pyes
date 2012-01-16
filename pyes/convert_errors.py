@@ -4,8 +4,6 @@
 
 """
 
-__author__ = 'Richard Boulton'
-
 __all__ = ['raise_if_error']
 
 import pyes.exceptions
@@ -25,7 +23,8 @@ exceptions_by_name = dict((name, getattr(pyes.exceptions, name))
         'MapperParsingException',
         'ReduceSearchPhaseException',
         "VersionConflictEngineException",
-        "DocumentAlreadyExistsEngineException"
+        "DocumentAlreadyExistsEngineException",
+        "TypeMissingException"
     )
 )
 
@@ -48,8 +47,8 @@ def raise_if_error(status, result, request=None):
     The status code and result can be retrieved from the exception by accessing its
     status and result properties.
 
-    Optionally, this can take the original RestRequest instance which generate this 
-    error, which will then get included in the exception.
+    Optionally, this can take the original RestRequest instance which generated 
+    this error, which will then get included in the exception.
 
     """
     assert isinstance(status, int)
@@ -61,7 +60,7 @@ def raise_if_error(status, result, request=None):
         raise pyes.exceptions.NotFoundException("Item not found", status, result, request)
 
     if not isinstance(result, dict) or 'error' not in result:
-        raise pyes.exceptions.ElasticSearchException("Unknown exception type", status, result, request)
+        raise pyes.exceptions.ElasticSearchException(u"Unknown exception type: %d, %s" % (status, result), status, result, request)
 
     error = result['error']
     if '; nested: ' in error:

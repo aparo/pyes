@@ -934,8 +934,8 @@ class TextQuery(Query):
             query["prefix_length"] = prefix_length
         if max_expansions != 2147483647:
             query["max_expansions"] = max_expansions
-#        if operator:
-#            query["operator"] = operator
+        if operator:
+            query["operator"] = operator
 
         self.queries[field] = query
 
@@ -1087,7 +1087,7 @@ class SpanNearQuery(Query):
     """
     _internal_name = "span_near"
 
-    def __init__(self, clauses=None, slop=None,
+    def __init__(self, clauses=None, slop=1,
                  in_order=None,
                  collect_payloads=None, **kwargs):
         super(SpanNearQuery, self).__init__(**kwargs)
@@ -1104,9 +1104,7 @@ class SpanNearQuery(Query):
     def serialize(self):
         if not self.clauses or len(self.clauses) == 0:
             raise RuntimeError("A least a Span*Query must be added to clauses")
-        data = {}
-        if self.slop is not None:
-            data["slop"] = self.slop
+        data = {"slop": self.slop}
         if self.in_order is not None:
             data["in_order"] = self.in_order
         if self.collect_payloads is not None:
@@ -1178,10 +1176,8 @@ class SpanOrQuery(Query):
 class SpanTermQuery(TermQuery):
     _internal_name = "span_term"
 
-    def __init__(self, **kwargs):
-        super(SpanTermQuery, self).__init__(**kwargs)
-
-
+    def __init__(self, *args, **kwargs):
+        super(SpanTermQuery, self).__init__(*args, **kwargs)
 
 class WildcardQuery(TermQuery):
     _internal_name = "wildcard"
@@ -1278,3 +1274,51 @@ class PercolatorQuery(Query):
     def to_search_json(self):
         """Disable this as it is not allowed in percolator queries."""
         raise NotImplementedError()
+
+
+class CustomFiltersScoreQuery(Query):
+    _internal_name = "custom_filters_score"
+    
+    class ScoreMode(object):
+        FIRST = "first"
+        MIN = "min"
+        MAX = "max"
+        TOTAL = "total"
+        AVG = "avg"
+        MULTIPLY = "multiply"
+
+    class Filter(EqualityComparableUsingAttributeDictionary):
+        def __init__(self, filter_, boost=None, script=None):
+            if (boost is None) == (script is None):
+              raise ValueError("Exactly one of boost and script must be specified")
+            
+            self.filter_ = filter_
+            self.boost = boost
+            self.script = script
+
+        def serialize(self):
+            data = {'filter': self.filter_.serialize()}
+            if self.boost is not None:
+              data['boost'] = self.boost
+            if self.script is not None:
+              data['script'] = self.script
+            return data
+
+    def __init__(self, query, filters, score_mode=None, params=None, lang=None, **kwargs):
+        super(CustomFiltersScoreQuery, self).__init__(**kwargs)
+        self.query = query
+        self.filters = filters
+        self.score_mode = score_mode
+        self.params = params
+        self.lang = lang
+
+    def serialize(self):
+        data = {'query':self.query.serialize()}
+        data['filters'] = [filter_.serialize() for filter_ in self.filters]
+        if self.score_mode is not None:
+            data['score_mode'] = self.score_mode
+        if self.params is not None:
+            data['params'] = self.params
+        if self.lang is not None:
+            data['lang'] = self.lang
+        return {self._internal_name: data}

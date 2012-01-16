@@ -5,7 +5,7 @@ Unit tests for pyes.  These require an es server with thrift plugin and the lang
 """
 from pyestest import ESTestCase
 from pyes.query import *
-from pyes.filters import TermFilter, ANDFilter, ORFilter, RangeFilter, RawFilter, IdsFilter
+from pyes.filters import TermFilter, ANDFilter, ORFilter, RangeFilter, RawFilter, IdsFilter, MatchAllFilter, NotFilter
 from pyes.utils import ESRangeOp
 import unittest
 
@@ -333,6 +333,91 @@ class QuerySearchTestCase(ESTestCase):
           dict(filter=filter_))
         self.assertEqual(Search(filter=RawFilter(filter_string)).serialize(),
           dict(filter=filter_))
+        
+    def test_CustomFiltersScoreQuery_ScoreMode(self):
+        self.assertEquals(CustomFiltersScoreQuery.ScoreMode.FIRST, "first")
+        self.assertEquals(CustomFiltersScoreQuery.ScoreMode.MIN, "min")
+        self.assertEquals(CustomFiltersScoreQuery.ScoreMode.MAX, "max")
+        self.assertEquals(CustomFiltersScoreQuery.ScoreMode.TOTAL, "total")
+        self.assertEquals(CustomFiltersScoreQuery.ScoreMode.AVG, "avg")
+        self.assertEquals(CustomFiltersScoreQuery.ScoreMode.MULTIPLY, "multiply")
+        
+    def test_CustomFiltersScoreQuery_Filter(self):
+        with self.assertRaises(ValueError) as cm:
+            CustomFiltersScoreQuery.Filter(MatchAllFilter())
+        self.assertEquals(cm.exception.message, "Exactly one of boost and script must be specified")
+      
+        with self.assertRaises(ValueError) as cm:
+            CustomFiltersScoreQuery.Filter(MatchAllFilter(), 5.0, "someScript")
+        self.assertEquals(cm.exception.message, "Exactly one of boost and script must be specified")
+        
+        filter1 = CustomFiltersScoreQuery.Filter(MatchAllFilter(), 5.0)
+        self.assertEquals(filter1, CustomFiltersScoreQuery.Filter(MatchAllFilter(), 5.0))
+        self.assertEquals(filter1.filter_, MatchAllFilter())
+        self.assertEquals(filter1.boost, 5.0)
+        self.assertIsNone(filter1.script)
+        self.assertEquals(filter1.serialize(), {'filter': {'match_all': {}}, 'boost': 5.0})
+        
+        filter2 = CustomFiltersScoreQuery.Filter(NotFilter(MatchAllFilter()), script="hello")
+        self.assertEquals(filter2, CustomFiltersScoreQuery.Filter(NotFilter(MatchAllFilter()), script="hello"))
+        self.assertEquals(filter2.filter_, NotFilter(MatchAllFilter()))
+        self.assertEquals(filter2.script, "hello")
+        self.assertIsNone(filter2.boost)
+        self.assertEquals(filter2.serialize(), {'filter': {'not': {'filter': {'match_all': {}}}}, 'script': 'hello'})
+
+    def test_CustomFiltersScoreQuery(self):
+        script1 = "max(1,2)"
+        script2 = "min(1,2)"
+
+        filter1 = CustomFiltersScoreQuery.Filter(MatchAllFilter(), 5.0)
+        filter2 = CustomFiltersScoreQuery.Filter(NotFilter(MatchAllFilter()),
+            script=script1)
+        filter3 = CustomFiltersScoreQuery.Filter(NotFilter(MatchAllFilter()),
+            script=script2)
+
+        q1 = MatchAllQuery()
+        q2 = TermQuery("foo", "bar")
+
+        cfsq1 = CustomFiltersScoreQuery(q1, [filter1, filter2])
+        self.assertEquals(cfsq1, CustomFiltersScoreQuery(q1, [filter1, filter2]))
+        self.assertEquals(cfsq1.query, q1)
+        self.assertEquals(cfsq1.filters, [filter1, filter2])
+        self.assertIsNone(cfsq1.score_mode)
+        self.assertIsNone(cfsq1.params)
+        self.assertIsNone(cfsq1.lang)
+        self.assertEquals(cfsq1.serialize(),
+            {'custom_filters_score': {
+                'query': {'match_all': {}},
+                'filters': [
+                  filter1.serialize(),
+                  filter2.serialize()
+                ]}})
+
+        params1 = {"foo": "bar"}
+        lang1 = "mvel"
+        cfsq2 = CustomFiltersScoreQuery(q2, [filter1, filter2, filter3],
+            CustomFiltersScoreQuery.ScoreMode.MAX,
+            params1, lang1)
+        self.assertEquals(cfsq2,
+            CustomFiltersScoreQuery(q2, [filter1, filter2, filter3],
+                CustomFiltersScoreQuery.ScoreMode.MAX,
+                params1, lang1))
+        self.assertEquals(cfsq2.query, q2)
+        self.assertEquals(cfsq2.filters, [filter1, filter2, filter3])
+        self.assertEquals(cfsq2.score_mode, CustomFiltersScoreQuery.ScoreMode.MAX)
+        self.assertEquals(cfsq2.params, params1)
+        self.assertEquals(cfsq2.lang, lang1)
+        self.assertEquals(cfsq2.serialize(),
+            {'custom_filters_score': {
+                'query': {'term':{'foo': 'bar'}},
+                'filters': [
+                  filter1.serialize(),
+                  filter2.serialize(),
+                  filter3.serialize()
+                ],
+                'score_mode': 'max',
+                'lang': 'mvel',
+                'params': {"foo": "bar"}}})
 
 if __name__ == "__main__":
     unittest.main()

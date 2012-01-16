@@ -1,25 +1,30 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
 from __future__ import with_statement
-import threading
 
 __author__ = 'Alberto Paro'
 __all__ = ['ES', 'file_to_attachment', 'decode_json']
 
 try:
+    # For Python < 2.6 or people using a newer version of simplejson
+    import simplejson
+    json = simplejson
+except ImportError:
     # For Python >= 2.6
     import json
-except ImportError:
-    # For Python < 2.6 or people using a newer version of simplejson
-    import simplejson as json
 
 import logging
+import random
 from datetime import date, datetime
+from urllib import urlencode
+from urlparse import urlunsplit
 import base64
 import time
 from StringIO import StringIO
 from decimal import Decimal
 from urllib import quote
+import threading
 import copy
 
 try:
@@ -32,15 +37,13 @@ except ImportError:
 
 from connection_http import connect as http_connect
 log = logging.getLogger('pyes')
-from mappings import Mapper
 
 from convert_errors import raise_if_error
 from pyes.exceptions import (InvalidParameter,
         ElasticSearchException, IndexAlreadyExistsException,
         IndexMissingException, NotFoundException, InvalidQuery,
-        ReduceSearchPhaseException
-        )
-import collections
+        ReduceSearchPhaseException, VersionConflictEngineException,
+        BulkOperationException)
 
 #
 # models
@@ -55,7 +58,7 @@ class DotDict(dict):
     __delattr__ = dict.__delitem__
 
     def __deepcopy__(self, memo):
-      return DotDict([(copy.deepcopy(k, memo), copy.deepcopy(v, memo)) for k, v in self.items()])
+        return DotDict([(copy.deepcopy(k, memo), copy.deepcopy(v, memo)) for k, v in self.items()])
 
 class ElasticSearchModel(DotDict):
     def __init__(self, *args, **kwargs):
@@ -65,22 +68,32 @@ class ElasticSearchModel(DotDict):
             self.update(item.pop("_source", DotDict()))
             self.update(item.pop("fields", {}))
             self.meta = DotDict([(k.lstrip("_"), v) for k, v in item.items()])
-            self.meta.parent = self.pop("_parent", None) 
+            self.meta.parent = self.pop("_parent", None)
             self.meta.connection = args[0]
         else:
             self.update(dict(*args, **kwargs))
 
-    def save(self, bulk=False, id=None, parent=None):
+    def delete(self, bulk=False):
+        """
+        Delete the object
+        """
+        meta = self.meta
+        conn = meta['connection']
+        conn.delete(meta.index, meta.type, meta.id, bulk=bulk)
+
+    def save(self, bulk=False, id=None, parent=None, force=False):
         """
         Save the object and returns id
         """
         meta = self.meta
         conn = meta['connection']
-        id = id or meta.get("id")
-        parent = parent or meta.get('parent')
-        version = meta.get('version')
+        id = id or meta.get("id", None)
+        parent = parent or meta.get('parent', None)
+        version = meta.get('version', None)
+        if force:
+            version = None
         res = conn.index(dict([(k, v) for k, v in self.items() if k != "meta"]),
-                         meta.index, meta.type, id, parent=parent, bulk=bulk, version=version)
+                         meta.index, meta.type, id, parent=parent, bulk=bulk, version=version, force_insert=force)
         if not bulk:
             self.meta.id = res._id
             self.meta.version = res._version
@@ -126,6 +139,21 @@ def file_to_attachment(filename, filehandler=None):
         return {'_name':filename,
                 'content':base64.b64encode(_file.read())
                 }
+
+def _is_bulk_item_ok(item):
+    if "index" in item:
+        return "ok" in item["index"]
+    elif "delete" in item:
+        return "ok" in item["delete"]
+    else:
+        # unknown response type; be conservative
+        return False
+
+def _raise_exception_if_bulk_item_failed(bulk_result):
+    errors = [item for item in bulk_result["items"] if not _is_bulk_item_ok(item)]
+    if len(errors) > 0:
+        raise BulkOperationException(errors, bulk_result)
+    return None
 
 class ESJsonEncoder(json.JSONEncoder):
     def default(self, value):
@@ -183,26 +211,37 @@ class ES(object):
 
     def __init__(self, server="localhost:9200", timeout=5.0, bulk_size=400,
                  encoder=None, decoder=None,
-                 max_retries=3, autorefresh=False,
+                 max_retries=3,
                  default_indices=['_all'],
                  default_types=None,
                  dump_curl=False,
-                 model=ElasticSearchModel):
+                 model=ElasticSearchModel,
+                 raise_on_bulk_item_failure=False):
         """
-        Init a es object
+        Init a es object.
+        Servers can be defined in different forms:
         
-        server: the server name, it can be a list of servers
-        timeout: timeout for a call
-        bulk_size: size of bulk operation
-        encoder: tojson encoder
-        max_retries: number of max retries for server if a server is down
-        autorefresh: check if need a refresh before a query
-        model: used to objectify the dictinary. If None, the raw dict is returned.
+        - host:port with protocol guess (i.e. 127.0.0.1:9200 protocol -> http 
+                                            127.0.0.1:9500  protocol -> thrift )
+        - type://host:port (i.e. http://127.0.0.1:9200 thrift://127.0.0.1:9500)
 
-        dump_curl: If truthy, this will dump every query to a curl file.  If
+        - (type, host, port) (i.e. tuple ("http", "127.0.0.1", "9200") ("thrift", "127.0.0.1", "9500")). This is the prefered form.
+        
+        :param server: the server name, it can be a list of servers. 
+        :param timeout: timeout for a call
+        :param bulk_size: size of bulk operation
+        :param encoder: tojson encoder
+        :param max_retries: number of max retries for server if a server is down
+        :param model: used to objectify the dictinary. If None, the raw dict is returned.
+        
+
+        :param dump_curl: If truthy, this will dump every query to a curl file.  If
         this is set to a string value, it names the file that output is sent
         to.  Otherwise, it should be set to an object with a write() method,
         which output will be written to.
+        
+        :param raise_on_bulk_item_failure: raises an exception if an item in a
+        bulk operation fails
 
         """
         self.timeout = timeout
@@ -211,8 +250,6 @@ class ES(object):
         self.debug_dump = False
         self.cluster_name = "undefined"
         self.connection = None
-        self.autorefresh = autorefresh
-        self.refreshed = True
 
         if model is None:
             model = lambda connection, model: model
@@ -230,11 +267,12 @@ class ES(object):
 
         #used in bulk
         self.bulk_size = bulk_size #size of the bulk
-        self.bulk_data = []
-        self.last_bulk_response = None #last response of a bulk insert
-        self.bulk_lock = threading.Lock()
+        # protects bulk_data
+        self.bulk_lock = threading.RLock()
+        with self.bulk_lock:
+            self.bulk_data = []
+        self.raise_on_bulk_item_failure = raise_on_bulk_item_failure
 
-        self.info = {} #info about the current server
         self.mappings = None #track mapping
         self.encoder = encoder
         if self.encoder is None:
@@ -244,31 +282,97 @@ class ES(object):
             self.decoder = ESJsonDecoder
         if isinstance(server, (str, unicode)):
             self.servers = [server]
+        elif isinstance(server, tuple):
+            self.servers = [server]
         else:
             self.servers = server
         self.default_indices = default_indices
         self.default_types = default_types or []
+        #check the servers variable
+        self._check_servers()
+        #init connections
         self._init_connection()
+        self.collect_info()
+
 
     def __del__(self):
         """
         Destructor
         """
+        # Don't bother getting the lock
         if len(self.bulk_data) > 0:
-            self.flush()
+             # It's not safe to rely on the destructor to flush the queue:
+             # the Python documentation explicitly states "It is not guaranteed 
+             # that __del__() methods are called for objects that still exist "
+             # when the interpreter exits."
+             log.error("pyes object %s is being destroyed, but bulk "
+                 "operations have not been flushed. Call force_bulk()!",
+                  self)
+             # Do our best to save the client anyway...
+             self.force_bulk()
+
+    def _check_servers(self):
+        """Check the servers variable and convert in a valid tuple form"""
+        new_servers = []
+        def check_format(host, port, _type=None):
+            try:
+                port = int(port)
+            except ValueError:
+                raise RuntimeError("Invalid port: \"%s\"" % port)
+            if _type is None:
+                if 9200 <= port <= 9299:
+                    _type = "http"
+                elif 9500 <= port <= 9599:
+                    _type = "thrift"
+                else:
+                    raise RuntimeError("Unable to recognize port-type: \"%s\"" % port)
+
+            if _type not in ["thrift", "http"]:
+                raise RuntimeError("Unable to recognize protocol: \"%s\"" % _type)
+
+            if _type == "thrift" and not thrift_enable:
+                raise RuntimeError("If you want to use thrift, please install thrift. \"pip install thrift\"")
+
+            new_servers.append((_type, host, port))
+
+        for server in self.servers:
+            if isinstance(server, (tuple, list)):
+                if len(list(server)) != 3:
+                    raise RuntimeError("Invalid server definition: \"%s\"" % server)
+                _type, host, port = server
+                check_format(host=host, port=port, _type=_type)
+            elif isinstance(server, basestring):
+                if server.startswith(("thrift:", "http:")):
+                    tokens = [t.strip("/") for t in server.split(":") if t.strip("/")]
+                    if len(tokens) == 3:
+                        check_format(tokens[1], tokens[2], tokens[0])
+                        continue
+                    else:
+                        raise RuntimeError("Invalid server definition: \"%s\"" % server)
+                else:
+                    tokens = [t for t in server.split(":") if t.strip()]
+                    if len(tokens) == 2:
+                        check_format(tokens[0], tokens[1])
+                        continue
+                    else:
+                        raise RuntimeError("Invalid server definition: \"%s\"" % server)
+
+        self.servers = new_servers
 
     def _init_connection(self):
         """
         Create initial connection pool
         """
         #detect connectiontype
-        port = self.servers[0].split(":")[1]
-        if port.startswith("92"):
-            self.connection = http_connect(self.servers, timeout=self.timeout, max_retries=self.max_retries)
+        if len(self.servers) == 0:
+            raise RuntimeError("No server defined")
+
+        _type, host, port = random.choice(self.servers)
+        if _type == "http":
+            self.connection = http_connect([(host, port) for _type, host, port in self.servers if _type == "http"], timeout=self.timeout, max_retries=self.max_retries)
             return
-        if not thrift_enable:
-            raise RuntimeError("If you want to use thrift, please install thrift. \"pip install thrift\"")
-        self.connection = thrift_connect(self.servers, timeout=self.timeout, max_retries=self.max_retries)
+        elif _type == "thrift":
+            self.connection = thrift_connect([(host, port) for _type, host, port in self.servers if _type == "thrift"], timeout=self.timeout, max_retries=self.max_retries)
 
     def _discovery(self):
         """
@@ -283,7 +387,7 @@ class ES(object):
         self._init_connection()
         return self.servers
 
-    def _send_request(self, method, path, body=None, params=None, headers=None):
+    def _send_request(self, method, path, body=None, params=None, headers=None, raw=False):
         if params is None:
             params = {}
         if headers is None:
@@ -327,8 +431,8 @@ class ES(object):
                 # in the exception.
                 raise ElasticSearchException(response.body, response.status, response.body)
         if response.status != 200:
-            raise_if_error(response.status, decoded, request)
-        if isinstance(decoded, dict):
+            raise_if_error(response.status, decoded)
+        if not raw and isinstance(decoded, dict):
             decoded = DotDict(decoded)
         return  decoded
 
@@ -347,8 +451,6 @@ class ES(object):
         This can be used for search and count calls.
         These are identical api calls, except for the type of query.
         """
-        if self.autorefresh and self.refreshed == False:
-            self.refresh(indices)
         querystring_args = query_params
         indices = self._validate_indices(indices)
         if doc_types is None:
@@ -372,19 +474,15 @@ class ES(object):
         return indices
 
     def _dump_curl_request(self, request):
-        self.dump_curl.write("# [%s]\n" % datetime.now().isoformat())
-        self.dump_curl.write("curl -X" + Method._VALUES_TO_NAMES[request.method])
-        self.dump_curl.write(" '")
-        self.dump_curl.write("http://" + self.servers[0] + request.uri)
-        if request.parameters:
-            params = request.parameters
-            self.dump_curl.write("?")
-            for param in params:
-                self.dump_curl.write("%s=%s" % (param, params[param]))
-        self.dump_curl.write("'")
+        print >> self.dump_curl, "# [%s]" % datetime.now().isoformat()
+        params = {'pretty': 'true'}
+        params.update(request.parameters)
+        method = Method._VALUES_TO_NAMES[request.method]
+        url = urlunsplit(('http', self.servers[0], request.uri, urlencode(params), ''))
+        curl_cmd = "curl -X%s '%s'" % (method, url)
         if request.body:
-            self.dump_curl.write(" -d '%s'" % request.body.replace("'", "'\\''"))
-        self.dump_curl.write("\n")
+            curl_cmd += " -d '%s'" % request.body
+        print >> self.dump_curl, curl_cmd
 
     #---- Admin commands
     def status(self, indices=None):
@@ -396,6 +494,15 @@ class ES(object):
             indices = self.default_indices
 #        indices = self._validate_indices(indices)
         path = self._make_path([','.join(indices), '_status'])
+        return self._send_request('GET', path)
+
+    def aliases(self, indices=None):
+        """
+        Retrieve the aliases of one or more indices
+        """
+        if not indices:
+            indices = ["_all"]
+        path = self._make_path([','.join(indices), '_aliases'])
         return self._send_request('GET', path)
 
     def create_index(self, index, settings=None):
@@ -432,12 +539,8 @@ class ES(object):
         """Deletes an index if it exists.
 
         """
-        try:
+        if self.exists_index(index):
             return self.delete_index(index)
-        except IndexMissingException:
-            pass
-        except NotFoundException, e:
-            return e.result
 
     def get_indices(self, include_aliases=False):
         """Get a dict holding an entry for each index which exists.
@@ -597,7 +700,6 @@ class ES(object):
         result = self._send_request('POST', path)
         time.sleep(timesleep)
         self.cluster_health(wait_for_status='green')
-        self.refreshed = True
         return result
 
 
@@ -644,7 +746,6 @@ class ES(object):
         if max_num_segments is not None:
             params['max_num_segments'] = max_num_segments
         result = self._send_request('POST', path, params=params)
-        self.refreshed = True
         return result
 
     def analyze(self, text, index=None):
@@ -671,6 +772,8 @@ class ES(object):
             mapping = {}
         if hasattr(mapping, "to_json"):
             mapping = mapping.to_json()
+        if hasattr(mapping, "as_dict"):
+            mapping = mapping.as_dict()
 
         if doc_type:
             path = self._make_path([','.join(indices), doc_type, "_mapping"])
@@ -679,7 +782,6 @@ class ES(object):
         else:
             path = self._make_path([','.join(indices), "_mapping"])
 
-        self.refreshed = False
         return self._send_request('PUT', path, mapping)
 
     def get_mapping(self, doc_type=None, indices=None):
@@ -695,16 +797,22 @@ class ES(object):
 
     def collect_info(self):
         """
-        Collect info about the connection and fill the info dictionary
+        Collect info about the connection and fill the info dictionary.
         """
-        self.info = {}
-        res = self._send_request('GET', "/")
-        self.info['server'] = {}
-        self.info['server']['name'] = res['name']
-        self.info['server']['version'] = res['version']
-        self.info['allinfo'] = res
-        self.info['status'] = self.status(["_all"])
-        return self.info
+        try:
+            info = {}
+            res = self._send_request('GET', "/")
+            info['server'] = {}
+            info['server']['name'] = res['name']
+            info['server']['version'] = res['version']
+            info['allinfo'] = res
+            info['status'] = self.status(["_all"])
+            info['aliases'] = self.aliases()
+            self.info = info
+            return True
+        except:
+            self.info = {}
+            return False
 
     #--- cluster
     def cluster_health(self, indices=None, level="cluster", wait_for_status=None,
@@ -809,18 +917,9 @@ class ES(object):
         path = self._make_path(parts)
         return self._send_request('GET', path)
 
-    def index_stats(self, indices=None):
-        """
-        http://www.elasticsearch.org/guide/reference/api/admin-indices-stats.html
-        """
-        parts = ["_stats"]
-        if indices:
-            if isinstance(indices, basestring):
-                indices = [indices]
-            parts = [",".join(indices), "_stats"]
-
-        path = self._make_path(parts)
-        return self._send_request('GET', path)
+    def _add_to_bulk_queue(self, content):
+        with self.bulk_lock:
+            self.bulk_data.append(content)
 
     def index_raw_bulk(self, header, document):
         """
@@ -828,7 +927,7 @@ class ES(object):
 
         header and document must be string "\n" ended
         """
-        self.bulk_data.append("%s%s" % (header, document))
+        self._add_to_bulk_queue(u"%s%s" % (header, document))
         return self.flush_bulk()
 
     def index(self, doc, index, doc_type, id=None, parent=None,
@@ -840,8 +939,6 @@ class ES(object):
         """
         if querystring_args is None:
             querystring_args = {}
-
-        self.refreshed = False
 
         if bulk:
             if op_type is None:
@@ -864,7 +961,7 @@ class ES(object):
             if isinstance(doc, dict):
                 doc = json.dumps(doc, cls=self.encoder)
             command = "%s\n%s" % (json.dumps(cmd, cls=self.encoder), doc)
-            self.bulk_data.append(command)
+            self._add_to_bulk_queue(command)
             return self.flush_bulk()
 
         if force_insert:
@@ -890,34 +987,49 @@ class ES(object):
         path = self._make_path([index, doc_type, id])
         return self._send_request(request_method, path, doc, querystring_args)
 
+
+    def index_stats(self, indices=None):
+        """
+        http://www.elasticsearch.org/guide/reference/api/admin-indices-stats.html
+        """
+        parts = ["_stats"]
+        if indices:
+            if isinstance(indices, basestring):
+                indices = [indices]
+            parts = [",".join(indices), "_stats"]
+
+        path = self._make_path(parts)
+        return self._send_request('GET', path)
+
+
     def flush_bulk(self, forced=False):
         """
-        Wait to process all pending operations
+        Send pending operations if forced or if the bulk threshold is exceeded.
         """
-        if not forced and len(self.bulk_data) < self.bulk_size:
-            return None
-        return self.force_bulk()
+        with self.bulk_lock:
+            if forced or len(self.bulk_data) >= self.bulk_size:
+                batch = self.bulk_data
+                self.bulk_data = []
+            else:
+                return None
+
+        if len(batch) > 0:
+            bulk_result = self._send_request("POST",
+                "/_bulk",
+                "\n".join(batch) + "\n")
+
+            if self.raise_on_bulk_item_failure:
+                _raise_exception_if_bulk_item_failed(bulk_result)
+
+            return bulk_result
 
     def force_bulk(self):
         """
         Force executing of all bulk data.
         
         Return the bulk response
-        
-        If not item self.last_bulk_response to None and returns None
         """
-        locked = self.bulk_lock.acquire(False)
-        if locked:
-            try:
-                if len(self.bulk_data):
-                    batch = self.bulk_data
-                    self.bulk_data = []
-                    self.last_bulk_response = self._send_request("POST", "/_bulk", "\n".join(batch) + "\n")
-                else:
-                    self.last_bulk_response = None
-            finally:
-              self.bulk_lock.release()
-        return self.last_bulk_response
+        return self.flush_bulk(True)
 
     def put_file(self, filename, index, doc_type, id=None):
         """
@@ -941,6 +1053,42 @@ class ES(object):
         return data['_name'], base64.standard_b64decode(data['content'])
         #return data["_source"]['_name'], base64.standard_b64decode(data["_source"]['content'])
 
+    def update(self, extra_doc, index, doc_type, id, querystring_args=None,
+               update_func=None, attempts=2):
+        """
+        Update an already indexed typed JSON document.
+
+        The update happens client-side, i.e. the current document is retrieved,
+        updated locally and finally pushed to the server. This may repeat up to
+        ``attempts`` times in case of version conflicts.
+
+        :param update_func: A callable ``update_func(current_doc, extra_doc)``
+            that computes and returns the updated doc. Alternatively it may
+            update ``current_doc`` in place and return None. The default
+            ``update_func`` is ``dict.update``.
+
+        :param attempts: How many times to retry in case of version conflict.
+        """
+        if querystring_args is None:
+            querystring_args = {}
+
+        if update_func is None:
+            update_func = dict.update
+
+        for attempt in xrange(attempts - 1, -1, -1):
+            current_doc = self.get(index, doc_type, id, **querystring_args)
+            new_doc = update_func(current_doc, extra_doc)
+            if new_doc is None:
+                new_doc = current_doc
+            meta = new_doc.pop('meta')
+            try:
+                return self.index(new_doc, index, doc_type, id,
+                                  version=meta.version, querystring_args=querystring_args)
+            except VersionConflictEngineException:
+                if i <= 0:
+                    raise
+                self.refresh(index)
+
     def delete(self, index, doc_type, id, bulk=False, querystring_args=None):
         """
         Delete a typed JSON document from a specific index based on its id.
@@ -950,9 +1098,8 @@ class ES(object):
         if bulk:
             cmd = { "delete" : { "_index" : index, "_type" : doc_type,
                                 "_id": id}}
-            self.bulk_data.append(json.dumps(cmd, cls=self.encoder))
-            self.flush_bulk()
-            return
+            self._add_to_bulk_queue(json.dumps(cmd, cls=self.encoder))
+            return self.flush_bulk()
 
         path = self._make_path([index, doc_type, id])
         return self._send_request('DELETE', path, params=querystring_args)
@@ -1031,10 +1178,18 @@ class ES(object):
         body = []
         for value in ids:
             if isinstance(value, tuple):
-                a, b, c = value
-                body.append({"_index":a,
-                             "_type":b,
-                             "_id":c})
+                if len(value) == 3:
+                    a, b, c = value
+                    body.append({"_index":a,
+                                 "_type":b,
+                                 "_id":c})
+                elif len(value) == 4:
+                    a, b, c, d = value
+                    body.append({"_index":a,
+                                 "_type":b,
+                                 "_id":c,
+                                 "fields":d})
+
             else:
                 if index is None:
                     raise InvalidQuery("index value is required for id")
@@ -1409,9 +1564,9 @@ class ResultSet(object):
                     start = 0
                 else:
                     start -= 1
-                end = val.stop or self.total
+                end = val.stop or self.total()
                 if end < 0:
-                    end = self.total + end
+                    end = self.total() + end
                 return start, end
             return val, val + 1
 
@@ -1462,6 +1617,5 @@ class ResultSet(object):
 
     def __iter__(self):
         self.iterpos = 0
-        self.start = 0
         self._results = None
         return self

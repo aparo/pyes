@@ -474,11 +474,18 @@ class ES(object):
         return indices
 
     def _dump_curl_request(self, request):
+        print 'request', request
+
         print >> self.dump_curl, "# [%s]" % datetime.now().isoformat()
         params = {'pretty': 'true'}
         params.update(request.parameters)
         method = Method._VALUES_TO_NAMES[request.method]
-        url = urlunsplit(('http', self.servers[0], request.uri, urlencode(params), ''))
+
+        server = self.servers[0]
+        scheme = server[0]
+        netloc = server[1] + ':' + str(server[2])
+
+        url = urlunsplit((scheme, netloc, request.uri, urlencode(params), ''))
         curl_cmd = "curl -X%s '%s'" % (method, url)
         if request.body:
             curl_cmd += " -d '%s'" % request.body

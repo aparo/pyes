@@ -30,11 +30,17 @@ Features
 Changelog
 =========
 
+v. 0.18.7-rc1:
+
+    Tested against 0.18.7, with all tests passing
+
+    Added support for index_stats
+
 v. 0.17.0:
 
-           API BREAKING: Added new searcher iterator API. (To use the old code rename ".search" in ".search_raw")
+    API BREAKING: Added new searcher iterator API. (To use the old code rename ".search" in ".search_raw")
 
-           Tests refactory.
+    Tests refactory.
 
 TODO
 ----

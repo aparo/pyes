@@ -474,8 +474,6 @@ class ES(object):
         return indices
 
     def _dump_curl_request(self, request):
-        print 'request', request
-
         print >> self.dump_curl, "# [%s]" % datetime.now().isoformat()
         params = {'pretty': 'true'}
         params.update(request.parameters)

@@ -478,7 +478,10 @@ class ES(object):
         params = {'pretty': 'true'}
         params.update(request.parameters)
         method = Method._VALUES_TO_NAMES[request.method]
-        url = urlunsplit(('http', self.servers[0], request.uri, urlencode(params), ''))
+        ### using the new (prot,host,port) tuple, the below code throws a 'can not
+        ### concatenate tuple + str' exception
+        #url = urlunsplit(('http', self.servers[0], request.uri, urlencode(params), ''))
+        url = urlunsplit(('http', ("%s:%s" % self.servers[0][1:3]), request.uri, urlencode(params), ''))
         curl_cmd = "curl -X%s '%s'" % (method, url)
         if request.body:
             curl_cmd += " -d '%s'" % request.body

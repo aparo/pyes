@@ -165,10 +165,10 @@ class ESJsonEncoder(json.JSONEncoder):
         """
 
         if isinstance(value, datetime):
-            return value.strftime("%Y-%m-%dT%H:%M:%S")
+            return value.isoformat()
         elif isinstance(value, date):
             dt = datetime(value.year, value.month, value.day, 0, 0, 0)
-            return dt.strftime("%Y-%m-%dT%H:%M:%S")
+            return dt.isoformat()
         elif isinstance(value, Decimal):
             return float(str(value))
         else:

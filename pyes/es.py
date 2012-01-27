@@ -468,7 +468,8 @@ class ES(object):
         If `indices` is not supplied, returns the default_indices.
 
         """
-        indices = indices or self.default_indices
+        if indices is None:
+            return self.default_indices
         if isinstance(indices, basestring):
             indices = [indices]
         return indices
@@ -486,6 +487,17 @@ class ES(object):
         if request.body:
             curl_cmd += " -d '%s'" % request.body
         print >> self.dump_curl, curl_cmd
+
+    def _get_default_indices(self):
+        return self._default_indices
+
+    def _set_default_indices(self, default_indices):
+        if default_indices is not None:
+            default_indices = self._validate_indices(default_indices)
+        self._default_indices = default_indices
+
+    default_indices = property(_get_default_indices, _set_default_indices)
+    del _get_default_indices, _set_default_indices
 
     #---- Admin commands
     def status(self, indices=None):
@@ -622,7 +634,7 @@ class ES(object):
         }
         return self._send_request('POST', "_aliases", body)
 
-    def add_alias(self, alias, indices):
+    def add_alias(self, alias, indices=None):
         """Add an alias to point to a set of indices.
 
         """
@@ -630,7 +642,7 @@ class ES(object):
         return self.change_aliases(['add', index, alias]
                                    for index in indices)
 
-    def delete_alias(self, alias, indices):
+    def delete_alias(self, alias, indices=None):
         """Delete an alias.
 
         The specified index or indices are deleted from the alias, if they are
@@ -642,7 +654,7 @@ class ES(object):
         return self.change_aliases(['remove', index, alias]
                                    for index in indices)
 
-    def set_alias(self, alias, indices):
+    def set_alias(self, alias, indices=None):
         """Set an alias.
 
         This handles removing the old list of indices pointed to by the alias.

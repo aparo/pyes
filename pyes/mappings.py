@@ -460,6 +460,7 @@ class Mapper(object):
                 for docname, docdata in indexdata.items():
                     o = get_field(docname, docdata)
                     o.connection = self.connection
+                    o.index_name = indexname
                     self.indices[indexname][docname] = o
 
     def get_doctype(self, index, name):

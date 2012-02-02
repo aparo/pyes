@@ -11,8 +11,16 @@ class FacetFactory(EqualityComparableUsingAttributeDictionary):
         self.facets = []
 
     def add_term_facet(self, *args, **kwargs):
-        """Add a term factory"""
+        """Add a term factory facet"""
         self.facets.append(TermFacet(*args, **kwargs))
+
+    def add_date_facet(self, *args, **kwargs):
+        """Add a date factory facet"""
+        self.facets.append(DateHistogramFacet(*args, **kwargs))
+
+    def add_geo_facet(self, *args, **kwargs):
+        """Add a geo factory facet"""
+        self.facets.append(GeoDistanceFacet(*args, **kwargs))
 
     def add(self, facet):
         """Add a term factory"""
@@ -189,6 +197,10 @@ class RangeFacet(Facet):
                 data['params'] = self.params
 
         return {self.name:{self._internal_name:data}}
+
+class GeoDistanceFacet(RangeFacet):
+    _internal_name = "geo_distance"
+
 
 class StatisticalFacet(Facet):
     _internal_name = "statistical"

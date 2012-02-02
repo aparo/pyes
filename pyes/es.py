@@ -105,7 +105,7 @@ class ElasticSearchModel(DotDict):
         version = meta.get('version', None)
         if force:
             version = None
-        res = conn.index(dict([(k, v) for k, v in self.items() if k != "meta"]),
+        res = conn.index(self,
                          meta.index, meta.type, id, parent=parent, bulk=bulk, version=version, force_insert=force)
         if not bulk:
             self._meta.id = res._id
@@ -136,7 +136,7 @@ class ElasticSearchModel(DotDict):
             cmd[op_type]['_id'] = meta.id
         result.append(json.dumps(cmd, cls=self._meta.connection.encoder))
         result.append("\n")
-        result.append(json.dumps(self.store, cls=self._meta.connection.encoder))
+        result.append(json.dumps(self, cls=self._meta.connection.encoder))
         result.append("\n")
         return ''.join(result)
 
@@ -481,8 +481,7 @@ class ES(object):
         If `indices` is not supplied, returns the default_indices.
 
         """
-        if indices is None:
-            return self.default_indices
+        indices = indices or self.default_indices
         if isinstance(indices, basestring):
             indices = [indices]
         return indices
@@ -1481,7 +1480,9 @@ class ResultSet(object):
 
         self.iterpos = 0 #keep track of iterator position
         self.start = self.query.start or 0
-        self.chuck_size = self.query.size or 10
+        self._max_item = self.query.size
+        self._current_item = 0
+        self.chuck_size = self.query.bulk_read or 10
 
     def _do_search(self, auto_increment=False):
         self.iterpos = 0
@@ -1541,7 +1542,16 @@ class ResultSet(object):
                 self._total = self._results.get("hits", {}).get('total', 0)
         return self._total
 
+    @property
+    def facets(self):
+        if self._results is None:
+            self._do_search()
+        return self._facets
+
     def __len__(self):
+        return self.total
+
+    def count(self):
         return self.total
 
     def fix_keys(self):
@@ -1590,9 +1600,11 @@ class ResultSet(object):
                     start = 0
                 else:
                     start -= 1
-                end = val.stop or self.total()
+                end = val.stop or self.total
                 if end < 0:
-                    end = self.total() + end
+                    end = self.total + end
+                if self._max_item is not None and end > self._max_item:
+                    end = self._max_item
                 return start, end
             return val, val + 1
 
@@ -1622,13 +1634,18 @@ class ResultSet(object):
         return [model(self.connection, hit) for hit in hits]
 
     def next(self):
+        if self._max_item is not None and self._current_item == self._max_item:
+            raise StopIteration
         if self._results is None:
+            self._do_search()
+        if "_scroll_id" in self._results and self._total != 0 and self._current_item == 0 and len(self._results["hits"].get("hits", [])) == 0:
             self._do_search()
         if len(self.hits) == 0:
             raise StopIteration
         if self.iterpos < len(self.hits):
             res = self.hits[self.iterpos]
             self.iterpos += 1
+            self._current_item += 1
             return self.connection.model(self.connection, res)
 
         if self.iterpos == self.total:
@@ -1639,9 +1656,14 @@ class ResultSet(object):
             raise StopIteration
         res = self.hits[self.iterpos]
         self.iterpos += 1
+        self._current_item += 1
         return self.connection.model(self.connection, res)
 
     def __iter__(self):
         self.iterpos = 0
-        self._results = None
+        if self._current_item != 0:
+            self._results = None
+        self._current_item = 0
+
+        self.start = 0
         return self

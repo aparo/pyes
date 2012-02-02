@@ -210,7 +210,7 @@ class IndexingTestCase(ESTestCase):
                           *({"name":"Joe Test2"}, self.index_name, self.document_type, 1), **{"version":2})
         item = self.conn.get(self.index_name, self.document_type, 1)
         self.assertEqual(item["meta"]["version"], 3)
-        self.assertEqual(item.meta.version, 3)
+        self.assertEqual(item._meta.version, 3)
 
 if __name__ == "__main__":
     unittest.main()

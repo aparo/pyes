@@ -215,8 +215,8 @@ class QuerySearchTestCase(ESTestCase):
                              ))
         resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
         self.assertEquals(resultset.total, 3)
-        self.assertEquals(resultset[0].meta.score, 8.0)
-        self.assertEquals(resultset[1].meta.score, 7.0)
+        self.assertEquals(resultset[0]._meta.score, 8.0)
+        self.assertEquals(resultset[1]._meta.score, 7.0)
         self.assertEquals(resultset.max_score, 8.0)
 
     def test_CustomScoreQueryJS(self):

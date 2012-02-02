@@ -7,12 +7,11 @@ __author__ = 'Alberto Paro'
 __all__ = ['ES', 'file_to_attachment', 'decode_json']
 
 try:
-    # For Python < 2.6 or people using a newer version of simplejson
-    import simplejson
-    json = simplejson
-except ImportError:
     # For Python >= 2.6
     import json
+except ImportError:
+    # For Python < 2.6 or people using a newer version of simplejson
+    import simplejson as json
 
 import logging
 import random
@@ -21,7 +20,6 @@ from urllib import urlencode
 from urlparse import urlunsplit
 import base64
 import time
-from StringIO import StringIO
 from decimal import Decimal
 from urllib import quote
 import threading
@@ -62,22 +60,37 @@ class DotDict(dict):
 
 class ElasticSearchModel(DotDict):
     def __init__(self, *args, **kwargs):
-        self.meta = DotDict()
+        self._meta = DotDict()
+        self.__initialised = True
         if len(args) == 2 and isinstance(args[0], ES):
             item = args[1]
             self.update(item.pop("_source", DotDict()))
             self.update(item.pop("fields", {}))
-            self.meta = DotDict([(k.lstrip("_"), v) for k, v in item.items()])
-            self.meta.parent = self.pop("_parent", None)
-            self.meta.connection = args[0]
+            self._meta = DotDict([(k.lstrip("_"), v) for k, v in item.items()])
+            self._meta.parent = self._meta.pop("_parent", None)
+            self._meta.connection = args[0]
         else:
             self.update(dict(*args, **kwargs))
+
+    def __setattr__(self, key, value):
+        if not self.__dict__.has_key('_ElasticSearchModel__initialised'):  # this test allows attributes to be set in the __init__ method
+            return dict.__setattr__(self, key, value)
+        elif self.__dict__.has_key(key):       # any normal attributes are handled normally
+            dict.__setattr__(self, key, value)
+        else:
+            self.__setitem__(key, value)
+
+    def __repr__(self):
+        return repr(self)
+
+    def get_meta(self):
+        return self._meta
 
     def delete(self, bulk=False):
         """
         Delete the object
         """
-        meta = self.meta
+        meta = self._meta
         conn = meta['connection']
         conn.delete(meta.index, meta.type, meta.id, bulk=bulk)
 
@@ -85,7 +98,7 @@ class ElasticSearchModel(DotDict):
         """
         Save the object and returns id
         """
-        meta = self.meta
+        meta = self._meta
         conn = meta['connection']
         id = id or meta.get("id", None)
         parent = parent or meta.get('parent', None)
@@ -95,14 +108,14 @@ class ElasticSearchModel(DotDict):
         res = conn.index(dict([(k, v) for k, v in self.items() if k != "meta"]),
                          meta.index, meta.type, id, parent=parent, bulk=bulk, version=version, force_insert=force)
         if not bulk:
-            self.meta.id = res._id
-            self.meta.version = res._version
+            self._meta.id = res._id
+            self._meta.version = res._version
             return res._id
         return id
 
     def get_id(self):
         """ Force the object saveing to get an id"""
-        _id = self.meta.get("id", None)
+        _id = self._meta.get("id", None)
         if _id is None:
             _id = self.save()
         return _id
@@ -113,7 +126,7 @@ class ElasticSearchModel(DotDict):
         op_type = "index"
         if create:
             op_type = "create"
-        meta = self.meta
+        meta = self._meta
         cmd = { op_type : { "_index" : meta.index, "_type" : meta.type}}
         if meta.parent:
             cmd[op_type]['_parent'] = meta.parent
@@ -121,9 +134,9 @@ class ElasticSearchModel(DotDict):
             cmd[op_type]['_version'] = meta.version
         if meta.id:
             cmd[op_type]['_id'] = meta.id
-        result.append(json.dumps(cmd, cls=self.meta.connection.encoder))
+        result.append(json.dumps(cmd, cls=self._meta.connection.encoder))
         result.append("\n")
-        result.append(json.dumps(self.store, cls=self.meta.connection.encoder))
+        result.append(json.dumps(self.store, cls=self._meta.connection.encoder))
         result.append("\n")
         return ''.join(result)
 
@@ -1150,11 +1163,11 @@ class ES(object):
         """
         data = data or {}
         obj = ElasticSearchModel()
-        obj.meta.index = index
-        obj.meta.type = doc_type
-        obj.meta.connection = self
+        obj._meta.index = index
+        obj._meta.type = doc_type
+        obj._meta.connection = self
         if id:
-            obj.meta.id = id
+            obj._meta.id = id
         if data:
             obj.update(data)
         if vertex:

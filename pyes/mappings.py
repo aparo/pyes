@@ -325,8 +325,8 @@ class NestedObject(ObjectField):
 class DocumentObjectField(object):
     def __init__(self, name=None, type=None, path=None, properties=None,
                  dynamic=None, enabled=None, _all=None, _boost=None, _id=None,
-                 _index=None, _source=None, _type=None, date_formats=None,
-                 _parent=None, _timestamp=None, connection=None, index_name=None):
+                 _index=None, _source=None, _type=None, date_formats=None, _routing=None,
+                 _parent=None, _timestamp=None, connection=None, index_name=None, dynamic_date_formats=None):
         self.name = name
         self.type = "object"
         self.path = path
@@ -343,6 +343,9 @@ class DocumentObjectField(object):
         self._id = _id
         self._index = _index
         self._source = _source
+        self._routing = _routing
+        self.dynamic_date_formats = dynamic_date_formats
+
         self._type = _type
         if self._type is None:
             self._type = {"store" : "yes"}
@@ -373,6 +376,8 @@ class DocumentObjectField(object):
             result['_all'] = self._all
         if self._boost is not None:
             result['_boost'] = self._boost
+        if self._routing is not None:
+            result['_routing'] = self._routing
         if self._id is not None:
             result['_id'] = self._id
         if self._timestamp is not None:
@@ -381,6 +386,8 @@ class DocumentObjectField(object):
             result['_index'] = self._index
         if self._parent is not None:
             result['_parent'] = self._parent
+        if self.dynamic_date_formats is not None:
+            result['dynamic_date_formats'] = self.dynamic_date_formats
 
         if self.properties:
             for name, value in self.properties.items():

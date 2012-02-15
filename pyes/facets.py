@@ -234,7 +234,7 @@ class TermFacet(Facet):
     def __init__(self, field=None, fields=None, name=None, size=10,
                  order=None, exclude=None,
                  regex=None, regex_flags="DOTALL",
-                 script=None, **kwargs):
+                 script=None, scope=None, **kwargs):
         super(TermFacet, self).__init__(**kwargs)
         self.name = name
         self.field = field
@@ -247,6 +247,7 @@ class TermFacet(Facet):
         self.regex = regex
         self.regex_flags = regex_flags
         self.script = script
+        self.scope = scope
 
     def serialize(self):
         if self.fields:
@@ -272,8 +273,10 @@ class TermFacet(Facet):
                 data['regex_flags'] = self.regex_flags
         elif self.script:
             data['script'] = self.script
-
-        return {self.name:{self._internal_name:data}}
+        facet = {self._internal_name: data}
+        if self.scope:
+            facet['scope'] = self.scope
+        return {self.name: facet}
 
 class TermStatsFacet(Facet):
     _internal_name = "terms_stats"

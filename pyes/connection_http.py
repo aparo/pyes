@@ -29,7 +29,7 @@ log = logging.getLogger('pyes')
 class ClientTransport(object):
     """Encapsulation of a client session."""
 
-    def __init__(self, server, framed_transport, timeout, recycle, basic_auth):
+    def __init__(self, server, framed_transport, timeout, recycle, basic_auth=None):
         self.connection_type, self.host, self.port = server
         self.timeout = timeout
         self.headers = {}
@@ -53,7 +53,8 @@ class ClientTransport(object):
         """
         headers = self.headers.copy()
         headers.update(request.headers)
-        response = requests.request(method=Method._VALUES_TO_NAMES[request.method],
+        s = requests.session()
+        response = s.request(method=Method._VALUES_TO_NAMES[request.method],
                                     url="http://%s:%s%s" % (self.host, self.port, request.uri), params=request.parameters,
                                     data=request.body, headers=request.headers)
         return RestResponse(status=response.status_code, body=response.content, headers=response.headers)

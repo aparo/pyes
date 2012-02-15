@@ -270,3 +270,56 @@ class TermFacet(Facet):
             data['script'] = self.script
 
         return {self.name:{self._internal_name:data}}
+
+class TermStatsFacet(Facet):
+    _internal_name = "terms_stats"
+
+    def __init__(self, name, size=10, order=None,
+                 key_field=None, value_field=None,
+                 key_script=None, value_script=None, params=None,
+                 nested=None,
+                 **kwargs):
+        super(TermStatsFacet, self).__init__(**kwargs)
+        self.name = name
+        self.size = size
+        self.ORDER_VALUES = ['term', 'reverse_term', 'count', 'reverse_count', 'total',
+            'reverse_total', 'min', 'reverse_min', 'max', 'reverse_max']
+        self.order = order if order is not None else self.ORDER_VALUES[0]
+        self.key_field = key_field
+        self.value_field = value_field
+        self.key_script = key_script
+        self.value_script = value_script
+        self.params = params
+        self.nested = nested
+
+    def serialize(self):
+        data = {}
+        facet = {self._internal_name:data}
+
+        if self.size:
+            data['size'] = self.size
+
+        if self.order:
+            if self.order not in self.ORDER_VALUES:
+                raise RuntimeError("Invalid order value:%s" % self.order)
+            data['order'] = self.order
+
+        if self.key_field:
+            data['key_field'] = self.key_field
+            if self.value_field:
+                data['value_field'] = self.value_field
+            else:
+                raise RuntimeError("Invalid key_field: value_field required")
+        elif self.key_script:
+            data['key_script'] = self.key_script
+            if self.value_script:
+                data['value_script'] = self.value_script
+            else:
+                raise RuntimeError("Invalid key_script: value_script required")
+            if self.params:
+                data['params'] = self.params
+
+        if self.nested is not None:
+            facet['nested'] = self.nested
+
+        return {self.name:facet}

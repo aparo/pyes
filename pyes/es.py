@@ -1365,6 +1365,14 @@ class ES(object):
         return self._send_request('DELETE', '/_river/%s/' % river_name)
 
     #--- settings management
+
+    def get_settings(self, index=None):
+        """
+        Returns the current settings for an index.
+        """
+        path = self._make_path([index, "_settings"])
+        return self._send_request('GET', path)
+
     def update_settings(self, index, newvalues):
         """
         Update Settings of an index.
@@ -1668,7 +1676,7 @@ class ResultSet(object):
     def __iter__(self):
         self.iterpos = 0
         if self._current_item != 0:
-        self._results = None
+            self._results = None
         self._current_item = 0
 
         self.start = 0

@@ -117,7 +117,7 @@ class DateHistogramFacet(Facet):
                  field=None, interval=None, zone=None,
                  key_field=None, value_field=None,
                  value_script=None, params=None,
-                 **kwargs):
+                 scope=None, **kwargs):
         super(DateHistogramFacet, self).__init__(**kwargs)
         self.name = name
         self.field = field
@@ -127,6 +127,7 @@ class DateHistogramFacet(Facet):
         self.value_field = value_field
         self.value_script = value_script
         self.params = params
+        self.scope = scope
 
     def serialize(self):
         data = {}
@@ -150,7 +151,10 @@ class DateHistogramFacet(Facet):
             else:
                 raise RuntimeError("Invalid key_field: value_field or value_script required")
 
-        return {self.name:{self._internal_name:data}}
+        facet = {self._internal_name:data}
+        if self.scope is not None:
+            facet['scope'] = self.scope
+        return {self.name:facet}
 
 class RangeFacet(Facet):
     _internal_name = "range"

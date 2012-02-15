@@ -12,7 +12,7 @@ import os
 class MapperTestCase(ESTestCase):
     def setUp(self):
         super(MapperTestCase, self).setUp()
-        self.datamap = decode_json(open(os.path.join("data", "map.json"), "rb").read())
+        self.datamap = decode_json(open(os.path.join("tests", "data", "map.json"), "rb").read())
 
     def test_parser(self):
         _ = Mapper(self.datamap)

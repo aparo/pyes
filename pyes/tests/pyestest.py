@@ -25,7 +25,15 @@ class ESTestCase(unittest.TestCase):
 
     def assertResultContains(self, result, expected):
         for (key, value) in expected.items():
-            self.assertEquals(value, result[key])
+            found = False
+            try:
+                found = value == result[key]
+            except KeyError:
+                if result.has_key('meta'):
+                    found = value == result['meta'][key]
+            self.assertEquals(True, found)
+
+            #self.assertEquals(value, result[key])
 
     def checkRaises(self, excClass, callableObj, *args, **kwargs):
         """Assert that calling callableObj with *args and **kwargs raises an

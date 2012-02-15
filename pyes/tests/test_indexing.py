@@ -45,12 +45,18 @@ class IndexingTestCase(ESTestCase):
         Testing an indexing given an ID
         """
         result = self.conn.index({"name":"Joe Tester"}, self.index_name, self.document_type, 1)
-        self.assertResultContains(result, {'_type': 'test-type', '_id': '1', 'ok': True, '_index': 'test-index'})
+        self.assertResultContains(result, {
+            '_type': 'test-type', 
+            '_id': '1', 'ok': True, 
+            '_index': 'test-index'})
 
     def testIndexingWithoutID(self):
         """Testing an indexing given without ID"""
         result = self.conn.index({"name":"Joe Tester"}, self.index_name, self.document_type)
-        self.assertResultContains(result, {'_type': 'test-type', 'ok': True, '_index': 'test-index'})
+        self.assertResultContains(result, {
+            '_type': 'test-type', 
+            'ok': True, 
+            '_index': 'test-index'})
         # should have an id of some value assigned.
         self.assertTrue(result.has_key('_id') and result['_id'])
 
@@ -64,13 +70,20 @@ class IndexingTestCase(ESTestCase):
         self.conn.index({"name":"Joe Tester"}, self.index_name, self.document_type, 1)
         self.conn.refresh(self.index_name)
         result = self.conn.delete(self.index_name, self.document_type, 1)
-        self.assertResultContains(result, {'_type': 'test-type', '_id': '1', 'ok': True, '_index': 'test-index'})
+        self.assertResultContains(result, {
+            '_type': 'test-type', 
+            '_id': '1', 'ok': True, 
+            '_index': 'test-index'})
 
     def testDeleteByIDWithEncoding(self):
         self.conn.index({"name":"Joe Tester"}, self.index_name, self.document_type, "http://hello/?#'there")
         self.conn.refresh(self.index_name)
         result = self.conn.delete(self.index_name, self.document_type, "http://hello/?#'there")
-        self.assertResultContains(result, {'_type': 'test-type', '_id': 'http://hello/?#\'there', 'ok': True, '_index': 'test-index'})
+        self.assertResultContains(result, {
+            '_type': 'test-type', 
+            '_id': 'http://hello/?#\'there', 
+            'ok': True, 
+            '_index': 'test-index'})
 
     def testDeleteIndex(self):
         self.conn.create_index("another-index")
@@ -197,6 +210,16 @@ class IndexingTestCase(ESTestCase):
             {"_score": 0.2169777, "_type": "test-type", "_id": "3", "_source": {"name": "Joe did the test"}, "_index": "test-index"},
             {"_score": 0.19178301, "_type": "test-type", "_id": "2", "_source": {"name": "Joe Tester"}, "_index": "test-index"},
         ], "total": 2, "max_score": 0.2169777})
+
+        # fails because arrays don't work. fucking annoying.
+        '''
+        self.assertEqual(2, result['hits']['total'])
+        self.assertEqual(0.19178301, result['hits']['max_score'])
+        self.assertResultContains({'wtf':result['hits']['hits']}, {'wtf':[
+            {u'_score': 0.19178301, u'_type': u'test-type', u'_id': u'3', u'_source': {u'name': u'Joe Tested'}, u'_index': u'test-index'},
+            {u'_score': 0.19178301, u'_type': u'test-type', u'_id': u'2', u'_source': {u'name': u'Joe Tester'}, u'_index': u'test-index'},
+            ]})
+        '''
 
     def testVersion(self):
         self.conn.index({"name":"Joe Test"}, self.index_name, self.document_type, 1, force_insert=True)

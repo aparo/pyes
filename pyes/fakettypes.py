@@ -190,6 +190,19 @@ class RestRequest(object):
         self.headers = headers
         self.body = body
 
+    def __repr__(self):
+        full_url = 'http://localhost:9200' + self.uri
+        if len(self.parameters) > 0:
+            full_url += '?'
+            for k, v in self.parameters:
+                full_url += k + '&' + v
+        
+        return "curl -X%s %s -d '%s'" % (
+            Method._VALUES_TO_NAMES[self.method],
+            full_url,
+            self.body,
+            )
+
 class RestResponse:
     """
     Attributes:

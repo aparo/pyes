@@ -491,10 +491,7 @@ class ES(object):
         params = {'pretty': 'true'}
         params.update(request.parameters)
         method = Method._VALUES_TO_NAMES[request.method]
-        ### using the new (prot,host,port) tuple, the below code throws a 'can not
-        ### concatenate tuple + str' exception
-        #url = urlunsplit(('http', self.servers[0], request.uri, urlencode(params), ''))
-        url = urlunsplit(('http', ("%s:%s" % self.servers[0][1:3]), request.uri, urlencode(params), ''))
+        url = urlunsplit(('http', self.servers[0], request.uri, urlencode(params), ''))
         curl_cmd = "curl -X%s '%s'" % (method, url)
         if request.body:
             curl_cmd += " -d '%s'" % request.body
@@ -517,7 +514,8 @@ class ES(object):
         Retrieve the status of one or more indices
         """
         if not indices:
-            indices = ["_all"]
+            #indices = ["_all"]
+            indices = self.default_indices
 #        indices = self._validate_indices(indices)
         path = self._make_path([','.join(indices), '_status'])
         return self._send_request('GET', path)
@@ -627,7 +625,7 @@ class ES(object):
         Otherwise, returns a list of index names.
 
         """
-        status = self.status(alias)
+        status = self.status([alias])
         return status['indices'].keys()
 
     def change_aliases(self, commands):
@@ -1076,7 +1074,8 @@ class ES(object):
         Return the filename and memory data stream
         """
         data = self.get(index, doc_type, id)
-        return data["_source"]['_name'], base64.standard_b64decode(data["_source"]['content'])
+        return data['_name'], base64.standard_b64decode(data['content'])
+        #return data["_source"]['_name'], base64.standard_b64decode(data["_source"]['content'])
 
     def update(self, extra_doc, index, doc_type, id, querystring_args=None,
                update_func=None, attempts=2):
@@ -1662,7 +1661,7 @@ class ResultSet(object):
     def __iter__(self):
         self.iterpos = 0
         if self._current_item != 0:
-            self._results = None
+        self._results = None
         self._current_item = 0
 
         self.start = 0

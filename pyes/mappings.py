@@ -242,7 +242,8 @@ class ObjectField(object):
                  dynamic=None, enabled=None, include_in_all=None, dynamic_templates=None,
                  _id=False, _type=False, _source=None, _all=None,
                  _analyzer=None, _boost=None,
-                 _parent=None, _index=None, _routing=None, connection=None, index_name=None):
+                 _parent=None, _index=None, _routing=None, _timestamp=None,
+                 connection=None, index_name=None):
         self.name = name
         self.type = "object"
         self.path = path
@@ -260,6 +261,7 @@ class ObjectField(object):
         self._parent = _parent
         self._index = _index
         self._routing = _routing
+        self._timestamp = _timestamp
         self.connection = connection
         self.index_name = index_name
         if properties:
@@ -294,6 +296,8 @@ class ObjectField(object):
             result['_index'] = {"store":True}
         if self._routing is not None:
             result['_routing'] = self._routing
+        if self._timestamp is not None:
+            result['_timestamp'] = self._timestamp
         if self.dynamic is not None:
             result['dynamic'] = self.dynamic
         if self.enabled is not None:

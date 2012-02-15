@@ -216,6 +216,7 @@ class ES(object):
                  default_types=None,
                  dump_curl=False,
                  model=ElasticSearchModel,
+                 basic_auth=None,
                  raise_on_bulk_item_failure=False):
         """
         Init a es object.
@@ -233,6 +234,7 @@ class ES(object):
         :param bulk_size: size of bulk operation
         :param encoder: tojson encoder
         :param max_retries: number of max retries for server if a server is down
+        :param basic_auth: Dictionary with 'username' and 'password' keys for HTTP Basic Auth.
         :param model: used to objectify the dictinary. If None, the raw dict is returned.
         
 
@@ -371,7 +373,8 @@ class ES(object):
         _type, host, port = random.choice(self.servers)
         if _type in ["http", "https"]:
             self.connection = http_connect([(_type, host, port) for _type, host, port in self.servers if _type in ["http", "https"]],
-                                           timeout=self.timeout, max_retries=self.max_retries)
+                                           timeout=self.timeout, basic_auth=self.basic_auth,
+                                           max_retries=self.max_retries)
             return
         elif _type == "thrift":
             self.connection = thrift_connect([(host, port) for _type, host, port in self.servers if _type == "thrift"],

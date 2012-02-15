@@ -28,7 +28,7 @@ log = logging.getLogger('pyes')
 class ClientTransport(object):
     """Encapsulation of a client session."""
 
-    def __init__(self, server, framed_transport, timeout, recycle):
+    def __init__(self, server, framed_transport, timeout, recycle, basic_auth):
         self.connection_type, self.host, self.port = server
         self.timeout = timeout
         #self.client = TimeoutHttpConnectionPool(host, port, timeout)
@@ -38,18 +38,28 @@ class ClientTransport(object):
         else:
             self.recycle = None
 
+        if basic_auth:
+            username = basic_auth.get('username')
+            password = basic_auth.get('password')
+            base64string = base64.encodestring('%s:%s' %
+                                               (username, password))[:-1]
+            self.headers["Authorization"] = ("Basic %s" % base64string)
+
     def execute(self, request):
         """
         Execute a request and return a response
         """
+        headers = self.headers.copy()
+        headers.update(request.headers)
         response = requests.request(method=Method._VALUES_TO_NAMES[request.method],
                                     url="%s://%s:%s%s" % (self.connection_type, self.host, self.port, request.uri),
                                     params=request.parameters, verify=True,
-                                    data=request.body, headers=request.headers)
+                                    data=request.body, headers=headers)
         return RestResponse(status=response.status_code, body=response.content, headers=response.headers)
 
 def connect(servers=None, framed_transport=False, timeout=None,
-            retry_time=60, recycle=None, round_robin=None, max_retries=3):
+            retry_time=60, recycle=None, round_robin=None,
+            max_retries=3, basic_auth=None):
     """
     Constructs a single ElastiSearch connection. Connects to a randomly chosen
     server on the list.
@@ -84,6 +94,13 @@ def connect(servers=None, framed_transport=False, timeout=None,
     max_retries: int
               Max retry time on connection down
 
+    basic_auth: dict
+              Use HTTP Basic Auth. Use ssl while using basic auth to keep the
+              password from being transmitted in the clear.
+              Expects keys:
+                  * username
+                  * password
+              
     round_robin: bool
               *DEPRECATED*
 
@@ -95,7 +112,8 @@ def connect(servers=None, framed_transport=False, timeout=None,
     if servers is None:
         servers = [DEFAULT_SERVER]
     return ThreadLocalConnection(servers, framed_transport, timeout,
-                                 retry_time, recycle, max_retries=max_retries)
+                                 retry_time, recycle, max_retries=max_retries,
+                                 basic_auth=basic_auth)
 
 connect_thread_local = connect
 
@@ -139,12 +157,13 @@ class ServerSet(object):
 
 class ThreadLocalConnection(object):
     def __init__(self, servers, framed_transport=False, timeout=None,
-                 retry_time=10, recycle=None, max_retries=3):
+                 retry_time=10, recycle=None, max_retries=3, basic_auth=None):
         self._servers = ServerSet(servers, retry_time)
         self._framed_transport = framed_transport #not used in http
         self._timeout = timeout
         self._recycle = recycle
         self._max_retries = max_retries
+        self._basic_auth = basic_auth
         self._local = threading.local()
 
     def __getattr__(self, attr):
@@ -181,7 +200,8 @@ class ThreadLocalConnection(object):
                 server = self._servers.get()
                 log.debug('Connecting to %s', server)
                 self._local.conn = ClientTransport(server, self._framed_transport,
-                                                   self._timeout, self._recycle)
+                                                   self._timeout, self._recycle,
+                                                   self._basic_auth)
             except (socket.timeout, socket.error):
                 log.warning('Connection to %s failed.', server)
                 self._servers.mark_dead(server)

@@ -252,6 +252,7 @@ class ES(object):
         self.cluster = None
         self.debug_dump = False
         self.cluster_name = "undefined"
+        self.basic_auth = basic_auth
         self.connection = None
 
         if model is None:

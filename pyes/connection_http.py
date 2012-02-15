@@ -7,6 +7,7 @@ import logging
 import random
 import threading
 import time
+import base64
 import requests
 from pyes.exceptions import NoServerAvailable
 from httplib import HTTPConnection
@@ -31,6 +32,7 @@ class ClientTransport(object):
     def __init__(self, server, framed_transport, timeout, recycle, basic_auth):
         self.connection_type, self.host, self.port = server
         self.timeout = timeout
+        self.headers = {}
         #self.client = TimeoutHttpConnectionPool(host, port, timeout)
         #setattr(self.client, "execute", self.execute)
         if recycle:

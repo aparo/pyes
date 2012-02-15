@@ -19,7 +19,7 @@ __all__ = ['connect', 'connect_thread_local']
 Work taken from pycassa
 """
 
-DEFAULT_SERVER = ("127.0.0.1", 9200)
+DEFAULT_SERVER = ("http", "127.0.0.1", 9200)
 #API_VERSION = VERSION.split('.')
 
 log = logging.getLogger('pyes')
@@ -29,7 +29,7 @@ class ClientTransport(object):
     """Encapsulation of a client session."""
 
     def __init__(self, server, framed_transport, timeout, recycle):
-        self.host, self.port = server
+        self.connection_type, self.host, self.port = server
         self.timeout = timeout
         #self.client = TimeoutHttpConnectionPool(host, port, timeout)
         #setattr(self.client, "execute", self.execute)
@@ -43,7 +43,8 @@ class ClientTransport(object):
         Execute a request and return a response
         """
         response = requests.request(method=Method._VALUES_TO_NAMES[request.method],
-                                    url="http://%s:%s%s" % (self.host, self.port, request.uri), params=request.parameters,
+                                    url="%s://%s:%s%s" % (self.connection_type, self.host, self.port, request.uri),
+                                    params=request.parameters, verify=True,
                                     data=request.body, headers=request.headers)
         return RestResponse(status=response.status_code, body=response.content, headers=response.headers)
 
@@ -65,7 +66,7 @@ def connect(servers=None, framed_transport=False, timeout=None,
     servers : [server]
               List of ES servers with format: "hostname:port"
 
-              Default: [("127.0.0.1", 9200)]
+              Default: [("http", "127.0.0.1", 9200)]
     framed_transport: bool
               If True, use a TFramedTransport instead of a TBufferedTransport
     timeout: float

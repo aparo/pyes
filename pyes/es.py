@@ -223,9 +223,10 @@ class ES(object):
         
         - host:port with protocol guess (i.e. 127.0.0.1:9200 protocol -> http 
                                             127.0.0.1:9500  protocol -> thrift )
-        - type://host:port (i.e. http://127.0.0.1:9200 thrift://127.0.0.1:9500)
+        - type://host:port (i.e. http://127.0.0.1:9200  https://127.0.0.1:9200 thrift://127.0.0.1:9500)
 
-        - (type, host, port) (i.e. tuple ("http", "127.0.0.1", "9200") ("thrift", "127.0.0.1", "9500")). This is the prefered form.
+        - (type, host, port) (i.e. tuple ("http", "127.0.0.1", "9200") ("https", "127.0.0.1", "9200")
+                                         ("thrift", "127.0.0.1", "9500")). This is the prefered form.
         
         :param server: the server name, it can be a list of servers. 
         :param timeout: timeout for a call
@@ -327,7 +328,7 @@ class ES(object):
                 else:
                     raise RuntimeError("Unable to recognize port-type: \"%s\"" % port)
 
-            if _type not in ["thrift", "http"]:
+            if _type not in ["thrift", "http", "https"]:
                 raise RuntimeError("Unable to recognize protocol: \"%s\"" % _type)
 
             if _type == "thrift" and not thrift_enable:
@@ -342,7 +343,7 @@ class ES(object):
                 _type, host, port = server
                 check_format(host=host, port=port, _type=_type)
             elif isinstance(server, basestring):
-                if server.startswith(("thrift:", "http:")):
+                if server.startswith(("thrift:", "http:", "https:")):
                     tokens = [t.strip("/") for t in server.split(":") if t.strip("/")]
                     if len(tokens) == 3:
                         check_format(tokens[1], tokens[2], tokens[0])
@@ -368,11 +369,13 @@ class ES(object):
             raise RuntimeError("No server defined")
 
         _type, host, port = random.choice(self.servers)
-        if _type == "http":
-            self.connection = http_connect([(host, port) for _type, host, port in self.servers if _type == "http"], timeout=self.timeout, max_retries=self.max_retries)
+        if _type in ["http", "https"]:
+            self.connection = http_connect([(_type, host, port) for _type, host, port in self.servers if _type in ["http", "https"]],
+                                           timeout=self.timeout, max_retries=self.max_retries)
             return
         elif _type == "thrift":
-            self.connection = thrift_connect([(host, port) for _type, host, port in self.servers if _type == "thrift"], timeout=self.timeout, max_retries=self.max_retries)
+            self.connection = thrift_connect([(host, port) for _type, host, port in self.servers if _type == "thrift"],
+                                             timeout=self.timeout, max_retries=self.max_retries)
 
     def _discovery(self):
         """

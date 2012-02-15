@@ -80,9 +80,6 @@ class ElasticSearchModel(DotDict):
         else:
             self.__setitem__(key, value)
 
-    def __repr__(self):
-        return repr(self)
-
     def get_meta(self):
         return self._meta
 
@@ -112,6 +109,13 @@ class ElasticSearchModel(DotDict):
             self._meta.version = res._version
             return res._id
         return id
+
+    def reload(self):
+        meta = self._meta
+        conn = meta['connection']
+        res = conn.get(meta.index, meta.type, meta["id"])
+        self.update(res)
+
 
     def get_id(self):
         """ Force the object saveing to get an id"""

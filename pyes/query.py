@@ -115,6 +115,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
         self.index_boost = index_boost
         self.min_score = min_score
         self.stats = stats
+        self.bulk_read = None
 
     def get_facet_factory(self):
         """

@@ -102,7 +102,9 @@ class TwitterRiver(River):
 class CouchDBRiver(River):
     type = "couchdb"
 
-    def __init__(self, host="localhost", port=5984, db="mydb", filter=None, filter_params=None, script=None, **kwargs):
+    def __init__(self, host="localhost", port=5984, db="mydb", filter=None,
+                 filter_params=None, script=None, user=None, password=None,
+                 **kwargs):
         super(CouchDBRiver, self).__init__(**kwargs)
         self.host = host
         self.port = port
@@ -110,6 +112,8 @@ class CouchDBRiver(River):
         self.filter = filter
         self.filter_params = filter_params
         self.script = script
+        self.user = user
+        self.password = password
 
     def serialize(self):
         result = {
@@ -125,4 +129,8 @@ class CouchDBRiver(River):
             result[self.type]["filter_params"] = self.filter_params
         if self.script is not None:
             result[self.type]["script"] = self.script
+        if self.user is not None:
+            result[self.type]["user"] = self.user
+        if self.password is not None:
+            result[self.type]["password"] = self.password
         return result

@@ -4,6 +4,7 @@
 __author__ = 'Alberto Paro'
 
 from utils import EqualityComparableUsingAttributeDictionary
+from filters import Filter, TermFilter, ANDFilter
 
 #--- Facet
 class FacetFactory(EqualityComparableUsingAttributeDictionary):
@@ -110,6 +111,7 @@ class HistogramFacet(Facet):
 
         return {self.name:{self._internal_name:data}}
 
+
 class DateHistogramFacet(Facet):
     _internal_name = "date_histogram"
 
@@ -117,7 +119,7 @@ class DateHistogramFacet(Facet):
                  field=None, interval=None, zone=None,
                  key_field=None, value_field=None,
                  value_script=None, params=None,
-                 scope=None, **kwargs):
+                 scope=None, is_global=None, facet_filter=None, **kwargs):
         super(DateHistogramFacet, self).__init__(**kwargs)
         self.name = name
         self.field = field
@@ -128,6 +130,8 @@ class DateHistogramFacet(Facet):
         self.value_script = value_script
         self.params = params
         self.scope = scope
+        self.is_global = is_global
+        self.facet_filter = facet_filter
 
     def serialize(self):
         data = {}
@@ -151,10 +155,15 @@ class DateHistogramFacet(Facet):
             else:
                 raise RuntimeError("Invalid key_field: value_field or value_script required")
 
-        facet = {self._internal_name:data}
+        facet = {self._internal_name: data}
         if self.scope is not None:
             facet['scope'] = self.scope
-        return {self.name:facet}
+        if self.is_global:
+            facet['global'] = self.is_global
+        if self.facet_filter:
+            facet.update(self.facet_filter.q)
+        return {self.name: facet}
+
 
 class RangeFacet(Facet):
     _internal_name = "range"
@@ -330,3 +339,21 @@ class TermStatsFacet(Facet):
             facet['nested'] = self.nested
 
         return {self.name:facet}
+
+
+class FacetFilter(Filter):
+
+    @property
+    def q(self):
+        res = {"facet_filter": self.serialize()}
+        return res
+
+
+class TermFacetFilter(TermFilter, FacetFilter):
+    pass
+
+
+class ANDFacetFilter(ANDFilter, FacetFilter):
+    pass
+
+

@@ -1139,7 +1139,7 @@ class ES(object):
         path = self._make_path([index, doc_type, id])
         return self._send_request('DELETE', path, params=querystring_args)
 
-    def deleteByQuery(self, indices, doc_types, query, **request_params):
+    def delete_by_query(self, indices, doc_types, query, **request_params):
         """
         Delete documents from one or more indices and one or more types based on a query.
         """
@@ -1157,7 +1157,7 @@ class ES(object):
             # A direct set of search parameters.
             body = json.dumps(query, cls=self.encoder)
         else:
-            raise InvalidQuery("deleteByQuery() must be supplied with a Query object, or a dict")
+            raise InvalidQuery("delete_by_query() must be supplied with a Query object, or a dict")
 
         path = self._make_path([','.join(indices), ','.join(doc_types), '_query'])
         return self._send_request('DELETE', path, body, querystring_args)

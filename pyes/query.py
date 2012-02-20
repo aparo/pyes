@@ -105,7 +105,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
         self.fields = fields
         self.start = start
         self.size = size
-        self.highlight = highlight
+        self._highlight = highlight
         self.sort = sort
         self.explain = explain
         self.facet = facet or FacetFactory()
@@ -115,6 +115,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
         self.index_boost = index_boost
         self.min_score = min_score
         self.stats = stats
+        self.bulk_read = bulk_read
 
     def get_facet_factory(self):
         """
@@ -141,8 +142,8 @@ class Search(EqualityComparableUsingAttributeDictionary):
             res['size'] = self.size
         if self.start is not None:
             res['from'] = self.start
-        if self.highlight:
-            res['highlight'] = self.highlight.serialize()
+        if self._highlight:
+            res['highlight'] = self._highlight.serialize()
         if self.sort:
             res['sort'] = self.sort
         if self.explain:
@@ -166,6 +167,12 @@ class Search(EqualityComparableUsingAttributeDictionary):
             res['stats'] = self.stats
         return res
 
+    @property
+    def highlight(self):
+        if self._highlight is None:
+            self._highlight = HighLighter("<b>", "</b>")
+        return self._highlight
+
     def add_highlight(self, field, fragment_size=None,
                       number_of_fragments=None, fragment_offset=None):
         """Add a highlight field.
@@ -173,9 +180,9 @@ class Search(EqualityComparableUsingAttributeDictionary):
         The Search object will be returned, so calls to this can be chained.
 
         """
-        if self.highlight is None:
-            self.highlight = HighLighter("<b>", "</b>")
-        self.highlight.add_field(field, fragment_size, number_of_fragments, fragment_offset)
+        if self._highlight is None:
+            self._highlight = HighLighter("<b>", "</b>")
+        self._highlight.add_field(field, fragment_size, number_of_fragments, fragment_offset)
         return self
 
     def add_index_boost(self, index, boost):

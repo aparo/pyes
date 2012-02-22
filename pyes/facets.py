@@ -357,3 +357,15 @@ class ANDFacetFilter(ANDFilter, FacetFilter):
     pass
 
 
+class FacetQueryWrap(EqualityComparableUsingAttributeDictionary):
+    def __init__(self, wrap_object, **kwargs):
+        """
+        Base Object for every Filter Object
+        """
+        self.wrap_object = wrap_object
+
+    def serialize(self):
+        return {"query": self.wrap_object.serialize()}
+
+
+

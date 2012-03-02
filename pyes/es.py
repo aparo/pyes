@@ -80,9 +80,6 @@ class ElasticSearchModel(DotDict):
         else:
             self.__setitem__(key, value)
 
-    def __repr__(self):
-        return repr(self)
-
     def get_meta(self):
         return self._meta
 

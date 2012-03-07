@@ -4,7 +4,7 @@
 __author__ = 'Alberto Paro'
 
 from utils import EqualityComparableUsingAttributeDictionary
-from filters import Filter, TermFilter, TermsFilter, ANDFilter
+from filters import Filter, TermFilter, TermsFilter, ANDFilter, NotFilter
 
 #--- Facet
 class FacetFactory(EqualityComparableUsingAttributeDictionary):
@@ -358,6 +358,10 @@ class TermsFacetFilter(TermsFilter, FacetFilter):
 
 
 class ANDFacetFilter(ANDFilter, FacetFilter):
+    pass
+
+
+class NotFacetFilter(NotFilter, FacetFilter):
     pass
 
 

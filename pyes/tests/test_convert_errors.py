@@ -1,22 +1,12 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
-#
-# Author: Ian Eure <ian@simplegeo.com>
-#
-
-"""Tests for convert_errors."""
-
+from __future__ import absolute_import
 import unittest
-
-from pyes.tests import ESTestCase
-from pyes.exceptions import (
-    NotFoundException, IndexAlreadyExistsException
-    )
-import pyes.convert_errors as convert_errors
+from . import ESTestCase
+from ..exceptions import (NotFoundException, IndexAlreadyExistsException)
+from .. import convert_errors
 
 
 class RaiseIfErrorTestCase(ESTestCase):
-
     def test_not_found_exception(self):
         self.assertRaises(
             NotFoundException,
@@ -30,8 +20,8 @@ class RaiseIfErrorTestCase(ESTestCase):
             400, {u'status': 400,
                   u'error': (u'RemoteTransportException[[name][inet' +
                              u'[/127.0.0.1:9300]][indices/createIndex]]; ' +
-                             u'nested: IndexAlreadyExistsException['+
+                             u'nested: IndexAlreadyExistsException[' +
                              u'[test-index] Already exists]; ')})
-        
+
 if __name__ == '__main__':
     unittest.main()

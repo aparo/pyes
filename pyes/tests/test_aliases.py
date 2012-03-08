@@ -1,11 +1,12 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import
+from . import ESTestCase
+import unittest
+from .. import exceptions
+
 """Tests of setting and getting aliases.
 
 """
-import unittest
-from pyes.tests import ESTestCase
-import pyes.exceptions
 
 class ErrorReportingTestCase(ESTestCase):
     def setUp(self):
@@ -32,7 +33,7 @@ class ErrorReportingTestCase(ESTestCase):
         self.assertTrue('test-alias' not in result)
 
         # Check getting a missing alias.
-        err = self.checkRaises(pyes.exceptions.IndexMissingException,
+        err = self.checkRaises(exceptions.IndexMissingException,
                                self.conn.get_alias, 'test-alias')
         self.assertEqual(str(err), '[test-alias] missing')
 
@@ -44,7 +45,7 @@ class ErrorReportingTestCase(ESTestCase):
         self.assertEqual(self.conn.get_alias("test-alias"), ['test-index'])
 
         # Adding an alias to a missing index fails
-        err = self.checkRaises(pyes.exceptions.IndexMissingException,
+        err = self.checkRaises(exceptions.IndexMissingException,
                                self.conn.change_aliases,
                                [['add', 'test-missing-index', 'test-alias']])
         self.assertEqual(str(err), '[test-missing-index] missing')

@@ -1,11 +1,8 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
-"""
-Unit tests for pyes.  These require an es server with thrift plugin running on the default port (localhost:9500).
-"""
+from __future__ import absolute_import
 import unittest
-from pyes.tests import ESTestCase
-import pyes.exceptions
+from . import ESTestCase
+from .. import exceptions
 
 class ErrorReportingTestCase(ESTestCase):
     def setUp(self):
@@ -23,8 +20,8 @@ class ErrorReportingTestCase(ESTestCase):
         self.assertTrue('ok' in result)
         self.assertTrue('error' not in result)
 
-        err = self.checkRaises(pyes.exceptions.IndexAlreadyExistsException,
-                               self.conn.create_index, self.index_name)
+        err = self.checkRaises(exceptions.IndexAlreadyExistsException,
+            self.conn.create_index, self.index_name)
         self.assertEqual(str(err), "[test-index] Already exists")
         self.assertEqual(err.status, 400)
         self.assertTrue('error' in err.result)
@@ -34,8 +31,8 @@ class ErrorReportingTestCase(ESTestCase):
         self.assertTrue('ok' in result)
         self.assertTrue('error' not in result)
 
-        err = self.checkRaises(pyes.exceptions.IndexMissingException,
-                               self.conn.delete_index, self.index_name)
+        err = self.checkRaises(exceptions.IndexMissingException,
+            self.conn.delete_index, self.index_name)
         self.assertEqual(str(err), "[test-index] missing")
         self.assertEqual(err.status, 404)
         self.assertTrue('error' in err.result)
@@ -45,8 +42,8 @@ class ErrorReportingTestCase(ESTestCase):
         """Test generation of a IndexMissingException.
 
         """
-        err = self.checkRaises(pyes.exceptions.IndexMissingException,
-                               self.conn.flush, self.index_name)
+        err = self.checkRaises(exceptions.IndexMissingException,
+            self.conn.flush, self.index_name)
         self.assertEqual(str(err), "[test-index] missing")
         self.assertEqual(err.status, 404)
         self.assertTrue('error' in err.result)
@@ -56,8 +53,8 @@ class ErrorReportingTestCase(ESTestCase):
         """Test error reported by doing a bad request.
 
         """
-        err = self.checkRaises(pyes.exceptions.ElasticSearchException,
-                               self.conn._send_request, 'GET', '_bad_request')
+        err = self.checkRaises(exceptions.ElasticSearchException,
+            self.conn._send_request, 'GET', '_bad_request')
         self.assertEqual(str(err), "No handler found for uri [/_bad_request] and method [GET]")
         self.assertEqual(err.status, 400)
         self.assertEqual(err.result, 'No handler found for uri [/_bad_request] and method [GET]')
@@ -66,9 +63,9 @@ class ErrorReportingTestCase(ESTestCase):
         """Test error reported by deleting a missing document.
 
         """
-        self.checkRaises(pyes.exceptions.NotFoundException,
-                               self.conn.delete, self.index_name, "flibble",
-                               "asdf")
+        self.checkRaises(exceptions.NotFoundException,
+            self.conn.delete, self.index_name, "flibble",
+            "asdf")
 
 
 if __name__ == "__main__":

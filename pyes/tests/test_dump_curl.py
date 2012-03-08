@@ -1,10 +1,7 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
-"""
-Unit tests for pyes.  These require an es server with thrift plugin running on the default port (localhost:9500).
-"""
+from __future__ import absolute_import
 import unittest
-from pyes.tests import ESTestCase, get_conn
+from . import ESTestCase, get_conn
 import StringIO
 
 class DumpCurlTestCase(ESTestCase):

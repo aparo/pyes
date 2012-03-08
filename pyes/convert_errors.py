@@ -1,30 +1,30 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Routines for converting error responses to appropriate exceptions.
+from __future__ import absolute_import
 
 """
+Routines for converting error responses to appropriate exceptions.
+"""
+from . import exceptions
 
 __all__ = ['raise_if_error']
-
-import pyes.exceptions
 
 # Patterns used to map exception strings to classes.
 
 # First, exceptions for which the messages start with the error name,
 # and then contain the error description wrapped in [].
 exceptions_by_name = dict((name, getattr(pyes.exceptions, name))
-    for name in (
-        'ElasticSearchIllegalArgumentException',
-        'IndexAlreadyExistsException',
-        'IndexMissingException',
-        'SearchPhaseExecutionException',
-        'ReplicationShardOperationFailedException',
-        'ClusterBlockException',
-        'MapperParsingException',
-        'ReduceSearchPhaseException',
-        "VersionConflictEngineException",
-        "DocumentAlreadyExistsEngineException",
-        "TypeMissingException"
+for name in (
+    'ElasticSearchIllegalArgumentException',
+    'IndexAlreadyExistsException',
+    'IndexMissingException',
+    'SearchPhaseExecutionException',
+    'ReplicationShardOperationFailedException',
+    'ClusterBlockException',
+    'MapperParsingException',
+    'ReduceSearchPhaseException',
+    "VersionConflictEngineException",
+    "DocumentAlreadyExistsEngineException",
+    "TypeMissingException"
     )
 )
 
@@ -34,7 +34,7 @@ exceptions_by_name = dict((name, getattr(pyes.exceptions, name))
 exception_patterns_trailing = {
     '] missing': pyes.exceptions.NotFoundException,
     '] Already exists': pyes.exceptions.AlreadyExistsException,
-}
+    }
 
 def raise_if_error(status, result, request=None):
     """Raise an appropriate exception if the result is an error.
@@ -47,7 +47,7 @@ def raise_if_error(status, result, request=None):
     The status code and result can be retrieved from the exception by accessing its
     status and result properties.
 
-    Optionally, this can take the original RestRequest instance which generated 
+    Optionally, this can take the original RestRequest instance which generated
     this error, which will then get included in the exception.
 
     """
@@ -60,13 +60,14 @@ def raise_if_error(status, result, request=None):
         raise pyes.exceptions.NotFoundException("Item not found", status, result, request)
 
     if not isinstance(result, dict) or 'error' not in result:
-        raise pyes.exceptions.ElasticSearchException(u"Unknown exception type: %d, %s" % (status, result), status, result, request)
+        raise pyes.exceptions.ElasticSearchException(u"Unknown exception type: %d, %s" % (status, result), status,
+            result, request)
 
     error = result['error']
     if '; nested: ' in error:
         error_list = error.split('; nested: ')
-        error = error_list[len(error_list)-1]
-                       
+        error = error_list[len(error_list) - 1]
+
     bits = error.split('[', 1)
     if len(bits) == 2:
         excClass = exceptions_by_name.get(bits[0], None)
@@ -83,7 +84,7 @@ def raise_if_error(status, result, request=None):
     for pattern, excClass in exception_patterns_trailing.iteritems():
         if not error.endswith(pattern):
             continue
-        # For these exceptions, the returned value is the whole descriptive
+            # For these exceptions, the returned value is the whole descriptive
         # message.
         raise excClass(error, status, result, request)
 

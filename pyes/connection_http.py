@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 from requests.packages import urllib3
-
-__author__ = 'Alberto Paro'
-
 import random
 import threading
 import time

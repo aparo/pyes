@@ -1,9 +1,8 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 class SettingsBuilder(object):
     def __init__(self, settings=None, mappings=None):
-        self.settings = settings or {'index.number_of_replicas':1,
+        self.settings = settings or {'index.number_of_replicas': 1,
                                      "index.number_of_shards": 5}
         self.mappings = mappings or {}
 
@@ -22,5 +21,5 @@ class SettingsBuilder(object):
 
     def as_dict(self):
         """Returns a dict"""
-        return {"settings":self.settings,
-                "mappings":self.mappings}
+        return {"settings": self.settings,
+                "mappings": self.mappings}

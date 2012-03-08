@@ -1,10 +1,8 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import
+from .utils import EqualityComparableUsingAttributeDictionary
+from .filters import Filter, TermFilter, TermsFilter, ANDFilter, NotFilter
 
-__author__ = 'Alberto Paro'
-
-from utils import EqualityComparableUsingAttributeDictionary
-from filters import Filter, TermFilter, TermsFilter, ANDFilter, NotFilter
 
 #--- Facet
 class FacetFactory(EqualityComparableUsingAttributeDictionary):
@@ -32,11 +30,13 @@ class FacetFactory(EqualityComparableUsingAttributeDictionary):
         res = {}
         for facet in self.facets:
             res.update(facet.serialize())
-        return {"facets":res}
+        return {"facets": res}
+
 
 class Facet(EqualityComparableUsingAttributeDictionary):
     def __init__(self, *args, **kwargs):
         pass
+
 
 class QueryFacet(Facet):
     _internal_name = "query"
@@ -47,7 +47,8 @@ class QueryFacet(Facet):
         self.query = query
 
     def serialize(self):
-        return {self.name:{self._internal_name:self.query.serialize()}}
+        return {self.name: {self._internal_name: self.query.serialize()}}
+
 
 class FilterFacet(Facet):
     _internal_name = "filter"
@@ -58,7 +59,8 @@ class FilterFacet(Facet):
         self.query = query
 
     def serialize(self):
-        return {self.name:{self._internal_name:self.query.serialize()}}
+        return {self.name: {self._internal_name: self.query.serialize()}}
+
 
 class HistogramFacet(Facet):
     _internal_name = "histogram"
@@ -109,7 +111,7 @@ class HistogramFacet(Facet):
             if self.params:
                 data['params'] = self.params
 
-        return {self.name:{self._internal_name:data}}
+        return {self.name: {self._internal_name: data}}
 
 
 class DateHistogramFacet(Facet):
@@ -209,7 +211,8 @@ class RangeFacet(Facet):
             if self.params:
                 data['params'] = self.params
 
-        return {self.name:{self._internal_name:data}}
+        return {self.name: {self._internal_name: data}}
+
 
 class GeoDistanceFacet(RangeFacet):
     _internal_name = "geo_distance"
@@ -235,7 +238,8 @@ class StatisticalFacet(Facet):
             if self.params:
                 data['params'] = self.params
 
-        return {self.name:{self._internal_name:data}}
+        return {self.name: {self._internal_name: data}}
+
 
 class TermFacet(Facet):
     _internal_name = "terms"
@@ -260,10 +264,10 @@ class TermFacet(Facet):
 
     def serialize(self):
         if self.fields:
-            data = {'fields':self.fields}
+            data = {'fields': self.fields}
         else:
             if self.field:
-                data = {'field':self.field}
+                data = {'field': self.field}
             else:
                 raise RuntimeError("Field or Fields is required:%s" % self.order)
 
@@ -287,6 +291,7 @@ class TermFacet(Facet):
             facet['scope'] = self.scope
         return {self.name: facet}
 
+
 class TermStatsFacet(Facet):
     _internal_name = "terms_stats"
 
@@ -299,7 +304,7 @@ class TermStatsFacet(Facet):
         self.name = name
         self.size = size
         self.ORDER_VALUES = ['term', 'reverse_term', 'count', 'reverse_count', 'total',
-            'reverse_total', 'min', 'reverse_min', 'max', 'reverse_max']
+                             'reverse_total', 'min', 'reverse_min', 'max', 'reverse_max']
         self.order = order if order is not None else self.ORDER_VALUES[0]
         self.key_field = key_field
         self.value_field = value_field
@@ -310,7 +315,7 @@ class TermStatsFacet(Facet):
 
     def serialize(self):
         data = {}
-        facet = {self._internal_name:data}
+        facet = {self._internal_name: data}
 
         if self.size:
             data['size'] = self.size
@@ -338,11 +343,10 @@ class TermStatsFacet(Facet):
         if self.nested is not None:
             facet['nested'] = self.nested
 
-        return {self.name:facet}
+        return {self.name: facet}
 
 
 class FacetFilter(Filter):
-
     @property
     def q(self):
         res = {"facet_filter": self.serialize()}

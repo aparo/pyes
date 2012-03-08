@@ -1,7 +1,4 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-__author__ = 'Alberto Paro'
 
 class HighLighter(object):
     """
@@ -23,7 +20,9 @@ class HighLighter(object):
         h = HighLighter(['<b>'], ['</b>'])
         s = Search(TermQuery('foo'), highlight=h)
     """
-    def __init__(self, pre_tags=None, post_tags=None, fields=None, fragment_size=None, number_of_fragments=None, fragment_offset=None):
+
+    def __init__(self, pre_tags=None, post_tags=None, fields=None, fragment_size=None, number_of_fragments=None,
+                 fragment_offset=None):
         self.pre_tags = pre_tags
         self.post_tags = post_tags
         self.fields = fields or {}
@@ -59,5 +58,5 @@ class HighLighter(object):
         if self.fields:
             res["fields"] = self.fields
         else:
-            res["fields"] = {"_all" : {}}
+            res["fields"] = {"_all": {}}
         return res

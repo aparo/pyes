@@ -4,7 +4,7 @@
 Keyword Tokenizer
 =================
 
-A tokenizer of type **keyoword** that emits the entire input as a single input.
+A tokenizer of type **keyword** that emits the entire input as a single input.
 
 
 The following are settings that can be set for a **keyword** tokenizer type:

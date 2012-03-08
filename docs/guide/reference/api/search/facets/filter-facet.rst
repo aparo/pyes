@@ -4,7 +4,7 @@
 Filter Facet
 ============
 
-A facet filter allows to return a count of the hits matching the facet filter. The filter itself can be expressed using the :ref:`Query DSL <es-guide-reference-query-dsl>`.  For example:
+A filter facet (not to be confused with a :ref:`facet filter <es-guide-reference-api-search-facets-index>`  allows you to return a count of the hits matching the filter. The filter itself can be expressed using the :ref:`Query DSL <es-guide-reference-query-dsl>`.  For example:
 
 
 .. code-block:: js
@@ -21,5 +21,5 @@ A facet filter allows to return a count of the hits matching the facet filter. T
     }    
 
 
-Note, facet filters are faster than query facet when using native filters (non query wrapper ones).
+Note, filter facet filters are faster than query facet when using native filters (non query wrapper ones).
 

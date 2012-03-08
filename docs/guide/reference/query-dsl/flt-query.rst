@@ -26,17 +26,18 @@ Note
 The **fuzzy_like_this** top level parameters include:
 
 
-=====================  =====================================================================================================
- Parameter              Description                                                                                         
-=====================  =====================================================================================================
-**fields**             A list of the fields to run the more like this query against. Defaults to the **_all** field.        
-**like_text**          The text to find documents like it, *required*.                                                      
-**ignore_tf**          Should term frequency be ignored. Defaults to **false**.                                             
-**max_query_terms**    The maximum number of query terms that will be included in any generated query. Defaults to **25**.  
-**min_similarity**     The minimum similarity of the term variants. Defaults to **0.5**.                                    
-**prefix_length**      Length of required common prefix on variant terms. Defaults to **0**.                                
-**boost**              Sets the boost value of the query. Defaults to **1.0**.                                              
-=====================  =====================================================================================================
+=====================  =========================================================================================================
+ Parameter              Description                                                                                             
+=====================  =========================================================================================================
+**fields**             A list of the fields to run the more like this query against. Defaults to the **_all** field.            
+**like_text**          The text to find documents like it, *required*.                                                          
+**ignore_tf**          Should term frequency be ignored. Defaults to **false**.                                                 
+**max_query_terms**    The maximum number of query terms that will be included in any generated query. Defaults to **25**.      
+**min_similarity**     The minimum similarity of the term variants. Defaults to **0.5**.                                        
+**prefix_length**      Length of required common prefix on variant terms. Defaults to **0**.                                    
+**boost**              Sets the boost value of the query. Defaults to **1.0**.                                                  
+**analyzer**           The analyzer that will be used to analyze the text. Defaults to the analyzer associated with the field.  
+=====================  =========================================================================================================
 
 How it Works
 ============

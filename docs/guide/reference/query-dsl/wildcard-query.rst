@@ -4,7 +4,7 @@
 Wildcard Query
 ==============
 
-Matches documents that have fields matching a wildcard expression. Supported wildcards are *****, which matches any character sequence (including the empty one), and **?**, which matches any single character. Note this query can be slow, as it needs to iterate over many terms. In order to prevent extremely slow wildcard queries, a wildcard term should not start with one of the wildcards ***** or **?**. The wildcard query maps to Lucene **WildcardQuery**.
+Matches documents that have fields matching a wildcard expression (*not analyzed*). Supported wildcards are *****, which matches any character sequence (including the empty one), and **?**, which matches any single character. Note this query can be slow, as it needs to iterate over many terms. In order to prevent extremely slow wildcard queries, a wildcard term should not start with one of the wildcards ***** or **?**. The wildcard query maps to Lucene **WildcardQuery**.
 
 
 .. code-block:: js
@@ -37,3 +37,4 @@ Or :
     }    
 
 
+This multi term query allows to control how it gets rewritten using the :ref:`rewrite <es-guide-reference-query-dsl-multi-term-rewrite>`  query-dsl-multi-term-rewrite>`  parameter.

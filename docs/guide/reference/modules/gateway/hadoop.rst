@@ -4,7 +4,7 @@
 Hadoop
 ======
 
-The hadoop (HDFS) based gateway stores the cluster meta and indices data in hadoop. Hadoop support is provided as a plugin and installing is as simply as executing **plugin -install hadoop** or downloading the hadoop plugin and placing it under the **plugins** directory. Here is an example config to enable it:
+The hadoop (HDFS) based gateway stores the cluster meta and indices data in hadoop. Hadoop support is provided as a plugin and installing is explained `here <https://github.com/elasticsearch/elasticsearch-hadoop>`_  or downloading the hadoop plugin and placing it under the **plugins** directory. Here is an example config to enable it:
 
 
 .. code-block:: js

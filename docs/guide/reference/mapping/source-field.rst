@@ -29,5 +29,24 @@ The source field can be compressed (LZF) when stored in the index. This can grea
 In order to enable compression, the **compress** option should be set to **true**. By default it is set to **false**. Note, this can be changed on an existing index, as a mix of compressed and uncompressed sources is supported.
 
 
-Moreover, a **compression_threshold** can be set to control when the source will be compressed. It accepts a byte size value (for example **100b**, **10kb**). Note, **compress** should be set to **true**.
+Moreover, a **compress_threshold** can be set to control when the source will be compressed. It accepts a byte size value (for example **100b**, **10kb**). Note, **compress** should be set to **true**.
+
+
+Includes / Excludes
+===================
+
+Allow to specify paths in the source that would be included / excluded when its stored, supporting ***** as wildcard annotation. For example:
+
+
+.. code-block:: js
+
+
+    {
+        "my_type" : {
+            "_source" : {
+                "includes" : ["path1.*", "path2.*"],
+                "excludes" : ["pat3.*"]
+            }
+        }
+    }
 

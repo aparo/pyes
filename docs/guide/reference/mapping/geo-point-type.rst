@@ -21,6 +21,15 @@ Mapper type called **geo_point** to support geo based points. The declaration lo
     }
 
 
+Indexed Fields
+==============
+
+The **geo_point** mapping will index a single field with the format of **lat,lon**. The **lat_lon** option can be set to also index the **.lat** and **.lon** as numeric fields, and **geohash** can be set to **true** to also index **.geohash** value.
+
+
+A good practice is to enable indexing **lat_lon** as well, since both the geo distance and bounding box filters can either be executed using in memory checks, or using the indexed lat lon values, and it really depends on the data set which one performs better. Note though, that indexed lat lon only make sense when there is a single geo point value for the field, and not multi values.
+
+
 Input Structure
 ===============
 
@@ -87,12 +96,6 @@ Format in **[lon, lat]**, note, the order of lon/lat here in order to conform wi
 
 
 
-Indexed Fields
-==============
-
-The **geo_point** mapping will index a single field with the format of **lat,lon**. The **lat_lon** option can be set to also index the **.lat** and **.lon** as numeric fields, and **geohash** can be set to **true** to also index **.geohash** value. Note, those values are almost never needed to be indexed unless explicit queries against those fields are needed. All the geo components work against the default indexed field.
-
-
 Mapping Options
 ===============
 
@@ -107,6 +110,6 @@ Mapping Options
 Usage in Scripts
 ================
 
-When using **doc[geo_field_name]** (in the above mapping, **doc['location']**), the **doc[...].value** returns a **GeoPoint**, which then allows access to **lat** and **lon** (for example, **doc[...].value.lat**). For performance, it is better to access the **lat** and **lon** directly using **doc[...].latValue** and **doc[...].lonValue**.
+When using **doc[geo_field_name]** (in the above mapping, **doc['location']**), the **doc[...].value** returns a **GeoPoint**, which then allows access to **lat** and **lon** (for example, **doc[...].value.lat**). For performance, it is better to access the **lat** and **lon** directly using **doc[...].lat** and **doc[...].lon**.
 
 

@@ -13,7 +13,7 @@ After :ref:`downloading <es-guide-reference-setup-download>`  the latest release
     $ bin/elasticsearch
 
 
-Under \*nix system, the command will start the process in the background. To run it in the foreground, add the -f switch to it:
+Under *nix system, the command will start the process in the background. To run it in the foreground, add the -f switch to it:
 
 .. code-block:: bash
 
@@ -21,7 +21,7 @@ Under \*nix system, the command will start the process in the background. To run
     $ bin/elasticsearch -f
 
 
-ElasticSearch is built using Java, and requires `Java 6 <http://java.sun.com/javase/downloads/index.jsp>`_  in order to run. The version of Java that will be used can be set by setting the **JAVA_HOME** environment variable.
+ElasticSearch is built using Java, and requires `Java 6 <http://java.sun.com/javase/downloads/index.jsp>`_  `_  in order to run. The version of Java that will be used can be set by setting the **JAVA_HOME** environment variable.
 
 Environment Variables
 =====================
@@ -32,11 +32,14 @@ Within the scripts, ElasticSearch comes with built in **JAVA_OPTS** passed to th
 Most times it is better to leave the default **JAVA_OPTS** as they are, and use the **ES_JAVA_OPTS** environment variable in order to set / change JVM settings or arguments.
 
 
-The **ES_MIN_MEM** and **ES_MAX_MEM** environment variables to set the minimum and maximum memory allocation for the JVM (set in mega bytes). It defaults to **256m** and **1g** respectively.
+The **ES_HEAP_SIZE** environment variable allows to set the heap memory that will be allocated to elasticsearch java process. It will allocate the same value to both min and max values, though those can be set explicitly (not recommended) by setting **ES_MIN_MEM** (defaults to **256m**), and **ES_MAX_MEM** (defaults to **1gb**).
 
 
-\*NIX
------
+It is recommended to set the min and max memory to the same value, and enable **mlockall** see later.
+
+
+*NIX
+----
 
 There are added features when using the **elasticsearch** shell script. The first, which was explained earlier, is the ability to easily run the process either in the foreground or the background.
 
@@ -56,7 +59,7 @@ Important Configurations
 File Descriptors
 ----------------
 
-Make sure to increate the number of open files descriptors on the machine (or for the user running elasticsearch). Setting it to 32k or even 64k is recommended.
+Make sure to increase the number of open files descriptors on the machine (or for the user running elasticsearch). Setting it to 32k or even 64k is recommended.
 
 
 In order to test how many open files the process can open, start it with **-Des.max-open-files** set to **true**. This will print the number of open files the process can open on startup.
@@ -76,6 +79,8 @@ Note, this is experimental feature, and might cause the JVM or shell session to 
 
 Running As a Service
 ====================
+
+It should be simple to wrap the **elasticsearch** script in an **init.d** or the like. But, elasticsearch also supports running it using the `Java Service Wrapper <http://wrapper.tanukisoftware.com/>`_.  
 
 ElasticSearch can be run as a service using the **elasticsearch** script located under **bin/service** location. The repo for it is located `here <http://github.com/elasticsearch/elasticsearch-servicewrapper>`_.  The script accepts a single parameter with the following values:
 

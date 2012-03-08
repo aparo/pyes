@@ -4,7 +4,7 @@
 Local
 =====
 
-The local gateway allows for recovery of the full cluster state and indices from the local storage of each node, and does not require a common node level shared storage.
+The local gateway allows for recovery of the full cluster state and indices from the local storage of each node, and does not require a common node level shared storage. 
 
 
 In order to use the local gateway, the indices must be file system based with no memory caching.
@@ -23,4 +23,6 @@ It is important to configure the **gateway.recover_after_nodes** setting to incl
         recover_after_time: 5m
         expected_nodes: 2
 
+
+Note, to backup/snapshot the full cluster state it is recommended that the local storage for all nodes be copied (in theory not all are required, just enough to guarantee a copy of each shard has been copied, ie depending on the replication settings) while disabling flush. Shared storage such as S3 can be used to keep the different nodes' copies in one place, though it does comes at a price of more IO.
 

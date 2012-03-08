@@ -4,7 +4,7 @@
 Attachment Type
 ===============
 
-The **attachment** type allows to index different `attachment" type field (encoded as **base64**), for example, microsoft office formats, open document formats, ePub, HTML, and so on (full list can be found "here <http://lucene.apache.org/tika/0.8/formats.html)>`_.  
+The **attachment** type allows to index different `attachment" type field (encoded as **base64**), for example, microsoft office formats, open document formats, ePub, HTML, and so on (full list can be found "here <http://lucene.apache.org/tika/0.10/formats.html)>`_.  
 
 The **attachment** type is provided as a plugin extension. The plugin is a simple zip file that can be downloaded and placed under **$ES_HOME/plugins** location. It will be automatically detected and the **attachment** type will be added.
 
@@ -81,4 +81,4 @@ Both the meta data and the actual content are simple core type mappers (string, 
 In the above example, the actual content indexed is mapped under **fields** name **file**, and we decide not to index it, so it will only be available in the **_all** field. The other fields map to their respective metadata names, but there is no need to specify the **type** (like **string** or **date**) since it is already known.
 
 
-The plugin uses `Apache Tika <http://lucene.apache.org/tika/>`_  to parse attachments, so many formats are supported, listed `here <http://lucene.apache.org/tika/0.8/formats.html>`_.  
+The plugin uses `Apache Tika <http://lucene.apache.org/tika/>`_  to parse attachments, so many formats are supported, listed `here <http://lucene.apache.org/tika/0.10/formats.html>`_.  

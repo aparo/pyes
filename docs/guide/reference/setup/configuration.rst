@@ -10,7 +10,7 @@ Configuration
 Settings
 ========
 
-The configuration format is `YAML <http://www.yaml.org/>`_.   Here is an example of changing the address all network based modules will use to bind and publish to:
+The configuration format is `YAML <http://www.yaml.org/>`_.  Here is an example of changing the address all network based modules will use to bind and publish to:
 
 .. code-block:: js
 

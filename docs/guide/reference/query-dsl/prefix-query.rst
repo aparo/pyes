@@ -4,14 +4,14 @@
 Prefix Query
 ============
 
-Matches documents that have fields containing terms with a specified prefix. The prefix query maps to Lucene **PrefixQuery**. The following matches documents where the user field contains a term that starts with **ki**:
+Matches documents that have fields containing terms with a specified prefix (*not analyzed*). The prefix query maps to Lucene **PrefixQuery**. The following matches documents where the user field contains a term that starts with **ki**:
 
 
 .. code-block:: js
 
 
     {
-        "prefix" : { "user" : "sh" }
+        "prefix" : { "user" : "ki" }
     }
 
 
@@ -36,3 +36,5 @@ Or :
         "prefix" : { "user" :  { "prefix" : "ki", "boost" : 2.0 } }
     }
 
+
+This multi term query allows to control how it gets rewritten using the :ref:`rewrite <es-guide-reference-query-dsl-multi-term-rewrite>`  query-dsl-multi-term-rewrite>`  parameter.

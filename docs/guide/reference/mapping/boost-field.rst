@@ -4,7 +4,7 @@
 Boost Field
 ===========
 
-Boosting is the process of enhancing the relevancy of a document or field. Field level mapping allows to define explicit boost level on a specific field. The boost field mapping (applied on the :ref:`root object <es-guide-reference-mapping-root-object-type)>`  allows to define a boost field mapping where *its content will control the boost level of the document*. For example, consider the following mapping:
+Boosting is the process of enhancing the relevancy of a document or field. Field level mapping allows to define explicit boost level on a specific field. The boost field mapping (applied on the :ref:`root object <es-guide-reference-mapping-root-object-type>`  allows to define a boost field mapping where *its content will control the boost level of the document*. For example, consider the following mapping:
 
 
 .. code-block:: js

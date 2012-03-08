@@ -10,6 +10,9 @@ The idea of the **_all** field is that it includes the text of one or more other
 The **_all** fields can be completely disabled. Explicit field mapping and object mapping can be excluded / included in the **_all** field. By default, it is enabled and all fields are included in it for ease of use.
 
 
+When disabling the **_all** field, it is a good practice to set **index.query.default_field** to a different value (for example, if you have a main "message" field in your data, set it to **message**).
+
+
 One of the nice features of the **_all** field is that it takes into account specific fields boost levels. Meaning that if a title field is boosted more than content, the title (part) in the **_all** field will mean more than the content (part) in the **_all** field.
 
 
@@ -60,7 +63,7 @@ The **_all** fields allows for **store**, **term_vector** and **analyzer** (with
 Highlighting
 ------------
 
-For any field to allow :ref:`highlighting <es-guide-reference-api-search-highlighting>`  ch-highlighting`  it has to be either stored or part of the **_source** field. By default **_all** field does not qualify for either, so highlighting for it does not yield any data.
+For any field to allow :ref:`highlighting <es-guide-reference-api-search-highlighting>`  ch-highlighting>`  it has to be either stored or part of the **_source** field. By default **_all** field does not qualify for either, so highlighting for it does not yield any data.
 
 Although it is possible to **store** the **_all** field, it is basically an aggregation of all fields, which means more data will be stored, and highlighting it might produce strange results.
 

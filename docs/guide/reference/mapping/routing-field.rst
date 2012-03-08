@@ -10,13 +10,13 @@ The routing field allows to control the **_routing** aspect when indexing data a
 store / index
 =============
 
-The first thing the **_rouing** mapping does is to store the routing value provided (**store** set to **yes**) and index it (**index** set to **not_analyzed**). The reason why the routing is stored by default is so reindexing data will be possible if the routing value is completely external and not part of the docs.
+The first thing the **_routing** mapping does is to store the routing value provided (**store** set to **yes**) and index it (**index** set to **not_analyzed**). The reason why the routing is stored by default is so reindexing data will be possible if the routing value is completely external and not part of the docs.
 
 
 required
 ========
 
-Another aspect of the **_routing** mapping is the ability define it as required by setting **required** to **true**. This is very important to set when using routing features, as it allows different APIs to make use of it. For example, and index operation will be rejected if no routing value has been provided (or derived from the doc). A delete operation will be broadcasted to all shards with no routing value is provided and **_routing** is required.
+Another aspect of the **_routing** mapping is the ability to define it as required by setting **required** to **true**. This is very important to set when using routing features, as it allows different APIs to make use of it. For example, an index operation will be rejected if no routing value has been provided (or derived from the doc). A delete operation will be broadcasted to all shards if no routing value is provided and **_routing** is required.
 
 
 path
@@ -47,7 +47,7 @@ Will cause the following doc to be routed based on the **111222** value:
     {
         "text" : "the comment text"
         "blog" : {
-            "id" : "111222"
+            "post_id" : "111222"
         }
     }
 

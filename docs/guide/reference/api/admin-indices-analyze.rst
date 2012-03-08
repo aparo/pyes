@@ -4,7 +4,26 @@
 Admin Indices Analyze
 =====================
 
-Performs the analysis process on a text and return the tokens breakdown of the text. Here is an example:
+Performs the analysis process on a text and return the tokens breakdown of the text. 
+
+
+Can be used without specifying an index against one of the many built in analyzers:
+
+
+.. code-block:: js
+
+    curl -XGET 'localhost:9200/_analyze?analyzer=standard' -d 'this is a test'
+
+
+Or by building a custom transient analyzer out of tokenizers and filters:
+
+
+.. code-block:: js
+
+    curl -XGET 'localhost:9200/_analyze?tokenizer=keyword&filters=lowercase' -d 'this is a test'
+
+
+It can also run against a specific index:
 
 
 .. code-block:: js
@@ -18,6 +37,18 @@ The above will run an analysis on the "this is a test" text, using the default i
 .. code-block:: js
 
     curl -XGET 'localhost:9200/test/_analyze?analyzer=whitespace' -d 'this is a test'
+
+
+Also, the analyzer can be derived based on a field mapping, for example:
+
+
+.. code-block:: js
+
+    curl -XGET 'localhost:9200/test/_analyze?field=obj1.field1' -d 'this is a test'
+
+
+Will cause the analysis to happen based on the analyzer configure in the mapping for **obj1.field1** (and if not, the default index analyzer).
+
 
 
 Also, the text can be provided as part of the request body, and not as a parameter.

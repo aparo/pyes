@@ -54,10 +54,10 @@ The root object allows to define type mapping level analyzers for index and sear
 The above simply explicitly defines both the **index_analyzer** and **search_analyzer** that will be used. There is also an option to use the **analyzer** attribute to set both the **search_analyzer** and **index_analyzer**.
 
 
-date_formats
-============
+dynamic_date_formats
+====================
 
-**date_formats** is the ability to set one or more date formats that will be used to detect **date** fields. For example:
+**dynamic_date_formats** (old setting called **date_formats** still works) is the ability to set one or more date formats that will be used to detect **date** fields. For example:
 
 
 .. code-block:: js
@@ -65,7 +65,7 @@ date_formats
 
     {
         "tweet" : {
-            "date_formats" : ["yyyy-MM-dd", "dd-MM-yyyy"],
+            "dynamic_date_formats" : ["yyyy-MM-dd", "dd-MM-yyyy"],
             "properties" : {
                 "message" : {"type" : "string"}
             }
@@ -75,7 +75,49 @@ date_formats
 
 In the above mapping, if a new JSON field of type string is detected, the date formats specified will be used in order to check if its a date. If it passes parsing, then the field will be declared with **date** type, and will use the matching format as its format attribute. The date format itself is explained :ref:`here <es-guide-reference-mapping-date-format>`.  
 
-The default formats are: **dateOptionalTime** (ISO) and **yyyy/MM/dd HH:mm:ss||yyyy/MM/dd**.
+The default formats are: **dateOptionalTime** (ISO) and **yyyy/MM/dd HH:mm:ss Z||yyyy/MM/dd Z**.
+
+
+<b>Note:</b> **dynamic_date_formats** are used <b>only</b> for dynamically added date fields, not for **date** fields that you specify in your mapping. 
+
+
+date_detection
+==============
+
+Allows to disable automatic date type detection (a new field introduced and matches the provided format), for example:
+
+
+.. code-block:: js
+
+
+    {
+        "tweet" : {
+            "date_detection" : false,
+            "properties" : {
+                "message" : {"type" : "string"}
+            }
+        }
+    }
+
+
+numeric_detection
+=================
+
+Sometimes, even though json has support for native numeric types, numeric values are still provided as strings. In order to try and automatically detect numeric values from string, the **numeric_detection** can be set to **true**. For example:
+
+
+.. code-block:: js
+
+
+    {
+        "tweet" : {
+            "numeric_detection" : true,
+            "properties" : {
+                "message" : {"type" : "string"}
+            }
+        }
+    }
+
 
 
 dynamic_templates
@@ -158,4 +200,7 @@ Complete generic settings can also be applied, for example, to have all mappings
             ]
         }
     }
+
+
+Such generic templates should be placed at the end of the **dynamic_templates** list because when two or more dynamic templates match a field, only the first matching one from the list is used.
 

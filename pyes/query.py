@@ -115,6 +115,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
         self.index_boost = index_boost
         self.min_score = min_score
         self.stats = stats
+        self.bulk_read = None
 
     def get_facet_factory(self):
         """
@@ -479,11 +480,12 @@ class NestedQuery(Query):
     """
     _internal_name = "nested"
 
-    def __init__(self, path, query, score_mode="avg", **kwargs):
+    def __init__(self, path, query, _scope=None, score_mode="avg", **kwargs):
         super(NestedQuery, self).__init__(**kwargs)
         self.path = path
         self.score_mode = score_mode
         self.query = query
+        self._scope = _scope
 
     def serialize(self):
 
@@ -493,6 +495,8 @@ class NestedQuery(Query):
              'path':self.path,
              'score_mode':self.score_mode,
              'query':self.query.serialize()}
+        if self._scope is not None:
+            data['_scope'] = self._scope
         return {self._internal_name:data}
 
 class DisMaxQuery(Query):
@@ -1278,7 +1282,7 @@ class PercolatorQuery(Query):
 
 class CustomFiltersScoreQuery(Query):
     _internal_name = "custom_filters_score"
-    
+
     class ScoreMode(object):
         FIRST = "first"
         MIN = "min"
@@ -1291,7 +1295,7 @@ class CustomFiltersScoreQuery(Query):
         def __init__(self, filter_, boost=None, script=None):
             if (boost is None) == (script is None):
               raise ValueError("Exactly one of boost and script must be specified")
-            
+
             self.filter_ = filter_
             self.boost = boost
             self.script = script

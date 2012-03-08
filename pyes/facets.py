@@ -11,8 +11,16 @@ class FacetFactory(EqualityComparableUsingAttributeDictionary):
         self.facets = []
 
     def add_term_facet(self, *args, **kwargs):
-        """Add a term factory"""
+        """Add a term factory facet"""
         self.facets.append(TermFacet(*args, **kwargs))
+
+    def add_date_facet(self, *args, **kwargs):
+        """Add a date factory facet"""
+        self.facets.append(DateHistogramFacet(*args, **kwargs))
+
+    def add_geo_facet(self, *args, **kwargs):
+        """Add a geo factory facet"""
+        self.facets.append(GeoDistanceFacet(*args, **kwargs))
 
     def add(self, facet):
         """Add a term factory"""
@@ -109,7 +117,7 @@ class DateHistogramFacet(Facet):
                  field=None, interval=None, zone=None,
                  key_field=None, value_field=None,
                  value_script=None, params=None,
-                 **kwargs):
+                 scope=None, **kwargs):
         super(DateHistogramFacet, self).__init__(**kwargs)
         self.name = name
         self.field = field
@@ -119,6 +127,7 @@ class DateHistogramFacet(Facet):
         self.value_field = value_field
         self.value_script = value_script
         self.params = params
+        self.scope = scope
 
     def serialize(self):
         data = {}
@@ -142,7 +151,10 @@ class DateHistogramFacet(Facet):
             else:
                 raise RuntimeError("Invalid key_field: value_field or value_script required")
 
-        return {self.name:{self._internal_name:data}}
+        facet = {self._internal_name:data}
+        if self.scope is not None:
+            facet['scope'] = self.scope
+        return {self.name:facet}
 
 class RangeFacet(Facet):
     _internal_name = "range"
@@ -190,6 +202,10 @@ class RangeFacet(Facet):
 
         return {self.name:{self._internal_name:data}}
 
+class GeoDistanceFacet(RangeFacet):
+    _internal_name = "geo_distance"
+
+
 class StatisticalFacet(Facet):
     _internal_name = "statistical"
 
@@ -218,7 +234,7 @@ class TermFacet(Facet):
     def __init__(self, field=None, fields=None, name=None, size=10,
                  order=None, exclude=None,
                  regex=None, regex_flags="DOTALL",
-                 script=None, **kwargs):
+                 script=None, scope=None, **kwargs):
         super(TermFacet, self).__init__(**kwargs)
         self.name = name
         self.field = field
@@ -231,6 +247,7 @@ class TermFacet(Facet):
         self.regex = regex
         self.regex_flags = regex_flags
         self.script = script
+        self.scope = scope
 
     def serialize(self):
         if self.fields:
@@ -256,5 +273,60 @@ class TermFacet(Facet):
                 data['regex_flags'] = self.regex_flags
         elif self.script:
             data['script'] = self.script
+        facet = {self._internal_name: data}
+        if self.scope:
+            facet['scope'] = self.scope
+        return {self.name: facet}
 
-        return {self.name:{self._internal_name:data}}
+class TermStatsFacet(Facet):
+    _internal_name = "terms_stats"
+
+    def __init__(self, name, size=10, order=None,
+                 key_field=None, value_field=None,
+                 key_script=None, value_script=None, params=None,
+                 nested=None,
+                 **kwargs):
+        super(TermStatsFacet, self).__init__(**kwargs)
+        self.name = name
+        self.size = size
+        self.ORDER_VALUES = ['term', 'reverse_term', 'count', 'reverse_count', 'total',
+            'reverse_total', 'min', 'reverse_min', 'max', 'reverse_max']
+        self.order = order if order is not None else self.ORDER_VALUES[0]
+        self.key_field = key_field
+        self.value_field = value_field
+        self.key_script = key_script
+        self.value_script = value_script
+        self.params = params
+        self.nested = nested
+
+    def serialize(self):
+        data = {}
+        facet = {self._internal_name:data}
+
+        if self.size:
+            data['size'] = self.size
+
+        if self.order:
+            if self.order not in self.ORDER_VALUES:
+                raise RuntimeError("Invalid order value:%s" % self.order)
+            data['order'] = self.order
+
+        if self.key_field:
+            data['key_field'] = self.key_field
+            if self.value_field:
+                data['value_field'] = self.value_field
+            else:
+                raise RuntimeError("Invalid key_field: value_field required")
+        elif self.key_script:
+            data['key_script'] = self.key_script
+            if self.value_script:
+                data['value_script'] = self.value_script
+            else:
+                raise RuntimeError("Invalid key_script: value_script required")
+            if self.params:
+                data['params'] = self.params
+
+        if self.nested is not None:
+            facet['nested'] = self.nested
+
+        return {self.name:facet}

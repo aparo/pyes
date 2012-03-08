@@ -7,12 +7,11 @@ __author__ = 'Alberto Paro'
 __all__ = ['ES', 'file_to_attachment', 'decode_json']
 
 try:
-    # For Python < 2.6 or people using a newer version of simplejson
-    import simplejson
-    json = simplejson
-except ImportError:
     # For Python >= 2.6
     import json
+except ImportError:
+    # For Python < 2.6 or people using a newer version of simplejson
+    import simplejson as json
 
 import logging
 import random
@@ -21,7 +20,6 @@ from urllib import urlencode
 from urlparse import urlunsplit
 import base64
 import time
-from StringIO import StringIO
 from decimal import Decimal
 from urllib import quote
 import threading
@@ -62,22 +60,37 @@ class DotDict(dict):
 
 class ElasticSearchModel(DotDict):
     def __init__(self, *args, **kwargs):
-        self.meta = DotDict()
+        self._meta = DotDict()
+        self.__initialised = True
         if len(args) == 2 and isinstance(args[0], ES):
             item = args[1]
             self.update(item.pop("_source", DotDict()))
             self.update(item.pop("fields", {}))
-            self.meta = DotDict([(k.lstrip("_"), v) for k, v in item.items()])
-            self.meta.parent = self.pop("_parent", None)
-            self.meta.connection = args[0]
+            self._meta = DotDict([(k.lstrip("_"), v) for k, v in item.items()])
+            self._meta.parent = self._meta.pop("_parent", None)
+            self._meta.connection = args[0]
         else:
             self.update(dict(*args, **kwargs))
+
+    def __setattr__(self, key, value):
+        if not self.__dict__.has_key('_ElasticSearchModel__initialised'):  # this test allows attributes to be set in the __init__ method
+            return dict.__setattr__(self, key, value)
+        elif self.__dict__.has_key(key):       # any normal attributes are handled normally
+            dict.__setattr__(self, key, value)
+        else:
+            self.__setitem__(key, value)
+
+    def __repr__(self):
+        return repr(self)
+
+    def get_meta(self):
+        return self._meta
 
     def delete(self, bulk=False):
         """
         Delete the object
         """
-        meta = self.meta
+        meta = self._meta
         conn = meta['connection']
         conn.delete(meta.index, meta.type, meta.id, bulk=bulk)
 
@@ -85,24 +98,24 @@ class ElasticSearchModel(DotDict):
         """
         Save the object and returns id
         """
-        meta = self.meta
+        meta = self._meta
         conn = meta['connection']
         id = id or meta.get("id", None)
         parent = parent or meta.get('parent', None)
         version = meta.get('version', None)
         if force:
             version = None
-        res = conn.index(dict([(k, v) for k, v in self.items() if k != "meta"]),
+        res = conn.index(self,
                          meta.index, meta.type, id, parent=parent, bulk=bulk, version=version, force_insert=force)
         if not bulk:
-            self.meta.id = res._id
-            self.meta.version = res._version
+            self._meta.id = res._id
+            self._meta.version = res._version
             return res._id
         return id
 
     def get_id(self):
         """ Force the object saveing to get an id"""
-        _id = self.meta.get("id", None)
+        _id = self._meta.get("id", None)
         if _id is None:
             _id = self.save()
         return _id
@@ -113,7 +126,7 @@ class ElasticSearchModel(DotDict):
         op_type = "index"
         if create:
             op_type = "create"
-        meta = self.meta
+        meta = self._meta
         cmd = { op_type : { "_index" : meta.index, "_type" : meta.type}}
         if meta.parent:
             cmd[op_type]['_parent'] = meta.parent
@@ -121,9 +134,9 @@ class ElasticSearchModel(DotDict):
             cmd[op_type]['_version'] = meta.version
         if meta.id:
             cmd[op_type]['_id'] = meta.id
-        result.append(json.dumps(cmd, cls=self.meta.connection.encoder))
+        result.append(json.dumps(cmd, cls=self._meta.connection.encoder))
         result.append("\n")
-        result.append(json.dumps(self.store, cls=self.meta.connection.encoder))
+        result.append(json.dumps(self, cls=self._meta.connection.encoder))
         result.append("\n")
         return ''.join(result)
 
@@ -165,10 +178,10 @@ class ESJsonEncoder(json.JSONEncoder):
         """
 
         if isinstance(value, datetime):
-            return value.strftime("%Y-%m-%dT%H:%M:%S")
+            return value.isoformat()
         elif isinstance(value, date):
             dt = datetime(value.year, value.month, value.day, 0, 0, 0)
-            return dt.strftime("%Y-%m-%dT%H:%M:%S")
+            return dt.isoformat()
         elif isinstance(value, Decimal):
             return float(str(value))
         else:
@@ -216,6 +229,7 @@ class ES(object):
                  default_types=None,
                  dump_curl=False,
                  model=ElasticSearchModel,
+                 basic_auth=None,
                  raise_on_bulk_item_failure=False):
         """
         Init a es object.
@@ -223,15 +237,17 @@ class ES(object):
         
         - host:port with protocol guess (i.e. 127.0.0.1:9200 protocol -> http 
                                             127.0.0.1:9500  protocol -> thrift )
-        - type://host:port (i.e. http://127.0.0.1:9200 thrift://127.0.0.1:9500)
+        - type://host:port (i.e. http://127.0.0.1:9200  https://127.0.0.1:9200 thrift://127.0.0.1:9500)
 
-        - (type, host, port) (i.e. tuple ("http", "127.0.0.1", "9200") ("thrift", "127.0.0.1", "9500")). This is the prefered form.
+        - (type, host, port) (i.e. tuple ("http", "127.0.0.1", "9200") ("https", "127.0.0.1", "9200")
+                                         ("thrift", "127.0.0.1", "9500")). This is the prefered form.
         
         :param server: the server name, it can be a list of servers. 
         :param timeout: timeout for a call
         :param bulk_size: size of bulk operation
         :param encoder: tojson encoder
         :param max_retries: number of max retries for server if a server is down
+        :param basic_auth: Dictionary with 'username' and 'password' keys for HTTP Basic Auth.
         :param model: used to objectify the dictinary. If None, the raw dict is returned.
         
 
@@ -249,6 +265,7 @@ class ES(object):
         self.cluster = None
         self.debug_dump = False
         self.cluster_name = "undefined"
+        self.basic_auth = basic_auth
         self.connection = None
 
         if model is None:
@@ -327,7 +344,7 @@ class ES(object):
                 else:
                     raise RuntimeError("Unable to recognize port-type: \"%s\"" % port)
 
-            if _type not in ["thrift", "http"]:
+            if _type not in ["thrift", "http", "https"]:
                 raise RuntimeError("Unable to recognize protocol: \"%s\"" % _type)
 
             if _type == "thrift" and not thrift_enable:
@@ -342,7 +359,7 @@ class ES(object):
                 _type, host, port = server
                 check_format(host=host, port=port, _type=_type)
             elif isinstance(server, basestring):
-                if server.startswith(("thrift:", "http:")):
+                if server.startswith(("thrift:", "http:", "https:")):
                     tokens = [t.strip("/") for t in server.split(":") if t.strip("/")]
                     if len(tokens) == 3:
                         check_format(tokens[1], tokens[2], tokens[0])
@@ -368,11 +385,14 @@ class ES(object):
             raise RuntimeError("No server defined")
 
         _type, host, port = random.choice(self.servers)
-        if _type == "http":
-            self.connection = http_connect([(host, port) for _type, host, port in self.servers if _type == "http"], timeout=self.timeout, max_retries=self.max_retries)
+        if _type in ["http", "https"]:
+            self.connection = http_connect([(_type, host, port) for _type, host, port in self.servers if _type in ["http", "https"]],
+                                           timeout=self.timeout, basic_auth=self.basic_auth,
+                                           max_retries=self.max_retries)
             return
         elif _type == "thrift":
-            self.connection = thrift_connect([(host, port) for _type, host, port in self.servers if _type == "thrift"], timeout=self.timeout, max_retries=self.max_retries)
+            self.connection = thrift_connect([(host, port) for _type, host, port in self.servers if _type == "thrift"],
+                                             timeout=self.timeout, max_retries=self.max_retries)
 
     def _discovery(self):
         """
@@ -487,13 +507,25 @@ class ES(object):
             curl_cmd += " -d '%s'" % request.body
         print >> self.dump_curl, curl_cmd
 
+    def _get_default_indices(self):
+        return self._default_indices
+
+    def _set_default_indices(self, default_indices):
+        if default_indices is not None:
+            default_indices = self._validate_indices(default_indices)
+        self._default_indices = default_indices
+
+    default_indices = property(_get_default_indices, _set_default_indices)
+    del _get_default_indices, _set_default_indices
+
     #---- Admin commands
     def status(self, indices=None):
         """
         Retrieve the status of one or more indices
         """
         if not indices:
-            indices = ["_all"]
+            #indices = ["_all"]
+            indices = self.default_indices
 #        indices = self._validate_indices(indices)
         path = self._make_path([','.join(indices), '_status'])
         return self._send_request('GET', path)
@@ -603,7 +635,7 @@ class ES(object):
         Otherwise, returns a list of index names.
 
         """
-        status = self.status(alias)
+        status = self.status([alias])
         return status['indices'].keys()
 
     def change_aliases(self, commands):
@@ -622,7 +654,7 @@ class ES(object):
         }
         return self._send_request('POST', "_aliases", body)
 
-    def add_alias(self, alias, indices):
+    def add_alias(self, alias, indices=None):
         """Add an alias to point to a set of indices.
 
         """
@@ -630,7 +662,7 @@ class ES(object):
         return self.change_aliases(['add', index, alias]
                                    for index in indices)
 
-    def delete_alias(self, alias, indices):
+    def delete_alias(self, alias, indices=None):
         """Delete an alias.
 
         The specified index or indices are deleted from the alias, if they are
@@ -642,7 +674,7 @@ class ES(object):
         return self.change_aliases(['remove', index, alias]
                                    for index in indices)
 
-    def set_alias(self, alias, indices):
+    def set_alias(self, alias, indices=None):
         """Set an alias.
 
         This handles removing the old list of indices pointed to by the alias.
@@ -1052,7 +1084,8 @@ class ES(object):
         Return the filename and memory data stream
         """
         data = self.get(index, doc_type, id)
-        return data["_source"]['_name'], base64.standard_b64decode(data["_source"]['content'])
+        return data['_name'], base64.standard_b64decode(data['content'])
+        #return data["_source"]['_name'], base64.standard_b64decode(data["_source"]['content'])
 
     def update(self, extra_doc, index, doc_type, id, querystring_args=None,
                update_func=None, attempts=2):
@@ -1153,11 +1186,11 @@ class ES(object):
         """
         data = data or {}
         obj = ElasticSearchModel()
-        obj.meta.index = index
-        obj.meta.type = doc_type
-        obj.meta.connection = self
+        obj._meta.index = index
+        obj._meta.type = doc_type
+        obj._meta.connection = self
         if id:
-            obj.meta.id = id
+            obj._meta.id = id
         if data:
             obj.update(data)
         if vertex:
@@ -1335,6 +1368,14 @@ class ES(object):
         return self._send_request('DELETE', '/_river/%s/' % river_name)
 
     #--- settings management
+
+    def get_settings(self, index=None):
+        """
+        Returns the current settings for an index.
+        """
+        path = self._make_path([index, "_settings"])
+        return self._send_request('GET', path)
+
     def update_settings(self, index, newvalues):
         """
         Update Settings of an index.
@@ -1456,7 +1497,9 @@ class ResultSet(object):
 
         self.iterpos = 0 #keep track of iterator position
         self.start = self.query.start or 0
-        self.chuck_size = self.query.size or 10
+        self._max_item = self.query.size
+        self._current_item = 0
+        self.chuck_size = self.query.bulk_read or 10
 
     def _do_search(self, auto_increment=False):
         self.iterpos = 0
@@ -1516,7 +1559,16 @@ class ResultSet(object):
                 self._total = self._results.get("hits", {}).get('total', 0)
         return self._total
 
+    @property
+    def facets(self):
+        if self._results is None:
+            self._do_search()
+        return self._facets
+
     def __len__(self):
+        return self.total
+
+    def count(self):
         return self.total
 
     def fix_keys(self):
@@ -1565,9 +1617,11 @@ class ResultSet(object):
                     start = 0
                 else:
                     start -= 1
-                end = val.stop or self.total()
+                end = val.stop or self.total
                 if end < 0:
-                    end = self.total() + end
+                    end = self.total + end
+                if self._max_item is not None and end > self._max_item:
+                    end = self._max_item
                 return start, end
             return val, val + 1
 
@@ -1597,13 +1651,18 @@ class ResultSet(object):
         return [model(self.connection, hit) for hit in hits]
 
     def next(self):
+        if self._max_item is not None and self._current_item == self._max_item:
+            raise StopIteration
         if self._results is None:
+            self._do_search()
+        if "_scroll_id" in self._results and self._total != 0 and self._current_item == 0 and len(self._results["hits"].get("hits", [])) == 0:
             self._do_search()
         if len(self.hits) == 0:
             raise StopIteration
         if self.iterpos < len(self.hits):
             res = self.hits[self.iterpos]
             self.iterpos += 1
+            self._current_item += 1
             return self.connection.model(self.connection, res)
 
         if self.iterpos == self.total:
@@ -1614,9 +1673,14 @@ class ResultSet(object):
             raise StopIteration
         res = self.hits[self.iterpos]
         self.iterpos += 1
+        self._current_item += 1
         return self.connection.model(self.connection, res)
 
     def __iter__(self):
         self.iterpos = 0
-        self._results = None
+        if self._current_item != 0:
+            self._results = None
+        self._current_item = 0
+
+        self.start = 0
         return self

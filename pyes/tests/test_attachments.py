@@ -73,7 +73,7 @@ class QueryAttachmentTestCase(ESTestCase):
         self.conn.put_mapping(self.document_type, {self.document_type:{'properties':mapping}}, self.index_name)
         self.conn.refresh(self.index_name)
         self.conn.get_mapping(self.document_type, self.index_name)
-        self.conn.index({"attachment":file_to_attachment(os.path.join("data", "testXHTML.html")), "uuid":"1" }, self.index_name, self.document_type, 1)
+        self.conn.index({"attachment":file_to_attachment(os.path.join("tests", "data", "testXHTML.html")), "uuid":"1" }, self.index_name, self.document_type, 1)
         self.conn.refresh(self.index_name)
 
     def test_TermQuery(self):

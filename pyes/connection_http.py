@@ -1,30 +1,22 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import
+from requests.packages import urllib3
 
 __author__ = 'Alberto Paro'
 
-import logging
 import random
 import threading
 import time
 import base64
 import requests
-from pyes.exceptions import NoServerAvailable
-from httplib import HTTPConnection
-from fakettypes import *
 import socket
-import urllib
+from .exceptions import NoServerAvailable
+from .fakettypes import Method, RestResponse
+from . import logger
 
 __all__ = ['connect', 'connect_thread_local']
 
-"""
-Work taken from pycassa
-"""
-
 DEFAULT_SERVER = ("http", "127.0.0.1", 9200)
-#API_VERSION = VERSION.split('.')
-
-log = logging.getLogger('pyes')
 
 
 class ClientTransport(object):
@@ -34,8 +26,6 @@ class ClientTransport(object):
         self.connection_type, self.host, self.port = server
         self.timeout = timeout
         self.headers = {}
-        #self.client = TimeoutHttpConnectionPool(host, port, timeout)
-        #setattr(self.client, "execute", self.execute)
         if recycle:
             self.recycle = time.time() + recycle + random.uniform(0, recycle * 0.1)
         else:
@@ -142,9 +132,9 @@ class ServerSet(object):
                     self._dead.append((ts, revived))
                 else:
                     self._servers.append(revived)
-                    log.info('Server %r reinstated into working pool', revived)
+                    logger.info('Server %r reinstated into working pool', revived)
             if not self._servers:
-                log.critical('No servers available')
+                logger.critical('No servers available')
                 raise NoServerAvailable()
             return random.choice(self._servers)
         finally:
@@ -176,7 +166,7 @@ class ThreadLocalConnection(object):
                 try:
                     return getattr(self._ensure_connection(), attr)(*args, **kwargs)
                 except (socket.timeout, socket.error), exc:
-                    log.exception('Client error: %s', exc)
+                    logger.exception('Client error: %s', exc)
                     self.close()
 
                     if retry < self._max_retries:
@@ -191,7 +181,7 @@ class ThreadLocalConnection(object):
         """Make certain we have a valid connection and return it."""
         conn = self.connect()
         if conn.recycle and conn.recycle < time.time():
-            log.debug('Client session expired after %is. Recycling.', self._recycle)
+            logger.debug('Client session expired after %is. Recycling.', self._recycle)
             self.close()
             conn = self.connect()
         return conn
@@ -201,18 +191,15 @@ class ThreadLocalConnection(object):
         if not getattr(self._local, 'conn', None):
             try:
                 server = self._servers.get()
-                log.debug('Connecting to %s', server)
+                logger.debug('Connecting to %s', server)
                 self._local.conn = ClientTransport(server, self._framed_transport,
                     self._timeout, self._recycle,
                     self._basic_auth)
             except (socket.timeout, socket.error):
-                log.warning('Connection to %s failed.', server)
+                logger.warning('Connection to %s failed.', server)
                 self._servers.mark_dead(server)
                 return self.connect()
         return self._local.conn
 
     def close(self):
-        """If a connection is open, close it."""
-        #        if self._local.conn:
-        #            self._local.conn.transport.close()
         self._local.conn = None

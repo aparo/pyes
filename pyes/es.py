@@ -36,6 +36,8 @@ except ImportError:
 from connection_http import connect as http_connect
 log = logging.getLogger('pyes')
 
+from mappings import Mapper
+
 from convert_errors import raise_if_error
 from pyes.exceptions import (InvalidParameter,
         ElasticSearchException, IndexAlreadyExistsException,
@@ -1127,12 +1129,11 @@ class ES(object):
             new_doc = update_func(current_doc, extra_doc)
             if new_doc is None:
                 new_doc = current_doc
-            meta = new_doc.pop('meta')
             try:
                 return self.index(new_doc, index, doc_type, id,
                                   version=meta.version, querystring_args=querystring_args)
             except VersionConflictEngineException:
-                if i <= 0:
+                if attempt <= 0:
                     raise
                 self.refresh(index)
 

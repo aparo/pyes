@@ -14,6 +14,7 @@ from httplib import HTTPConnection
 from fakettypes import *
 import socket
 import urllib
+
 __all__ = ['connect', 'connect_thread_local']
 
 """
@@ -55,9 +56,10 @@ class ClientTransport(object):
         headers.update(request.headers)
         s = requests.session()
         response = s.request(method=Method._VALUES_TO_NAMES[request.method],
-                                    url="http://%s:%s%s" % (self.host, self.port, request.uri), params=request.parameters,
-                                    data=request.body, headers=request.headers)
+            url="http://%s:%s%s" % (self.host, self.port, request.uri), params=request.parameters,
+            data=request.body, headers=request.headers, timeout=self.timeout)
         return RestResponse(status=response.status_code, body=response.content, headers=response.headers)
+
 
 def connect(servers=None, framed_transport=False, timeout=None,
             retry_time=60, recycle=None, round_robin=None,
@@ -102,7 +104,7 @@ def connect(servers=None, framed_transport=False, timeout=None,
               Expects keys:
                   * username
                   * password
-              
+
     round_robin: bool
               *DEPRECATED*
 
@@ -114,8 +116,8 @@ def connect(servers=None, framed_transport=False, timeout=None,
     if servers is None:
         servers = [DEFAULT_SERVER]
     return ThreadLocalConnection(servers, framed_transport, timeout,
-                                 retry_time, recycle, max_retries=max_retries,
-                                 basic_auth=basic_auth)
+        retry_time, recycle, max_retries=max_retries,
+        basic_auth=basic_auth)
 
 connect_thread_local = connect
 
@@ -170,7 +172,6 @@ class ThreadLocalConnection(object):
 
     def __getattr__(self, attr):
         def _client_call(*args, **kwargs):
-
             for retry in xrange(self._max_retries + 1):
                 try:
                     return getattr(self._ensure_connection(), attr)(*args, **kwargs)
@@ -202,8 +203,8 @@ class ThreadLocalConnection(object):
                 server = self._servers.get()
                 log.debug('Connecting to %s', server)
                 self._local.conn = ClientTransport(server, self._framed_transport,
-                                                   self._timeout, self._recycle,
-                                                   self._basic_auth)
+                    self._timeout, self._recycle,
+                    self._basic_auth)
             except (socket.timeout, socket.error):
                 log.warning('Connection to %s failed.', server)
                 self._servers.mark_dead(server)
@@ -212,6 +213,6 @@ class ThreadLocalConnection(object):
 
     def close(self):
         """If a connection is open, close it."""
-#        if self._local.conn:
-#            self._local.conn.transport.close()
+        #        if self._local.conn:
+        #            self._local.conn.transport.close()
         self._local.conn = None

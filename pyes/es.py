@@ -1520,7 +1520,7 @@ class ResultSet(object):
         self.start = self.query.start or 0
         self._max_item = self.query.size
         self._current_item = 0
-        self.chuck_size = self.query.bulk_read or 10
+        self.chuck_size = self.query.bulk_read or self.query.size or 10
 
     def _do_search(self, auto_increment=False):
         self.iterpos = 0

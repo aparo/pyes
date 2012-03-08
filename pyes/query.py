@@ -98,7 +98,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
                  index_boost={},
                  min_score=None,
                  stats=None,
-                 bulk_read=200):
+                 bulk_read=None):
         """
         fields: if is [], the _source is not returned
         """

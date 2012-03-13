@@ -4,7 +4,7 @@
 Index_
 ======
 
-The index API allows to index a typed JSON document into a specific index and make it searchable. The following example index the JSON document into an index called twitter, under a type called tweet, with id valued 1:
+The index API adds or updates a typed JSON document in a specific index, making it searchable. The following example inserts the JSON document into the "twitter" index, under a type called "tweet" with an id of 1:
 
 
 .. code-block:: js
@@ -30,13 +30,13 @@ The result of the above index operation is:
     }
 
 
-Automatic for the Index
-=======================
+Automatic Index Creation
+========================
 
-The index operation automatically creates an index if it has not been created before (check out the :ref:`create index API <es-guide-reference-api-admin-indices-create-index>`  for manually creating an index), and also automatically creates a dynamic type mapping for the specific type if it has not been created before (check out the :ref:`put mapping <es-guide-reference-api-admin-indices-put-mapping>`  API for manually creating type mapping). 
+The index operation automatically creates an index if it has not been created before (check out the :ref:`create index API <es-guide-reference-api-admin-indices-create-index>`  for manually creating an index), and also automatically creates a dynamic type mapping for the specific type if one has not yet been created (check out the :ref:`put mapping <es-guide-reference-api-admin-indices-put-mapping>`  API for manually creating a type mapping).
 
 
-The mapping itself is very flexible and is schema free, meaning that new fields / objects can be added and they will automatically be added to the mapping definition of the specific type. Check out the :ref:`mapping <es-guide-reference-mapping>`  section for more information on mapping definitions.
+The mapping itself is very flexible and is schema-free. New fields and objects will automatically be added to the mapping definition of the type specified. Check out the :ref:`mapping <es-guide-reference-mapping>`  section for more information on mapping definitions.
 
 
 Though explained on the :ref:`mapping <es-guide-reference-mapping>`  section, its important to note that the format of the JSON document can also include the type (very handy when using JSON mappers), for example:
@@ -53,10 +53,13 @@ Though explained on the :ref:`mapping <es-guide-reference-mapping>`  section, it
     }'
 
 
+Automatic index creation can be disabled by setting **action.auto_create_index** to **false** in the config file of all nodes. Automatic mapping creation can be disabled by setting **index.mapper.dynamic** to **false** in the config files of all nodes (or on the specific index settings).
+
+
 Versioning
 ==========
 
-Each document indexed is versioned. When indexing a doc, the **version** that is associated with it is returned as part of the response. The index API allows for `optimistic concurrency control <http://en.wikipedia.org/wiki/Optimistic_concurrency_control>`_  by allowing to specify the version the index should be updated under. This is handy for example when doing read and update, and making sure no changes happened in the meantime (when reading, make sure to set the **preference** to **_primary**). For example:
+Each indexed document is given a version number. The associated **version** number is returned as part of the response to the index API request. The index API optionally allows for `optimistic concurrency control <http://en.wikipedia.org/wiki/Optimistic_concurrency_control>`_  when the **version** parameter is specified. This will control the version of the document the operation is intended to be executed against. A good example of a use case for versioning is performing a transactional read-then-update. Specifying a **version** from the document initially read ensures no changes have happened in the meantime (when reading in order to update, it is recommended to set **preference** to **_primary**). For example:
 
 
 .. code-block:: js
@@ -66,19 +69,19 @@ Each document indexed is versioned. When indexing a doc, the **version** that is
     }'
 
 
-Note, versioning are completely real time, and are not affect by the near real time aspect of get and search operations. If no version is provided, then the operation is forced to be executed without any checks.
+*NOTE:* versioning is completely real time, and is not affected by the near real time aspects of search operations. If no version is provided, then the operation is executed without any version checks.
 
 
-By default, an internal versioning systems will be used, but, the versioning can be provided as an external value (for example, if maintained in a database). It must be a numeric value, and when providing it, the **version_type** should be set to **external**. In this case, the check will be if the provided version is greater than the current document version. If so, it will be set as the document version value and the document will be indexed. If the current document version is higher than the provided version, a version conflict will be returned / thrown.
+By default, internal versioning is used that starts at 1 and increments with each update. Optionally, the version number can be supplemented with an external value (for example, if maintained in a database). To enable this functionality, **version_type** should be set to **external**. The value provided must be a numeric, long value greater than 0, and less than around 9.2e+18. When using the external version type, instead of checking for a matching version number, the system checks to see if the version number passed to the index request is greater than or equal to the version of the currently stored document. If true, the document will be indexed and the new version number used. If the value provided is lower than the stored document's version number, a version conflict will occur and the index operation will fail.
 
 
-This means that async indexing as a result of operations done against the database can use the database versioning scheme and there is no need to maintain strict ordering in the async indexing process. Or even the simple case of updating the db, and then indexing into elasticsearch is now simplified since if the indexing gets out of order, the external versioning can be used to make sure only the latest version is indexed.
+A nice side effect is that there is no need to maintain strict ordering of async indexing operations executed a result of changes to a source database, as long as version numbers from the source database are used. Even the simple case of updating the elasticsearch index using data from a database is simplified if external versioning is used, as only the latest version will be used if the index operations are out of order for whatever reason.
 
 
 Operation Type
 ==============
 
-The index operation also accepts an **op_type** to force a **create** operation. This will allow for a "put of absent" behavior when a document will be created only if it does not exists in the index.
+The index operation also accepts an **op_type** that can be used to force a **create** operation, allowing for "put-if-absent" behavior. When **create** is used, the index operation will fail if a document by that id already exists in the index.
 
 
 Here is an example of using the **op_type** parameter:
@@ -106,10 +109,10 @@ Another option to specify **create** is to use the following uri:
 
 
 
-Automatic Id Generation
+Automatic ID Generation
 =======================
 
-The index operation can be executed without specifying the id. In such a case, an id will be generated automatically for the document. In such a case, the **opType** will automatically be set to **create**. Here is an example (note the *POST* used instead of *PUT*):
+The index operation can be executed without specifying the id. In such a case, an id will be generated automatically. In addition, the **op_type** will automatically be set to **create**. Here is an example (note the *POST* used instead of *PUT*):
 
 .. code-block:: js
 
@@ -137,7 +140,7 @@ The result of the above index operation is:
 Routing
 =======
 
-When indexing documents, the document will end up being indexed into a specific shard. By default, the shard is controlled by hashing the id value of the document and using the hash value to control the shard it will end at. For more explicit control of the routing, one can be specified as part of the API call. For example:
+By default, shard placement &mdash; or **routing** &mdash; is controlled by using a hash of the document's id value. For more explicit control, the value fed into the hash function used by the router can be directly specified on a per-operation basis using the **routing** parameter. For example:
 
 
 .. code-block:: js
@@ -149,13 +152,16 @@ When indexing documents, the document will end up being indexed into a specific 
     }'
 
 
-The above sample will route the indexing of the tweet message based on the user name. Note, the **_routing** mapping option allows to control automatic extraction of the routing value from an indexed document without the need to explicitly set it at the cost of (very lightweight) additional parsing of the doc. Also, if the **_routing** mapping is defined, and set to be **required**, then the index operation will fail if no routing is provided (or extracted).
+In the example above, the "tweet" document is routed to a shard based on the **routing** parameter provided: "kimchy".
 
 
-Parent
-======
+When setting up explicit mapping, the **_routing** field can be optionally used to direct the index operation to extract the routing value from the document itself. This does come at the (very minimal) cost of an additional document parsing pass. If the **_routing** mapping is defined, and set to be **required**, the index operation will fail if no routing value is provided or extracted.
 
-When indexing a child document, it is important that it will be routed to the same shard as the parent. This uses the routing capability. When indexing a doc with a parent id, it is automatically set as the routing value (unless the routing value is explicitly defined). Indexing a document with a parent id is simple:
+
+Parents &amp; Children
+======================
+
+A child document can be indexed by specifying it's parent when indexing. For example:
 
 
 .. code-block:: js
@@ -165,10 +171,62 @@ When indexing a child document, it is important that it will be routed to the sa
     }'
 
 
+When indexing a child document, the routing value is automatically set to be the same as it's parent, unless the routing value is explicitly specified using the **routing** parameter.
+
+
+Timestamp
+=========
+
+A document can be indexed with a **timestamp** associated with it. The **timestamp** value of a document can be set using the **timestamp** parameter. For example:
+
+
+.. code-block:: js
+
+    $ curl -XPUT localhost:9200/twitter/tweet/1?timestamp=2009-11-15T14%3A12%3A12 -d '{
+        "user" : "kimchy",
+        "message" : "trying out Elastic Search",
+    }'
+
+
+If the **timestamp** value is not provided externally or in the **_source**, the **timestamp** will be automatically set to the date the document was processed by the indexing chain. More information can be found on the :ref:`_timestamp mapping page <es-guide-reference-api-mapping-timestamp-field>`.  
+
+TTL
+===
+
+A document can be indexed with a **ttl** (time to live) associated with it. Expired documents will be expunged automatically. The expiration date that will be set for a document with a provided **ttl** is relative to the **timestamp** of the document, meaning it can be based on the time of indexing or on any time provided. The provided **ttl** must be strictly positive and can be a number (in milliseconds) or any valid time value as shown in the following examples:
+
+
+.. code-block:: js
+
+    curl -XPUT 'http://localhost:9200/twitter/tweet/1?ttl=86400000' -d '{
+        "user" : "kimchy",
+        "message" : "Trying out elasticsearch, so far so good?"
+    }'
+
+
+.. code-block:: js
+
+    curl -XPUT 'http://localhost:9200/twitter/tweet/1?ttl=1d' -d '{
+        "user" : "kimchy",
+        "message" : "Trying out elasticsearch, so far so good?"
+    }'
+
+
+.. code-block:: js
+
+    curl -XPUT 'http://localhost:9200/twitter/tweet/1' -d '{
+        "ttl" : "1d",
+        "user" : "kimchy",
+        "message" : "Trying out elasticsearch, so far so good?"
+    }'
+
+
+More information can be found on the :ref:`_ttl mapping page <es-guide-reference-api-mapping-ttl-field>`.  -mapping-ttl-field>`.  
+
 Percolate
 =========
 
-:ref:`Percolation <es-guide-reference-api-percolate>`  can be automatically done on an indexed doc by passing the **percolate** parameter. Setting it to ***** will cause all percolation queries registered against the index to be checked against the indexed doc, for example:
+:ref:`Percolation <es-guide-reference-api-percolate>`  can be performed at index time by passing the **percolate** parameter. Setting it to ***** will cause all percolation queries registered against the index to be checked against the provided document, for example:
 
 
 .. code-block:: js
@@ -178,7 +236,7 @@ Percolate
     }'
 
 
-It can also be set to query (following the query string syntax) to filter out which percolator queries will be executed:
+To filter out which percolator queries will be executed, pass the query string syntax to the **percolate** parameter:
 
 
 .. code-block:: js
@@ -189,40 +247,40 @@ It can also be set to query (following the query string syntax) to filter out wh
     }'
 
 
-Percolation on index operation is done while optimizing the distributed nature of elasticsearch. Once the index operation is done on the primary shard, it is sent to all the replicas, and while the operation is done on the replicas, the percolation is executed on the node hosting the primary shard. Also, the parsing operation done on the primary shard is reused for the percolation operation.
+*NOTE:* In a distributed cluster, percolation during the index operation is performed on the primary shard, as soon as the index operation completes. The operation executes on the primary while the replicas are updating, concurrently. Percolation during the index operation somewhat cuts down on parsing overhead, as the parse tree for the document is simply re-used for percolation.
 
 
 Distributed
 ===========
 
-The index operation gets hashed into a specific shard id. It then gets redirected into the primary shard within that id group, and replicated (if needed) to shard replicas within that id group.
-
-
-Replication Type
-================
-
-The replication of the operation can be done in an asynchronous manner to the replicas (the operation will return once it has be executed on the primary shard). The **replication** parameter can be set to **async** (defaults to **sync**) in order to enable it.
+The index operation is directed to the primary shard based on it's route (see the Routing section above) and performed on the actual node containing this shard. After the primary shard completes the operation, if needed, the update is distributed to applicable replicas.
 
 
 Write Consistency
 =================
 
-Control if the operation will be allowed to execute based on the number of active shards within that partition (replication group). The values allowed are **one**, **quorum**, and **all**. The parameter to set it is **consistency**, and it defaults to the node level setting of **action.write_consistency** which in turn defaults to **quorum**.
+To prevent writes from taking place on the "wrong" side of a network partition, by default, index operations only succeed if a quorum (>replicas/2+1) of active shards are available. This default can be overridden on a node-by-node basis using the **action.write_consistency** setting. To alter this behavior per-operation, the **consistency** request parameter can be used.
 
 
-For example, in a N shards with 2 replicas index, there will have to be at least 2 active shards within the relevant partition (**quorum**) for the operation to succeed. In a N shards with 1 replica scenario, there will need to be a single shard active (in this case, **one** and **quorum** is the same).
+Valid write consistency values are **one**, **quorum**, and **all**.
+
+
+Asynchronous Replication
+========================
+
+By default, the index operation only returns after all shards within the replication group have indexed the document (sync replication). To enable asynchronous replication, causing the replication process to take place in the background, set the **replication** parameter to **async**. When asynchronous replication is used, the index operation will return as soon as the operation succeeds on the primary shard.
 
 
 Refresh
 =======
 
-The **refresh** parameter can be set to **true** in order to refresh the relevant shard after the index operation has occurred and make it searchable. Setting it to **true** should be done after careful thought and verification that this does not cause a heavy load on the system (and slows down indexing).
+To refresh the index immediately after the operation occurs, so that the document appears in search results immediately, the **refresh** parameter can be set to **true**. Setting this option to **true** should *ONLY* be done after careful thought and verification that it does not lead to poor performance, both from an indexing and a search standpoint. Note, getting a document using the get API is completely realtime.
 
 
 Timeout
 =======
 
-The primary shard that needs to perform the operation might not be available yet. For example, it might still be in the process of recovery from a gateway, or might be in the process of relocation. The timeout parameter allows to control how long the index operation will wait till the primary shard is available before exiting with an error. The parameter name is **timeout** with a default value of 1 minute. Here is an example of setting it to 5 minutes:
+The primary shard assigned to perform the index operation might not be available when the index operation is executed. Some reasons for this might be that the primary shard is currently recovering from a gateway or undergoing relocation. By default, the index operation will wait on the primary shard to become available for up to 1 minute before failing and responding with an error. The **timeout** parameter can be used to explicitly specify how long it waits. Here is an example of setting it to 5 minutes:
 
 
 .. code-block:: js

@@ -9,7 +9,19 @@ The cluster health API allows to get a very simple status on the health of the c
 
 .. code-block:: js
 
-    $ curl -XGET 'http://localhost:9200/_cluster/health'
+    $ curl -XGET 'http://localhost:9200/_cluster/health?pretty=true'
+    {                                                                                            
+      "cluster_name" : "testcluster",                                                              
+      "status" : "green",                                                                        
+      "timed_out" : false,                                                                       
+      "number_of_nodes" : 2,                                                                     
+      "number_of_data_nodes" : 2,                                                                
+      "active_primary_shards" : 5,                                                               
+      "active_shards" : 10,                                                                      
+      "relocating_shards" : 0,                                                                   
+      "initializing_shards" : 0,                                                                 
+      "unassigned_shards" : 0                                                                    
+    }
 
 
 The API can also be executed against one or more indices to get just the specified indices health:

@@ -45,6 +45,6 @@ A filter that matches documents matching boolean combinations of other queries. 
 Caching
 =======
 
-The result of the `bool` filter is automatically cached by default. The `_cache` can be set to `false` to turn it off.
+The result of the **bool** filter is not cached by default (though internal filters might be). The **_cache** can be set to **true** in order to enable caching.
 
 

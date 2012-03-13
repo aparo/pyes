@@ -1,6 +1,4 @@
 .. _es-guide-reference-index-modules-index:
-.. _es-guide-reference-index-modules:
-
 =============
 Index Modules
 =============
@@ -11,7 +9,7 @@ Index Modules are modules created per index and control all aspects related to a
 Index Settings
 ==============
 
-There specific index level settings that are not associated with any specific module. These include:
+There are specific index level settings that are not associated with any specific module. These include:
 
 
 ===========================  ================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================================
@@ -26,10 +24,12 @@ index.refresh_interval       A time setting controlling how often the refresh op
 .. toctree::
     :maxdepth: 1
 
+    allocation
     analysis/index
     cache
     mapper
     merge
+    slowlog
     store
     translog
 	

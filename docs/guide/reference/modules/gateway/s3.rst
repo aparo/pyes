@@ -22,6 +22,9 @@ s3 based gateway allows to do long term reliable async persistency of the cluste
             bucket: bucket_name
 
 
+You’ll need to install the **cloud-aws** plugin, by running **bin/plugin install cloud-aws** before (re)starting elasticsearch.
+
+
 The following are a list of settings (prefixed with **gateway.s3**) that can further control the s3 gateway:
 
 

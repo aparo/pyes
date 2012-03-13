@@ -167,7 +167,41 @@ The filter *requires* the **geo_point** type to be set on the relevant field.
 Multi Location Per Document
 ===========================
 
-The filter can work with multiple locations / points per document. Once a single location / point matches the filter, the document will be included in the filter.
+The filter can work with multiple locations / points per document. Once a single location / point matches the filter, the document will be included in the filter
+
+
+Type
+====
+
+The type of the bounding box execution by default is set to **memory**, which means in memory checks if the doc falls within the bounding box range. In some cases, an **indexed** option will perform faster (but note that the **geo_point** type must have lat and lon indexed in this case). Note, when using the indexed option, multi locations per document field are not supported. Here is an example:
+
+
+.. code-block:: js
+
+
+    {
+        "filtered" : {
+            "query" : {
+                "match_all" : {}
+            },
+            "filter" : {
+                "geo_bounding_box" : {
+                    "pin.location" : {
+                        "top_left" : {
+                            "lat" : 40.73,
+                            "lon" : -74.1
+                        },
+                        "bottom_right" : {
+                            "lat" : 40.717,
+                            "lon" : -73.99
+                        }
+                    },
+                    "type" : "indexed"
+                }
+            }
+        }
+    }
+
 
 
 Caching

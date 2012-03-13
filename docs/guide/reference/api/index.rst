@@ -7,6 +7,28 @@ Api
 
 This section describes the REST APIs *elasticsearch* provides (mainly) using JSON. The API is exposed using :ref:`HTTP <es-guide-reference-modules-http>`,  :ref:`thrift <es-guide-reference-modules-thrift>`,  :ref:`memcached <es-guide-reference-modules-memcached>`.  
 
+Nodes
+=====
+
+Most cluster level APIs allow to specify which nodes to execute on (for example, getting the node stats for a node). Nodes can be identified in the APIs either using their internal node id, the node name, address, custom attributes, or just the **_local** node receiving the request. For example, here are some sample executions of nodes info:
+
+
+.. code-block:: js
+
+    # Local    
+    curl localhost:9200/_cluster/nodes/_local
+    # Address
+    curl localhost:9200/_cluster/nodes/10.0.0.3,10.0.0.4
+    curl localhost:9200/_cluster/nodes/10.0.0.*
+    # Names
+    curl localhost:9200/_cluster/nodes/node_name_goes_here
+    curl localhost:9200/_cluster/nodes/node_name_goes_*
+    # Attributes (set something like node.rack: 2 in the config)
+    curl localhost:9200/_cluster/nodes/rack:2
+    curl localhost:9200/_cluster/nodes/ra*:2
+    curl localhost:9200/_cluster/nodes/ra*:2*
+
+
 Options
 =======
 
@@ -48,7 +70,6 @@ All REST APIs accept a **callback** parameter resulting in a `JSONP <http://en.w
 You can also use the **source** query string parameter to substitute for the body of the request.
 
 
-
 .. toctree::
     :maxdepth: 1
 
@@ -57,6 +78,7 @@ You can also use the **source** query string parameter to substitute for the bod
     admin-cluster-nodes-shutdown
     admin-cluster-nodes-stats
     admin-cluster-state
+    admin-cluster-update-settings
     admin-indices-aliases
     admin-indices-analyze
     admin-indices-clearcache
@@ -66,10 +88,13 @@ You can also use the **source** query string parameter to substitute for the bod
     admin-indices-flush
     admin-indices-gateway-snapshot
     admin-indices-get-mapping
+    admin-indices-indices-exists
     admin-indices-open-close
     admin-indices-optimize
     admin-indices-put-mapping
     admin-indices-refresh
+    admin-indices-segments
+    admin-indices-stats
     admin-indices-status
     admin-indices-templates
     admin-indices-get-settings
@@ -81,5 +106,6 @@ You can also use the **source** query string parameter to substitute for the bod
     get
     index_
     more-like-this
+    multi-get
     percolate
     search/index

@@ -13,7 +13,7 @@ One of the questions when executing a distributed search is how much results to 
 Another question, which relates to search engine, is the fact that each shard stands on its own. When a query is executed on a specific shard, it does not take into account term frequencies and other search engine information from the other shards. If we want to support accurate ranking, we would need to first execute the query against all shards and gather the relevant term frequencies, and then, based on it, execute the query.
 
 
-Also, because of the need to sort the results, getting back a large document set, or even scrolling it, while maintaing the correct sorting behavior can be a very expensive operation. For that, the **scan** search type (explained below) is also available.
+Also, because of the need to sort the results, getting back a large document set, or even scrolling it, while maintaing the correct sorting behavior can be a very expensive operation. For large result set scrolling without sorting, the **scan** search type (explained below) is also available.
 
 
 ElasticSearch is very flexible and allows to control the type of search to execute on a *per search request* basis.  The type can be configured by setting the *search_type* parameter in the query string. The types are:

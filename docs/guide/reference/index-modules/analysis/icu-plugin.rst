@@ -4,12 +4,7 @@
 Icu Plugin
 ==========
 
-The `ICU <http://icu-project.org/>`_  analysis plugin allows for unicode normalization, collation and folding. The plugin is called **analysis-icu** and can be installed by running:
-
-
-.. code-block:: js
-
-    bin/plugin install analysis-icu
+The `ICU <http://icu-project.org/>`_  analysis plugin allows for unicode normalization, collation and folding. The plugin is called `elasticsearch-analysis-icu <https://github.com/elasticsearch/elasticsearch-analysis-icu>`_.  
 
 
 The plugin includes the following analysis components:
@@ -27,7 +22,7 @@ Normalizes characters as explained `here <http://userguide.icu-project.org/trans
         "index" : {
             "analysis" : {
                 "analyzer" : {
-                    "collation" : {
+                    "normalization" : {
                         "tokenizer" : "keyword",
                         "filter" : ["icu_normalizer"]
                     }
@@ -40,7 +35,32 @@ Normalizes characters as explained `here <http://userguide.icu-project.org/trans
 ICU Folding
 ===========
 
-Folding of unicode characters based on **UTR#30**. It registers itself under **icu_folding** and **icuFolding** names. Sample setting:
+Folding of unicode characters based on **UTR#30**. It registers itself under **icu_folding** and **icuFolding** names. 
+
+The filter also does lowercasing, which means the lowercase filter can normally be left out. Sample setting:
+
+.. code-block:: js
+
+    {
+        "index" : {
+            "analysis" : {
+                "analyzer" : {
+                    "folding" : {
+                        "tokenizer" : "keyword",
+                        "filter" : ["icu_folding"]
+                    }
+                }
+            }
+        }
+    }
+
+
+Filtering
+---------
+
+The folding can be filtered by a set of unicode characters with the parameter **unicodeSetFilter**. This is useful for a non-internationalized search engine where retaining a set of national characters which are primary letters in a specific language is wanted. See syntax for the UnicodeSet `here <http://icu-project.org/apiref/icu4j/com/ibm/icu/text/UnicodeSet.html>`_.  
+
+The Following example excempt Swedish characters from the folding. Note that the filtered characters are NOT lowercased which is why we add that filter below.
 
 
 .. code-block:: js
@@ -49,9 +69,15 @@ Folding of unicode characters based on **UTR#30**. It registers itself under **i
         "index" : {
             "analysis" : {
                 "analyzer" : {
-                    "collation" : {
-                        "tokenizer" : "keyword",
-                        "filter" : ["icu_folding"]
+                    "folding" : {
+                        "tokenizer" : "standard",
+                        "filter" : ["my_icu_folding", "lowercase"]
+                    }
+                }
+                "filter" : {
+                    "my_icu_folding" : {
+                        "type" : "icu_folding"
+                        "unicodeSetFilter" : "[^åäöÅÄÖ]"
                     }
                 }
             }

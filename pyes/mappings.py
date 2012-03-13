@@ -118,11 +118,13 @@ class GeoPointField(AbstractField):
 
 class NumericFieldAbstract(AbstractField):
     def __init__(self, null_value=None, include_in_all=None, precision_step=4,
-                 **kwargs):
+                 numeric_resolution=None, **kwargs):
+
         super(NumericFieldAbstract, self).__init__(**kwargs)
         self.null_value = null_value
         self.include_in_all = include_in_all
         self.precision_step = precision_step
+        self.numeric_resolution=numeric_resolution
 
     def as_dict(self):
         result = super(NumericFieldAbstract, self).as_dict()
@@ -132,6 +134,8 @@ class NumericFieldAbstract(AbstractField):
             result['include_in_all'] = self.include_in_all
         if self.precision_step != 4:
             result['precision_step'] = self.precision_step
+        if self.numeric_resolution:
+            result['numeric_resolution'] = self.numeric_resolution
         return result
 
 class IpField(NumericFieldAbstract):
@@ -240,9 +244,8 @@ class AttachmentField(object):
 class ObjectField(object):
     def __init__(self, name=None, type=None, path=None, properties=None,
                  dynamic=None, enabled=None, include_in_all=None, dynamic_templates=None,
-                 _id=False, _type=False, _source=None, _all=None,
-                 _analyzer=None, _boost=None,
-                 _parent=None, _index=None, _routing=None, connection=None, index_name=None):
+                 include_in_parent=None, include_in_root=None,
+                 connection=None, index_name=None):
         self.name = name
         self.type = "object"
         self.path = path
@@ -251,15 +254,9 @@ class ObjectField(object):
         self.dynamic = dynamic
         self.dynamic_templates = dynamic_templates or []
         self.enabled = enabled
-        self._id = _id
-        self._type = _type
-        self._source = _source
-        self._all = _all
-        self._analyzer = _analyzer
-        self._boost = _boost
-        self._parent = _parent
-        self._index = _index
-        self._routing = _routing
+        self.include_in_all = include_in_all
+        self.include_in_parent = include_in_parent
+        self.include_in_root = include_in_root
         self.connection = connection
         self.index_name = index_name
         if properties:
@@ -276,30 +273,17 @@ class ObjectField(object):
     def as_dict(self):
         result = {"type": self.type,
                   "properties": {}}
-        if self._id:
-            result['_id'] = {"store":True}
-        if self._type:
-            result['_type'] = {"store":True}
-        if self._source is not None:
-            result['_source'] = self._source
-        if self._all is not None:
-            result['_all'] = self._all
-        if self._analyzer is not None:
-            result['_analyzer'] = self._analyzer
-        if self._boost is not None:
-            result['_boost'] = self._boost
-        if self._parent is not None:
-            result['_parent'] = self._parent
-        if self._index:
-            result['_index'] = {"store":True}
-        if self._routing is not None:
-            result['_routing'] = self._routing
         if self.dynamic is not None:
             result['dynamic'] = self.dynamic
         if self.enabled is not None:
             result['enabled'] = self.enabled
         if self.include_in_all is not None:
             result['include_in_all'] = self.include_in_all
+        if self.include_in_parent is not None:
+            result['include_in_parent'] = self.include_in_parent
+        if self.include_in_root is not None:
+            result['include_in_root'] = self.include_in_root
+
         if self.path is not None:
             result['path'] = self.path
 
@@ -322,17 +306,13 @@ class NestedObject(ObjectField):
         super(NestedObject, self).__init__(*args, **kwargs)
         self.type = "nested"
 
-class DocumentObjectField(object):
-    def __init__(self, name=None, type=None, path=None, properties=None,
-                 dynamic=None, enabled=None, _all=None, _boost=None, _id=None,
-                 _index=None, _source=None, _type=None, date_formats=None, _routing=None,
-                 _parent=None, _timestamp=None, connection=None, index_name=None, dynamic_date_formats=None):
-        self.name = name
-        self.type = "object"
-        self.path = path
-        self.properties = properties or {}
-        self.dynamic = dynamic
-        self.enabled = enabled
+
+class DocumentObjectField(ObjectField):
+    def __init__(self, _all=None, _boost=None, _id=None,
+                 _index=None, _source=None, _type=None, date_formats=None, _routing=None, _ttl=None,
+                 _parent=None, _timestamp=None, _analyzer=None, _size=None, date_detection=None,
+                 numeric_detection=None, dynamic_date_formats=None, *args, **kwargs):
+        super(DocumentObjectField, self).__init__(*args, **kwargs)
         self._timestamp = _timestamp
         self._all = _all
         if self._all is None:
@@ -344,40 +324,34 @@ class DocumentObjectField(object):
         self._index = _index
         self._source = _source
         self._routing = _routing
-        self.dynamic_date_formats = dynamic_date_formats
+        self._ttl = _ttl
+        self._analyzer = _analyzer
+        self._size = _size
 
         self._type = _type
         if self._type is None:
             self._type = {"store" : "yes"}
 
         self._parent = _parent
-        self.date_formats = date_formats
-        self.connection = connection
-        self.index_name = index_name
-
-        if properties:
-            self.properties = dict([(name, get_field(name, data)) for name, data in properties.items()])
+        self.date_detection = date_detection
+        self.numeric_detection = numeric_detection
+        self.dynamic_date_formats = dynamic_date_formats
 
     def enable_compression(self, threshold="5kb"):
         self._source.update({"compress":True, "compression_threshold":threshold})
 
     def as_dict(self):
-        result = {"type": self.type,
-                  "properties": {},
-                  '_source': self._source,
-                  '_type': self._type}
-        if self.dynamic is not None:
-            result['dynamic'] = self.dynamic
-        if self.enabled is not None:
-            result['enabled'] = self.enabled
-        if self.path is not None:
-            result['path'] = self.path
+        result = super(DocumentObjectField, self).as_dict()
+        result['_source'] = self._source
+        result['_type'] = self._type
         if self._all is not None:
             result['_all'] = self._all
         if self._boost is not None:
             result['_boost'] = self._boost
         if self._routing is not None:
             result['_routing'] = self._routing
+        if self._ttl is not None:
+            result['_ttl'] = self._ttl
         if self._id is not None:
             result['_id'] = self._id
         if self._timestamp is not None:
@@ -386,23 +360,37 @@ class DocumentObjectField(object):
             result['_index'] = self._index
         if self._parent is not None:
             result['_parent'] = self._parent
+        if self._analyzer is not None:
+            result['_analyzer'] = self._analyzer
+        if self._size is not None:
+            result['_size'] = self._size
+
+        if self.date_detection is not None:
+            result['date_detection'] = self.date_detection
+        if self.numeric_detection is not None:
+            result['numeric_detection'] = self.numeric_detection
         if self.dynamic_date_formats is not None:
             result['dynamic_date_formats'] = self.dynamic_date_formats
 
-        if self.properties:
-            for name, value in self.properties.items():
-                result['properties'][name] = value.as_dict()
         return result
 
-    def __unicode__(self):
-        return "<DocumentObjectField:%s>" % self.as_dict()
+    def add_property(self, prop):
+        """
+        Add a property to the object
+        """
+        self.properties[prop.name] = prop
+
+    def __repr__(self):
+        return u"<DocumentObjectField:%s>" % self.name
+
 
     def save(self):
         if self.connection is None:
             raise RuntimeError("No connection available")
         self.connection.put_mapping(doc_type=self.name, mapping=self.as_dict(), indices=self.index_name)
 
-def get_field(name, data, default="object"):
+
+def get_field(name, data, default="object", document_object_field=None):
     """
     Return a valid Field by given data
     """
@@ -435,10 +423,16 @@ def get_field(name, data, default="object"):
     elif _type == "attachment":
         return AttachmentField(name=name, **data)
     elif _type == "document":
+        if document_object_field:
+            return document_object_field(name=name, **data)
+        else:
         return DocumentObjectField(name=name, **data)
 
     elif _type == "object":
         if '_timestamp' in data:
+            if document_object_field:
+                return document_object_field(name=name, **data)
+            else:
             return DocumentObjectField(name=name, **data)
 
         return ObjectField(name=name, **data)
@@ -447,11 +441,21 @@ def get_field(name, data, default="object"):
     raise RuntimeError("Invalid type: %s" % _type)
 
 class Mapper(object):
-    def __init__(self, data, connection=None, is_mapping=False):
+    def __init__(self, data, connection=None, is_mapping=False, document_object_field=None):
+        """
+        Create a mapper object
+
+        :param data: a dict containing the mappings
+        :param connection: a connection object
+        :param is_mapping: if it's a mapping or index/mapping
+        :param document_object_field: the kind of object to be used for document object Field
+        :return:
+        """
         self.indices = {}
         self.mappings = {}
         self.is_mapping = is_mapping
         self.connection = connection
+        self.document_object_field = document_object_field
         self._process(data)
 
     def _process(self, data):
@@ -460,7 +464,8 @@ class Mapper(object):
         """
         if self.is_mapping:
             for docname, docdata in data.items():
-                self.mappings[docname] = get_field(docname, docdata, "document")
+                self.mappings[docname] = get_field(docname, docdata, "document",
+                    document_object_field=self.document_object_field)
         else:
             for indexname, indexdata in data.items():
                 self.indices[indexname] = {}
@@ -475,3 +480,29 @@ class Mapper(object):
         Returns a doctype given an index and a name
         """
         return self.indices[index][name]
+
+    def get_property(self, index, doctype, name):
+        """
+        Returns a property of a given type
+
+        :return a mapped property
+        """
+
+        return self.indices[index][doctype].properties[name]
+
+MAPPING_NAME_TYPE = {
+    "attachment": AttachmentField,
+    "boolean": BooleanField,
+    "date": DateField,
+    "double": DoubleField,
+    "float": FloatField,
+    "geopoint": GeoPointField,
+    "integer": IntegerField,
+    "ip": IpField,
+    "long": LongField,
+    "multifield": MultiField,
+    "nested": NestedObject,
+    "short": ShortField,
+    "string": StringField
+}
+

@@ -7,7 +7,7 @@ Memcached
 The memcached module allows to expose *elasticsearch* :ref:`API <es-guide-reference-api>`  over the memcached protocol (as closely as possible). 
 
 
-It is provided as a plugin called **transport-memcached** and installing is as simply as executing **plugin -install transport-memcached** or downloading the memcached plugin and placing it under the **plugins** directory.
+It is provided as a plugin called **transport-memcached** and installing is explained `here <https://github.com/elasticsearch/elasticsearch-transport-memcached>`_  . Another option is to download the memcached plugin and placing it under the **plugins** directory.
 
 
 The memcached protocol supports both the binary and the text protocol, automatically detecting the correct one to use.

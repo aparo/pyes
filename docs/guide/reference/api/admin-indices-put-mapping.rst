@@ -20,7 +20,10 @@ The put mapping API allows to register specific mapping definition for a specifi
     '
 
 
-The above example creates a mapping called **tweet** within the **twitter** index. The mapping simply defines that the **message** field should be stored (by default, fields are not stored, just indexed) so we can retrieve it later on using selective loading. More information on how to define type mappings can be found in the :ref:`mapping <es-guide-reference-mapping>`  section. 
+The above example creates a mapping called **tweet** within the **twitter** index. The mapping simply defines that the **message** field should be stored (by default, fields are not stored, just indexed) so we can retrieve it later on using selective loading. 
+
+
+More information on how to define type mappings can be found in the :ref:`mapping <es-guide-reference-mapping>`  section. 
 
 
 Merging &amp; Conflicts

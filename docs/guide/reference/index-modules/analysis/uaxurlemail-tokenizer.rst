@@ -4,7 +4,7 @@
 Uaxurlemail Tokenizer
 =====================
 
-A tokenizer of type **uax_url_email** which works exactly like the **standard** tokenizer, but tokenizes emails and urls as single tokens.
+A tokenizer of type **uax_url_email** which works exactly like the **standard** tokenizer, but also handles emails and urls.
 
 
 The following are settings that can be set for a **uax_url_email** tokenizer type:

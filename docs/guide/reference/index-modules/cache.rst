@@ -4,22 +4,22 @@
 Cache
 =====
 
-There are different caching inner modules associated with an index. They include **filter**, **field** and others.
+There are different caching inner modules that correspond to an index. They include **filter**, **field** and others.
 
 
 Filter Cache
 ============
 
-The filter cache is responsible for caching the results of filters (used in the query). The default implementation of a filter cache (and the one recommended to use in almost all cases) is the **node** filter cache type.
+The filter cache is responsible to cache the results of filters (used in the query). The default implementation of a filter cache (and the one recommended to use in almost all cases) is the **node** filter cache type.
 
 
 Node Filter Cache
 -----------------
 
-The **node** filter cache may be configured to use either a percentage of the total memory allocated to the process or an specific amount of memory. All shards present on a node share a single node cache (thats why its called **node**`). The cache implements an LRU eviction policy: when a cache becomes full, the least recently used data is evicted to make way for new data.
+The **node** filter cache allows to configure either a percentage (of the total memory allocated to the process) or an exact value of the cache used for filter cache. All shards allocated on that node will use this cache (thats why its called **node**), and evicted based on LRU logic.
 
 
-The setting that allows one to control the memory size for the filter cache is **indices.cache.filter.size**, which defaults to **20%**. *Note*, this is *not* an index level setting but a node level setting (can be configured in the node configuration).
+The setting that allows to control the memory size for the filter cache is **indices.cache.filter.size** and it defaults to **20%**. *Note*, this is *not* an index level setting but a node level setting (can be configured in the node configuration).
 
 
 **indices.cache.filter.size** can accept either a percentage value, like **30%**, or an exact value, like **512mb**.

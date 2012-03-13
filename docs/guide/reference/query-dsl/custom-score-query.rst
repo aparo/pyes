@@ -37,7 +37,7 @@ Scripts are cached for faster execution. If the script has parameters that it ne
         "params" : {
             "param1" : 2,
             "param2" : 3.1
-        },
+        }
         "script" : "_score * doc['my_numeric_field'].value / pow(param1, param2)"
     }
 

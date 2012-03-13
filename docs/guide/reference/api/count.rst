@@ -17,7 +17,7 @@ The count API allows to easily execute a query and get the number of matches for
     }'
 
 
-Both examples above do the same thing, which is count the number of tweets from the twitter index for a certain user. The result is:
+Both examples above end up doing the same thing, which is count the number of tweets from the twitter index for a certain user. The result of the commands is:
 
 
 .. code-block:: js
@@ -31,9 +31,6 @@ Both examples above do the same thing, which is count the number of tweets from 
             "failed" : 0
         }
     }
-
-
-The query is optional, and when not provided, it will use **match_all** to count all the docs.
 
 
 Multiple Indices and Types

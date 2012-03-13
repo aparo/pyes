@@ -25,7 +25,7 @@ The **query_string** top level parameters include:
  Parameter                             Description                                                                                                                                                                                                                                                                                                                          
 ====================================  ======================================================================================================================================================================================================================================================================================================================================
  **query**                             The actual query to be parsed.                                                                                                                                                                                                                                                                                                       
- **default_field**                     The default field for query terms if no prefix field is specified. Defaults to the **index.query.default_field** index settings, which in turn defaults to **_all**                                                                                                                                                                  
+ **default_field**                     The default field for query terms if no prefix field is specified. Defaults to the **_all** field.                                                                                                                                                                                                                                   
  **default_operator**                  The default operator used if no explicit operator is specified. For example, with a default operator of **OR**, the query **capital of Hungary** is translated to **capital OR of OR Hungary**, and with default operator of **AND**, the same query is translated to **capital AND of AND Hungary**. The default value is **OR**.   
  **analyzer**                          The analyzer name used to analyze the query string.                                                                                                                                                                                                                                                                                  
  **allow_leading_wildcard**            When set, ***** or **?** are allowed as the first character. Defaults to **true**.                                                                                                                                                                                                                                                   
@@ -37,20 +37,7 @@ The **query_string** top level parameters include:
  **boost**                             Sets the boost value of the query. Defaults to **1.0**.                                                                                                                                                                                                                                                                              
  **analyze_wildcard**                  By default, wildcards terms in a query string are not analyzed. By setting this value to **true**, a best effort will be made to analyze those as well.                                                                                                                                                                              
  **auto_generate_phrase_queries**      Default to **false**.                                                                                                                                                                                                                                                                                                                
- **minimum_should_match**              A percent value (for example **20%**) controlling how many "should" clauses in the resulting boolean query should match.                                                                                                                                                                                                             
 ====================================  ======================================================================================================================================================================================================================================================================================================================================
-
-When a multi term query is being generated, one can control how it gets rewritten using the :ref:`rewrite <es-guide-reference-query-dsl-multi-term-rewrite>`  parameter.
-
-
-Default Field
-=============
-
-When not explicitly specifying the field to search on in the query string syntax, the **index.query.default_field** will be used to derive which field to search on. It defaults to **_all** field. 
-
-
-So, if **_all** field is disabled, it might make sense to change it to set a different default field.a
-
 
 Multi Field
 ===========
@@ -95,7 +82,7 @@ The fields parameter can also include pattern based field names, allowing to aut
     }
 
 
-<h1 id="Syntax_Extension">Syntax Extension</h1>
+h1(#Syntax_Extension). Syntax Extension
 
 There are several syntax extensions to the Lucene query language.
 

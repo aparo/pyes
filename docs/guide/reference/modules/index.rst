@@ -17,7 +17,6 @@ Modules
     memcached
     network
     node
-    plugins
     scripting
     threadpool
     thrift

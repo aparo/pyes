@@ -32,31 +32,5 @@ A filter that matches documents using **OR** boolean operator on other queries. 
 Caching
 =======
 
-The result of the filter is not cached by default. The `_cache` can be set to `true` in order to cache it (tough usually not needed). Since the **_cache** element requires to be set on the **or** filter itself, the structure then changes a bit to have the filters provided within a **filters** element:
-
-
-.. code-block:: js
-
-
-    {
-        "filtered" : {
-            "query" : {
-                "term" : { "name.first" : "shay" }
-            },
-            "filter" : {
-                "or" : {
-                    "filters" : [
-                        {
-                            "term" : { "name.second" : "banon" }
-                        },
-                        {
-                            "term" : { "name.nick" : "kimchy" }
-                        }
-                    ],
-                    "_cache" : true
-                }
-            }
-        }
-    }
-
+The result of the filter is not cached by default. The `_cache` can be set to `true` in order to cache it (tough usually not needed).
 

@@ -10,8 +10,8 @@ elasticsearch provides a full Java query dsl in a similar manner to the REST :re
 .. code-block:: java
 
 
-    import static org.elasticsearch.index.query.FilterBuilders.*;
-    import static org.elasticsearch.index.query.QueryBuilders.*;
+    import static org.elasticsearch.index.query.xcontent.FilterBuilders.*;
+    import static org.elasticsearch.index.query.xcontent.QueryBuilders.*;
     
     QueryBuilder qb1 = termQuery("name", "kimchy");
     

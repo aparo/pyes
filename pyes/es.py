@@ -36,8 +36,6 @@ except ImportError:
 from connection_http import connect as http_connect
 log = logging.getLogger('pyes')
 
-from mappings import Mapper
-
 from convert_errors import raise_if_error
 from pyes.exceptions import (InvalidParameter,
         ElasticSearchException, IndexAlreadyExistsException,
@@ -82,6 +80,9 @@ class ElasticSearchModel(DotDict):
         else:
             self.__setitem__(key, value)
 
+    def __repr__(self):
+        return repr(self)
+
     def get_meta(self):
         return self._meta
 
@@ -111,13 +112,6 @@ class ElasticSearchModel(DotDict):
             self._meta.version = res._version
             return res._id
         return id
-
-    def reload(self):
-        meta = self._meta
-        conn = meta['connection']
-        res = conn.get(meta.index, meta.type, meta["id"])
-        self.update(res)
-
 
     def get_id(self):
         """ Force the object saveing to get an id"""
@@ -227,9 +221,6 @@ class ES(object):
     """
     ES connection object.
     """
-    #static to easy overwrite
-    encoder = ESJsonEncoder
-    decoder = ESJsonDecoder
 
     def __init__(self, server="localhost:9200", timeout=5.0, bulk_size=400,
                  encoder=None, decoder=None,
@@ -239,8 +230,7 @@ class ES(object):
                  dump_curl=False,
                  model=ElasticSearchModel,
                  basic_auth=None,
-                 raise_on_bulk_item_failure=False,
-                 document_object_field=None):
+                 raise_on_bulk_item_failure=False):
         """
         Init a es object.
         Servers can be defined in different forms:
@@ -269,7 +259,6 @@ class ES(object):
         :param raise_on_bulk_item_failure: raises an exception if an item in a
         bulk operation fails
 
-        :param document_object_field: a class to use as base document field in mapper
         """
         self.timeout = timeout
         self.max_retries = max_retries
@@ -278,8 +267,6 @@ class ES(object):
         self.cluster_name = "undefined"
         self.basic_auth = basic_auth
         self.connection = None
-        self._mappings = None
-        self.document_object_field = document_object_field
 
         if model is None:
             model = lambda connection, model: model
@@ -303,10 +290,13 @@ class ES(object):
             self.bulk_data = []
         self.raise_on_bulk_item_failure = raise_on_bulk_item_failure
 
-        if encoder:
-            self.encoder = encoder
-        if decoder:
-            self.decoder = decoder
+        self.mappings = None #track mapping
+        self.encoder = encoder
+        if self.encoder is None:
+            self.encoder = ESJsonEncoder
+        self.decoder = decoder
+        if self.decoder is None:
+            self.decoder = ESJsonDecoder
         if isinstance(server, (str, unicode)):
             self.servers = [server]
         elif isinstance(server, tuple):
@@ -528,13 +518,6 @@ class ES(object):
     default_indices = property(_get_default_indices, _set_default_indices)
     del _get_default_indices, _set_default_indices
 
-    @property
-    def mappings(self):
-        if self._mappings is None:
-            self._mappings = Mapper(self.get_mapping(["_all"]), connection=self,
-                document_object_field=self.document_object_field)
-        return self._mappings
-
     #---- Admin commands
     def status(self, indices=None):
         """
@@ -738,7 +721,7 @@ class ES(object):
             args['refresh'] = refresh
         return self._send_request('POST', path, params=args)
 
-    def refresh(self, indices=None, timesleep=None):
+    def refresh(self, indices=None, timesleep=1):
         """
         Refresh one or more indices
         
@@ -749,8 +732,7 @@ class ES(object):
 
         path = self._make_path([','.join(indices), '_refresh'])
         result = self._send_request('POST', path)
-        if timesleep:
-            time.sleep(timesleep)
+        time.sleep(timesleep)
         self.cluster_health(wait_for_status='green')
         return result
 
@@ -1132,11 +1114,12 @@ class ES(object):
             new_doc = update_func(current_doc, extra_doc)
             if new_doc is None:
                 new_doc = current_doc
+            meta = new_doc.pop('meta')
             try:
                 return self.index(new_doc, index, doc_type, id,
                                   version=meta.version, querystring_args=querystring_args)
             except VersionConflictEngineException:
-                if attempt <= 0:
+                if i <= 0:
                     raise
                 self.refresh(index)
 
@@ -1155,7 +1138,7 @@ class ES(object):
         path = self._make_path([index, doc_type, id])
         return self._send_request('DELETE', path, params=querystring_args)
 
-    def delete_by_query(self, indices, doc_types, query, **request_params):
+    def deleteByQuery(self, indices, doc_types, query, **request_params):
         """
         Delete documents from one or more indices and one or more types based on a query.
         """
@@ -1171,9 +1154,9 @@ class ES(object):
             body = query.to_query_json()
         elif isinstance(query, dict):
             # A direct set of search parameters.
-            body = json.dumps(query, cls=ES.encoder)
+            body = json.dumps(query, cls=self.encoder)
         else:
-            raise InvalidQuery("delete_by_query() must be supplied with a Query object, or a dict")
+            raise InvalidQuery("deleteByQuery() must be supplied with a Query object, or a dict")
 
         path = self._make_path([','.join(indices), ','.join(doc_types), '_query'])
         return self._send_request('DELETE', path, body, querystring_args)
@@ -1276,7 +1259,6 @@ class ES(object):
 
         if hasattr(query, 'to_search_json'):
             # Common case - a Search or Query object.
-            query.encoder = self.encoder
             body = query.to_search_json()
         elif isinstance(query, dict):
             # A direct set of search parameters.
@@ -1356,17 +1338,13 @@ class ES(object):
         path = self._make_path([','.join(indices), ','.join(doc_types), "_reindexbyquery"])
         return self._send_request('POST', path, body, querystring_args)
 
-    def count(self, query=None, indices=None, doc_types=None, **query_params):
+    def count(self, query, indices=None, doc_types=None, **query_params):
         """
         Execute a query against one or more indices and get hits count.
         """
         indices = self._validate_indices(indices)
         if doc_types is None:
             doc_types = []
-        if query is None:
-            from pyes.query import MatchAllQuery
-
-            query = MatchAllQuery()
         if hasattr(query, 'to_query_json'):
             query = query.to_query_json()
         return self._query_call("_count", query, indices, doc_types, **query_params)
@@ -1479,13 +1457,11 @@ class ES(object):
 
 def decode_json(data):
     """ Decode some json to dict"""
-    return json.loads(data, cls=ES.decoder)
-
+    return json.loads(data, cls=ESJsonDecoder)
 
 def encode_json(data):
     """ Encode some json to dict"""
-    return json.dumps(data, cls=ES.encoder)
-
+    return json.dumps(data, cls=ESJsonEncoder)
 
 class ResultSet(object):
     def __init__(self, connection, query, indices=None, doc_types=None, query_params=None,
@@ -1523,7 +1499,7 @@ class ResultSet(object):
         self.start = self.query.start or 0
         self._max_item = self.query.size
         self._current_item = 0
-        self.chuck_size = self.query.bulk_read or self.query.size or 10
+        self.chuck_size = self.query.bulk_read or 10
 
     def _do_search(self, auto_increment=False):
         self.iterpos = 0

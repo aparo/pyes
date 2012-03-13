@@ -20,9 +20,6 @@ A family of **text** queries that accept text, analyzes it, and constructs a que
 Note, even though the name is text, it also supports exact matching (**term** like) on numeric values and dates.
 
 
-Note, **message** is the name of a field, you can subsitute the name of any field (including **_all**) instead.
-
-
 Types of Text Queries
 ---------------------
 
@@ -160,4 +157,3 @@ Comparison to query_string / field
 ----------------------------------
 
 The text family of queries does not go through a "query parsing" process. It does not support field name prefixes, wildcard characters, or other "advance" features. For this reason, chances of it failing are very small / non existent, and it provides an excellent behavior when it comes to just analyze and run that text as a query behavior (which is usually what a text search box does). Also, the **phrase_prefix** can provide a great "as you type" behavior to automatically load search results.
-

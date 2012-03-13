@@ -1,16 +1,17 @@
 .. _es-guide-reference-modules-gateway-index:
-.. _es-guide-reference-modules-gatewa:
+.. _es-guide-reference-modules-gateway:
+
 =======
 Gateway
 =======
 
-The gateway module allows one to store the state of the cluster meta data across full cluster restarts. The cluster meta data mainly holds all the indices created with their respective (index level) settings and explicit type mappings.
+The gateway module allows to store the state of the cluster meta data across full cluster restarts. The cluster meta data mainly holds all the indices created with their respective index level settings and explicit type mappings.
 
 
-Each time the cluster meta data changes (for example, when an index is added or deleted), those changes will be persisted using the gateway. When the cluster first starts up, the state will be read from the gateway and applied.
+Each time the cluster meta data changes (for example, and index is added or deleted), it will get persisted using the gateway. When the cluster first starts up, the state will be read from the gateway and applied.
 
 
-The gateway set on the node level will automatically control the index gateway that will be used. For example, if the **fs** gateway is used, then automatically, each index created on the node will also use its own respective index level **fs** gateway. In this case, if an index should not persist its state, it should be explicitly set to **none** (which is the only other value it can be set to).
+The gateway set on the node level will automatically control the index gateway that will be used. For example, if the **fs** gateway is used, then automatically, each index created on the node will also use its own respective index level **fs** gateway. In this case, if in an index should not persist its state, it should be explicitly set to **none** (which is the only other value it can be set to).
 
 
 The default gateway used is the :ref:`local <es-guide-reference-modules-gateway-local>`  gateway.

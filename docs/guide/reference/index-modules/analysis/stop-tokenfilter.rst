@@ -19,5 +19,5 @@ The following are settings that can be set for a **stop** token filter type:
 **ignore_case**                   Set to **true** to lower case all words first. Defaults to **false**.                                                
 ================================  =====================================================================================================================
 
-stopwords allow for custom language specific expansion of default stopwords. It follows the **_lang_** notation and supports: arabic, armenian, basque, brazilian, bulgarian, catalan, czech, danish, dutch, english, finnish, french, galician, german, greek, hindi, hungarian, indonesian, italian, norwegian, persian, portuguese, romanian, russian, spanish, swedish, turkish.
+stopwords allow for custom language specific expansion of default stopwords. It follows the **_lang_** notation and supports: arabic, armenian, basque, brazilian, bulgarian, catalan, danish, dutch, english, finnish, french, galician, german, greek, hindi, hungarian, indonesian, italian, norwegian, persian, portuguese, romanian, russian, spanish, swedish, turkish.
 

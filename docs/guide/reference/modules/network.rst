@@ -31,21 +31,6 @@ Both settings allows to be configured with either explicit host address or host 
 **_[networkInterface]:ipv6_**    Resolves to the ipv6 address of the provided network interface. For example **_en0:ipv6_**.  
 ===============================  =============================================================================================
 
-When the **cloud-aws** plugin is installed, the following are also allowed as valid network host settings:
-
-
-=======================  =================================================
- EC2 Host Value           Description                                     
-=======================  =================================================
-**_ec2:privateIpv4_**    The private IP address (ipv4) of the machine.    
-**_ec2:privateDns_**     The private host of the machine.                 
-**_ec2:publicIpv4_**     The public IP address (ipv4) of the machine.     
-**_ec2:publicDns_**      The public host of the machine.                  
-**_ec2_**                Less verbose option for the private ip address.  
-**_ec2:privateIp_**      Less verbose option for the private ip address.  
-**_ec2:publicIp_**       Less verbose option for the public ip address.   
-=======================  =================================================
-
 TCP Settings
 ============
 

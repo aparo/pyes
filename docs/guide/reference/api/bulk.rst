@@ -4,7 +4,7 @@
 Bulk
 ====
 
-The bulk API makes it possible to perform many index/delete operations in a single API call. This can greatly increase the indexing speed. The REST API endpoint is **/_bulk**, and it expects the following JSON structure:
+The bulk API allows to index and delete several documents in a single API. This can greatly increase the indexing speed.The REST API endpoint is /_bulk and it follows the following structure (for **json**):
 
 
 .. code-block:: js
@@ -18,22 +18,7 @@ The bulk API makes it possible to perform many index/delete operations in a sing
     optional_source\n
 
 
-*NOTE*: the final line of data must end with a newline character **\n**.
-
-
-If you're providing text file input to **curl**, you *must* **--data-binary** instead of plain **-d**.  The latter doesn't preserve newlines.  Example:
-
-
-.. code-block:: js
-
-    $ cat requests
-    { "index" : { "_index" : "test", "_type" : "type1", "_id" : "1" } }
-    { "field1" : "value1" }
-    $ curl -s -XPOST localhost:9200/_bulk --data-binary **requests; echo
-    {:ref:`took <es-guide-reference-api-7,"items":[{"create":{"_index":"test","_type":"type1","_id":"1","_version":1,"ok":true}}]}>`  ,"_version":1,"ok":true}}]}>`  
-
-
-Because this format uses literal **\n**'s as delimiters, please be sure that the JSON actions and sources are not pretty printed. Here is an example of a correct sequence of bulk commands:
+The json format relies on the fact that Json string values must have **\n** escaped, and that the actual json actions and sources are not pretty printed. Here is an example:
 
 
 .. code-block:: js
@@ -45,19 +30,20 @@ Because this format uses literal **\n**'s as delimiters, please be sure that the
     { "field1" : "value3" }
     
 
-The endpoints are **/_bulk**, **/{index}/_bulk**, and **{index}/type/_bulk**. When the index or the index/type are provided, they will be used by default on bulk items that don't provide them explicitly.
+
+In the optional source part, the `type` is optional as is when indexing data.
 
 
-A note on the format. The idea here is to make processing of this as fast as possible. As some of the actions will be redirected to other shards on other nodes, only **action_meta_data** is parsed on the receiving node side.
+A note on the format. The idea here is to make processing of this as fast as possible. As some of the actions will be needed to be redirected to other shards that exists on other nodes, only the action meta_data is parsed on the receiving node side. Also, zero copy buffers can be used on the source directly writing segments relevant to each action source to the network.
 
 
-Client libraries using this protocol should try and strive to do something similar on the client side, and reduce buffering as much as possible.
+Client libraries using this protocol should try and strive to do something similar on the client side, and reduce as much as possible the creation of buffers.
 
 
-The response to a bulk action is a large JSON structure with the individual results of each action that was performed. The failure of a single action does not affect the remaining actions.
+The result is a full formatted json, with all the actions performed (in the same order), with possible error field indicating for each one in case of failure (on an item level).
 
 
-There is no "correct" number of actions to perform in a single bulk call. You should experiment with different settings to find the optimum size for your particular workload.
+Note, in the end, the full data needs to be represented on each server, so indexing 5GB of data should be broken down and not executed in a single batch.
 
 
 If using the HTTP API, make sure that the client does not send HTTP chunks, as this will slow things down.
@@ -66,7 +52,7 @@ If using the HTTP API, make sure that the client does not send HTTP chunks, as t
 Versioning
 ==========
 
-Each bulk item can include the version value using the **_version**/**version** field. It automatically follows the behavior of the index / delete operation based on the **_version** mapping. It also support the **version_type**/**_version_type** when using **external** versioning.
+Each bulk item can include the version value using the **_version**/**version** field. It automatically follows the behavior of the index / delete operation based on the **_version** mapping. It also support the **version_type** when using **external** versioning.
 
 
 Routing
@@ -78,7 +64,7 @@ Each bulk item can include the routing value using the **_routing**/**routing** 
 Percolator
 ==========
 
-Each bulk index action can include a percolate value using the **_percolate**/**percolate** field.
+Each index bulk item can include a percolate value using the **_percolate** field.
 
 
 Parent
@@ -87,22 +73,10 @@ Parent
 Each bulk item can include the parent value using the **_parent**/**parent** field. It automatically follows the behavior of the index / delete operation based on the **_parent** / **_routing** mapping.
 
 
-Timestamp
-=========
-
-Each bulk item can include the timestamp value using the **_timestamp**/**timestamp** field. It automatically follows the behavior of the index operation based on the **_timestamp** mapping.
-
-
-TTL
-===
-
-Each bulk item can include the ttl value using the **_ttl**/**ttl** field. It automatically follows the behavior of the index operation based on the **_ttl** mapping.
-
-
 Write Consistency
 =================
 
-When making bulk calls, you can require a minimum number of active shards in the partition through the **consistency** parameter. The values allowed are **one**, **quorum**, and **all**. It defaults to the node level setting of **action.write_consistency**, which in turn defaults to **quorum**.
+Control if the operation will be allowed to execute based on the number of active shards within that partition (replication group). The values allowed are **one**, **quorum**, and **all**. The parameter to set it is **consistency**, and it defaults to the node level setting of **action.write_consistency** which in turn defaults to **quorum**.
 
 
 For example, in a N shards with 2 replicas index, there will have to be at least 2 active shards within the relevant partition (**quorum**) for the operation to succeed. In a N shards with 1 replica scenario, there will need to be a single shard active (in this case, **one** and **quorum** is the same).
@@ -111,5 +85,5 @@ For example, in a N shards with 2 replicas index, there will have to be at least
 Refresh
 =======
 
-The **refresh** parameter can be set to **true** in order to refresh the relevant shards immediately after the bulk operation has occurred and make it searchable, instead of waiting for the normal refresh interval to expire. Setting it to **true** can trigger additional load, and may slow down indexing.
+The **refresh** parameter can be set to **true** in order to refresh the relevant shards after the bulk operation has occurred and make it searchable. Setting it to **true** should be done after careful thought and verification that this does not cause a heavy load on the system (and slows down indexing).
 

@@ -4,10 +4,10 @@
 Ip Type
 =======
 
-An **ip** mapping type allows to store _ipv4_ addresses in a numeric form allowing to easily sort, and range query it (using ip values).
+An **ip** mapping type allows to store _ipv4_ addresses in a numeric form allowing to easily sort, and range query it (using ip values). This type is automatically detected within documents.
 
 
-The following table lists all the attributes that can be used with an ip type:
+The following table lists all the attributes that can be used with a date type:
 
 
 ====================  ==============================================================================================================================================================================

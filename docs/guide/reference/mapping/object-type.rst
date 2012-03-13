@@ -188,7 +188,7 @@ In the above example, the **name1** and **name2** objects within the **person** 
  JSON Name               Document Field Name   
 ======================  =======================
 **name1**/**first1**    **first1**             
-**name1**/**last1**     **i_last_1**           
+**name1**/**last1**     **i_last_2**           
 **name2**/**first2**    **name2.first2**       
 **name2**/**last2**     **name2.i_last_2**     
 ======================  =======================

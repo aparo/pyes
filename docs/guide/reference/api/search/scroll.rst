@@ -7,9 +7,7 @@ Scroll
 A search request can be scrolled by specifying the **scroll** parameter. The **scroll** parameter is a time value parameter (for example: **scroll=5m**), indicating for how long the nodes that participate in the search will maintain relevant resources in order to continue and support it. This is very similar in its idea to opening a cursor against a database.
 
 
-A **scroll_id** is returned from the first search request (and from continuous) scroll requests. The **scroll_id** should be used when scrolling (along with the **scroll** parameter, to stop the scroll from expiring). The scroll id can also be passed as part of the search request body. 
-
-**Note**: the **scroll_id** changes for each scroll request and only the most recent one should be used.
+A **scroll_id** is returned from the first search request (and from continuous) scroll requests. The **scroll_id** should be used when scrolling (and that's it, no other parameter is required). The scroll id can also be passed as part of the search request body. Note that the **scroll_id** changes for each scroll request and only the most recent one should be used.
 
 
 .. code-block:: js
@@ -26,12 +24,12 @@ A **scroll_id** is returned from the first search request (and from continuous) 
 
 .. code-block:: js
 
-    $ curl -XGET 'http://localhost:9200/_search/scroll?scroll=5m&scroll_id=c2Nhbjs2OzM0NDg1ODpzRlBLc0FXNlNyNm5JWUc1'
+    $ curl -XGET 'http://localhost:9200/_search/scroll?scroll_id=c2Nhbjs2OzM0NDg1ODpzRlBLc0FXNlNyNm5JWUc1'
 
 
 Note
     Scrolling is not intended for real time user requests, it is intended for cases like scrolling over large portions of data that exists within elasticsearch to reindex it for example.
 
 
-For more information on scrolling, see the :ref:`scan <es-guide-reference-api-search-search-type>`  search type.
+For more information on scrolling, see the *scan* search type.
 

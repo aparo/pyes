@@ -22,21 +22,5 @@ Filters documents that have fields that contain a term (*not analyzed*). Similar
 Caching
 =======
 
-The result of the filter is automatically cached by default. The `_cache` can be set to `false` to turn it off. Here is an example:
-
-
-
-.. code-block:: js
-
-
-    {
-        "constant_score" : {
-            "filter" : {
-                "term" : { 
-                    "user" : "kimchy",
-                    "_cache" : false
-                }
-            }
-        }
-    }
+The result of the filter is automatically cached by default. The `_cache` can be set to `false` to turn it off.
 

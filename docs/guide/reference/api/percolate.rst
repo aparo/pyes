@@ -55,14 +55,6 @@ And the matches are part of the response:
     {:ref:`ok <es-guide-reference-api-true>`,  :ref:`matches <es-guide-reference-api-["kuku"]}>`  i-true>`,  "matches":["kuku"]}
 
 
-You can unregister the previous percolator query with the same API you use to delete any document in an index:
-
-
-.. code-block:: js
-
-    curl -XDELETE localhost:9200/_percolator/test/kuku
-
-
 Filtering Executed Queries
 ==========================
 
@@ -72,7 +64,7 @@ Since the registered percolator queries are just docs in an index, one can filte
 .. code-block:: js
 
     curl -XPUT localhost:9200/_percolator/test/kuku -d '{
-        "color" : "blue",
+        "color" : "blue"
         "query" : {
             "term" : {
                 "field1" : "value1"

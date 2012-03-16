@@ -1676,5 +1676,5 @@ class ResultSet(object):
             self._results = None
         self._current_item = 0
 
-        self.start = 0
+        self.start = self.query.start
         return self

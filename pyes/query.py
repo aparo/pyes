@@ -1241,15 +1241,14 @@ class CustomScoreQuery(Query):
 
 class IdsQuery(Query):
     _internal_name = "ids"
-
-    def __init__(self, type, values, **kwargs):
+    def __init__(self, values, type=None, **kwargs):
         super(IdsQuery, self).__init__(**kwargs)
         self.type = type
         self.values = values
 
     def serialize(self):
         data = {}
-        if self.type:
+        if self.type is not None:
             data['type'] = self.type
         if isinstance(self.values, basestring):
             data['values'] = [self.values]

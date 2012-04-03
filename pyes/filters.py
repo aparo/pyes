@@ -413,8 +413,7 @@ class NestedFilter(Filter):
 
 class IdsFilter(Filter):
     _internal_name = "ids"
-
-    def __init__(self, type, values, **kwargs):
+    def __init__(self, values, type=None, **kwargs):
         super(IdsFilter, self).__init__(**kwargs)
         self.type = type
         self.values = values

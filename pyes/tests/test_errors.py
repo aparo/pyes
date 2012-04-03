@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 import unittest
-from . import ESTestCase
+from .estestcase import ESTestCase
 from .. import exceptions
 
 class ErrorReportingTestCase(ESTestCase):

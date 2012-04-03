@@ -12,19 +12,20 @@ __all__ = ['raise_if_error']
 
 # First, exceptions for which the messages start with the error name,
 # and then contain the error description wrapped in [].
-exceptions_by_name = dict((name, getattr(pyes.exceptions, name))
+exceptions_by_name = dict((name, getattr(exceptions, name))
 for name in (
+    "DocumentAlreadyExistsEngineException",
+    "DocumentAlreadyExistsException",
+    "TypeMissingException",
+    "VersionConflictEngineException",
+    'ClusterBlockException',
     'ElasticSearchIllegalArgumentException',
     'IndexAlreadyExistsException',
     'IndexMissingException',
-    'SearchPhaseExecutionException',
-    'ReplicationShardOperationFailedException',
-    'ClusterBlockException',
     'MapperParsingException',
     'ReduceSearchPhaseException',
-    "VersionConflictEngineException",
-    "DocumentAlreadyExistsEngineException",
-    "TypeMissingException"
+    'ReplicationShardOperationFailedException',
+    'SearchPhaseExecutionException',
     )
 )
 
@@ -32,8 +33,8 @@ for name in (
 # description, and doesn't contain an error name.  These patterns are matched
 # at the end of the exception.
 exception_patterns_trailing = {
-    '] missing': pyes.exceptions.NotFoundException,
-    '] Already exists': pyes.exceptions.AlreadyExistsException,
+    '] missing': exceptions.NotFoundException,
+    '] Already exists': exceptions.AlreadyExistsException,
     }
 
 def raise_if_error(status, result, request=None):
@@ -57,10 +58,10 @@ def raise_if_error(status, result, request=None):
         return
 
     if status == 404 and isinstance(result, dict) and 'error' not in result:
-        raise pyes.exceptions.NotFoundException("Item not found", status, result, request)
+        raise exceptions.NotFoundException("Item not found", status, result, request)
 
     if not isinstance(result, dict) or 'error' not in result:
-        raise pyes.exceptions.ElasticSearchException(u"Unknown exception type: %d, %s" % (status, result), status,
+        raise exceptions.ElasticSearchException(u"Unknown exception type: %d, %s" % (status, result), status,
             result, request)
 
     error = result['error']
@@ -88,4 +89,4 @@ def raise_if_error(status, result, request=None):
         # message.
         raise excClass(error, status, result, request)
 
-    raise pyes.exceptions.ElasticSearchException(error, status, result, request)
+    raise exceptions.ElasticSearchException(error, status, result, request)

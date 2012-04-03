@@ -2,7 +2,7 @@
 from __future__ import absolute_import
 from copy import deepcopy
 import unittest
-from . import ESTestCase
+from .estestcase import ESTestCase
 from ..es import DotDict
 
 class ElasticSearchModelTestCase(ESTestCase):
@@ -19,7 +19,7 @@ class ElasticSearchModelTestCase(ESTestCase):
         self.assertEqual(obj._meta.id, None)
         obj._meta.id = "dasdas"
         self.assertEqual(obj._meta.id, "dasdas")
-        self.assertEqual(sorted(obj.keys()), ["meta", "name", "val"])
+        self.assertEqual(sorted(obj.keys()), ["name", "val"])
         obj.save()
         obj.name = "test2"
         obj.save()

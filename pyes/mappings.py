@@ -442,7 +442,7 @@ def get_field(name, data, default="object", document_object_field=None):
             return DocumentObjectField(name=name, **data)
 
     elif _type == "object":
-        if '_timestamp' in data:
+        if '_timestamp' in data or "_all" in data:
             if document_object_field:
                 return document_object_field(name=name, **data)
             else:

@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 import unittest
-from . import ESTestCase
+from .estestcase import ESTestCase
 from ..query import TermQuery
 from ..es import file_to_attachment
-
-"""
-Unit tests for pyes.  These require an es server with thrift plugin running on the default port (localhost:9500).
-"""
+import os
 
 class TestFileSaveTestCase(ESTestCase):
     def test_filesave(self):
@@ -24,9 +21,9 @@ class TestFileSaveTestCase(ESTestCase):
         self.conn.put_mapping(self.document_type, {self.document_type: {'properties': mapping}}, self.index_name)
         self.conn.refresh(self.index_name)
         self.conn.get_mapping(self.document_type, self.index_name)
-        name = "__init__.py"
-        content = open(name, "rb").read()
-        self.conn.put_file(name, self.index_name, self.document_type, 1)
+        name = "map.json"
+        content = self.get_datafile(name)
+        self.conn.put_file(self.get_datafile_path(name), self.index_name, self.document_type, 1)
         self.conn.refresh(self.index_name)
         _ = self.conn.get_mapping(self.document_type, self.index_name)
         nname, ncontent = self.conn.get_file(self.index_name, self.document_type, 1)
@@ -76,7 +73,7 @@ class QueryAttachmentTestCase(ESTestCase):
         self.conn.put_mapping(self.document_type, {self.document_type: {'properties': mapping}}, self.index_name)
         self.conn.refresh(self.index_name)
         self.conn.get_mapping(self.document_type, self.index_name)
-        self.conn.index({"attachment": file_to_attachment(os.path.join("tests", "data", "testXHTML.html")), "uuid": "1"}
+        self.conn.index({"attachment": file_to_attachment(self.get_datafile_path("testXHTML.html")), "uuid": "1"}
             , self.index_name, self.document_type, 1)
         self.conn.refresh(self.index_name)
 

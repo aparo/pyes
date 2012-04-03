@@ -1,20 +1,11 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-__author__ = 'Alberto Paro'
-
+from __future__ import absolute_import
 import unittest
-from pyes.tests import ESTestCase
-from pyes import clean_string
-from pyes.es import ES
-from datetime import datetime
-
-"""
-Unit tests for pyes.  These require an es server with thrift plugin running on the default port (localhost:9500).
-"""
+from .estestcase import ESTestCase
+from ..utils import clean_string
+from ..es import ES
 
 class UtilsTestCase(ESTestCase):
-
     def test_cleanstring(self):
         self.assertEquals(clean_string("senthil("), "senthil")
         self.assertEquals(clean_string("senthil&"), "senthil")
@@ -32,9 +23,8 @@ class UtilsTestCase(ESTestCase):
         self.assertEquals(es.servers, [("thrift", "127.0.0.1", 9100)])
         es = ES(["thrift://127.0.0.1:9100", "127.0.0.1:9200", ("thrift", "127.0.0.1", 9000)])
         self.assertEquals(sorted(es.servers), [("http", "127.0.0.1", 9200),
-                                               ("thrift", "127.0.0.1", 9000),
-                                               ("thrift", "127.0.0.1", 9100)])
-
+            ("thrift", "127.0.0.1", 9000),
+            ("thrift", "127.0.0.1", 9100)])
 
 
 if __name__ == "__main__":

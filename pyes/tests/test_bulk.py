@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 import unittest
-from . import ESTestCase
+from .estestcase import ESTestCase
 from ..query import TermQuery
 from ..es import _raise_exception_if_bulk_item_failed, _is_bulk_item_ok
 from ..exceptions import BulkOperationException

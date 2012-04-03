@@ -52,7 +52,7 @@ def connect(servers=None, framed_transport=False, timeout=None,
             retry_time=60, recycle=None, round_robin=None,
             max_retries=3, basic_auth=None):
     """
-    Constructs a single ElastiSearch connection. Connects to a randomly chosen
+    Constructs a single ElasticSearch connection. Connects to a randomly chosen
     server on the list.
 
     If the connection fails, it will attempt to connect to each server on the

@@ -1139,7 +1139,7 @@ class ES(object):
                 new_doc = current_doc
             try:
                 return self.index(new_doc, index, doc_type, id,
-                    version=meta.version, querystring_args=querystring_args)
+                    version=current_doc._meta.version, querystring_args=querystring_args)
             except VersionConflictEngineException:
                 if attempt <= 0:
                     raise
@@ -1369,7 +1369,7 @@ class ES(object):
         if doc_types is None:
             doc_types = []
         if query is None:
-            from pyes.query import MatchAllQuery
+            from ..query import MatchAllQuery
 
             query = MatchAllQuery()
         if hasattr(query, 'to_query_json'):
@@ -1515,7 +1515,7 @@ class ResultSet(object):
         self.auto_fix_keys = auto_fix_keys
         self.auto_clean_highlight = auto_clean_highlight
 
-        from pyes.query import Search, Query
+        from .query import Search, Query
 
         if not isinstance(query, (Query, Search, dict)):
             raise InvalidQuery("search() must be supplied with a Search or Query object, or a dict")

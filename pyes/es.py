@@ -229,7 +229,12 @@ class ESJsonDecoder(json.JSONDecoder):
         return DotDict(d)
 
 
-class Bulker(object):
+class BaseBulker(object):
+    """
+    Base class to implement a bulker strategy
+
+    """
+
     def __init__(self, conn, bulk_size=400, raise_on_bulk_item_failure=False):
         self.conn = conn
         self.bulk_size = bulk_size
@@ -239,7 +244,25 @@ class Bulker(object):
             self.bulk_data = []
         self.raise_on_bulk_item_failure = raise_on_bulk_item_failure
 
-    def add_to_bulk_queue(self, content):
+    def add(self, content):
+        raise NotImplementedError
+
+    def flush_bulker(self, forced=False):
+        raise NotImplementedError
+
+
+class ListBulker(BaseBulker):
+    """
+    A bulker that store data in a list
+    """
+
+    def __init__(self, conn, bulk_size=400, raise_on_bulk_item_failure=False):
+        super(ListBulker, self).__init__(conn=conn, bulk_size=bulk_size,
+                                         raise_on_bulk_item_failure=raise_on_bulk_item_failure)
+        with self.bulk_lock:
+            self.bulk_data = []
+
+    def add(self, content):
         with self.bulk_lock:
             self.bulk_data.append(content)
 
@@ -253,13 +276,14 @@ class Bulker(object):
 
         if len(batch) > 0:
             bulk_result = self.conn._send_request("POST",
-                                             "/_bulk",
-                                             "\n".join(batch) + "\n")
+                                                  "/_bulk",
+                                                  "\n".join(batch) + "\n")
 
             if self.raise_on_bulk_item_failure:
                 _raise_exception_if_bulk_item_failed(bulk_result)
 
             return bulk_result
+
 
 class ES(object):
     """
@@ -279,7 +303,7 @@ class ES(object):
                  basic_auth=None,
                  raise_on_bulk_item_failure=False,
                  document_object_field=None,
-                 bulker_class=Bulker):
+                 bulker_class=ListBulker):
         """
         Init a es object.
         Servers can be defined in different forms:
@@ -319,7 +343,6 @@ class ES(object):
         self.connection = None
         self._mappings = None
         self.document_object_field = document_object_field
-        self.bulker_class = bulker_class
 
         if model is None:
             model = lambda connection, model: model
@@ -338,6 +361,8 @@ class ES(object):
         #used in bulk
         self.bulk_size = bulk_size #size of the bulk
         self.bulker = bulker_class(self, bulk_size=bulk_size, raise_on_bulk_item_failure=raise_on_bulk_item_failure)
+        self.bulker_class = bulker_class
+        self.raise_on_bulk_item_failure = raise_on_bulk_item_failure
 
         if encoder:
             self.encoder = encoder
@@ -595,6 +620,14 @@ class ES(object):
             indices = ["_all"]
         path = self._make_path([','.join(indices), '_aliases'])
         return self._send_request('GET', path)
+
+    def create_bulker(self):
+        """
+        Create a bulker object and return it to allow to manage custom bulk policies
+        """
+        return  self.bulker_class(self, bulk_size=self.bulk_size,
+                                  raise_on_bulk_item_failure=self.raise_on_bulk_item_failure)
+
 
     def create_index(self, index, settings=None):
         """
@@ -1016,7 +1049,7 @@ class ES(object):
 
         header and document must be string "\n" ended
         """
-        self.bulker.add_to_bulk_queue(u"%s%s" % (header, document))
+        self.bulker.add(u"%s%s" % (header, document))
         return self.flush_bulk()
 
     def index(self, doc, index, doc_type, id=None, parent=None,
@@ -1050,7 +1083,7 @@ class ES(object):
             if isinstance(doc, dict):
                 doc = json.dumps(doc, cls=self.encoder)
             command = "%s\n%s" % (json.dumps(cmd, cls=self.encoder), doc)
-            self.bulker.add_to_bulk_queue(command)
+            self.bulker.add(command)
             return self.flush_bulk()
 
         if force_insert:
@@ -1171,7 +1204,7 @@ class ES(object):
         if bulk:
             cmd = {"delete": {"_index": index, "_type": doc_type,
                               "_id": id}}
-            self.bulker.add_to_bulk_queue(json.dumps(cmd, cls=self.encoder))
+            self.bulker.add(json.dumps(cmd, cls=self.encoder))
             return self.flush_bulk()
 
         path = self._make_path([index, doc_type, id])

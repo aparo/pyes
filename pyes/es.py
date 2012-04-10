@@ -266,7 +266,7 @@ class ListBulker(BaseBulker):
         with self.bulk_lock:
             self.bulk_data.append(content)
 
-    def flush_bulker(self, forced=False):
+    def flush_bulk(self, forced=False):
         with self.bulk_lock:
             if forced or len(self.bulk_data) >= self.bulk_size:
                 batch = self.bulk_data
@@ -335,7 +335,7 @@ class ES(object):
         :param document_object_field: a class to use as base document field in mapper
         """
         self.timeout = timeout
-        self.default_indices= default_indices or ["_all"]
+        self.default_indices = default_indices or ["_all"]
         self.max_retries = max_retries
         self.cluster = None
         self.debug_dump = False

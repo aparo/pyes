@@ -105,7 +105,7 @@ class ElasticSearchModel(DotDict):
         if force:
             version = None
         res = conn.index(self,
-            meta.index, meta.type, id, parent=parent, bulk=bulk, version=version, force_insert=force)
+                         meta.index, meta.type, id, parent=parent, bulk=bulk, version=version, force_insert=force)
         if not bulk:
             self._meta.id = res._id
             self._meta.version = res._version
@@ -229,6 +229,38 @@ class ESJsonDecoder(json.JSONDecoder):
         return DotDict(d)
 
 
+class Bulker(object):
+    def __init__(self, conn, bulk_size=400, raise_on_bulk_item_failure=False):
+        self.conn = conn
+        self.bulk_size = bulk_size
+        # protects bulk_data
+        self.bulk_lock = threading.RLock()
+        with self.bulk_lock:
+            self.bulk_data = []
+        self.raise_on_bulk_item_failure = raise_on_bulk_item_failure
+
+    def add_to_bulk_queue(self, content):
+        with self.bulk_lock:
+            self.bulk_data.append(content)
+
+    def flush_bulker(self, forced=False):
+        with self.bulk_lock:
+            if forced or len(self.bulk_data) >= self.bulk_size:
+                batch = self.bulk_data
+                self.bulk_data = []
+            else:
+                return None
+
+        if len(batch) > 0:
+            bulk_result = self.conn._send_request("POST",
+                                             "/_bulk",
+                                             "\n".join(batch) + "\n")
+
+            if self.raise_on_bulk_item_failure:
+                _raise_exception_if_bulk_item_failed(bulk_result)
+
+            return bulk_result
+
 class ES(object):
     """
     ES connection object.
@@ -237,7 +269,7 @@ class ES(object):
     encoder = ESJsonEncoder
     decoder = ESJsonDecoder
 
-    def __init__(self, server="localhost:9200", timeout=5.0, bulk_size=400,
+    def __init__(self, server="localhost:9200", timeout=30.0, bulk_size=400,
                  encoder=None, decoder=None,
                  max_retries=3,
                  default_indices=['_all'],
@@ -246,7 +278,8 @@ class ES(object):
                  model=ElasticSearchModel,
                  basic_auth=None,
                  raise_on_bulk_item_failure=False,
-                 document_object_field=None):
+                 document_object_field=None,
+                 bulker_class=Bulker):
         """
         Init a es object.
         Servers can be defined in different forms:
@@ -286,6 +319,7 @@ class ES(object):
         self.connection = None
         self._mappings = None
         self.document_object_field = document_object_field
+        self.bulker_class = bulker_class
 
         if model is None:
             model = lambda connection, model: model
@@ -303,11 +337,7 @@ class ES(object):
 
         #used in bulk
         self.bulk_size = bulk_size #size of the bulk
-        # protects bulk_data
-        self.bulk_lock = threading.RLock()
-        with self.bulk_lock:
-            self.bulk_data = []
-        self.raise_on_bulk_item_failure = raise_on_bulk_item_failure
+        self.bulker = bulker_class(self, bulk_size=bulk_size, raise_on_bulk_item_failure=raise_on_bulk_item_failure)
 
         if encoder:
             self.encoder = encoder
@@ -333,16 +363,16 @@ class ES(object):
         Destructor
         """
         # Don't bother getting the lock
-        if len(self.bulk_data) > 0:
+        if self.bulker:
             # It's not safe to rely on the destructor to flush the queue:
             # the Python documentation explicitly states "It is not guaranteed
             # that __del__() methods are called for objects that still exist "
             # when the interpreter exits."
             logger.error("pyes object %s is being destroyed, but bulk "
                          "operations have not been flushed. Call force_bulk()!",
-                self)
+                         self)
             # Do our best to save the client anyway...
-            self.force_bulk()
+            self.bulker.force_bulk()
 
     def _check_servers(self):
         """Check the servers variable and convert in a valid tuple form"""
@@ -405,12 +435,17 @@ class ES(object):
         if _type in ["http", "https"]:
             self.connection = http_connect(
                 [(_type, host, port) for _type, host, port in self.servers if _type in ["http", "https"]],
-                timeout=self.timeout, basic_auth=self.basic_auth,
-                max_retries=self.max_retries)
+                                                                                                         timeout=self.timeout
+                                                                                                         ,
+                                                                                                         basic_auth=self.basic_auth
+                                                                                                         ,
+                                                                                                         max_retries=self.max_retries)
             return
         elif _type == "thrift":
             self.connection = thrift_connect([(host, port) for _type, host, port in self.servers if _type == "thrift"],
-                timeout=self.timeout, max_retries=self.max_retries)
+                                                                                                                      timeout=self.timeout
+                                                                                                                      ,
+                                                                                                                      max_retries=self.max_retries)
 
     def _discovery(self):
         """
@@ -444,7 +479,7 @@ class ES(object):
         else:
             body = ""
         request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()],
-            uri=path, parameters=params, headers=headers, body=body)
+                              uri=path, parameters=params, headers=headers, body=body)
         if self.dump_curl is not None:
             self._dump_curl_request(request)
 
@@ -536,8 +571,8 @@ class ES(object):
     @property
     def mappings(self):
         if self._mappings is None:
-            self._mappings = Mapper(self.get_mapping(["_all"]), connection=self,
-                document_object_field=self.document_object_field)
+            self._mappings = Mapper(self.get_mapping(indices=["_all"]), connection=self,
+                                    document_object_field=self.document_object_field)
         return self._mappings
 
     #---- Admin commands
@@ -799,7 +834,7 @@ class ES(object):
             only_expunge_deletes=only_expunge_deletes,
             refresh=refresh,
             flush=flush,
-        )
+            )
         if max_num_segments is not None:
             params['max_num_segments'] = max_num_segments
         result = self._send_request('POST', path, params=params)
@@ -974,9 +1009,6 @@ class ES(object):
         path = self._make_path(parts)
         return self._send_request('GET', path)
 
-    def _add_to_bulk_queue(self, content):
-        with self.bulk_lock:
-            self.bulk_data.append(content)
 
     def index_raw_bulk(self, header, document):
         """
@@ -984,7 +1016,7 @@ class ES(object):
 
         header and document must be string "\n" ended
         """
-        self._add_to_bulk_queue(u"%s%s" % (header, document))
+        self.bulker.add_to_bulk_queue(u"%s%s" % (header, document))
         return self.flush_bulk()
 
     def index(self, doc, index, doc_type, id=None, parent=None,
@@ -1018,7 +1050,7 @@ class ES(object):
             if isinstance(doc, dict):
                 doc = json.dumps(doc, cls=self.encoder)
             command = "%s\n%s" % (json.dumps(cmd, cls=self.encoder), doc)
-            self._add_to_bulk_queue(command)
+            self.bulker.add_to_bulk_queue(command)
             return self.flush_bulk()
 
         if force_insert:
@@ -1063,22 +1095,7 @@ class ES(object):
         """
         Send pending operations if forced or if the bulk threshold is exceeded.
         """
-        with self.bulk_lock:
-            if forced or len(self.bulk_data) >= self.bulk_size:
-                batch = self.bulk_data
-                self.bulk_data = []
-            else:
-                return None
-
-        if len(batch) > 0:
-            bulk_result = self._send_request("POST",
-                "/_bulk",
-                "\n".join(batch) + "\n")
-
-            if self.raise_on_bulk_item_failure:
-                _raise_exception_if_bulk_item_failed(bulk_result)
-
-            return bulk_result
+        self.bulker.flush_bulk(forced)
 
     def force_bulk(self):
         """
@@ -1139,7 +1156,7 @@ class ES(object):
                 new_doc = current_doc
             try:
                 return self.index(new_doc, index, doc_type, id,
-                    version=current_doc._meta.version, querystring_args=querystring_args)
+                                  version=current_doc._meta.version, querystring_args=querystring_args)
             except VersionConflictEngineException:
                 if attempt <= 0:
                     raise
@@ -1154,7 +1171,7 @@ class ES(object):
         if bulk:
             cmd = {"delete": {"_index": index, "_type": doc_type,
                               "_id": id}}
-            self._add_to_bulk_queue(json.dumps(cmd, cls=self.encoder))
+            self.bulker.add_to_bulk_queue(json.dumps(cmd, cls=self.encoder))
             return self.flush_bulk()
 
         path = self._make_path([index, doc_type, id])
@@ -1258,8 +1275,8 @@ class ES(object):
         if routing:
             get_params["routing"] = routing
         results = self._send_request('GET', "/_mget",
-            body={'docs': body},
-            params=get_params)
+                                     body={'docs': body},
+                                     params=get_params)
         if 'docs' in results:
             model = self.model
             return [model(self, item) for item in results['docs']]
@@ -1369,7 +1386,7 @@ class ES(object):
         if doc_types is None:
             doc_types = []
         if query is None:
-            from ..query import MatchAllQuery
+            from .query import MatchAllQuery
 
             query = MatchAllQuery()
         if hasattr(query, 'to_query_json'):
@@ -1542,7 +1559,7 @@ class ResultSet(object):
             self.query.size = self.chuck_size
 
             self._results = self.connection.search_raw(self.query, indices=self.indices,
-                doc_types=self.doc_types, **self.query_params)
+                                                       doc_types=self.doc_types, **self.query_params)
             if 'search_type' in self.query_params and self.query_params['search_type'] == "scan":
                 self.scroller_parameters['search_type'] = self.query_params['search_type']
                 del self.query_params['search_type']
@@ -1561,7 +1578,7 @@ class ResultSet(object):
         else:
             try:
                 self._results = self.connection.search_scroll(self.scroller_id,
-                    self.scroller_parameters.get("scroll", "10m"))
+                                                              self.scroller_parameters.get("scroll", "10m"))
                 self.scroller_id = self._results['_scroll_id']
             except ReduceSearchPhaseException:
                 #bad hack, should be not hits on the last iteration
@@ -1670,7 +1687,7 @@ class ResultSet(object):
         query['size'] = end - start
 
         results = self.connection.search_raw(query, indices=self.indices,
-            doc_types=self.doc_types, **self.query_params)
+                                             doc_types=self.doc_types, **self.query_params)
 
         hits = results['hits']['hits']
         if not isinstance(val, slice):

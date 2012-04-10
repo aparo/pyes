@@ -484,7 +484,8 @@ class Mapper(object):
             for indexname, indexdata in data.items():
                 self.indices[indexname] = {}
                 for docname, docdata in indexdata.items():
-                    o = get_field(docname, docdata)
+                    o = get_field(docname, docdata, "document",
+                        document_object_field=self.document_object_field)
                     o.connection = self.connection
                     o.index_name = indexname
                     self.indices[indexname][docname] = o

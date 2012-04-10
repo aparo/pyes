@@ -296,7 +296,7 @@ class ES(object):
     def __init__(self, server="localhost:9200", timeout=30.0, bulk_size=400,
                  encoder=None, decoder=None,
                  max_retries=3,
-                 default_indices=['_all'],
+                 default_indices=None,
                  default_types=None,
                  dump_curl=False,
                  model=ElasticSearchModel,
@@ -335,6 +335,7 @@ class ES(object):
         :param document_object_field: a class to use as base document field in mapper
         """
         self.timeout = timeout
+        self.default_indices= default_indices or ["_all"]
         self.max_retries = max_retries
         self.cluster = None
         self.debug_dump = False
@@ -374,7 +375,7 @@ class ES(object):
             self.servers = [server]
         else:
             self.servers = server
-        self.default_indices = default_indices
+
         self.default_types = default_types or []
         #check the servers variable
         self._check_servers()
@@ -453,7 +454,7 @@ class ES(object):
         Create initial connection pool
         """
         #detect connectiontype
-        if len(self.servers) == 0:
+        if not self.servers:
             raise RuntimeError("No server defined")
 
         _type, host, port = random.choice(self.servers)
@@ -1065,7 +1066,6 @@ class ES(object):
         if bulk:
             if op_type is None:
                 op_type = "index"
-            op_type = "index"
             if force_insert:
                 op_type = "create"
             cmd = {op_type: {"_index": index, "_type": doc_type}}
@@ -1278,7 +1278,7 @@ class ES(object):
             list of ids: index and doc_type are required
 
         """
-        if len(ids) == 0:
+        if not ids:
             return []
 
         body = []
@@ -1519,6 +1519,7 @@ class ES(object):
             doc_types = [doc_types]
 
         path = self._make_path([index, ','.join(doc_types), '_percolate'])
+
         body = None
 
         if hasattr(query, 'to_query_json'):

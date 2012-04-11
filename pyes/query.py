@@ -116,7 +116,12 @@ class Search(EqualityComparableUsingAttributeDictionary):
         """
         res = {}
         if self.query:
-            res["query"] = self.query.serialize()
+            if isinstance(self.query, dict):
+                res["query"] = self.query
+            elif hasattr(self.query, "serialize"):
+                res["query"] = self.query.serialize()
+            else:
+                raise InvalidQuery("Invalid query")
         if self.filter:
             res['filter'] = self.filter.serialize()
         if self.fields is not None:
@@ -924,8 +929,8 @@ class TextQuery(Query):
         super(TextQuery, self).__init__(**kwargs)
         self.queries = {}
         self.add_query(field, text, type, slop, fuzziness,
-            prefix_length, max_expansions,
-            operator, analyzer)
+                       prefix_length, max_expansions,
+                       operator, analyzer)
 
     def add_query(self, field, text, type="boolean", slop=0, fuzziness=None,
                   prefix_length=0, max_expansions=2147483647,
@@ -1241,6 +1246,7 @@ class CustomScoreQuery(Query):
 
 class IdsQuery(Query):
     _internal_name = "ids"
+
     def __init__(self, values, type=None, **kwargs):
         super(IdsQuery, self).__init__(**kwargs)
         self.type = type

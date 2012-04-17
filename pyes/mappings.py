@@ -355,10 +355,11 @@ class DocumentObjectField(ObjectField):
 
     def as_dict(self):
         result = super(DocumentObjectField, self).as_dict()
-        result['_source'] = self._source
         result['_type'] = self._type
         if self._all is not None:
             result['_all'] = self._all
+        if self._source is not None:
+            result['_source'] = self._source
         if self._boost is not None:
             result['_boost'] = self._boost
         if self._routing is not None:

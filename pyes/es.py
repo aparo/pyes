@@ -284,7 +284,6 @@ class ListBulker(BaseBulker):
 
             return bulk_result
 
-
 class ES(object):
     """
     ES connection object.

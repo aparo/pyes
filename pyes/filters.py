@@ -176,7 +176,7 @@ class ScriptFilter(Filter):
 
 
     def add(self, field, value):
-        self._values[field] = {'value': value}
+        self.params[field] = {'value': value}
 
     def serialize(self):
         data = {'script': self.script}
@@ -240,6 +240,15 @@ class RegexTermFilter(Filter):
             raise RuntimeError("A least a field/value pair must be added")
         return {self._internal_name: self._values}
 
+class LimitFilter(Filter):
+    _internal_name = "limit"
+
+    def __init__(self, value=100, **kwargs):
+        super(LimitFilter, self).__init__(**kwargs)
+        self.value=value
+
+    def serialize(self):
+        return {self._internal_name: {"value":self.value}}
 
 class TermsFilter(Filter):
     _internal_name = "terms"

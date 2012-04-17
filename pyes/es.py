@@ -351,7 +351,7 @@ class ES(object):
         self.bulker_class = bulker_class
         self.raise_on_bulk_item_failure = raise_on_bulk_item_failure
 
-        self.mappings = None #track mapping
+        # self.mappings = None #track mapping
         self.encoder = encoder
         if self.encoder is None:
             self.encoder = ESJsonEncoder

@@ -1,9 +1,8 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-__author__ = 'Alberto Paro'
-__all__ = ['clean_string', "ESRange", "ESRangeOp", "string_b64encode", "string_b64decode"]
+from __future__ import absolute_import
 import base64
+
+__all__ = ['clean_string', "ESRange", "ESRangeOp", "string_b64encode", "string_b64decode"]
 
 def string_b64encode(s):
     """
@@ -11,6 +10,7 @@ def string_b64encode(s):
     You can use it to generate an ID for urls or some texts
     """
     return base64.urlsafe_b64encode(s).strip('=')
+
 
 def string_b64decode(s):
     return base64.urlsafe_b64decode(s + '=' * (len(s) % 4))
@@ -37,6 +37,7 @@ class EqualityComparableUsingAttributeDictionary(object):
     def __ne__(self, other):
         return not self == other
 
+
 class ESRange(EqualityComparableUsingAttributeDictionary):
     def __init__(self, field, from_value=None, to_value=None, include_lower=None,
                  include_upper=None, boost=None, **kwargs):
@@ -61,6 +62,7 @@ class ESRange(EqualityComparableUsingAttributeDictionary):
             filters['boost'] = self.boost
         return self.field, filters
 
+
 class ESRangeOp(ESRange):
     def __init__(self, field, op, value, boost=None):
         from_value = to_value = include_lower = include_upper = None
@@ -77,7 +79,8 @@ class ESRangeOp(ESRange):
             to_value = value
             include_upper = True
         super(ESRangeOp, self).__init__(field, from_value, to_value,
-                include_lower, include_upper, boost)
+            include_lower, include_upper, boost)
+
 
 def clean_string(text):
     """
@@ -86,6 +89,7 @@ def clean_string(text):
     if isinstance(text, unicode):
         return text.translate(UNI_SPECIAL_CHARS).strip()
     return text.translate(None, STR_SPECIAL_CHARS).strip()
+
 
 def keys_to_string(data):
     """

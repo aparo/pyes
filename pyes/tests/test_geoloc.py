@@ -1,11 +1,9 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
-"""
-Unit tests for pyes.  These require an es server with thrift plugin running on the default port (localhost:9500).
-"""
+from __future__ import absolute_import
 import unittest
-from pyes.tests import ESTestCase
-from pyes import GeoBoundingBoxFilter, GeoDistanceFilter, GeoPolygonFilter, FilteredQuery, MatchAllQuery
+from .estestcase import ESTestCase
+from ..filters import GeoBoundingBoxFilter, GeoDistanceFilter, GeoPolygonFilter
+from ..query import FilteredQuery, MatchAllQuery
 
 #--- Geo Queries Test case
 class GeoQuerySearchTestCase(ESTestCase):

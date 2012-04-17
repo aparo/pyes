@@ -1,11 +1,8 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
-"""Tests of setting and getting aliases.
-
-"""
+from __future__ import absolute_import
+from .estestcase import ESTestCase
 import unittest
-from pyes.tests import ESTestCase
-import pyes.exceptions
+from .. import exceptions
 
 class ErrorReportingTestCase(ESTestCase):
     def setUp(self):
@@ -32,8 +29,8 @@ class ErrorReportingTestCase(ESTestCase):
         self.assertTrue('test-alias' not in result)
 
         # Check getting a missing alias.
-        err = self.checkRaises(pyes.exceptions.IndexMissingException,
-                               self.conn.get_alias, 'test-alias')
+        err = self.checkRaises(exceptions.IndexMissingException,
+            self.conn.get_alias, 'test-alias')
         self.assertEqual(str(err), '[test-alias] missing')
 
         # Check deleting a missing alias (doesn't return a error).
@@ -44,16 +41,16 @@ class ErrorReportingTestCase(ESTestCase):
         self.assertEqual(self.conn.get_alias("test-alias"), ['test-index'])
 
         # Adding an alias to a missing index fails
-        err = self.checkRaises(pyes.exceptions.IndexMissingException,
-                               self.conn.change_aliases,
-                               [['add', 'test-missing-index', 'test-alias']])
+        err = self.checkRaises(exceptions.IndexMissingException,
+            self.conn.change_aliases,
+            [['add', 'test-missing-index', 'test-alias']])
         self.assertEqual(str(err), '[test-missing-index] missing')
         self.assertEqual(self.conn.get_alias("test-alias"), ['test-index'])
 
-#        # An alias can't be deleted using delete_index.
-#        err = self.checkRaises(pyes.exceptions.NotFoundException,
-#                               self.conn.delete_index, 'test-alias')
-#        self.assertEqual(str(err), '[test-alias] missing')
+        #        # An alias can't be deleted using delete_index.
+        #        err = self.checkRaises(exceptions.NotFoundException,
+        #                               self.conn.delete_index, 'test-alias')
+        #        self.assertEqual(str(err), '[test-alias] missing')
 
         # Check return value from get_indices now.
         result = self.conn.get_indices(include_aliases=True)
@@ -71,19 +68,18 @@ class ErrorReportingTestCase(ESTestCase):
         self.assertTrue('ok' in self.conn.create_index("test-index2"))
         self.conn.change_aliases([['add', 'test-index2', 'test-alias']])
         self.assertEqual(sorted(self.conn.get_alias("test-alias")),
-                         ['test-index', 'test-index2'])
+            ['test-index', 'test-index2'])
 
         # Check deleting multiple indices from an alias.
         self.conn.delete_alias("test-alias", [self.index_name, "test-index2"])
-        err = self.checkRaises(pyes.exceptions.IndexMissingException,
-                               self.conn.get_alias, 'test-alias')
+        self.checkRaises(exceptions.IndexMissingException, self.conn.get_alias, 'test-alias')
 
         # Check deleting multiple indices from a missing alias (still no error)
         self.conn.delete_alias("test-alias", [self.index_name, "test-index2"])
 
         # Check that we still get an error for a missing alias.
-        err = self.checkRaises(pyes.exceptions.IndexMissingException,
-                               self.conn.get_alias, 'test-alias')
+        err = self.checkRaises(exceptions.IndexMissingException,
+            self.conn.get_alias, 'test-alias')
         self.assertEqual(str(err), '[test-alias] missing')
 
     def testWriteToAlias(self):
@@ -96,9 +92,9 @@ class ErrorReportingTestCase(ESTestCase):
         self.conn.index(dict(title='doc1'), 'test-index', 'testtype')
         self.conn.index(dict(title='doc1'), 'test-index2', 'testtype')
         self.conn.index(dict(title='doc1'), 'test-alias', 'testtype')
-        self.checkRaises(pyes.exceptions.ElasticSearchIllegalArgumentException,
-                         self.conn.index, dict(title='doc1'),
-                         'test-alias2', 'testtype')
+        self.checkRaises(exceptions.ElasticSearchIllegalArgumentException,
+            self.conn.index, dict(title='doc1'),
+            'test-alias2', 'testtype')
 
         self.conn.refresh() # ensure that the documents have been indexed.
         # Check the document counts for each index or alias.

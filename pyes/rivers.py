@@ -1,21 +1,16 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-__author__ = 'Alberto Paro'
-
-import logging
+from __future__ import absolute_import
 
 try:
     # For Python < 2.6 or people using a newer version of simplejson
     import simplejson
+
     json = simplejson
 except ImportError:
     # For Python >= 2.6
     import json
 
-from es import ESJsonEncoder
-
-log = logging.getLogger('pyes')
+from .es import ES
 
 class River(object):
     def __init__(self, index_name=None, index_type=None, bulk_size=100, bulk_timeout=None):
@@ -47,7 +42,11 @@ class River(object):
         return str(self.q)
 
     def to_json(self):
-        return json.dumps(self.q, cls=ESJsonEncoder)
+        return json.dumps(self.q, cls=ES.encoder)
+
+    def serialize(self):
+        raise NotImplementedError
+
 
 class RabbitMQRiver(River):
     type = "rabbitmq"
@@ -67,18 +66,18 @@ class RabbitMQRiver(River):
 
     def serialize(self):
         return {
-                "type" : self.type,
-                self.type : {
-                    "host" : self.host,
-                    "port" : self.port,
-                    "user" : self.user,
-                    "pass" : self.password,
-                    "vhost" : self.vhost,
-                    "queue" : self.queue,
-                    "exchange" : self.exchange,
-                    "routing_key" : self.routing_key
-                }
+            "type": self.type,
+            self.type: {
+                "host": self.host,
+                "port": self.port,
+                "user": self.user,
+                "pass": self.password,
+                "vhost": self.vhost,
+                "queue": self.queue,
+                "exchange": self.exchange,
+                "routing_key": self.routing_key
             }
+        }
 
 
 class TwitterRiver(River):
@@ -92,12 +91,13 @@ class TwitterRiver(River):
 
     def serialize(self):
         return {
-                "type" : self.type,
-                self.type : {
-                    "user" : self.user,
-                    "password" : self.password,
+            "type": self.type,
+            self.type: {
+                "user": self.user,
+                "password": self.password,
                 }
-            }
+        }
+
 
 class CouchDBRiver(River):
     type = "couchdb"
@@ -117,14 +117,14 @@ class CouchDBRiver(River):
 
     def serialize(self):
         result = {
-                "type" : self.type,
-                self.type : {
-                    "host" : self.host,
-                    "port" : self.port,
-                    "db" : self.db,
-                    "filter" : self.filter,
+            "type": self.type,
+            self.type: {
+                "host": self.host,
+                "port": self.port,
+                "db": self.db,
+                "filter": self.filter,
                 }
-            }
+        }
         if self.filter_params is not None:
             result[self.type]["filter_params"] = self.filter_params
         if self.script is not None:

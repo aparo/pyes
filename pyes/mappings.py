@@ -1,22 +1,20 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-__author__ = 'Alberto Paro'
+from __future__ import absolute_import
 
 import threading
 
 _thread_locals = threading.local()
 #store threadsafe data
-from pyes.utils import keys_to_string
+from .utils import keys_to_string
 
 check_values = {
-                'index': ['no', 'analyzed', 'not_analyzed'],
-                'term_vector': ['no', 'yes', 'with_offsets', 'with_positions', 'with_positions_offsets'],
-                'type': ['float', 'double', 'short', 'integer', 'long'],
-                'store': ['yes', 'no'],
-                'index_analyzer' : [],
-                'search_analyzer' : [],
-                }
+    'index': ['no', 'analyzed', 'not_analyzed'],
+    'term_vector': ['no', 'yes', 'with_offsets', 'with_positions', 'with_positions_offsets'],
+    'type': ['float', 'double', 'short', 'integer', 'long'],
+    'store': ['yes', 'no'],
+    'index_analyzer': [],
+    'search_analyzer': [],
+    }
 
 
 class AbstractField(object):
@@ -42,8 +40,8 @@ class AbstractField(object):
         self.name = name
 
     def as_dict(self):
-        result = {"type":self.type,
-                  'index':self.index}
+        result = {"type": self.type,
+                  'index': self.index}
         if self.store != "no":
             if isinstance(self.store, bool):
                 if self.store:
@@ -71,6 +69,7 @@ class AbstractField(object):
 
         return result
 
+
 class StringField(AbstractField):
     def __init__(self, null_value=None, include_in_all=None, *args, **kwargs):
         super(StringField, self).__init__(*args, **kwargs)
@@ -86,11 +85,12 @@ class StringField(AbstractField):
             result['include_in_all'] = self.include_in_all
         return result
 
+
 class GeoPointField(AbstractField):
     def __init__(self, null_value=None, include_in_all=None,
                  lat_lon=None, geohash=None, geohash_precision=None,
                  *args, **kwargs):
-        super(GeoPointField, self).__init__(**kwargs)
+        super(GeoPointField, self).__init__(*args, **kwargs)
         self.null_value = null_value
         self.include_in_all = include_in_all
         self.lat_lon = lat_lon
@@ -116,13 +116,15 @@ class GeoPointField(AbstractField):
             result['geohash_precision'] = self.geohash_precision
         return result
 
+
 class NumericFieldAbstract(AbstractField):
     def __init__(self, null_value=None, include_in_all=None, precision_step=4,
-                 **kwargs):
+                 numeric_resolution=None, **kwargs):
         super(NumericFieldAbstract, self).__init__(**kwargs)
         self.null_value = null_value
         self.include_in_all = include_in_all
         self.precision_step = precision_step
+        self.numeric_resolution = numeric_resolution
 
     def as_dict(self):
         result = super(NumericFieldAbstract, self).as_dict()
@@ -134,35 +136,42 @@ class NumericFieldAbstract(AbstractField):
             result['precision_step'] = self.precision_step
         return result
 
+
 class IpField(NumericFieldAbstract):
     def __init__(self, *args, **kwargs):
         super(IpField, self).__init__(*args, **kwargs)
         self.type = "ip"
+
 
 class ShortField(NumericFieldAbstract):
     def __init__(self, *args, **kwargs):
         super(ShortField, self).__init__(*args, **kwargs)
         self.type = "short"
 
+
 class IntegerField(NumericFieldAbstract):
     def __init__(self, *args, **kwargs):
         super(IntegerField, self).__init__(*args, **kwargs)
         self.type = "integer"
+
 
 class LongField(NumericFieldAbstract):
     def __init__(self, *args, **kwargs):
         super(LongField, self).__init__(*args, **kwargs)
         self.type = "long"
 
+
 class FloatField(NumericFieldAbstract):
     def __init__(self, *args, **kwargs):
         super(FloatField, self).__init__(*args, **kwargs)
         self.type = "float"
 
+
 class DoubleField(NumericFieldAbstract):
     def __init__(self, *args, **kwargs):
         super(DoubleField, self).__init__(*args, **kwargs)
         self.type = "double"
+
 
 class DateField(NumericFieldAbstract):
     def __init__(self, format=None, **kwargs):
@@ -175,6 +184,7 @@ class DateField(NumericFieldAbstract):
         if self.format:
             result['format'] = self.format
         return result
+
 
 class BooleanField(AbstractField):
     def __init__(self, null_value=None, include_in_all=None, *args, **kwargs):
@@ -190,6 +200,7 @@ class BooleanField(AbstractField):
         if self.include_in_all is not None:
             result['include_in_all'] = self.include_in_all
         return result
+
 
 class MultiField(object):
     def __init__(self, name, type=None, path=None, fields=None):
@@ -217,12 +228,14 @@ class MultiField(object):
             result['path'] = self.path
         return result
 
+
 class AttachmentField(object):
     """An attachment field.
 
     Requires the mapper-attachments plugin to be installed to be used.
 
     """
+
     def __init__(self, name, type=None, path=None, fields=None):
         self.name = name
         self.type = "attachment"
@@ -231,11 +244,12 @@ class AttachmentField(object):
 
     def as_dict(self):
         result_fields = dict((name, value.as_dict())
-                             for (name, value) in self.fields.items())
+        for (name, value) in self.fields.items())
         result = dict(type=self.type, fields=result_fields)
         if self.path:
             result['path'] = self.path
         return result
+
 
 class ObjectField(object):
     def __init__(self, name=None, type=None, path=None, properties=None,
@@ -317,6 +331,7 @@ class ObjectField(object):
 
         self.connection.put_mapping(doc_type=self.name, mapping=self.as_dict(), indices=self.index_name)
 
+
 class NestedObject(ObjectField):
     def __init__(self, *args, **kwargs):
         super(NestedObject, self).__init__(*args, **kwargs)
@@ -337,7 +352,7 @@ class DocumentObjectField(object):
         self._all = _all
         if self._all is None:
             #tnp defaults
-            self._all = {"enabled" : False}
+            self._all = {"enabled": False}
 
         self._boost = _boost
         self._id = _id
@@ -348,7 +363,7 @@ class DocumentObjectField(object):
 
         self._type = _type
         if self._type is None:
-            self._type = {"store" : "yes"}
+            self._type = {"store": "yes"}
 
         self._parent = _parent
         self.date_formats = date_formats
@@ -359,21 +374,15 @@ class DocumentObjectField(object):
             self.properties = dict([(name, get_field(name, data)) for name, data in properties.items()])
 
     def enable_compression(self, threshold="5kb"):
-        self._source.update({"compress":True, "compression_threshold":threshold})
+        self._source.update({"compress": True, "compression_threshold": threshold})
 
     def as_dict(self):
-        result = {"type": self.type,
-                  "properties": {},
-                  '_source': self._source,
-                  '_type': self._type}
-        if self.dynamic is not None:
-            result['dynamic'] = self.dynamic
-        if self.enabled is not None:
-            result['enabled'] = self.enabled
-        if self.path is not None:
-            result['path'] = self.path
+        result = super(DocumentObjectField, self).as_dict()
+        result['_type'] = self._type
         if self._all is not None:
             result['_all'] = self._all
+        if self._source is not None:
+            result['_source'] = self._source
         if self._boost is not None:
             result['_boost'] = self._boost
         if self._routing is not None:
@@ -435,16 +444,23 @@ def get_field(name, data, default="object"):
     elif _type == "attachment":
         return AttachmentField(name=name, **data)
     elif _type == "document":
-        return DocumentObjectField(name=name, **data)
+        if document_object_field:
+            return document_object_field(name=name, **data)
+        else:
+            return DocumentObjectField(name=name, **data)
 
     elif _type == "object":
-        if '_timestamp' in data:
-            return DocumentObjectField(name=name, **data)
+        if '_timestamp' in data or "_all" in data:
+            if document_object_field:
+                return document_object_field(name=name, **data)
+            else:
+                return DocumentObjectField(name=name, **data)
 
         return ObjectField(name=name, **data)
     elif _type == "nested":
         return NestedObject(name=name, **data)
     raise RuntimeError("Invalid type: %s" % _type)
+
 
 class Mapper(object):
     def __init__(self, data, connection=None, is_mapping=False):
@@ -465,7 +481,8 @@ class Mapper(object):
             for indexname, indexdata in data.items():
                 self.indices[indexname] = {}
                 for docname, docdata in indexdata.items():
-                    o = get_field(docname, docdata)
+                    o = get_field(docname, docdata, "document",
+                        document_object_field=self.document_object_field)
                     o.connection = self.connection
                     o.index_name = indexname
                     self.indices[indexname][docname] = o

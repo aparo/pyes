@@ -1,11 +1,8 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
-"""
-Unit tests for pyes.  These require an es server with thrift plugin running on the default port (localhost:9500).
-"""
+from __future__ import absolute_import
 import unittest
-from pyestest import ESTestCase
-from pyes.rivers import CouchDBRiver, RabbitMQRiver, TwitterRiver
+from .estestcase import ESTestCase
+from ..rivers import CouchDBRiver, RabbitMQRiver, TwitterRiver
 
 class RiversTestCase(ESTestCase):
     def setUp(self):

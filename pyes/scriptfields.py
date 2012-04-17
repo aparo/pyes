@@ -1,20 +1,19 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import
 
-__author__ = 'Armando Guereca'
-
-from pyes.exceptions import ScriptFieldsError
+from .exceptions import ScriptFieldsError
 
 class ScriptFields(object):
     """
     This object create the script_fields definition
     """
     _internal_name = "script_fields"
-    def __init__(self, field_name, script, params = None):
-        self.fields={}
+
+    def __init__(self, field_name, script, params=None):
+        self.fields = {}
         self.add_field(field_name, script, params or {})
 
-    def add_field(self, field_name, script, params = None):
+    def add_field(self, field_name, script, params=None):
         """
         Add a field to script_fields
         """
@@ -41,7 +40,7 @@ class ScriptFields(object):
         try:
             self.fields[field_name]['params'][param_name] = param_value
         except Exception as ex:
-            raise ScriptFieldsError("Error adding parameter %s with value %s :%s" % (param_name,param_value,ex))
+            raise ScriptFieldsError("Error adding parameter %s with value %s :%s" % (param_name, param_value, ex))
 
         return self
 

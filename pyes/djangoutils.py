@@ -1,23 +1,21 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-__author__ = 'Alberto Paro'
-__all__ = ["get_values"]
-
-#useful to raise ad invali import
-import django
+from __future__ import absolute_import
 
 from types import NoneType
 import datetime
 from django.db import models
 import uuid
 
+__author__ = 'Alberto Paro'
+__all__ = ["get_values"]
+
+
 #--- taken from http://djangosnippets.org/snippets/2278/
 
 def get_values(instance, go_into={}, exclude=(), extra=(), skip_none=False):
     """
     Transforms a django model instance into an object that can be used for
-    serialization. 
+    serialization.
     @param instance(django.db.models.Model) - the model in question
     @param go_into(dict) - relations with other models that need expanding
     @param exclude(tuple) - fields that will be ignored
@@ -43,7 +41,7 @@ def get_values(instance, go_into={}, exclude=(), extra=(), skip_none=False):
 
     value = {
         'pk': instance.pk,
-    }
+        }
 
     # check for simple string instead of tuples
     # and dicts; this is shorthand syntax
@@ -80,10 +78,10 @@ def get_values(instance, go_into={}, exclude=(), extra=(), skip_none=False):
             continue
 
         if field in exclude or field[0] == '_' or isinstance(property, Manager):
-            # if it's in the exclude tuple, ignore it 
-            # if it's a "private" field, ignore it 
+            # if it's in the exclude tuple, ignore it
+            # if it's a "private" field, ignore it
             # if it's an instance of manager (this means a more complicated
-            # relationship), ignore it 
+            # relationship), ignore it
             continue
         elif go_into.has_key(field):
             # if it's in the go_into dict, make a recursive call for that field
@@ -103,9 +101,9 @@ def get_values(instance, go_into={}, exclude=(), extra=(), skip_none=False):
                 field_extra = ()
 
             value[field] = get_values(property,
-                                      field_go_into,
-                                      field_exclude,
-                                      field_extra, skip_none=skip_none)
+                field_go_into,
+                field_exclude,
+                field_extra, skip_none=skip_none)
         else:
             if isinstance(property, Model):
                 # if it's a model, we need it's PK #
@@ -126,8 +124,10 @@ def get_values(instance, go_into={}, exclude=(), extra=(), skip_none=False):
 
     return value
 
+
 class EmbeddedModel(models.Model):
     _embedded_in = None
+
     class Meta:
         abstract = True
 
@@ -142,9 +142,9 @@ class EmbeddedModel(models.Model):
         if self.pk is None:
             self.pk = "TODO"
             self.id = self.pk
-        result = {'_app':self._meta.app_label,
-            '_model':self._meta.module_name,
-            '_id':self.pk}
+        result = {'_app': self._meta.app_label,
+                  '_model': self._meta.module_name,
+                  '_id': self.pk}
         for field in self._meta.fields:
             result[field.attname] = getattr(self, field.attname)
         return result

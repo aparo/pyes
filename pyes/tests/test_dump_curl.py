@@ -1,10 +1,7 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
-"""
-Unit tests for pyes.  These require an es server with thrift plugin running on the default port (localhost:9500).
-"""
+from __future__ import absolute_import
 import unittest
-from pyes.tests import ESTestCase, get_conn
+from .estestcase import ESTestCase, get_conn
 import StringIO
 
 class DumpCurlTestCase(ESTestCase):
@@ -21,7 +18,6 @@ class DumpCurlTestCase(ESTestCase):
         self.assertTrue('ok' in result)
         self.assertTrue('error' not in result)
         dump = dump.getvalue()
-        print 'dump', dump
         self.assertTrue("""
             curl -XPOST 'http://127.0.0.1:9200/test-index/test-type?pretty=true' -d '{"title": "Hi"}'
             """.strip() in dump)

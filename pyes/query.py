@@ -1,9 +1,5 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-__author__ = 'Alberto Paro'
-
-import logging
+from __future__ import absolute_import
 
 try:
     # For Python >= 2.6
@@ -12,13 +8,12 @@ except ImportError:
     # For Python < 2.6 or people using a newer version of simplejson
     import simplejson as json
 
-from es import ESJsonEncoder
-from utils import clean_string, ESRange, EqualityComparableUsingAttributeDictionary
-from facets import FacetFactory
-from highlight import HighLighter
-from scriptfields import ScriptFields
-from pyes.exceptions import InvalidQuery, InvalidParameterQuery, QueryError, ScriptFieldsError
-log = logging.getLogger('pyes')
+from .utils import clean_string, ESRange, EqualityComparableUsingAttributeDictionary
+from .facets import FacetFactory
+from .highlight import HighLighter
+from .scriptfields import ScriptFields
+from .exceptions import InvalidQuery, InvalidParameterQuery, QueryError, ScriptFieldsError
+from .es import ES
 
 class FieldParameter(EqualityComparableUsingAttributeDictionary):
 
@@ -81,25 +76,14 @@ class Search(EqualityComparableUsingAttributeDictionary):
     control how the search works, what it should return, etc.
 
     """
-    def __init__(self,
-                 query=None,
-                 filter=None,
-                 fields=None,
-                 start=None,
-                 size=None,
-                 highlight=None,
-                 sort=None,
-                 explain=False,
-                 facet=None,
-                 version=None,
-                 track_scores=None,
-                 script_fields=None,
-                 index_boost={},
-                 min_score=None,
-                 stats=None):
+
+    def __init__(self, query=None, filter=None, fields=None, start=None, size=None, highlight=None, sort=None,
+                 explain=False, facet=None, version=None, track_scores=None, script_fields=None, index_boost=None,
+                 min_score=None, stats=None, bulk_read=None):
         """
         fields: if is [], the _source is not returned
         """
+        if not index_boost: index_boost = {}
         self.query = query
         self.filter = filter
         self.fields = fields
@@ -133,7 +117,12 @@ class Search(EqualityComparableUsingAttributeDictionary):
         """
         res = {}
         if self.query:
-            res["query"] = self.query.serialize()
+            if isinstance(self.query, dict):
+                res["query"] = self.query
+            elif hasattr(self.query, "serialize"):
+                res["query"] = self.query.serialize()
+            else:
+                raise InvalidQuery("Invalid query")
         if self.filter:
             res['filter'] = self.filter.serialize()
         if self.fields is not None:
@@ -202,7 +191,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
         search.
 
         """
-        return json.dumps(self.q, cls=ESJsonEncoder)
+        return json.dumps(self.q, cls=ES.encoder)
 
 
 class Query(EqualityComparableUsingAttributeDictionary):
@@ -236,7 +225,7 @@ class Query(EqualityComparableUsingAttributeDictionary):
         search.
 
         """
-        return json.dumps(dict(query=self.serialize()), cls=ESJsonEncoder)
+        return json.dumps(dict(query=self.serialize()), cls=ES.encoder)
 
     def to_query_json(self):
         """Convert the query to JSON using the query DSL.
@@ -245,7 +234,7 @@ class Query(EqualityComparableUsingAttributeDictionary):
         delete_by_query and reindex.
 
         """
-        return json.dumps(self.serialize(), cls=ESJsonEncoder)
+        return json.dumps(self.serialize(), cls=ES.encoder)
 
 
 class BoolQuery(Query):
@@ -552,7 +541,7 @@ class FieldQuery(Query):
         self.allow_leading_wildcard = allow_leading_wildcard
         self.lowercase_expanded_terms = lowercase_expanded_terms
         self.enable_position_increments = enable_position_increments
-        self.fuzzy_prefix_length = enable_position_increments
+        self.fuzzy_prefix_length = fuzzy_prefix_length
         self.fuzzy_min_sim = fuzzy_min_sim
         self.phrase_slop = phrase_slop
         self.boost = boost
@@ -674,7 +663,7 @@ class FuzzyLikeThisQuery(Query):
             filters["max_query_terms"] = self.max_query_terms
         if self.min_similarity != 0.5:
             filters["min_similarity"] = self.min_similarity
-        if self.prefix_length != 0:
+        if self.prefix_length:
             filters["prefix_length"] = self.prefix_length
         if self.boost != 1.0:
             filters["boost"] = self.boost
@@ -829,8 +818,8 @@ class FilterQuery(Query):
             raise RuntimeError("A least one filter must be declared")
         return {self._internal_name:{"filter":filters}}
 
-    def __repr__(self):
-        return str(self.q)
+#    def __repr__(self):
+#        return str(self.q)
 
 class PrefixQuery(Query):
     def __init__(self, field=None, prefix=None, boost=None, **kwargs):
@@ -916,8 +905,8 @@ class TextQuery(Query):
         super(TextQuery, self).__init__(**kwargs)
         self.queries = {}
         self.add_query(field, text, type, slop, fuzziness,
-                 prefix_length, max_expansions,
-                 operator, analyzer)
+                       prefix_length, max_expansions,
+                       operator, analyzer)
 
     def add_query(self, field, text, type="boolean", slop=0, fuzziness=None,
                  prefix_length=0, max_expansions=2147483647,
@@ -928,13 +917,13 @@ class TextQuery(Query):
         if operator not in self._valid_operators:
             raise QueryError("Invalid value '%s' for operator: allowed values are %s" % (operator, self._valid_operators))
 
-        query = {'type':type,
-                'query':text}
-        if slop != 0:
+        query = {'type': type,
+                 'query': text}
+        if slop:
             query["slop"] = slop
         if fuzziness is not None:
             query["fuzziness"] = fuzziness
-        if slop != 0:
+        if prefix_length:
             query["prefix_length"] = prefix_length
         if max_expansions != 2147483647:
             query["max_expansions"] = max_expansions
@@ -997,7 +986,7 @@ class StringQuery(Query):
             if not isinstance(self.default_field, (str, unicode)) and isinstance(self.default_field, list):
                 if not self.use_dis_max:
                     filters["use_dis_max"] = self.use_dis_max
-                if self.tie_breaker != 0:
+                if self.tie_breaker:
                     filters["tie_breaker"] = self.tie_breaker
 
         if self.default_operator != "OR":
@@ -1025,7 +1014,7 @@ class StringQuery(Query):
             if len(filters["fields"]) > 1:
                 if not self.use_dis_max:
                     filters["use_dis_max"] = self.use_dis_max
-                if self.tie_breaker != 0:
+                if self.tie_breaker:
                     filters["tie_breaker"] = self.tie_breaker
         if self.boost != 1.0:
             filters["boost"] = self.boost
@@ -1142,11 +1131,8 @@ class SpanNotQuery(Query):
     def serialize(self):
 
         self._validate()
-        data = {}
-        data['include'] = self.include.serialize()
-        data['exclude'] = self.exclude.serialize()
+        return {self._internal_name: {'include': self.include.serialize(), 'exclude': self.exclude.serialize()}}
 
-        return {self._internal_name:data}
 
 def is_a_spanquery(obj):
     """
@@ -1222,19 +1208,20 @@ class CustomScoreQuery(Query):
             data['lang'] = self.lang
         return {self._internal_name:data}
 
-    def __repr__(self):
-        return str(self.q)
+#    def __repr__(self):
+#        return str(self.q)
 
 class IdsQuery(Query):
     _internal_name = "ids"
-    def __init__(self, type, values, **kwargs):
+
+    def __init__(self, values, type=None, **kwargs):
         super(IdsQuery, self).__init__(**kwargs)
         self.type = type
         self.values = values
 
     def serialize(self):
         data = {}
-        if self.type:
+        if self.type is not None:
             data['type'] = self.type
         if isinstance(self.values, basestring):
             data['values'] = [self.values]
@@ -1265,8 +1252,7 @@ class PercolatorQuery(Query):
         """Serialize the query to a structure using the query DSL.
 
         """
-        data = {}
-        data['doc'] = self.doc
+        data = {'doc': self.doc}
         if hasattr(self.query, 'serialize'):
             data['query'] = self.query.serialize()
         return data
@@ -1317,8 +1303,8 @@ class CustomFiltersScoreQuery(Query):
         self.lang = lang
 
     def serialize(self):
-        data = {'query':self.query.serialize()}
-        data['filters'] = [filter_.serialize() for filter_ in self.filters]
+        data = {'query': self.query.serialize(),
+                'filters': [filter_.serialize() for filter_ in self.filters]}
         if self.score_mode is not None:
             data['score_mode'] = self.score_mode
         if self.params is not None:

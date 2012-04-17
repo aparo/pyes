@@ -1,17 +1,11 @@
 # -*- coding: utf-8 -*-
-#
-# Author: Ian Eure <ian@simplegeo.com>
-#
-
+from __future__ import absolute_import
 import unittest
-
-import pyes.exceptions as exc
-import pyes.scriptfields as sf
+from .. import scriptfields
 
 class ScriptFieldsTest(unittest.TestCase):
-
     def test_scriptfieldserror_imported(self):
-        self.assertTrue(hasattr(sf, 'ScriptFieldsError'))
+        self.assertTrue(hasattr(scriptfields, 'ScriptFieldsError'))
 
 
 if __name__ == '__main__':

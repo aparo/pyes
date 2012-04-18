@@ -873,11 +873,37 @@ class ES(object):
         result = self._send_request('POST', path, params=params)
         return result
 
-    def analyze(self, text, index=None):
+    def analyze(self, text, index=None, analyzer=None, tokenizer=None, filters=[], field=None):
         """
         Performs the analysis process on a text and return the tokens breakdown of the text
         """
+
+        argsets = 0
+        args = {}
+
+        if analyzer:
+            args['analyzer'] = analyzer
+            argsets += 1
+        if tokenizer or filters:
+            if tokenizer:
+                args['tokenizer'] = tokenizer
+            if filters:
+                args['filters'] = ','.join(filters)
+            argsets += 1
+        if field:
+            args['field'] = field
+            argsets += 1
+
+        if argsets > 1:
+            raise ValueError('Argument conflict: Speficy either analyzer, tokenizer/filters or field')
+
+        if field and index is None:
+            raise ValueError('field can only be specified with an index')
+
         path = self._make_path([index, '_analyze'])
+        if args:
+            path += '?' + urlencode(args)
+
         return self._send_request('POST', path, text)
 
     def gateway_snapshot(self, indices=None):

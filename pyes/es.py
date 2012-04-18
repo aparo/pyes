@@ -873,11 +873,12 @@ class ES(object):
         result = self._send_request('POST', path, params=params)
         return result
 
-    def analyze(self, text, index=None, analyzer=None, tokenizer=None, filters=[], field=None):
+    def analyze(self, text, index=None, analyzer=None, tokenizer=None, filters=None, field=None):
         """
         Performs the analysis process on a text and return the tokens breakdown of the text
         """
-
+        if filters is None:
+            filters=[]
         argsets = 0
         args = {}
 
@@ -906,6 +907,8 @@ class ES(object):
     def gateway_snapshot(self, indices=None):
         """
         Gateway snapshot one or more indices
+
+        :param indices: a list of indices or None for default configured.
         """
         indices = self._validate_indices(indices)
         path = self._make_path([','.join(indices), '_gateway', 'snapshot'])

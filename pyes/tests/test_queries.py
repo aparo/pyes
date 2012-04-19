@@ -313,7 +313,7 @@ class QuerySearchTestCase(ESTestCase):
         self.assertEqual(RawFilter(filter_), RawFilter(filter_))
         self.assertEqual(RawFilter(filter_).serialize(), filter_)
         self.assertEqual(RawFilter(filter_).serialize(),
-            IdsFilter("my_type", ["1", "4", "100"]).serialize())
+            IdsFilter(type="my_type", values=["1", "4", "100"]).serialize())
 
     def test_RawFilter_string(self):
         filter_ = dict(ids=dict(type="my_type", values=["1", "4", "100"]))
@@ -322,7 +322,7 @@ class QuerySearchTestCase(ESTestCase):
         self.assertEqual(RawFilter(filter_string), RawFilter(filter_))
         self.assertEqual(RawFilter(filter_string).serialize(), filter_)
         self.assertEqual(RawFilter(filter_string).serialize(),
-            IdsFilter("my_type", ["1", "4", "100"]).serialize())
+            IdsFilter(type="my_type", values=["1", "4", "100"]).serialize())
 
     def test_RawFilter_search(self):
         filter_ = dict(ids=dict(type="my_type", values=["1", "4", "100"]))

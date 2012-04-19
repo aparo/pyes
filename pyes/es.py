@@ -236,17 +236,36 @@ class BaseBulker(object):
 
     def __init__(self, conn, bulk_size=400, raise_on_bulk_item_failure=False):
         self.conn = conn
-        self.bulk_size = bulk_size
+        self._bulk_size = bulk_size
         # protects bulk_data
         self.bulk_lock = threading.RLock()
         with self.bulk_lock:
             self.bulk_data = []
         self.raise_on_bulk_item_failure = raise_on_bulk_item_failure
 
+    def get_bulk_size(self):
+        """
+        Get the current bulk_size
+
+        :return a int: the size of the bulk holder
+        """
+        return self._bulk_size
+
+    def set_bulk_size(self, bulk_size):
+        """
+        Set the bulk size
+
+        :param bulk_size the bulker size
+        """
+        self._bulk_size=bulk_size
+        self.flush_bulk()
+
+    bulk_size=property(get_bulk_size, set_bulk_size)
+
     def add(self, content):
         raise NotImplementedError
 
-    def flush_bulker(self, forced=False):
+    def flush_bulk(self, forced=False):
         raise NotImplementedError
 
 
@@ -358,10 +377,10 @@ class ES(object):
             self.dump_curl = None
 
         #used in bulk
-        self.bulk_size = bulk_size #size of the bulk
+        self._bulk_size = bulk_size #size of the bulk
         self.bulker = bulker_class(self, bulk_size=bulk_size, raise_on_bulk_item_failure=raise_on_bulk_item_failure)
         self.bulker_class = bulker_class
-        self.raise_on_bulk_item_failure = raise_on_bulk_item_failure
+        self._raise_on_bulk_item_failure = raise_on_bulk_item_failure
 
         if encoder:
             self.encoder = encoder
@@ -380,7 +399,6 @@ class ES(object):
         #init connections
         self._init_connection()
         self.collect_info()
-
 
     def __del__(self):
         """
@@ -484,6 +502,45 @@ class ES(object):
         self._init_connection()
         return self.servers
 
+    def _get_bulk_size(self):
+        """
+        Get the current bulk_size
+
+        :return a int: the size of the bulk holder
+        """
+        return self._bulk_size
+
+    def _set_bulk_size(self, bulk_size):
+        """
+        Set the bulk size
+
+        :param bulk_size the bulker size
+        """
+        self._bulk_size=bulk_size
+        self.bulker.bulk_size = bulk_size
+
+    bulk_size=property(_get_bulk_size, _set_bulk_size)
+
+    def _get_raise_on_bulk_item_failure(self):
+        """
+        Get the raise_on_bulk_item_failure status
+
+        :return a bool: the status of raise_on_bulk_item_failure
+        """
+        return self._bulk_size
+
+    def _set_raise_on_bulk_item_failure(self, raise_on_bulk_item_failure):
+        """
+        Set the raise_on_bulk_item_failure parameter
+
+        :param raise_on_bulk_item_failure a bool the status of the raise_on_bulk_item_failure
+        """
+        self._raise_on_bulk_item_failure=raise_on_bulk_item_failure
+        self.bulker.raise_on_bulk_item_failure = raise_on_bulk_item_failure
+
+    raise_on_bulk_item_failure=property(_get_raise_on_bulk_item_failure, _set_raise_on_bulk_item_failure)
+
+
     def _send_request(self, method, path, body=None, params=None, headers=None, raw=False):
         if params is None:
             params = {}
@@ -575,7 +632,13 @@ class ES(object):
         params = {'pretty': 'true'}
         params.update(request.parameters)
         method = Method._VALUES_TO_NAMES[request.method]
-        url = urlunsplit(('http', self.servers[0], request.uri, urlencode(params), ''))
+        server = self.servers[0]
+        if isinstance(server, tuple):
+            if len(server)==2:
+                server = "%s:%s"%(server[0], server[1])
+            elif len(server)==3:
+                server = "%s:%s"%(server[1], server[2])
+        url = urlunsplit(('http', server, request.uri, urlencode(params), ''))
         curl_cmd = "curl -X%s '%s'" % (method, url)
         if request.body:
             curl_cmd += " -d '%s'" % request.body
@@ -1152,7 +1215,7 @@ class ES(object):
         """
         Send pending operations if forced or if the bulk threshold is exceeded.
         """
-        self.bulker.flush_bulk(forced)
+        return self.bulker.flush_bulk(forced)
 
     def force_bulk(self):
         """
@@ -1162,7 +1225,7 @@ class ES(object):
         """
         return self.flush_bulk(True)
 
-    def put_file(self, filename, index, doc_type, id=None):
+    def put_file(self, filename, index, doc_type, id=None, name=None):
         """
         Store a file in a index
         """
@@ -1174,6 +1237,8 @@ class ES(object):
             request_method = 'PUT'
         path = self._make_path([index, doc_type, id])
         doc = file_to_attachment(filename)
+        if name:
+            doc["_name"]=name
         return self._send_request(request_method, path, doc, querystring_args)
 
     def get_file(self, index, doc_type, id=None):

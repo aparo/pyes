@@ -23,7 +23,7 @@ class TestFileSaveTestCase(ESTestCase):
         self.conn.get_mapping(self.document_type, self.index_name)
         name = "map.json"
         content = self.get_datafile(name)
-        self.conn.put_file(self.get_datafile_path(name), self.index_name, self.document_type, 1)
+        self.conn.put_file(self.get_datafile_path(name), self.index_name, self.document_type, 1, name=name)
         self.conn.refresh(self.index_name)
         _ = self.conn.get_mapping(self.document_type, self.index_name)
         nname, ncontent = self.conn.get_file(self.index_name, self.document_type, 1)

@@ -4,7 +4,7 @@
 Bulk
 ====
 
-The bulk API allows one to index and delete several documents in a single request. Here is a sample usage:
+The bulk API allows to index and delete several documents in a single API. Here is a sample usage:
 
 
 .. code-block:: java

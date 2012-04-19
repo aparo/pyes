@@ -56,9 +56,6 @@ Parent
 The **parent** parameter can be set, which will basically be the same as setting the routing parameter.
 
 
-Note that deleting a parent document does not automatically delete its children. One way of deleting all child documents given a parent's id is to perform a :ref:`delete by query <es-guide-reference-api-delete-by-query>`  on the child index with the automatically generated (and indexed) field ==_parent==, which is in the format ==parent_type#parent_id==.
-
-
 Automatic for the Index
 =======================
 

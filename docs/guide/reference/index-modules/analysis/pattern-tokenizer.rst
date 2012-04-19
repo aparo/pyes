@@ -17,16 +17,3 @@ A tokenizer of type **pattern** that can flexibly separate text into terms via a
 
 *IMPORTANT*: The regular expression should match the *token separators*, not the tokens themselves.
 
-
-**group** set to **-1** (the default) is equivalent to "split". Using Using group >= 0 selects the matching group as the token. For example, if you have:
-
-
-<pre>
-pattern = \'([^\']+)\'
-group = 0
-input = aaa 'bbb' 'ccc'
-
-
-the output will be two tokens: 'bbb' and 'ccc' (including the ' marks).  With the same input but using group=1, the output would be: bbb and ccc (no ' marks).
-
-

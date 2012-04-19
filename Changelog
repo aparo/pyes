@@ -32,7 +32,7 @@ v. 0.16.0:
 
            Add ScriptFields object used as parameter script_fields of Search object (aguereca).
 
-           Add IdsQuery, IdsFilter and delete_by_query (aguereca).
+           Add IdsQuery, IdsFilter and deleteByQuery (aguereca).
 
            Bulk delete (acdha).
 

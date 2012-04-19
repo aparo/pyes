@@ -28,14 +28,11 @@ Explicit mapping is defined on an index type level. By default, there isn't a ne
     ip-type
     meta
     multi-field-type
-    nested-type
     object-type
     parent-field
     root-object-type
     routing-field
     size-field
     source-field
-    timestamp-field
-    ttl-field
     type-field
     uid-field

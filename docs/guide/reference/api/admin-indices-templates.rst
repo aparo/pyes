@@ -63,7 +63,7 @@ Multiple index templates can potentially match an index, in this case, both the 
     curl -XPUT localhost:9200/_template/template_1 -d '
     {
         "template" : "*",
-        "order" : 0,
+        "order" : 0
         "settings" : {
             "number_of_shards" : 1
         },
@@ -78,7 +78,7 @@ Multiple index templates can potentially match an index, in this case, both the 
     curl -XPUT localhost:9200/_template/template_2 -d '
     {
         "template" : "te*",
-        "order" : 1,
+        "order" : 1
         "settings" : {
             "number_of_shards" : 1
         },
@@ -92,34 +92,4 @@ Multiple index templates can potentially match an index, in this case, both the 
 
 
 The above will disable storing the **_source** on all **type1** types, but for indices of that start with **te***, source will still be enabled. Note, for mappings, the merging is "deep", meaning that specific object/property based mappings can easily be added/overridden on higher order templates, with lower order templates providing the basis.
-
-
-Config
-======
-
-Index templates can also be placed within the config location (**path.config**) under the **templates** directory (note, make sure to place them on all master eligible nodes). For example, a file called **template_1.json** can be placed under **config/templates** and it will be added if it matches an index. Here is a sample of a the mentioned file:
-
-
-.. code-block:: js
-
-    {
-        "template_1" : {
-            "template" : "*",
-            "settings" : {
-                "index.number_of_shards" : 2
-            },
-            "mappings" : {
-                "_default_" : {
-                    "_source" : {
-                        "enabled" : false
-                    }
-                },
-                "type1" : {
-                    "_all" : {
-                        "enabled" : false
-                    }
-                }
-            }
-        }
-    }
 

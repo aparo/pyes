@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
-from requests.packages import urllib3
+# from requests.packages import urllib3
+import urllib3
 import random
 import threading
 import time
@@ -19,7 +20,7 @@ DEFAULT_SERVER = ("http", "127.0.0.1", 9200)
 class ClientTransport(object):
     """Encapsulation of a client session."""
 
-    def __init__(self, server, framed_transport, timeout, recycle, basic_auth=None):
+    def __init__(self, server, framed_transport, timeout, recycle, basic_auth):
         self.connection_type, self.host, self.port = server
         self.timeout = timeout
         self.headers = {}

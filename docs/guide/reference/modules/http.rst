@@ -22,8 +22,7 @@ The following are the settings the can be configured for HTTP:
 =============================  =====================================================================================
 **http.port**                  A bind port range. Defaults to **9200-9300**.                                        
 **http.max_content_length**    The max content of an HTTP request. Defaults to **100mb**                            
-**http.compression**           Support for compression when possible (with Accept-Encoding). Defaults to **true**.  
-**http.compression_level**     Defines the compression level to use. Defaults to **6**.                             
+**http.compress**              Support for compression when possible (with Accept-Encoding). Defaults to **true**.  
 =============================  =====================================================================================
 
 It also shares the uses the common :ref:`network settings <es-guide-reference-modules-network>`.  

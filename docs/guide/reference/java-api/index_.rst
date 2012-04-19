@@ -4,7 +4,7 @@
 Index_
 ======
 
-The index API allows one to index a typed JSON document into a specific index and make it searchable. The following example indexes a JSON document into an index called twitter, under a type called tweet, with id valued 1:
+The index API allows to index a typed JSON document into a specific index and make it searchable. The following example index the JSON document into an index called twitter, under a type called tweet, with id valued 1:
 
 
 .. code-block:: java
@@ -24,7 +24,7 @@ The index API allows one to index a typed JSON document into a specific index an
             .actionGet();
 
 
-The source to be indexed a json object that can be built easily using the elasticsearch **XContent** JSON Builder.
+The source to be indexed is a binary array representing the json to be indexed. It can be easily built using elasticsearch special **XContent** JSON Builder.
 
 
 For more information on the index operation, check out the REST :ref:`index <es-guide-reference-java-api-index_>`  docs.
@@ -33,7 +33,7 @@ For more information on the index operation, check out the REST :ref:`index <es-
 Source Parameter
 ================
 
-The source parameter represents a JSON object. It can be provided in different ways: as a native **byte[]**, as a **String**, as a byte array built using the **jsonBuilder**, or as a **Map** (that will be automatically converted to its JSON equivalent). Internally, each type is converted to **byte[]** (so a String is converted to a **byte[]**). Therefore, if the object is in this form already, then use it. The **jsonBuilder** is highly optimized JSON generator that directly constructs a **byte[]**.
+The source parameter is a JSON. It can be provided in different means, as a native **byte[]**, as a **String**, be built using the **jsonBuilder** and as a **Map** (that will be automatically converted to its JSON equivalent). All different types are converted to **byte[]** (so a String is converted to a **byte[]**), so its preferable, if the JSON is in this form already, to use it. The **jsonBuilder** is highly optimized JSON generator that is built right into a **byte[]**.
 
 
 Operation Threading

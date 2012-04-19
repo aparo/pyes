@@ -92,9 +92,6 @@ And post tag of **</em>**. If you think of more nice to have built in tag schema
     }
 
 
-An **encoder** parameter can be used to define how highlighted text will be encoded. It can be either **default** (no encoding) or **html** (will escape html, if you use html highlighting tags).
-
-
 Highlighted Fragments
 =====================
 
@@ -151,9 +148,6 @@ If the **number_of_fragments** value is set to 0 then no fragments are produced,
     }
 
 
-When using **fast-vector-highlighter** one can use **fragment_offset** parameter to conrol the margin to start highlighting from. 
-
-
 Global Settings
 ===============
 
@@ -178,17 +172,3 @@ Highlighting settings can be set on a global level and then overridden at the fi
         }
     }
 
-
-Require Field Match
-===================
-
-**require_field_match** can be set to **true** which will cause a field to be highlighted only if a query matched that field. false means that terms are highlighted on all requested fields regardless if the query matches specifically on them.
-
-
-Boundary Characters
-===================
-
-When highlighting a field that is mapped with term vectors, **boundary_chars** can be configured to define what constitutes a boundary for highlighting. Its a single string with each boundary character defined in it. It defaults to **.,!? \t\n**.
-
-
-The **boundary_max_size** allows to control how far to look for boundary characters, and defaults to **20**.

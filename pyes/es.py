@@ -58,7 +58,6 @@ class DotDict(dict):
     def __deepcopy__(self, memo):
         return DotDict([(copy.deepcopy(k, memo), copy.deepcopy(v, memo)) for k, v in self.items()])
 
-
 class ElasticSearchModel(DotDict):
     def __init__(self, *args, **kwargs):
         self._meta = DotDict()

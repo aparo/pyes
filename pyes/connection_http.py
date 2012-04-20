@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
-from requests.packages import urllib3
 import random
 import threading
 import time
@@ -169,7 +168,7 @@ class ThreadLocalConnection(object):
                     if retry < self._max_retries:
                         continue
 
-                    raise urllib3.MaxRetryError
+                    raise NoServerAvailable
 
         setattr(self, attr, _client_call)
         return getattr(self, attr)

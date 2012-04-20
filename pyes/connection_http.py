@@ -26,25 +26,26 @@ class ClientTransport(object):
             self.recycle = time.time() + recycle + random.uniform(0, recycle * 0.1)
         else:
             self.recycle = None
-
         if basic_auth:
             username = basic_auth.get('username')
             password = basic_auth.get('password')
-            base64string = base64.encodestring('%s:%s' %
-                                               (username, password))[:-1]
-            self.headers["Authorization"] = ("Basic %s" % base64string)
+            base64string = base64.encodestring('%s:%s' % (username, password))[:-1]
+            self.headers["Authorization"] = 'Basic %s' % base64string
 
     def execute(self, request):
-        """
-        Execute a request and return a response
-        """
+        """Execute a request and return a response"""
         headers = self.headers.copy()
         headers.update(request.headers)
-        s = requests.session()
-        response = s.request(method=Method._VALUES_TO_NAMES[request.method],
-            url="http://%s:%s%s" % (self.host, self.port, request.uri), params=request.parameters,
-            data=request.body, headers=request.headers, timeout=self.timeout)
-        return RestResponse(status=response.status_code, body=response.content, headers=response.headers)
+        response = requests.session().request(
+            method=Method._VALUES_TO_NAMES[request.method],
+            url='%s://%s:%s%s' % (self.connection_type, self.host, self.port, request.uri),
+            params=request.parameters,
+            data=request.body,
+            headers=request.headers,
+            timeout=self.timeout)
+        return RestResponse(status=response.status_code,
+                            body=response.content,
+                            headers=response.headers)
 
 
 def connect(servers=None, framed_transport=False, timeout=None,

@@ -185,16 +185,11 @@ class ThreadLocalConnection(object):
     def connect(self):
         """Create new connection unless we already have one."""
         if not getattr(self._local, 'conn', None):
-            try:
-                server = self._servers.get()
-                logger.debug('Connecting to %s', server)
-                self._local.conn = ClientTransport(server, self._framed_transport,
-                    self._timeout, self._recycle,
-                    self._basic_auth)
-            except (socket.timeout, socket.error):
-                logger.warning('Connection to %s failed.', server)
-                self._servers.mark_dead(server)
-                return self.connect()
+            server = self._servers.get()
+            logger.debug('Connecting to %s', server)
+            self._local.conn = ClientTransport(server, self._framed_transport,
+                                               self._timeout, self._recycle,
+                                               self._basic_auth)
         return self._local.conn
 
     def close(self):

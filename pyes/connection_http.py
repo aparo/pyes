@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
+from requests.exceptions import RequestException
 import random
 import threading
 import time
 import base64
 import requests
-import socket
 from .exceptions import NoServerAvailable
 from .fakettypes import Method, RestResponse
 from . import logger
@@ -162,8 +162,8 @@ class ThreadLocalConnection(object):
             for retry in xrange(self._max_retries + 1):
                 try:
                     return getattr(self._ensure_connection(), attr)(*args, **kwargs)
-                except (socket.timeout, socket.error), exc:
-                    logger.exception('Client error: %s', exc)
+                except RequestException, exc:
+                    logger.error('Client error: %s', exc)
                     self.close()
 
                     if retry < self._max_retries:

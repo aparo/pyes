@@ -19,7 +19,9 @@ class ClientTransport(object):
     """Encapsulation of a client session."""
 
     def __init__(self, server, framed_transport, timeout, recycle, basic_auth=None):
-        self.connection_type, self.host, self.port = server
+        connection_type, host, port = server
+        self.server = server
+        self.server_uri = '%s://%s:%s' % (connection_type, host, port)
         self.timeout = timeout
         self.headers = {}
         if recycle:
@@ -38,7 +40,7 @@ class ClientTransport(object):
         headers.update(request.headers)
         response = requests.session().request(
             method=Method._VALUES_TO_NAMES[request.method],
-            url='%s://%s:%s%s' % (self.connection_type, self.host, self.port, request.uri),
+            url=self.server_uri + request.uri,
             params=request.parameters,
             data=request.body,
             headers=request.headers,

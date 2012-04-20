@@ -18,7 +18,7 @@ DEFAULT_SERVER = ("http", "127.0.0.1", 9200)
 class ClientTransport(object):
     """Encapsulation of a client session."""
 
-    def __init__(self, server, framed_transport, timeout, recycle, basic_auth=None):
+    def __init__(self, server, timeout, recycle, basic_auth=None):
         connection_type, host, port = server
         self.server = server
         self.server_uri = '%s://%s:%s' % (connection_type, host, port)
@@ -104,9 +104,8 @@ def connect(servers=None, framed_transport=False, timeout=None,
 
     if servers is None:
         servers = [DEFAULT_SERVER]
-    return ThreadLocalConnection(servers, framed_transport, timeout,
-        retry_time, recycle, max_retries=max_retries,
-        basic_auth=basic_auth)
+    return ThreadLocalConnection(servers, timeout, retry_time, recycle,
+                                 max_retries, basic_auth)
 
 connect_thread_local = connect
 
@@ -149,10 +148,9 @@ class ServerSet(object):
 
 
 class ThreadLocalConnection(object):
-    def __init__(self, servers, framed_transport=False, timeout=None,
-                 retry_time=10, recycle=None, max_retries=3, basic_auth=None):
+    def __init__(self, servers, timeout=None, retry_time=10, recycle=None,
+                 max_retries=3, basic_auth=None):
         self._servers = ServerSet(servers, retry_time)
-        self._framed_transport = framed_transport #not used in http
         self._timeout = timeout
         self._recycle = recycle
         self._max_retries = max_retries
@@ -190,7 +188,7 @@ class ThreadLocalConnection(object):
         if not getattr(self._local, 'conn', None):
             server = self._servers.get()
             logger.debug('Connecting to %s', server)
-            self._local.conn = ClientTransport(server, self._framed_transport,
+            self._local.conn = ClientTransport(server,
                                                self._timeout, self._recycle,
                                                self._basic_auth)
         return self._local.conn

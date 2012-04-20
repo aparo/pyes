@@ -1521,7 +1521,7 @@ class ES(object):
         Create a river
         """
         if hasattr(river, "q"):
-            river_name = river.name
+            #river_name = river.name
             river = river.q
         return self._send_request('PUT', '/_river/%s/_meta' % river_name, river)
 

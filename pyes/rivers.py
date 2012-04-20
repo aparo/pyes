@@ -15,6 +15,7 @@ from .es import ES
 class River(object):
     def __init__(self, index_name=None, index_type=None, bulk_size=100, bulk_timeout=None):
         self.name = index_name
+        self.name = None
         self.index_name = index_name
         self.index_type = index_type
         self.bulk_size = bulk_size

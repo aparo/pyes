@@ -1,3 +1,6 @@
 *.pyc
 .*.swp
 docs/_build
+build/
+dist/
+pyes.egg-info/

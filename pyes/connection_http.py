@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
-from requests.packages import urllib3
+from requests.exceptions import RequestException
+from time import time
 import random
 import threading
-import time
 import base64
 import requests
-import socket
 from .exceptions import NoServerAvailable
 from .fakettypes import Method, RestResponse
 from . import logger
@@ -19,33 +18,35 @@ DEFAULT_SERVER = ("http", "127.0.0.1", 9200)
 class ClientTransport(object):
     """Encapsulation of a client session."""
 
-    def __init__(self, server, framed_transport, timeout, recycle, basic_auth=None):
-        self.connection_type, self.host, self.port = server
+    def __init__(self, server, timeout, recycle, basic_auth=None):
+        connection_type, host, port = server
+        self.server_uri = '%s://%s:%s' % (connection_type, host, port)
         self.timeout = timeout
         self.headers = {}
         if recycle:
-            self.recycle = time.time() + recycle + random.uniform(0, recycle * 0.1)
+            self.recycle = time() + recycle + random.uniform(0, recycle * 0.1)
         else:
             self.recycle = None
-
         if basic_auth:
             username = basic_auth.get('username')
             password = basic_auth.get('password')
-            base64string = base64.encodestring('%s:%s' %
-                                               (username, password))[:-1]
-            self.headers["Authorization"] = ("Basic %s" % base64string)
+            base64string = base64.encodestring('%s:%s' % (username, password))[:-1]
+            self.headers["Authorization"] = 'Basic %s' % base64string
 
     def execute(self, request):
-        """
-        Execute a request and return a response
-        """
+        """Execute a request and return a response"""
         headers = self.headers.copy()
         headers.update(request.headers)
-        s = requests.session()
-        response = s.request(method=Method._VALUES_TO_NAMES[request.method],
-            url="http://%s:%s%s" % (self.host, self.port, request.uri), params=request.parameters,
-            data=request.body, headers=request.headers, timeout=self.timeout)
-        return RestResponse(status=response.status_code, body=response.content, headers=response.headers)
+        response = requests.session().request(
+            method=Method._VALUES_TO_NAMES[request.method],
+            url=self.server_uri + request.uri,
+            params=request.parameters,
+            data=request.body,
+            headers=request.headers,
+            timeout=self.timeout)
+        return RestResponse(status=response.status_code,
+                            body=response.content,
+                            headers=response.headers)
 
 
 def connect(servers=None, framed_transport=False, timeout=None,
@@ -102,9 +103,8 @@ def connect(servers=None, framed_transport=False, timeout=None,
 
     if servers is None:
         servers = [DEFAULT_SERVER]
-    return ThreadLocalConnection(servers, framed_transport, timeout,
-        retry_time, recycle, max_retries=max_retries,
-        basic_auth=basic_auth)
+    return ThreadLocalConnection(servers, timeout, retry_time, recycle,
+                                 max_retries, basic_auth)
 
 connect_thread_local = connect
 
@@ -121,36 +121,35 @@ class ServerSet(object):
         self._dead = []
 
     def get(self):
-        self._lock.acquire()
-        try:
-            if self._dead:
-                ts, revived = self._dead.pop()
-                if ts > time.time():  # Not yet, put it back
-                    self._dead.append((ts, revived))
+        with self._lock:
+            try:
+                ts, server = self._dead.pop()
+            except IndexError:
+                pass
+            else:
+                if ts > time():  # Not yet, put it back
+                    self._dead.append((ts, server))
                 else:
-                    self._servers.append(revived)
-                    logger.info('Server %r reinstated into working pool', revived)
-            if not self._servers:
+                    self._servers.append(server)
+                    logger.info('Server %r reinstated into working pool', server)
+
+            try:
+                return random.choice(self._servers)
+            except IndexError:
                 logger.critical('No servers available')
-                raise NoServerAvailable()
-            return random.choice(self._servers)
-        finally:
-            self._lock.release()
+                raise NoServerAvailable
 
     def mark_dead(self, server):
-        self._lock.acquire()
-        try:
+        with self._lock:
             self._servers.remove(server)
-            self._dead.insert(0, (time.time() + self._retry_time, server))
-        finally:
-            self._lock.release()
+            self._dead.insert(0, (time() + self._retry_time, server))
+            logger.warning('Server %r removed from working pool', server)
 
 
 class ThreadLocalConnection(object):
-    def __init__(self, servers, framed_transport=False, timeout=None,
-                 retry_time=10, recycle=None, max_retries=3, basic_auth=None):
+    def __init__(self, servers, timeout=None, retry_time=10, recycle=None,
+                 max_retries=3, basic_auth=None):
         self._servers = ServerSet(servers, retry_time)
-        self._framed_transport = framed_transport #not used in http
         self._timeout = timeout
         self._recycle = recycle
         self._max_retries = max_retries
@@ -159,44 +158,46 @@ class ThreadLocalConnection(object):
 
     def __getattr__(self, attr):
         def _client_call(*args, **kwargs):
-            for retry in xrange(self._max_retries + 1):
+            retry = 0
+            while True:
                 try:
-                    return getattr(self._ensure_connection(), attr)(*args, **kwargs)
-                except (socket.timeout, socket.error), exc:
-                    logger.exception('Client error: %s', exc)
-                    self.close()
+                    conn = self.connect()
+                    if conn.recycle and conn.recycle < time():
+                        logger.debug('Recycling expired client session after %is.',
+                                     self._recycle)
+                        self.close()
+                        conn = self.connect()
 
-                    if retry < self._max_retries:
-                        continue
+                    return getattr(conn, attr)(*args, **kwargs)
 
-                    raise urllib3.MaxRetryError
+                except RequestException:
+                    self.mark_current_server_dead()
+                    if retry >= self._max_retries:
+                        logger.critical('Client error: bailing out after %d failed retries',
+                                        self._max_retries, exc_info=1)
+                        raise NoServerAvailable
+                    logger.debug('Client error: %d retries left',
+                                 self._max_retries - retry)
+                    retry += 1
 
         setattr(self, attr, _client_call)
-        return getattr(self, attr)
-
-    def _ensure_connection(self):
-        """Make certain we have a valid connection and return it."""
-        conn = self.connect()
-        if conn.recycle and conn.recycle < time.time():
-            logger.debug('Client session expired after %is. Recycling.', self._recycle)
-            self.close()
-            conn = self.connect()
-        return conn
+        return _client_call
 
     def connect(self):
         """Create new connection unless we already have one."""
         if not getattr(self._local, 'conn', None):
-            try:
-                server = self._servers.get()
-                logger.debug('Connecting to %s', server)
-                self._local.conn = ClientTransport(server, self._framed_transport,
-                    self._timeout, self._recycle,
-                    self._basic_auth)
-            except (socket.timeout, socket.error):
-                logger.warning('Connection to %s failed.', server)
-                self._servers.mark_dead(server)
-                return self.connect()
+            server = self._servers.get()
+            self._local.server = server
+            self._local.conn = ClientTransport(server, self._timeout,
+                                               self._recycle, self._basic_auth)
         return self._local.conn
+
+    def mark_current_server_dead(self):
+        server = getattr(self._local, 'server', None)
+        if server:
+            self._servers.mark_dead(server)
+            self.close()
 
     def close(self):
         self._local.conn = None
+        self._local.server = None

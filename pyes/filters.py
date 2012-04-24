@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
+import copy
 
 from .exceptions import QueryParameterError
 from .utils import ESRange, EqualityComparableUsingAttributeDictionary
@@ -265,10 +266,11 @@ class LimitFilter(Filter):
 class TermsFilter(Filter):
     _internal_name = "terms"
 
-    def __init__(self, field=None, values=None, _name=None, **kwargs):
+    def __init__(self, field=None, values=None, _name=None, execution=None, **kwargs):
         super(TermsFilter, self).__init__(**kwargs)
         self._values = {}
         self._name = _name
+        self.execution = execution
 
         if field is not None and values is not None:
             self.add(field, values)
@@ -279,7 +281,12 @@ class TermsFilter(Filter):
     def serialize(self):
         if not self._values:
             raise RuntimeError("A least a field/value pair must be added")
-        return self._add_parameters({self._internal_name: self._values})
+        data = copy.deepcopy()
+        if self.execution:
+            data['execution'] = self.execution
+        if self._name:
+            data['_name'] = self._name
+        return self._add_parameters({self._internal_name: data})
 
 
 class QueryFilter(Filter):

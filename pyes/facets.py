@@ -34,8 +34,25 @@ class FacetFactory(EqualityComparableUsingAttributeDictionary):
 
 
 class Facet(EqualityComparableUsingAttributeDictionary):
-    def __init__(self, *args, **kwargs):
-        pass
+    def __init__(self, scope=None, nested=None,
+                 is_global=None, facet_filter=None, *args, **kwargs):
+        self.scope = scope
+        self.nested = nested
+        self.is_global = is_global
+        self.facet_filter = facet_filter
+
+    def _base_parameters(self):
+        data = {}
+        if self.scope is not None:
+            data["scope"] = self.scope
+        if self.nested is not None:
+            data["nested"] = self.nested
+        if self.is_global:
+            data['global'] = self.is_global
+        if self.facet_filter:
+            data.update(self.facet_filter.q)
+
+        return data
 
 
 class QueryFacet(Facet):
@@ -47,7 +64,9 @@ class QueryFacet(Facet):
         self.query = query
 
     def serialize(self):
-        return {self.name: {self._internal_name: self.query.serialize()}}
+        data = self._base_parameters()
+        data[self._internal_name]= self.query.serialize()
+        return {self.name: data}
 
 
 class FilterFacet(Facet):
@@ -59,7 +78,9 @@ class FilterFacet(Facet):
         self.query = query
 
     def serialize(self):
-        return {self.name: {self._internal_name: self.query.serialize()}}
+        data = self._base_parameters()
+        data[self._internal_name]= self.query.serialize()
+        return {self.name: data}
 
 
 class HistogramFacet(Facet):
@@ -91,7 +112,6 @@ class HistogramFacet(Facet):
 
     def serialize(self):
         data = {}
-
         if self.field:
             data['field'] = self.field
             self._add_interval(data)
@@ -110,8 +130,9 @@ class HistogramFacet(Facet):
                 raise RuntimeError("Invalid key_script: value_script required")
             if self.params:
                 data['params'] = self.params
-
-        return {self.name: {self._internal_name: data}}
+        params = self._base_parameters()
+        params[self._internal_name]= data
+        return {self.name: params}
 
 
 class DateHistogramFacet(Facet):
@@ -120,8 +141,7 @@ class DateHistogramFacet(Facet):
     def __init__(self, name,
                  field=None, interval=None, zone=None,
                  key_field=None, value_field=None,
-                 value_script=None, params=None,
-                 scope=None, is_global=None, facet_filter=None, **kwargs):
+                 value_script=None, params=None, **kwargs):
         super(DateHistogramFacet, self).__init__(**kwargs)
         self.name = name
         self.field = field
@@ -131,9 +151,6 @@ class DateHistogramFacet(Facet):
         self.value_field = value_field
         self.value_script = value_script
         self.params = params
-        self.scope = scope
-        self.is_global = is_global
-        self.facet_filter = facet_filter
 
     def serialize(self):
         data = {}
@@ -157,13 +174,8 @@ class DateHistogramFacet(Facet):
             else:
                 raise RuntimeError("Invalid key_field: value_field or value_script required")
 
-        facet = {self._internal_name: data}
-        if self.scope is not None:
-            facet['scope'] = self.scope
-        if self.is_global:
-            facet['global'] = self.is_global
-        if self.facet_filter:
-            facet.update(self.facet_filter.q)
+        facet = self._base_parameters()
+        facet[self._internal_name]= data
         return {self.name: facet}
 
 
@@ -211,7 +223,9 @@ class RangeFacet(Facet):
             if self.params:
                 data['params'] = self.params
 
-        return {self.name: {self._internal_name: data}}
+        params = self._base_parameters()
+        params[self._internal_name]= data
+        return {self.name: params}
 
 
 class GeoDistanceFacet(RangeFacet):
@@ -238,7 +252,9 @@ class StatisticalFacet(Facet):
             if self.params:
                 data['params'] = self.params
 
-        return {self.name: {self._internal_name: data}}
+        params = self._base_parameters()
+        params[self._internal_name]= data
+        return {self.name: params}
 
 
 class TermFacet(Facet):
@@ -247,7 +263,7 @@ class TermFacet(Facet):
     def __init__(self, field=None, fields=None, name=None, size=10,
                  order=None, exclude=None,
                  regex=None, regex_flags="DOTALL",
-                 script=None, scope=None, **kwargs):
+                 script=None, **kwargs):
         super(TermFacet, self).__init__(**kwargs)
         self.name = name
         self.field = field
@@ -260,7 +276,6 @@ class TermFacet(Facet):
         self.regex = regex
         self.regex_flags = regex_flags
         self.script = script
-        self.scope = scope
 
     def serialize(self):
         if self.fields:
@@ -286,10 +301,9 @@ class TermFacet(Facet):
                 data['regex_flags'] = self.regex_flags
         elif self.script:
             data['script'] = self.script
-        facet = {self._internal_name: data}
-        if self.scope:
-            facet['scope'] = self.scope
-        return {self.name: facet}
+        params = self._base_parameters()
+        params[self._internal_name]= data
+        return {self.name: params}
 
 
 class TermStatsFacet(Facet):
@@ -298,7 +312,6 @@ class TermStatsFacet(Facet):
     def __init__(self, name, size=10, order=None,
                  key_field=None, value_field=None,
                  key_script=None, value_script=None, params=None,
-                 nested=None,
                  **kwargs):
         super(TermStatsFacet, self).__init__(**kwargs)
         self.name = name
@@ -311,11 +324,9 @@ class TermStatsFacet(Facet):
         self.key_script = key_script
         self.value_script = value_script
         self.params = params
-        self.nested = nested
 
     def serialize(self):
         data = {}
-        facet = {self._internal_name: data}
 
         if self.size:
             data['size'] = self.size
@@ -340,11 +351,9 @@ class TermStatsFacet(Facet):
             if self.params:
                 data['params'] = self.params
 
-        if self.nested is not None:
-            facet['nested'] = self.nested
-
-        return {self.name: facet}
-
+        params = self._base_parameters()
+        params[self._internal_name]= data
+        return {self.name: params}
 
 class FacetFilter(Filter):
     @property

@@ -13,7 +13,7 @@ from . import logger
 __all__ = ['connect', 'connect_thread_local']
 
 DEFAULT_SERVER = ("http", "127.0.0.1", 9200)
-
+SESSION = requests.session()
 
 class ClientTransport(object):
     """Encapsulation of a client session."""
@@ -37,7 +37,7 @@ class ClientTransport(object):
         """Execute a request and return a response"""
         headers = self.headers.copy()
         headers.update(request.headers)
-        response = requests.session().request(
+        response = SESSION.request(
             method=Method._VALUES_TO_NAMES[request.method],
             url=self.server_uri + request.uri,
             params=request.parameters,

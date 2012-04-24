@@ -8,13 +8,25 @@ from .es import encode_json, json
 class Filter(EqualityComparableUsingAttributeDictionary):
     _internal_name = "undefined"
 
-    def __init__(self, **kwargs):
+    def __init__(self, _cache=None, _cache_key=None, **kwargs):
         """
         Base Object for every Filter Object
         """
+        self._cache=_cache
+        self._cache_key=_cache_key
 
     def serialize(self):
         raise NotImplementedError
+
+    def _add_parameters(self, data):
+        """
+        Extend the serializable dict adding global parameters if they are set
+        """
+        if self._cache:
+            data["_cache"]=self._cache
+        if self._cache_key:
+            data["_cache_key"]=self._cache_key
+        return data
 
     @property
     def q(self):
@@ -33,7 +45,7 @@ class FilterList(Filter):
     def serialize(self):
         if not self.filters:
             raise RuntimeError("A least a filter must be declared")
-        return {self._internal_name: [filter.serialize() for filter in self.filters]}
+        return self._add_parameters({self._internal_name: [filter.serialize() for filter in self.filters]})
 
     def __iter__(self):
         return iter(self.filters)
@@ -102,7 +114,7 @@ class BoolFilter(Filter):
             filters['minimum_number_should_match'] = self.minimum_number_should_match
         if not filters:
             raise RuntimeError("A least a filter must be declared")
-        return {"bool": filters}
+        return self._add_parameters({"bool": filters})
 
 
 class ORFilter(FilterList):
@@ -122,7 +134,7 @@ class NotFilter(Filter):
     def serialize(self):
         if not isinstance(self.filter, Filter):
             raise RuntimeError("NotFilter argument should be a Filter")
-        return {self._internal_name: {"filter": self.filter.serialize()}}
+        return self._add_parameters({self._internal_name: {"filter": self.filter.serialize()}})
 
 
 class RangeFilter(Filter):
@@ -143,7 +155,7 @@ class RangeFilter(Filter):
         if not self.ranges:
             raise RuntimeError("A least a range must be declared")
         filters = dict([r.serialize() for r in self.ranges])
-        return {"range": filters}
+        return self._add_parameters({"range": filters})
 
 NumericRangeFilter = RangeFilter
 
@@ -163,7 +175,7 @@ class PrefixFilter(Filter):
     def serialize(self):
         if not self._values:
             raise RuntimeError("A least a field/prefix pair must be added")
-        return {self._internal_name: self._values}
+        return self._add_parameters({self._internal_name: self._values})
 
 
 class ScriptFilter(Filter):
@@ -182,7 +194,7 @@ class ScriptFilter(Filter):
         data = {'script': self.script}
         if self.params is not None:
             data['params'] = self.params
-        return {self._internal_name: data}
+        return self._add_parameters({self._internal_name: data})
 
 
 class TermFilter(Filter):
@@ -205,7 +217,7 @@ class TermFilter(Filter):
         result = {self._internal_name: self._values}
         if self._name:
             result[self._internal_name]['_name'] = self._name
-        return {self._internal_name: self._values}
+        return self._add_parameters({self._internal_name: self._values})
 
 
 class ExistsFilter(TermFilter):
@@ -238,7 +250,7 @@ class RegexTermFilter(Filter):
     def serialize(self):
         if not self._values:
             raise RuntimeError("A least a field/value pair must be added")
-        return {self._internal_name: self._values}
+        return self._add_parameters({self._internal_name: self._values})
 
 class LimitFilter(Filter):
     _internal_name = "limit"
@@ -248,7 +260,7 @@ class LimitFilter(Filter):
         self.value=value
 
     def serialize(self):
-        return {self._internal_name: {"value":self.value}}
+        return self._add_parameters({self._internal_name: {"value":self.value}})
 
 class TermsFilter(Filter):
     _internal_name = "terms"
@@ -267,7 +279,7 @@ class TermsFilter(Filter):
     def serialize(self):
         if not self._values:
             raise RuntimeError("A least a field/value pair must be added")
-        return {self._internal_name: self._values}
+        return self._add_parameters({self._internal_name: self._values})
 
 
 class QueryFilter(Filter):
@@ -280,7 +292,7 @@ class QueryFilter(Filter):
     def serialize(self):
         if not self._query:
             raise RuntimeError("A least a field/value pair must be added")
-        return {self._internal_name: self._query.serialize()}
+        return self._add_parameters({self._internal_name: self._query.serialize()})
 
 #
 #--- Geo Queries
@@ -315,7 +327,7 @@ class GeoDistanceFilter(Filter):
                 raise QueryParameterError("Invalid distance_unit")
             params['distance_unit'] = self.distance_unit
 
-        return {self._internal_name: params}
+        return self._add_parameters({self._internal_name: params})
 
 
 class GeoBoundingBoxFilter(Filter):
@@ -333,13 +345,13 @@ class GeoBoundingBoxFilter(Filter):
         self.location_br = location_br
 
     def serialize(self):
-        return {self._internal_name: {
+        return self._add_parameters({self._internal_name: {
             self.field: {
                 "top_left": self.location_tl,
                 "bottom_right": self.location_br
             }
         }
-        }
+        })
 
 
 class GeoPolygonFilter(Filter):
@@ -356,12 +368,12 @@ class GeoPolygonFilter(Filter):
         self.points = points
 
     def serialize(self):
-        return {self._internal_name: {
+        return self._add_parameters({self._internal_name: {
             self.field: {
                 "points": self.points,
                 }
         }
-        }
+        })
 
 
 class MatchAllFilter(Filter):
@@ -374,7 +386,7 @@ class MatchAllFilter(Filter):
         super(MatchAllFilter, self).__init__(**kwargs)
 
     def serialize(self):
-        return {self._internal_name: {}}
+        return self._add_parameters({self._internal_name: {}})
 
 
 class HasChildFilter(Filter):
@@ -397,7 +409,7 @@ class HasChildFilter(Filter):
                 "type": self.type}
         if self._scope is not None:
             data['_scope'] = self._scope
-        return {self._internal_name: data}
+        return self._add_parameters({self._internal_name: data})
 
 
 class NestedFilter(Filter):
@@ -417,7 +429,7 @@ class NestedFilter(Filter):
         data = {
             'path': self.path,
             'query': self.filter.serialize()}
-        return {self._internal_name: data}
+        return self._add_parameters({self._internal_name: data})
 
 
 class IdsFilter(Filter):
@@ -436,7 +448,7 @@ class IdsFilter(Filter):
         else:
             data['values'] = self.values
 
-        return {self._internal_name: data}
+        return self._add_parameters({self._internal_name: data})
 
 
 class RawFilter(Filter):

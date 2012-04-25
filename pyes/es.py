@@ -661,7 +661,8 @@ class ES(object):
     @property
     def mappings(self):
         if self._mappings is None:
-            self._mappings = Mapper(self.get_mapping(indices=["_all"]), connection=self,
+            self._mappings = Mapper(self.get_mapping(indices=self.default_indices),
+                                    connection=self,
                                     document_object_field=self.document_object_field)
         return self._mappings
 
@@ -679,8 +680,8 @@ class ES(object):
         """
         Retrieve the aliases of one or more indices
         """
-        if not indices:
-            indices = ["_all"]
+        if indices is None:
+            indices = self.default_indices
         path = self._make_path([','.join(indices), '_aliases'])
         return self._send_request('GET', path)
 
@@ -899,8 +900,8 @@ class ES(object):
                  flush=True):
         """Optimize one or more indices.
 
-        `indices` is the list of indices to optimise.  If not supplied, or
-        "_all", all indices are optimised.
+        `indices` is the list of indices to optimise.  If not supplied, all
+        default_indices are optimised.
 
         `wait_for_merge` (boolean): If True, the operation will not return
         until the merge has been completed.  Defaults to False.
@@ -1020,7 +1021,7 @@ class ES(object):
             info['server']['name'] = res['name']
             info['server']['version'] = res['version']
             info['allinfo'] = res
-            info['status'] = self.status(["_all"])
+            info['status'] = self.status()
             info['aliases'] = self.aliases()
             self.info = info
             return True

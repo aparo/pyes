@@ -62,11 +62,10 @@ class Connection(object):
     def execute(self, request):
         """Execute a request and return a response"""
         retry = 0
+        server = getattr(self._local, "server", None)
         while True:
-            server = getattr(self._local, "server", None)
             if not server:
-                server = self._get_server()
-                self._local.server = server
+                self._local.server = server = self._get_server()
             try:
                 response = SESSION.request(
                     method=Method._VALUES_TO_NAMES[request.method],
@@ -82,7 +81,7 @@ class Connection(object):
                                     headers=response.headers)
             except RequestException:
                 self._drop_server(server)
-                self._local.server = None
+                self._local.server = server = None
                 if retry >= self._max_retries:
                     logger.error("Client error: bailing out after %d failed retries",
                                  self._max_retries, exc_info=1)

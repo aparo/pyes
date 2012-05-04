@@ -281,7 +281,7 @@ class TermsFilter(Filter):
     def serialize(self):
         if not self._values:
             raise RuntimeError("A least a field/value pair must be added")
-        data = copy.deepcopy()
+        data = copy.deepcopy(self._values)
         if self.execution:
             data['execution'] = self.execution
         if self._name:

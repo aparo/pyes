@@ -873,11 +873,14 @@ class ES(object):
             args['refresh'] = refresh
         return self._send_request('POST', path, params=args)
 
-    def refresh(self, indices=None, timesleep=None):
+    def refresh(self, indices=None, timesleep=None, timeout=0):
         """
         Refresh one or more indices
 
         timesleep: seconds to wait
+        
+        timeout: seconds to wait before timing out when waiting for
+        the cluster's health.
         """
         self.force_bulk()
         indices = self._validate_indices(indices)
@@ -886,7 +889,7 @@ class ES(object):
         result = self._send_request('POST', path)
         if timesleep:
             time.sleep(timesleep)
-        self.cluster_health(wait_for_status='green')
+        self.cluster_health(wait_for_status='green', timeout=timeout)
         return result
 
 
@@ -1052,7 +1055,11 @@ class ES(object):
                         if one of the wait_for_XXX are provided.
                         Defaults to 30s.
         """
-        path = self._make_path(["_cluster", "health"])
+        
+        if indices:
+            path = self._make_path(["_cluster", "health", ','.join(indices)])
+        else:
+            path = self._make_path(["_cluster", "health"])
         mapping = {}
         if level != "cluster":
             if level not in ["cluster", "indices", "shards"]:
@@ -1064,7 +1071,7 @@ class ES(object):
             mapping['wait_for_status'] = wait_for_status
 
             mapping['timeout'] = "%ds" % timeout
-        return self._send_request('GET', path, mapping)
+        return self._send_request('GET', path, params=mapping)
 
     def cluster_state(self, filter_nodes=None, filter_routing_table=None,
                       filter_metadata=None, filter_blocks=None,

@@ -1,5 +1,16 @@
-*.pyc
-docs/_build
+# pypi
+/build
+/dist
+
+# do not wants
+*.py[c|o]
+*.egg-info
 .*.swp
+
+# temp files
+docs/_build
 pyes/tests/.noseids
+
+# IDEs
 .idea
+.project

@@ -208,7 +208,7 @@ class ESJsonDecoder(json.JSONDecoder):
         """
         if isinstance(obj, basestring) and len(obj) == 19:
             try:
-                return datetime(*obj.strptime("%Y-%m-%dT%H:%M:%S")[:6])
+                return datetime(*time.strptime("%Y-%m-%dT%H:%M:%S")[:6])
             except:
                 pass
         return obj
@@ -667,10 +667,7 @@ class ES(object):
         """
         Retrieve the status of one or more indices
         """
-        if not indices:
-            #indices = ["_all"]
-            indices = self.default_indices
-            #        indices = self._validate_indices(indices)
+        indices = self._validate_indices(indices)
         path = self._make_path([','.join(indices), '_status'])
         return self._send_request('GET', path)
 
@@ -1513,6 +1510,8 @@ class ES(object):
             query = MatchAllQuery()
         if hasattr(query, 'to_query_json'):
             query = query.to_query_json()
+        if hasattr(query, 'to_json'):
+            query = query.to_json()
         return self._query_call("_count", query, indices, doc_types, **query_params)
 
     #--- river management

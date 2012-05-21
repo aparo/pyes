@@ -49,6 +49,8 @@ __all__ = ['ES', 'file_to_attachment', 'decode_json']
 
 class DotDict(dict):
     def __getattr__(self, attr):
+        if attr.startswith('__'):
+            raise AttributeError
         return self.get(attr, None)
 
     __setattr__ = dict.__setitem__

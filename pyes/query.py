@@ -74,6 +74,12 @@ class Search(EqualityComparableUsingAttributeDictionary):
     This contains a query, and has additional parameters which are used to
     control how the search works, what it should return, etc.
 
+    Example:
+
+    q = StringQuery('elasticsearch')
+    s = Search(q, fields=['title', 'author'], start=100, size=50)
+    results = conn.search(s)
+
     """
 
     def __init__(self, query=None, filter=None, fields=None, start=None, size=None, highlight=None, sort=None,
@@ -582,6 +588,16 @@ class FieldQuery(Query):
 
 
 class FilteredQuery(Query):
+    """
+    FilteredQuery allows for results to be filtered using the various filter classes.
+
+    Example:
+
+    t = TermFilter('name', 'john')
+    q = FilteredQuery(MatchAllQuery(), t)
+    results = conn.search(q)
+
+    """
     _internal_name = "filtered"
 
     def __init__(self, query, filter, **kwargs):
@@ -747,6 +763,15 @@ class FuzzyLikeThisFieldQuery(Query):
 
 
 class MatchAllQuery(Query):
+    """
+    Query used to match all
+
+    Example:
+
+    q = MatchAllQuery()
+    results = conn.search(q)
+
+    """
     _internal_name = "match_all"
 
     def __init__(self, boost=None, **kwargs):
@@ -873,6 +898,16 @@ class TermQuery(Query):
 
     A boost may be supplied.
 
+    Example:
+
+    q = TermQuery('name', 'john')
+    results = conn.search(q)
+
+    With boost:
+
+    q = TermQuery('name', 'john', boost=0.75)
+    results = conn.search(q)
+
     """
     _internal_name = "term"
 
@@ -921,6 +956,15 @@ class TermsQuery(TermQuery):
 class TextQuery(Query):
     """
     A new family of text queries that accept text, analyzes it, and constructs a query out of it.
+
+    Examples:
+
+    q = TextQuery('book_title', 'elasticsearch')
+    results = conn.search(q)
+
+    q = TextQuery('book_title', 'elasticsearch python', operator='and')
+    results = conn.search(q)
+
     """
     _internal_name = "text"
     _valid_types = ['boolean', "phrase", "phrase_prefix"]
@@ -971,6 +1015,15 @@ class RegexTermQuery(TermQuery):
 
 
 class StringQuery(Query):
+    """
+    Query to match values on all fields for a given string
+
+    Example:
+
+    q = StringQuery('elasticsearch')
+    results = conn.search(q)
+
+    """
     _internal_name = "query_string"
 
     def __init__(self, query, default_field=None,

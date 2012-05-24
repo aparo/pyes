@@ -53,6 +53,18 @@ class FilterList(Filter):
 
 
 class ANDFilter(FilterList):
+    """
+    A filter that matches combinations of other filters using the AND operator
+
+    Example:
+
+    t1 = TermFilter('name', 'john')
+    t2 = TermFilter('name', 'smith')
+    f = ANDFilter([t1, t2])
+    q = FilteredQuery(MatchAllQuery(), f)
+    results = conn.search(q)
+
+    """
     _internal_name = "and"
 
     def __init__(self, *args, **kwargs):
@@ -119,6 +131,18 @@ class BoolFilter(Filter):
 
 
 class ORFilter(FilterList):
+    """
+    A filter that matches combinations of other filters using the OR operator
+
+    Example:
+
+    t1 = TermFilter('name', 'john')
+    t2 = TermFilter('name', 'smith')
+    f = ORFilter([t1, t2])
+    q = FilteredQuery(MatchAllQuery(), f)
+    results = conn.search(q)
+
+    """
     _internal_name = "or"
 
     def __init__(self, *args, **kwargs):

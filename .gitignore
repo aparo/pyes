@@ -5,6 +5,7 @@
 # do not wants
 *.py[c|o]
 *.egg-info
+*.egg
 .*.swp
 
 # temp files

@@ -488,10 +488,11 @@ class ES(object):
                                                                                        max_retries=self.max_retries)
             return
         elif server.scheme == "thrift":
-            self.connection = thrift_connect(filter(lambda server: server.scheme == "thrift", self.servers),
-                                                                                                           timeout=self.timeout
-                                                                                                           ,
-                                                                                                           max_retries=self.max_retries)
+            self.connection = thrift_connect(
+                filter(lambda server: server.scheme == "thrift", self.servers),
+                                                                               timeout=self.timeout
+                                                                               ,
+                                                                               max_retries=self.max_retries)
 
     def _discovery(self):
         """

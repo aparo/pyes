@@ -69,7 +69,7 @@ class ElasticSearchModel(DotDict):
             self.update(item.pop("_source", DotDict()))
             self.update(item.pop("fields", {}))
             self._meta = DotDict([(k.lstrip("_"), v) for k, v in item.items()])
-            self._meta.parent = self._meta.pop("_parent", None)
+            self._meta.parent = self.pop("_parent", None)
             self._meta.connection = args[0]
         else:
             self.update(dict(*args, **kwargs))

@@ -20,6 +20,7 @@ from decimal import Decimal
 from urllib import quote
 import threading
 import copy
+from urlparse import urlparse
 
 try:
     from .connection import connect as thrift_connect
@@ -259,10 +260,10 @@ class BaseBulker(object):
 
         :param bulk_size the bulker size
         """
-        self._bulk_size=bulk_size
+        self._bulk_size = bulk_size
         self.flush_bulk()
 
-    bulk_size=property(get_bulk_size, set_bulk_size)
+    bulk_size = property(get_bulk_size, set_bulk_size)
 
     def add(self, content):
         raise NotImplementedError
@@ -303,6 +304,7 @@ class ListBulker(BaseBulker):
                 _raise_exception_if_bulk_item_failed(bulk_result)
 
             return bulk_result
+
 
 class ES(object):
     """
@@ -422,48 +424,48 @@ class ES(object):
         """Check the servers variable and convert in a valid tuple form"""
         new_servers = []
 
-        def check_format(host, port, _type=None):
-            try:
-                port = int(port)
-            except ValueError:
-                raise RuntimeError("Invalid port: \"%s\"" % port)
-            if _type is None:
-                if 9200 <= port <= 9299:
-                    _type = "http"
-                elif 9500 <= port <= 9599:
-                    _type = "thrift"
-                else:
-                    raise RuntimeError("Unable to recognize port-type: \"%s\"" % port)
-
-            if _type not in ["thrift", "http", "https"]:
+        def check_format(server):
+            if server.scheme not in ["thrift", "http", "https"]:
                 raise RuntimeError("Unable to recognize protocol: \"%s\"" % _type)
 
-            if _type == "thrift" and not thrift_enable:
-                raise RuntimeError("If you want to use thrift, please install thrift. \"pip install thrift\"")
+            if server.scheme == "thrift":
+                if not thrift_enable:
+                    raise RuntimeError("If you want to use thrift, please install thrift. \"pip install thrift\"")
+                if server.port is None:
+                    raise RuntimeError("If you want to use thrift, please provide a port number")
 
-            new_servers.append((_type, host, port))
+            new_servers.append(server)
 
         for server in self.servers:
             if isinstance(server, (tuple, list)):
                 if len(list(server)) != 3:
                     raise RuntimeError("Invalid server definition: \"%s\"" % server)
                 _type, host, port = server
-                check_format(host=host, port=port, _type=_type)
+                server = urlparse('%s://%s:%s' % (_type, host, port))
+                check_format(server)
             elif isinstance(server, basestring):
                 if server.startswith(("thrift:", "http:", "https:")):
-                    tokens = [t.strip("/") for t in server.split(":") if t.strip("/")]
-                    if len(tokens) == 3:
-                        check_format(tokens[1], tokens[2], tokens[0])
-                        continue
-                    else:
-                        raise RuntimeError("Invalid server definition: \"%s\"" % server)
+                    server = urlparse(server)
+                    check_format(server)
+                    continue
                 else:
                     tokens = [t for t in server.split(":") if t.strip()]
                     if len(tokens) == 2:
-                        check_format(tokens[0], tokens[1])
-                        continue
-                    else:
-                        raise RuntimeError("Invalid server definition: \"%s\"" % server)
+                        host = tokens[0]
+                        try:
+                            port = int(tokens[1])
+                        except ValueError:
+                            raise RuntimeError("Invalid port: \"%s\"" % port)
+
+                        if 9200 <= port <= 9299:
+                            _type = "http"
+                        elif 9500 <= port <= 9599:
+                            _type = "thrift"
+                        else:
+                            raise RuntimeError("Unable to recognize port-type: \"%s\"" % port)
+
+                        server = urlparse('%s://%s:%s' % (_type, host, port))
+                        check_format(server)
 
         self.servers = new_servers
 
@@ -475,21 +477,21 @@ class ES(object):
         if not self.servers:
             raise RuntimeError("No server defined")
 
-        _type, host, port = random.choice(self.servers)
-        if _type in ["http", "https"]:
+        server = random.choice(self.servers)
+        if server.scheme in ["http", "https"]:
             self.connection = http_connect(
-                [(_type, host, port) for _type, host, port in self.servers if _type in ["http", "https"]],
-                                                                                                         timeout=self.timeout
-                                                                                                         ,
-                                                                                                         basic_auth=self.basic_auth
-                                                                                                         ,
-                                                                                                         max_retries=self.max_retries)
+                filter(lambda server: server.scheme in ["http", "https"], self.servers),
+                                                                                       timeout=self.timeout
+                                                                                       ,
+                                                                                       basic_auth=self.basic_auth
+                                                                                       ,
+                                                                                       max_retries=self.max_retries)
             return
-        elif _type == "thrift":
-            self.connection = thrift_connect([(host, port) for _type, host, port in self.servers if _type == "thrift"],
-                                                                                                                      timeout=self.timeout
-                                                                                                                      ,
-                                                                                                                      max_retries=self.max_retries)
+        elif server.scheme == "thrift":
+            self.connection = thrift_connect(filter(lambda server: server.scheme == "thrift", self.servers),
+                                                                                                           timeout=self.timeout
+                                                                                                           ,
+                                                                                                           max_retries=self.max_retries)
 
     def _discovery(self):
         """
@@ -518,10 +520,10 @@ class ES(object):
 
         :param bulk_size the bulker size
         """
-        self._bulk_size=bulk_size
+        self._bulk_size = bulk_size
         self.bulker.bulk_size = bulk_size
 
-    bulk_size=property(_get_bulk_size, _set_bulk_size)
+    bulk_size = property(_get_bulk_size, _set_bulk_size)
 
     def _get_raise_on_bulk_item_failure(self):
         """
@@ -537,10 +539,10 @@ class ES(object):
 
         :param raise_on_bulk_item_failure a bool the status of the raise_on_bulk_item_failure
         """
-        self._raise_on_bulk_item_failure=raise_on_bulk_item_failure
+        self._raise_on_bulk_item_failure = raise_on_bulk_item_failure
         self.bulker.raise_on_bulk_item_failure = raise_on_bulk_item_failure
 
-    raise_on_bulk_item_failure=property(_get_raise_on_bulk_item_failure, _set_raise_on_bulk_item_failure)
+    raise_on_bulk_item_failure = property(_get_raise_on_bulk_item_failure, _set_raise_on_bulk_item_failure)
 
 
     def _send_request(self, method, path, body=None, params=None, headers=None, raw=False):
@@ -636,10 +638,10 @@ class ES(object):
         method = Method._VALUES_TO_NAMES[request.method]
         server = self.servers[0]
         if isinstance(server, tuple):
-            if len(server)==2:
-                server = "%s:%s"%(server[0], server[1])
-            elif len(server)==3:
-                server = "%s:%s"%(server[1], server[2])
+            if len(server) == 2:
+                server = "%s:%s" % (server[0], server[1])
+            elif len(server) == 3:
+                server = "%s:%s" % (server[1], server[2])
         url = urlunsplit(('http', server, request.uri, urlencode(params), ''))
         curl_cmd = "curl -X%s '%s'" % (method, url)
         if request.body:
@@ -939,7 +941,7 @@ class ES(object):
         Performs the analysis process on a text and return the tokens breakdown of the text
         """
         if filters is None:
-            filters=[]
+            filters = []
         argsets = 0
         args = {}
 
@@ -1237,7 +1239,7 @@ class ES(object):
         path = self._make_path([index, doc_type, id])
         doc = file_to_attachment(filename)
         if name:
-            doc["_name"]=name
+            doc["_name"] = name
         return self._send_request(request_method, path, doc, querystring_args)
 
     def get_file(self, index, doc_type, id=None):

@@ -19,8 +19,7 @@ class ClientTransport(object):
     """Encapsulation of a client session."""
 
     def __init__(self, server, timeout, recycle, basic_auth=None):
-        connection_type, host, port = server
-        self.server_uri = '%s://%s:%s' % (connection_type, host, port)
+        self.server_uri = server.geturl()
         self.timeout = timeout
         self.headers = {}
         if recycle:

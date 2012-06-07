@@ -130,6 +130,10 @@ class HistogramFacet(Facet):
                 raise RuntimeError("Invalid key_script: value_script required")
             if self.params:
                 data['params'] = self.params
+            if self.interval:
+                data['interval'] = self.interval
+            elif self.time_interval:
+                data['time_interval'] = self.time_interval
         params = self._base_parameters()
         params[self._internal_name]= data
         return {self.name: params}

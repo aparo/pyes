@@ -386,6 +386,7 @@ class ES(object):
         self.bulker_class = bulker_class
         self._raise_on_bulk_item_failure = raise_on_bulk_item_failure
 
+        self.info = {} #info about the current server
         if encoder:
             self.encoder = encoder
         if decoder:
@@ -402,7 +403,6 @@ class ES(object):
         self._check_servers()
         #init connections
         self._init_connection()
-        self.collect_info()
 
     def __del__(self):
         """

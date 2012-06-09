@@ -30,8 +30,7 @@ class ClientTransport(object):
     """Encapsulation of a client session."""
 
     def __init__(self, server, framed_transport, timeout, recycle):
-        host, port = server
-        socket = TSocket.TSocket(host, port)
+        socket = TSocket.TSocket(server.hostname, server.port)
         if timeout is not None:
             socket.setTimeout(timeout * 1000.0)
         if framed_transport:

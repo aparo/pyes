@@ -46,8 +46,7 @@ class Connection(object):
                  basic_auth=None):
         if servers is None:
             servers = [DEFAULT_SERVER]
-        self._active_servers = ["%s://%s:%s" % (connection_type, host, port)
-                                for connection_type, host, port in servers]
+        self._active_servers = [server.geturl() for server in servers]
         self._inactive_servers = []
         self._retry_time = retry_time
         self._max_retries = max_retries

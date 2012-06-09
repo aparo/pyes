@@ -641,12 +641,7 @@ class ES(object):
         params.update(request.parameters)
         method = Method._VALUES_TO_NAMES[request.method]
         server = self.servers[0]
-        if isinstance(server, tuple):
-            if len(server) == 2:
-                server = "%s:%s" % (server[0], server[1])
-            elif len(server) == 3:
-                server = "%s:%s" % (server[1], server[2])
-        url = urlunsplit(('http', server, request.uri, urlencode(params), ''))
+        url = urlunsplit((server.scheme, server.netloc, request.uri, urlencode(params), ''))
         curl_cmd = "curl -X%s '%s'" % (method, url)
         if request.body:
             curl_cmd += " -d '%s'" % request.body

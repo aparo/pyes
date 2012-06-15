@@ -20,6 +20,7 @@ from decimal import Decimal
 from urllib import quote
 import threading
 import copy
+import pprint
 from urlparse import urlparse
 
 try:
@@ -142,9 +143,9 @@ class ElasticSearchModel(DotDict):
             cmd[op_type]['_version'] = meta.version
         if meta.id:
             cmd[op_type]['_id'] = meta.id
-        result.append(json.dumps(cmd, cls=self._meta.connection.encoder))
+        result.append(dump_json(cmd, cls=self._meta.connection.encoder))
         result.append("\n")
-        result.append(json.dumps(self, cls=self._meta.connection.encoder))
+        result.append(dump_json(self, cls=self._meta.connection.encoder))
         result.append("\n")
         return ''.join(result)
 
@@ -178,6 +179,22 @@ def _raise_exception_if_bulk_item_failed(bulk_result):
     if len(errors) > 0:
         raise BulkOperationException(errors, bulk_result)
     return None
+
+
+def dump_json(query, *args, **kw):
+    """
+    Wrapper around json.dumps that prints nicer errors.
+
+    For errors like circular reference error, the exception message contains
+    a well formatted print out of what the offending query was.
+    """
+    try:
+        return json.dumps(query, *args, **kw)
+    except Exception, exc:
+        q = pprint.pformat(query)
+        exc.args = tuple(['%s; query=%s' % (exc.args[0], q)] +
+                         list(exc.args[1:]))
+        raise exc
 
 
 class ESJsonEncoder(json.JSONEncoder):
@@ -561,7 +578,7 @@ class ES(object):
                 body = body.as_dict()
 
             if isinstance(body, dict):
-                body = json.dumps(body, cls=self.encoder)
+                body = dump_json(body, cls=self.encoder)
         else:
             body = ""
         request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()],
@@ -1170,8 +1187,8 @@ class ES(object):
                 cmd[op_type]['_id'] = id
 
             if isinstance(doc, dict):
-                doc = json.dumps(doc, cls=self.encoder)
-            command = "%s\n%s" % (json.dumps(cmd, cls=self.encoder), doc)
+                doc = dump_json(doc, cls=self.encoder)
+            command = "%s\n%s" % (dump_json(cmd, cls=self.encoder), doc)
             self.bulker.add(command)
             return self.flush_bulk()
 
@@ -1295,7 +1312,7 @@ class ES(object):
         if bulk:
             cmd = {"delete": {"_index": index, "_type": doc_type,
                               "_id": id}}
-            self.bulker.add(json.dumps(cmd, cls=self.encoder))
+            self.bulker.add(dump_json(cmd, cls=self.encoder))
             return self.flush_bulk()
 
         path = self._make_path([index, doc_type, id])
@@ -1317,7 +1334,7 @@ class ES(object):
             body = query.to_query_json()
         elif isinstance(query, dict):
             # A direct set of search parameters.
-            body = json.dumps(query, cls=ES.encoder)
+            body = dump_json(query, cls=ES.encoder)
         else:
             raise InvalidQuery("delete_by_query() must be supplied with a Query object, or a dict")
 
@@ -1426,7 +1443,7 @@ class ES(object):
             body = query.to_search_json()
         elif isinstance(query, dict):
             # A direct set of search parameters.
-            body = json.dumps(query, cls=self.encoder)
+            body = dump_json(query, cls=self.encoder)
         else:
             raise InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
 
@@ -1493,7 +1510,7 @@ class ES(object):
             if isinstance(query, dict):
                 if 'query' in query:
                     query = query['query']
-                query = json.dumps(query, cls=self.encoder)
+                query = dump_json(query, cls=self.encoder)
             elif hasattr(query, "to_query_json"):
                 query = query.to_query_json(inner=True)
         querystring_args = query_params
@@ -1591,7 +1608,7 @@ class ES(object):
             raise InvalidQuery("create_percolator() must be supplied with a Query object or dict")
             # A direct set of search parameters.
         query.update(kwargs)
-        body = json.dumps(query, cls=self.encoder)
+        body = dump_json(query, cls=self.encoder)
 
         return self._send_request('PUT', path, body=body)
 
@@ -1620,7 +1637,7 @@ class ES(object):
             body = query.to_query_json()
         elif isinstance(query, dict):
             # A direct set of search parameters.
-            body = json.dumps(query, cls=self.encoder)
+            body = dump_json(query, cls=self.encoder)
         else:
             raise InvalidQuery("percolate() must be supplied with a Query object, or a dict")
 
@@ -1634,7 +1651,7 @@ def decode_json(data):
 
 def encode_json(data):
     """ Encode some json to dict"""
-    return json.dumps(data, cls=ES.encoder)
+    return dump_json(data, cls=ES.encoder)
 
 
 class ResultSet(object):

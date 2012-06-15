@@ -67,6 +67,24 @@ class ErrorReportingTestCase(ESTestCase):
             self.conn.delete, self.index_name, "flibble",
             "asdf")
 
+    def testJsonErrors(self):
+
+        # Set up a circular reference error, which is common
+        # if you accidentally pass in a Django ORM object.
+        class _other:
+            prop = None
+        class _object:
+            prop = _other
+        _other.prop = _object
+
+        with self.assertRaises(ValueError) as cm:
+            self.conn.index({"name": _object,
+                             "parsedtext": "Joe Testere nice guy",
+                             "uuid": "11111", "position": 1},
+                            "errortest", None, 1)
+            assert '{"name": ' in cm.exception, (
+                                'Expected printed query: %s' % exc)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -4,7 +4,8 @@ import unittest
 from .estestcase import ESTestCase
 
 from ..query import TermQuery
-from ..exceptions import (IndexAlreadyExistsException, DocumentAlreadyExistsException,
+from ..exceptions import (IndexAlreadyExistsException,
+                          DocumentAlreadyExistsEngineException,
                           VersionConflictEngineException)
 from time import sleep
 
@@ -226,14 +227,12 @@ class IndexingTestCase(ESTestCase):
 
     def testVersion(self):
         self.conn.index({"name": "Joe Test"}, self.index_name, self.document_type, 1, force_insert=True)
-        self.assertRaises(DocumentAlreadyExistsException,
-            self.conn.index,
-            *({"name": "Joe Test2"}, self.index_name, self.document_type, 1), **{"force_insert": True})
+        self.assertRaises(DocumentAlreadyExistsEngineException, self.conn.index,
+            {"name": "Joe Test2"}, self.index_name, self.document_type, 1, force_insert=True)
         self.conn.index({"name": "Joe Test"}, self.index_name, self.document_type, 1, version=1)
         self.conn.index({"name": "Joe Test"}, self.index_name, self.document_type, 1, version=2)
-        self.assertRaises(VersionConflictEngineException,
-            self.conn.index,
-            *({"name": "Joe Test2"}, self.index_name, self.document_type, 1), **{"version": 2})
+        self.assertRaises(VersionConflictEngineException, self.conn.index,
+            {"name": "Joe Test2"}, self.index_name, self.document_type, 1, version=2)
         item = self.conn.get(self.index_name, self.document_type, 1)
         self.assertEqual(item._meta.version, 3)
 

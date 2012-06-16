@@ -209,10 +209,10 @@ class ESJsonDecoder(json.JSONDecoder):
     def string_to_datetime(self, obj):
         """Decode a datetime string to a datetime object
         """
-        if isinstance(obj, basestring) and len(obj) == 19:
+        if isinstance(obj, basestring):
             try:
-                return datetime(*time.strptime("%Y-%m-%dT%H:%M:%S")[:6])
-            except:
+                return datetime(*time.strptime(obj, "%Y-%m-%dT%H:%M:%S")[:6])
+            except ValueError:
                 pass
         return obj
 
@@ -355,8 +355,10 @@ class ES(object):
 
         :param document_object_field: a class to use as base document field in mapper
         """
+        if default_indices is None:
+            default_indices = ["_all"]
         self.timeout = timeout
-        self.default_indices = default_indices or ["_all"]
+        self.default_indices = default_indices
         self.max_retries = max_retries
         self.cluster = None
         self.debug_dump = False
@@ -627,7 +629,8 @@ class ES(object):
         If `indices` is not supplied, returns the default_indices.
 
         """
-        indices = indices or self.default_indices
+        if indices is None:
+            indices = self.default_indices
         if isinstance(indices, basestring):
             indices = [indices]
         return indices
@@ -638,12 +641,7 @@ class ES(object):
         params.update(request.parameters)
         method = Method._VALUES_TO_NAMES[request.method]
         server = self.servers[0]
-        if isinstance(server, tuple):
-            if len(server) == 2:
-                server = "%s:%s" % (server[0], server[1])
-            elif len(server) == 3:
-                server = "%s:%s" % (server[1], server[2])
-        url = urlunsplit(('http', server, request.uri, urlencode(params), ''))
+        url = urlunsplit((server.scheme, server.netloc, request.uri, urlencode(params), ''))
         curl_cmd = "curl -X%s '%s'" % (method, url)
         if request.body:
             curl_cmd += " -d '%s'" % request.body
@@ -652,10 +650,10 @@ class ES(object):
     def _get_default_indices(self):
         return self._default_indices
 
-    def _set_default_indices(self, default_indices):
-        if default_indices is not None:
-            default_indices = self._validate_indices(default_indices)
-        self._default_indices = default_indices
+    def _set_default_indices(self, indices):
+        if indices is None:
+            raise ValueError("default_indices cannot be set to None")
+        self._default_indices = self._validate_indices(indices)
 
     default_indices = property(_get_default_indices, _set_default_indices)
     del _get_default_indices, _set_default_indices
@@ -663,7 +661,8 @@ class ES(object):
     @property
     def mappings(self):
         if self._mappings is None:
-            self._mappings = Mapper(self.get_mapping(indices=["_all"]), connection=self,
+            self._mappings = Mapper(self.get_mapping(indices=self.default_indices),
+                                    connection=self,
                                     document_object_field=self.document_object_field)
         return self._mappings
 
@@ -680,8 +679,8 @@ class ES(object):
         """
         Retrieve the aliases of one or more indices
         """
-        if not indices:
-            indices = ["_all"]
+        if indices is None:
+            indices = self.default_indices
         path = self._make_path([','.join(indices), '_aliases'])
         return self._send_request('GET', path)
 
@@ -900,8 +899,8 @@ class ES(object):
                  flush=True):
         """Optimize one or more indices.
 
-        `indices` is the list of indices to optimise.  If not supplied, or
-        "_all", all indices are optimised.
+        `indices` is the list of indices to optimise.  If not supplied, all
+        default_indices are optimised.
 
         `wait_for_merge` (boolean): If True, the operation will not return
         until the merge has been completed.  Defaults to False.
@@ -1021,7 +1020,7 @@ class ES(object):
             info['server']['name'] = res['name']
             info['server']['version'] = res['version']
             info['allinfo'] = res
-            info['status'] = self.status(["_all"])
+            info['status'] = self.status()
             info['aliases'] = self.aliases()
             self.info = info
             return True

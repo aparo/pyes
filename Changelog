@@ -1,5 +1,49 @@
 Changelog
 =========
+v. 0.19.0:
+    
+    Use default_indices instead of hardcoding ['_all'] (gsakkis)
+    
+    Complete rewrite of connection_http (gsakkis)
+    
+    Don't collect info on creation of ES object (patricksmith)
+    
+    Add interval to histogram facet. (vrachil)
+
+    Improved connection string construction and added more flexibility. (ferhatsb)
+
+    Fixed pickling DotDict. 
+
+    Fixed a bug in Decoder.
+
+    Added execution to TermsFilter. Fixed missing _name attribute in serialized object
+
+    Added _cache and _cache_key parameters to filters.
+
+    Added scope, filter and global parameters to facets. closes #119
+    
+    Use a single global ConnectionPool instead of initializing it on every execute call. (gsakkis)
+
+    Allow partial_fields to be passed in the Search class. (tehmaze)
+    
+    Propagated parameters to bulker. 
+
+    Support params for analyze. (akheron)
+
+    Added LimitFilter. 
+
+    Fixed support for query as dict in Search object.
+
+    Added ListBulker implementation and create_bulker method.
+
+    Moved imports to absolute ones.
+
+    Removed inused urllib3 files and added timeout to connection_http.
+
+    Add NotFilter as facet filter (junckritter)
+
+    Add terms facet filter
+
 v. 0.18.7-rc1:
 
     Tested against 0.18.7, with all tests passing

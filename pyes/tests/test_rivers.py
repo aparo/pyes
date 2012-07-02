@@ -37,30 +37,44 @@ class RiversTestCase(ESTestCase):
 
     def testDeleteRabbitMQRiver(self):
         """
-        Testing deleting a river
+        Delete RabbitMQ river
         """
         test_river = RabbitMQRiver(index_name='text_index', index_type='test_type')
+        result = self.conn.create_river(test_river, river_name='test_index')
         result = self.conn.delete_river(test_river, river_name='test_index')
         print result
         self.assertResultContains(result, {'ok': True})
 
     def testCreateTwitterRiver(self):
         """
-        Testing deleting a river
+        Create twitter river
         """
-        test_river = TwitterRiver('test', 'test', index_name='text_index', index_type='test_type')
+        test_river = TwitterRiver('test', 'test', index_name='text_index', index_type='status')
         result = self.conn.create_river(test_river, river_name='test_index')
         print result
         self.assertResultContains(result, {'ok': True})
 
     def testDeleteTwitterRiver(self):
         """
-        Testing deleting a river
+        Delete Twitter river
         """
-        test_river = TwitterRiver('test', 'test', index_name='text_index', index_type='test_type')
+        test_river = TwitterRiver('test', 'test', index_name='text_index', index_type='status')
+        result = self.conn.create_river(test_river, river_name='test_index')
         result = self.conn.delete_river(test_river, river_name='test_index')
         print result
         self.assertResultContains(result, {'ok': True})
+
+    def testCreateTwitterRiverOAuth(self):
+        test_river = TwitterRiver('test', 'test', index_name='text_index', index_type='test_type',
+                                 consumer_key="aaa",
+                                 consumer_secret="aaa",
+                                 access_token="aaa",
+                                 access_token_secret="aaa",
+                                 )
+        result = self.conn.create_river(test_river, river_name='test_index')
+        print result
+        self.assertResultContains(result, {'ok': True})
+
 
 if __name__ == "__main__":
     unittest.main()

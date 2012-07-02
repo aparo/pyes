@@ -83,21 +83,45 @@ class RabbitMQRiver(River):
 class TwitterRiver(River):
     type = "twitter"
 
-    def __init__(self, user, password, **kwargs):
-        super(TwitterRiver, self).__init__(**kwargs)
+    def __init__(self, user=None, password=None, **kwargs):
         self.user = user
         self.password = password
-
+        self.consumer_key = kwargs.pop('consumer_key', None)
+        self.consumer_secret = kwargs.pop('consumer_secret', None)
+        self.access_token = kwargs.pop('access_token', None)
+        self.access_token_secret = kwargs.pop('access_token_secret', None)
+        # These filters may be lists or comma-separated strings of values
+        self.tracks = kwargs.pop('tracks', None)
+        self.follow = kwargs.pop('follow', None)
+        self.locations = kwargs.pop('locations', None)
+        super(TwitterRiver, self).__init__(**kwargs)
 
     def serialize(self):
-        return {
-            "type": self.type,
-            self.type: {
-                "user": self.user,
-                "password": self.password,
-                }
-        }
-
+        result = {"type": self.type}
+        if self.user and self.password:
+            result[self.type] = {"user": self.user,
+                       "password": self.password}
+        elif (self.consumer_key and self.consumer_secret and self.access_token
+              and self.access_token_secret):
+            result[self.type] = {"oauth": {
+                "consumer_key": self.consumer_key,
+                "consumer_secret": self.consumer_secret,
+                "access_token": self.access_token,
+                "access_token_secret": self.access_token_secret,
+            }
+            }
+        else:
+            raise ValueError("Twitter river requires authentication by username/password or OAuth")
+        filter = {}
+        if self.tracks:
+            filter['tracks'] = self.tracks
+        if self.follow:
+            filter['follow'] = self.follow
+        if self.locations:
+            filter['locations'] = self.locations
+        if filter:
+            result[self.type]['filter'] = filter
+        return result
 
 class CouchDBRiver(River):
     type = "couchdb"

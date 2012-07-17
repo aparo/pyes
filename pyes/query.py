@@ -972,16 +972,16 @@ class TextQuery(Query):
 
     def __init__(self, field, text, type="boolean", slop=0, fuzziness=None,
                  prefix_length=0, max_expansions=2147483647,
-                 operator="or", analyzer=None, **kwargs):
+                 operator="or", analyzer=None, boost=1.0, **kwargs):
         super(TextQuery, self).__init__(**kwargs)
         self.queries = {}
         self.add_query(field, text, type, slop, fuzziness,
                        prefix_length, max_expansions,
-                       operator, analyzer)
+                       operator, analyzer, boost)
 
     def add_query(self, field, text, type="boolean", slop=0, fuzziness=None,
                   prefix_length=0, max_expansions=2147483647,
-                  operator="or", analyzer=None):
+                  operator="or", analyzer=None, boost=1.0):
         if type not in self._valid_types:
             raise QueryError("Invalid value '%s' for type: allowed values are %s" % (type, self._valid_types))
         if operator not in self._valid_operators:
@@ -1000,6 +1000,8 @@ class TextQuery(Query):
             query["max_expansions"] = max_expansions
         if operator:
             query["operator"] = operator
+        if boost != 1.0:
+            query["boost"] = boost
 
         self.queries[field] = query
 

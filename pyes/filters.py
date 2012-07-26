@@ -5,6 +5,7 @@ import copy
 from .exceptions import QueryParameterError
 from .utils import ESRange, EqualityComparableUsingAttributeDictionary
 from .es import encode_json, json
+from .query import Query
 
 class Filter(EqualityComparableUsingAttributeDictionary):
     _internal_name = "undefined"
@@ -427,16 +428,16 @@ class HasChildFilter(Filter):
     """
     _internal_name = "has_child"
 
-    def __init__(self, type, filter, _scope=None, **kwargs):
+    def __init__(self, type, query, _scope=None, **kwargs):
+        if not isinstance(query, Query):
+            raise RuntimeError("HasChildFilter expects a Query")
         super(HasChildFilter, self).__init__(**kwargs)
-        self.filter = filter
+        self.query = query
         self.type = type
         self._scope = _scope
 
     def serialize(self):
-        if not isinstance(self.filter, Filter):
-            raise RuntimeError("NotFilter argument should be a Filter")
-        data = {"query": self.filter.serialize(),
+        data = {"query": self.query.serialize(),
                 "type": self.type}
         if self._scope is not None:
             data['_scope'] = self._scope

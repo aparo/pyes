@@ -196,9 +196,8 @@ class ESJsonEncoder(json.JSONEncoder):
             return dt.isoformat()
         elif isinstance(value, Decimal):
             return float(str(value))
-        else:
-            # use no special encoding and hope for the best
-            return value
+        # use no special encoding and hope for the best
+        return value
 
 
 class ESJsonDecoder(json.JSONDecoder):
@@ -209,12 +208,13 @@ class ESJsonDecoder(json.JSONDecoder):
     def string_to_datetime(self, obj):
         """Decode a datetime string to a datetime object
         """
-        if isinstance(obj, basestring):
+        if isinstance(obj, basestring) and len(obj) == 19:
             try:
                 return datetime(*time.strptime(obj, "%Y-%m-%dT%H:%M:%S")[:6])
             except ValueError:
                 pass
         return obj
+
 
     def dict_to_object(self, d):
         """
@@ -222,6 +222,7 @@ class ESJsonDecoder(json.JSONDecoder):
         """
         for k, v in d.items():
             if isinstance(v, basestring) and len(v) == 19:
+                """Decode a datetime string to a datetime object"""
                 try:
                     d[k] = datetime(*time.strptime(v, "%Y-%m-%dT%H:%M:%S")[:6])
                 except ValueError:
@@ -1165,7 +1166,7 @@ class ES(object):
                 cmd[op_type]['_routing'] = querystring_args['routing']
             if 'percolate' in querystring_args:
                 cmd[op_type]['percolate'] = querystring_args['percolate']
-            if id:
+            if id is not None:#None to support 0 as id
                 cmd[op_type]['_id'] = id
 
             if isinstance(doc, dict):
@@ -1553,18 +1554,6 @@ class ES(object):
         path = self._make_path([index, "_settings"])
         return self._send_request('PUT', path, newvalues)
 
-    #    def terms(self, fields, indices=None, **query_params):
-    #        """
-    #        Extract terms and their document frequencies from one or more fields.
-    #        The fields argument must be a list or tuple of fields.
-    #        For valid query params see:
-    #        http://www.elasticsearch.com/docs/elasticsearch/rest_api/terms/
-    #        """
-    #        indices = self._validate_indices(indices)
-    #        path = self._make_path([','.join(indices), "_terms"])
-    #        query_params['fields'] = ','.join(fields)
-    #        return self._send_request('GET', path, params=query_params)
-    #
     def morelikethis(self, index, doc_type, id, fields, **query_params):
         """
         Execute a "more like this" search query against one or more fields and get back search hits.
@@ -1737,6 +1726,20 @@ class ResultSet(object):
         if self._results is None:
             self._do_search()
         return self._facets
+
+    def fix_facets(self):
+        """
+        This function convert date_histogram facets to datetime
+        """
+        facets = self.facets
+        for key in facets.keys():
+            _type=facets[key].get("_type", "unknown")
+            if _type == "date_histogram":
+                for entry in facets[key].get("entries", []):
+                    for k,v in entry.items():
+                        if k in ["count", "max", "min", "total_count", "mean", "total"]:
+                            continue
+                        entry[k]=datetime.fromtimestamp(v / 1e3)
 
     def __len__(self):
         return self.total

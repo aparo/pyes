@@ -91,7 +91,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
         if not index_boost: index_boost = {}
         self.query = query
         self.filter = filter
-        self.fields = fields
+        self.fields = fields or []
         self.start = start
         self.size = size
         self._highlight = highlight
@@ -100,7 +100,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
         self.facet = facet or FacetFactory()
         self.version = version
         self.track_scores = track_scores
-        self.script_fields = script_fields
+        self._script_fields = script_fields
         self.index_boost = index_boost
         self.min_score = min_score
         self.stats = stats
@@ -147,11 +147,13 @@ class Search(EqualityComparableUsingAttributeDictionary):
             res['version'] = self.version
         if self.track_scores:
             res['track_scores'] = self.track_scores
-        if self.script_fields:
+        if self._script_fields:
             if isinstance(self.script_fields, ScriptFields):
                 res['script_fields'] = self.script_fields.serialize()
+            elif isinstance(self.script_fields, dict):
+                res['script_fields'] = self.script_fields.serialize()
             else:
-                raise ScriptFieldsError("Parameter script_fields should of type ScriptFields")
+                raise ScriptFieldsError("Parameter script_fields should of type ScriptFields or dict")
         if self.index_boost:
             res['indices_boost'] = self.index_boost
         if self.min_score:
@@ -169,6 +171,12 @@ class Search(EqualityComparableUsingAttributeDictionary):
         if self._highlight is None:
             self._highlight = HighLighter("<b>", "</b>")
         return self._highlight
+
+    @property
+    def script_fields(self):
+        if self._script_fields is None:
+            self._script_fields = ScriptFields()
+        return self._script_fields
 
     def add_highlight(self, field, fragment_size=None,
                       number_of_fragments=None, fragment_offset=None):
@@ -386,7 +394,7 @@ class ConstantScoreQuery(Query):
         combined with an ANDFilter.
 
         """
-        from pyes.filters import Filter
+        from .filters import Filter
 
         if isinstance(filter, Filter):
             self.filters.append(filter)
@@ -411,7 +419,7 @@ class ConstantScoreQuery(Query):
         if len(self.filters) == 1:
             filters.update(self.filters[0].serialize())
         else:
-            from pyes import ANDFilter
+            from .filters import ANDFilter
 
             filters.update(ANDFilter(self.filters).serialize())
         if not filters:

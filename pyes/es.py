@@ -10,6 +10,7 @@ except ImportError:
     # For Python < 2.6 or people using a newer version of simplejson
     import simplejson as json
 
+import codecs
 import random
 from datetime import date, datetime
 from urllib import urlencode
@@ -375,7 +376,7 @@ class ES(object):
         self.log_curl = log_curl
         if dump_curl:
             if isinstance(dump_curl, basestring):
-                self.dump_curl = open(dump_curl, "wb")
+                self.dump_curl = codecs.open(dump_curl, "wb", "utf8")
             elif hasattr(dump_curl, 'write'):
                 self.dump_curl = dump_curl
             else:
@@ -646,9 +647,12 @@ class ES(object):
         method = Method._VALUES_TO_NAMES[request.method]
         server = self.servers[0]
         url = urlunsplit((server.scheme, server.netloc, request.uri, urlencode(params), ''))
-        curl_cmd = "curl -X%s '%s'" % (method, url)
-        if request.body:
-            curl_cmd += " -d '%s'" % request.body
+        curl_cmd = u"curl -X%s '%s'" % (method, url)
+        body = request.body
+        if body:
+            if not isinstance(body, unicode):
+                body = unicode(body, "utf8")
+            curl_cmd += u" -d '%s'" % body
         return curl_cmd
 
     def _get_default_indices(self):

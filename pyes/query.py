@@ -131,7 +131,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
                 raise InvalidQuery("Invalid query")
         if self.filter:
             res['filter'] = self.filter.serialize()
-        if self.fields is not None:
+        if self.fields:
             res['fields'] = self.fields
         if self.size is not None:
             res['size'] = self.size

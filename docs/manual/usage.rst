@@ -70,7 +70,7 @@ Execute a query
 .. code-block:: python
 
     >>> q = TermQuery("name", "joe")
-    >>> results = self.conn.search(query = q)
+    >>> results = conn.search(query = q)
 
 Iterate on results:
 

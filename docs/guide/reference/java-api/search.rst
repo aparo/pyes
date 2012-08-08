@@ -4,7 +4,7 @@
 Search
 ======
 
-The search API allows to execute a search query and get back search hits that match the query. It can be executed across one or more indices and across one or more types. The query can either be provided using the :ref:`Query DSL <es-guide-reference-java-api-query-dsl>`.  ference-java-api-query-dsl>`.  The body of the search request is built using the **SearchSourceBuilder**. Here is an example:
+The search API allows to execute a search query and get back search hits that match the query. It can be executed across one or more indices and across one or more types. The query can either be provided using the :ref:`Query DSL <es-guide-reference-java-api-query-dsl>`.  The body of the search request is built using the **SearchSourceBuilder**. Here is an example:
 
 .. code-block:: java
 
@@ -26,7 +26,7 @@ For more information on the search operation, check out the REST :ref:`search <e
 Using scrolls in Java
 =====================
 
-Read the :ref:`scroll documentation <es-guide-reference-java-api-search-scroll>`  scroll>`  first!
+Read the :ref:`scroll documentation <es-guide-reference-java-api-search-scroll>`  first!
 
 .. code-block:: java
 
@@ -39,18 +39,16 @@ Read the :ref:`scroll documentation <es-guide-reference-java-api-search-scroll>`
     SearchResponse scrollResp = client.prepareSearch(test)
     		.setSearchType(SearchType.SCAN)
     		.setScroll(new TimeValue(60000))
-    		.setQuery(qb.buildAsBytes())
+    		.setQuery(qb)
     		.setSize(100).execute().actionGet(); //100 hits per shard will be returned for each scroll
     //Scroll until no hits are returned
     while (true) {
         scrollResp = client.prepareSearchScroll(scrollResp.getScrollId()).setScroll(new TimeValue(600000)).execute().actionGet();
-        boolean hitsRead = false;
         for (SearchHit hit : scrollResp.getHits()) {
-            hitsRead = true;
             //Handle the hit...
         }
         //Break condition: No hits are returned
-        if (!hitsRead) {
+        if (scrollResp.hits().hits().length == 0) {
             break;
         }
     }

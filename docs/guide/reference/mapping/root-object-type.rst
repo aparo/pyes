@@ -141,8 +141,8 @@ For example, we might want to have all fields to be stored by default, or all `s
                         "mapping" : {
                             "type" : "multi_field",
                             "fields" : {
-                                :ref:`{name}" : {"type <es-guide-reference-mapping>`  pe <es-guide-reference-mapping>`  "{dynamic_type}", "index" : "analyzed", "store" : "yes"},
-                                :ref:`org" : {"type <es-guide-reference-mapping>`  pe <es-guide-reference-mapping>`  "{dynamic_type}", "index" : "not_analyzed", "store" : "yes"}
+                                "{name}" : {"type": "{dynamic_type}", "index" : "analyzed"},
+                                "org" : {"type": "{dynamic_type}", "index" : "not_analyzed"}
                             }
                         }
                     }

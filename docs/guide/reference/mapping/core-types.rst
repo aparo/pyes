@@ -98,8 +98,8 @@ The **string** type also support custom indexing parameters associated with the 
 
     {
         "message" : {
-            :ref:`_value <es-guide-reference-mapping>`  ue <es-guide-reference-mapping>`   "boosted value",
-            :ref:`_boost <es-guide-reference-mapping>`  st <es-guide-reference-mapping>`   2.0
+            "_value":  "boosted value",
+            "_boost":  2.0
         }
     }
 

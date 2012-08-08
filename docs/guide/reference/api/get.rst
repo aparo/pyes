@@ -33,6 +33,14 @@ The result of the above get operation is:
 The above result includes the **_index**, **_type**, and **_id** of the document we wish to retrieve, including the actual source of the document that was indexed.
 
 
+The API also allows to check for the existance of a document using **HEAD**, for example:
+
+
+.. code-block:: js
+
+    curl -XHEAD 'http://localhost:9200/twitter/tweet/1'
+
+
 Realtime
 ========
 

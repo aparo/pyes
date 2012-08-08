@@ -90,7 +90,7 @@ The date_histogram facet allows to use a different key (of type date) which cont
         },
         "facets" : {
             "histo1" : {
-                "histogram" : {
+                "date_histogram" : {
                     "key_field" : "timestamp",
                     "value_field" : "price",
                     "interval" : "day"
@@ -115,7 +115,7 @@ A script can be used to compute the value that will then be used to compute the 
         },
         "facets" : {
             "histo1" : {
-                "histogram" : {
+                "date_histogram" : {
                     "key_field" : "timestamp",
                     "value_script" : "doc['price'].value * 2",
                     "interval" : "day"

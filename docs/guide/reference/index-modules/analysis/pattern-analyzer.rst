@@ -43,12 +43,12 @@ Whitespace tokenizer
 
         curl -XPUT 'localhost:9200/test' -d '
         {
-            :ref:`settings <es-guide-reference-index-modules-analysis-{>`  s <es-guide-reference-index-modules-analysis-{>`  
-                :ref:`analysis <es-guide-reference-index-modules-analysis>`  is <es-guide-reference-index-modules-analysis>`  {
-                    :ref:`analyzer <es-guide-reference-index-modules-analysis>`  er <es-guide-reference-index-modules-analysis>`  {
-                        :ref:`whitespace <es-guide-reference-index-modules-analysis-{>`  e <es-guide-reference-index-modules-analysis-{>`  
-                            :ref:`type <es-guide-reference-index-modules-analysis>`  pe <es-guide-reference-index-modules-analysis>`  "pattern",
-                            :ref:`pattern <es-guide-reference-index-modules-analysis-"\\s+">`  -guide-reference-index-modules-analysis-"\\s+">`  
+            "settings":{
+                "analysis": {
+                    "analyzer": {
+                        "whitespace":{
+                            "type": "pattern",
+                            "pattern":"\\s+"
                         }
                     }
                 }
@@ -67,12 +67,12 @@ Non-word character tokenizer
     
         curl -XPUT 'localhost:9200/test' -d '
         {
-            :ref:`settings <es-guide-reference-index-modules-analysis-{>`  s <es-guide-reference-index-modules-analysis-{>`  
-                :ref:`analysis <es-guide-reference-index-modules-analysis>`  is <es-guide-reference-index-modules-analysis>`  {
-                    :ref:`analyzer <es-guide-reference-index-modules-analysis>`  er <es-guide-reference-index-modules-analysis>`  {
-                        :ref:`nonword <es-guide-reference-index-modules-analysis-{>`  d <es-guide-reference-index-modules-analysis-{>`  
-                            :ref:`type <es-guide-reference-index-modules-analysis>`  pe <es-guide-reference-index-modules-analysis>`  "pattern",
-                            :ref:`pattern <es-guide-reference-index-modules-analysis-"[^\\w]+">`  ide-reference-index-modules-analysis-"[^\\w]+">`  
+            "settings":{
+                "analysis": {
+                    "analyzer": {
+                        "nonword":{
+                            "type": "pattern",
+                            "pattern":"[^\\w]+"
                         }
                     }
                 }
@@ -95,12 +95,12 @@ CamelCase tokenizer
     
         curl -XPUT 'localhost:9200/test?pretty=1' -d '
         {
-            :ref:`settings <es-guide-reference-index-modules-analysis-{>`  s <es-guide-reference-index-modules-analysis-{>`  
-                :ref:`analysis <es-guide-reference-index-modules-analysis>`  is <es-guide-reference-index-modules-analysis>`  {
-                    :ref:`analyzer <es-guide-reference-index-modules-analysis>`  er <es-guide-reference-index-modules-analysis>`  {
-                        :ref:`camel <es-guide-reference-index-modules-analysis-{>`  l <es-guide-reference-index-modules-analysis-{>`  
-                            :ref:`type <es-guide-reference-index-modules-analysis>`  pe <es-guide-reference-index-modules-analysis>`  "pattern",
-                            :ref:`pattern <es-guide-reference-index-modules-analysis-"([^\\p{L}\\d]+)|(?<=\\D)(?=\\d)|(?<=\\d)(?=\\D)|(?<=[\\p{L}&&[^\\p{Lu}]])(?=\\p{Lu})|(?<=\\p{Lu})(?=\\p{Lu}[\\p{L}&&[^\\p{Lu}]])">`  )|(?<=\\p{Lu})(?=\\p{Lu}[\\p{L}&&[^\\p{Lu}]])">`  
+            "settings":{
+                "analysis": {
+                    "analyzer": {
+                        "camel":{
+                            "type": "pattern",
+                            "pattern":"([^\\p{L}\\d]+)|(?<=\\D)(?=\\d)|(?<=\\d)(?=\\D)|(?<=[\\p{L}&&[^\\p{Lu}]])(?=\\p{Lu})|(?<=\\p{Lu})(?=\\p{Lu}[\\p{L}&&[^\\p{Lu}]])"
                         }
                     }
                 }

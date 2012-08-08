@@ -67,8 +67,10 @@ JSONP
 
 All REST APIs accept a **callback** parameter resulting in a `JSONP <http://en.wikipedia.org/wiki/JSONP>`_  result.
 
-You can also use the **source** query string parameter to substitute for the body of the request.
+Request body in query string
+----------------------------
 
+For libraries that don't accept a request body for non-POST requests, you can pass the request body as the **source** query string parameter instead.
 
 .. toctree::
     :maxdepth: 1
@@ -107,5 +109,9 @@ You can also use the **source** query string parameter to substitute for the bod
     index_
     more-like-this
     multi-get
+    multi-index
+    multi-search
     percolate
     search/index
+    update
+    validate

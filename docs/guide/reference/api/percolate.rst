@@ -52,7 +52,7 @@ And the matches are part of the response:
 
 .. code-block:: js
 
-    {:ref:`ok <es-guide-reference-api-true>`,  :ref:`matches <es-guide-reference-api-["kuku"]}>`  i-true>`,  "matches":["kuku"]}
+    {"ok":true, "matches":["kuku"]}
 
 
 You can unregister the previous percolator query with the same API you use to delete any document in an index:

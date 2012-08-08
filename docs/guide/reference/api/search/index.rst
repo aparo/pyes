@@ -29,6 +29,7 @@ In such a case, if we want to search only on the tweets for a specific user, we 
 .. code-block:: js
 
     $ curl -XGET 'http://localhost:9200/twitter/tweet/_search?routing=kimchy' -d '{
+        "query": {
             "filtered" : {
                 "query" : {
                     "query_string" : {

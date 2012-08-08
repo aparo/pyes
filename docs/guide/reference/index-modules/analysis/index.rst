@@ -127,6 +127,7 @@ Will allow the **standard** analyzer to also be referenced with **alias1** and *
     length-tokenfilter
     lowercase-tokenfilter
     ngram-tokenfilter
+    pattern_replace-tokenfilter
     phonetic-tokenfilter
     porterstem-tokenfilter
     reverse-tokenfilter
@@ -137,6 +138,7 @@ Will allow the **standard** analyzer to also be referenced with **alias1** and *
     stemmer-tokenfilter
     stop-tokenfilter
     synonym-tokenfilter
+    trim-tokenfilter
     word-delimiter-tokenfilter
 
     edgengram-tokenizer
@@ -152,5 +154,6 @@ Will allow the **standard** analyzer to also be referenced with **alias1** and *
     unique-tokenfilter
 
     htmlstrip-charfilter
+    mapping-charfilter
 
     icu-plugin

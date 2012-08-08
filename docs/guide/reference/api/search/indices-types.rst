@@ -4,7 +4,7 @@
 Indices Types
 =============
 
-The search API can be applied to multiple types within an index, and across multiple indices. For example, we can search on all documents across all types within the twitter index:
+The search API can be applied to multiple types within an index, and across multiple indices with support for the :ref:`multi index syntax <es-guide-reference-api-multi-index>`.  For example, we can search on all documents across all types within the twitter index:
 
 
 .. code-block:: js

@@ -7,13 +7,13 @@ Facets
 
 The usual purpose of a full-text search engine is to return a small number of documents matching your query.
 
-_Facets_ provide aggregated data based on a search query. In the simplest case, a :ref:`terms facet <es-guide-reference-api-search-facets-terms-facet>`  t>`  can return _facet counts_ for various _facet values_ for a specific _field_. ElasticSearch supports more facet implementations, suc:ref:`statistical <es-guide-reference-api-search-facets-statistical-facet>`  htm:ref:`date histogram <es-guide-reference-api-search-facets-date-histogram-facet>`  html facets.
+**Facets** provide aggregated data based on a search query. In the simplest case, a :ref:`terms facet <es-guide-reference-api-search-facets-terms-facet>`  can return **facet counts** for various **facet values** for a specific **field**. ElasticSearch supports more facet implementations, such as :ref:`statistical <es-guide-reference-api-search-facets-statistical-facet>`  or :ref:`date histogram <es-guide-reference-api-search-facets-date-histogram-facet>`  facets.
 
-The field used for facet calculations _must_ be of type numeric, date/time or be analyzed as a single token &mdash; see the :ref:`_Mapping_ <es-guide-reference-mapping-index>`  x>`  guide for details on the analysis process.
+The field used for facet calculations **must** be of type numeric, date/time or be analyzed as a single token &mdash; see the :ref:`_Mapping_ <es-guide-reference-mapping-index>`  guide for details on the analysis process.
 
-You can give the facet a custom _name_ and return multiple facets in one request.
+You can give the facet a custom **name** and return multiple facets in one request.
 
-Let's try it out with a simple example. Suppose we have a number of articles with a field called **tags**, preferably analyzed with the :ref:`keyword <es-guide-reference-index-modules-analysis-keyword-analyzer>`  r>`  analyzer. The facet aggregation will return counts for the most popular tags across the documents matching your query &mdash; or across all documents in the index.
+Let's try it out with a simple example. Suppose we have a number of articles with a field called **tags**, preferably analyzed with the :ref:`keyword <es-guide-reference-index-modules-analysis-keyword-analyzer>`  analyzer. The facet aggregation will return counts for the most popular tags across the documents matching your query &mdash; or across all documents in the index.
 
 We will store some example data first:
 
@@ -26,7 +26,7 @@ We will store some example data first:
     curl -X POST "http://localhost:9200/articles/article" -d '{"title" : "Three", "tags" : ["foo", "bar", "baz"]}'
 
 
-Now, let's query the index for articles beginning with letter “T” and retrieve a :ref:`_terms facet_ <es-guide-reference-api-search-facets-terms-facet>`  t>`  for the **tags** field. We will name the facet simply: _tags_.
+Now, let's query the index for articles beginning with letter “T” and retrieve a :ref:`_terms facet_ <es-guide-reference-api-search-facets-terms-facet>`  for the **tags** field. We will name the facet simply: **tags**.
 
 .. code-block:: bash
 
@@ -50,6 +50,8 @@ This request will return articles “Two” and “Three” (because they match 
       "tags" : {
         "_type" : "terms",
         "missing" : 0,
+        "total": 5,
+        "other": 0,
         "terms" : [ {
           "term" : "foo",
           "count" : 2
@@ -64,15 +66,15 @@ This request will return articles “Two” and “Three” (because they match 
     }
 
 
-In the **terms** array, relevant _terms_ and _counts_ are returned. You'll probably want to display these to your users. The facet also returns the number of documents which have no value for the field (**missing**), the number of facet values not included in the returned facets (**other**), and the total number of tokens in the facet (**total**).
+In the **terms** array, relevant **terms** and **counts** are returned. You'll probably want to display these to your users. The facet also returns the number of documents which have no value for the field (**missing**), the number of facet values not included in the returned facets (**other**), and the total number of tokens in the facet (**total**).
 
-Notice, that the counts are scoped to the current query: _foo_ is counted only twice (not three times), _bar_ is counted twice and _baz_ once.
+Notice, that the counts are scoped to the current query: **foo** is counted only twice (not three times), **bar** is counted twice and **baz** once.
 
-That's because the primary purpose of facets is to enable `_faceted navigation_ <http://en.wikipedia.org/wiki/Faceted_search>`_,  _,  allowing the user to refine her query based on the insight from the facet, ie. restrict the search to a specific category, price or date range. See the example of faceted navigation at _LinkedIn_ below:
+That's because the primary purpose of facets is to enable `_faceted navigation_ <http://en.wikipedia.org/wiki/Faceted_search>`_,  allowing the user to refine her query based on the insight from the facet, ie. restrict the search to a specific category, price or date range. See the example of faceted navigation at **LinkedIn** below:
 
 !/guide/images/linkedin-faceted-search.png(Faceted Search at LinkedIn)!
 
-Facets can be used, however, for other purposes: computing histograms, statistical aggregations, and more. See the article about :ref:`data visualization <es-guide-reference-api-search-facets-blog-2011-05-13-data-visualization-with-elasticsearch-and-protovis>`  ion-with-elasticsearch-and-protovis>`  on the ElasticSearch's blog for inspiration.
+Facets can be used, however, for other purposes: computing histograms, statistical aggregations, and more. See the article about :ref:`data visualization <es-guide-reference-api-search-facets-blog-2011-05-13-data-visualization-with-elasticsearch-and-protovis>`  on the ElasticSearch's blog for inspiration.
 
 Scope
 -----
@@ -92,14 +94,14 @@ As we have already mentioned, facet computation is restricted to the scope of th
     }    
 
 
-There's one **important distinction** to keep in mind. While search _queries_ restrict both the returned documents and facet counts, search _filters_ restrict only returned documents &mdash; but _not_ facet counts.
+There's one **important distinction** to keep in mind. While search **queries** restrict both the returned documents and facet counts, search **filters** restrict only returned documents &mdash; but **not** facet counts.
 
-If you need to restrict both the documents and facets, and you're not willing or able to use a query, you may use a _facet filter_.
+If you need to restrict both the documents and facets, and you're not willing or able to use a query, you may use a **facet filter**.
 
 Facet Filter
 ------------
 
-All facets can be configured with an additional filter (explained in the :ref:`Query DSL <es-guide-reference-query-dsl>`  ry-dsl>`  section), which _will_ reduce the documents they use for computing results. An example with a _term_ filter:
+All facets can be configured with an additional filter (explained in the :ref:`Query DSL <es-guide-reference-query-dsl>`  section), which **will** reduce the documents they use for computing results. An example with a **term** filter:
 
 .. code-block:: js
 
@@ -118,15 +120,15 @@ All facets can be configured with an additional filter (explained in the :ref:`Q
     }    
 
 
-Note that this is different from a facet of the :ref:`filter <es-guide-reference-api-search-facets-filter-facet>`  t>`  type.
+Note that this is different from a facet of the :ref:`filter <es-guide-reference-api-search-facets-filter-facet>`  type.
 
-Facets with the _nested_ types
-------------------------------
+Facets with the **nested** types
+--------------------------------
 
 :ref:`Nested <es-guide-reference-mapping-nested-type>`  mapping allows for better support for "inner" documents faceting, especially when it comes to multi valued key and value facets (like histograms, or term stats).
 
 
-Why is it good for? First of all, this is the only way to use facets on nested documents once they are used (possibly for other reasons). But, there is also facet specific reason why nested documents can be used, and that's the fact that facets working on different key and value field (like term_stats, or histogram) can now support cases where both are multi valued properly.
+What is it good for? First of all, this is the only way to use facets on nested documents once they are used (possibly for other reasons). But, there is also facet specific reason why nested documents can be used, and that's the fact that facets working on different key and value field (like term_stats, or histogram) can now support cases where both are multi valued properly.
 
 
 For example, lets use the following mapping:
@@ -175,28 +177,28 @@ Any **nested** query allows to specify a **_scope** associated with it. Any **fa
 .. code-block:: js
 
     {
-       "query": {
-           "nested": {
-               "_scope": "my_scope",
-               "path": "obj1",
-               "score_mode": "avg",
-               "query": {
-                   "bool": {
-                       "must": [
-                           {"text": {"obj1.name": "blue"}},
-                           {"range": {"obj1.count": {"gt": 3}}}
+        "query": {
+            "nested": {
+                "_scope": "my_scope",
+                "path": "obj1",
+                "score_mode": "avg",
+                "query": {
+                    "bool": {
+                        "must": [
+                            {"text": {"obj1.name": "blue"}},
+                            {"range": {"obj1.count": {"gt": 3}}}
                         ]
                     }
                 }
             }
         },
-       "facets": {
-           "facet1": {
-               "terms_stats": {
-                   "key_field": "obj1.name",
-                   "value_field": "obj1.count"
+        "facets": {
+            "facet1": {
+                "terms_stats": {
+                    "key_field": "obj1.name",
+                    "value_field": "obj1.count"
                 },
-               "scope": "my_scope"
+                "scope": "my_scope"
             }
         }
     }
@@ -211,16 +213,16 @@ Another option is to run the facet on all the nested documents matching the root
 .. code-block:: js
 
     {
-       "query": {
-           "match_all": {}
+        "query": {
+            "match_all": {}
         },
-       "facets": {
-           "facet1": {
-               "terms_stats": {
+        "facets": {
+            "facet1": {
+                "terms_stats": {
                     "key_field" : "name",
-                   "value_field": "count"
+                    "value_field": "count"
                 },
-               "nested": "obj1"
+                "nested": "obj1"
             }
         }
     }

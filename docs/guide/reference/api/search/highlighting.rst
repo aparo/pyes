@@ -29,7 +29,7 @@ In order to perform highlighting, the actual content of the field is required. I
 If no **term_vector** information is provided (by setting it to **with_positions_offsets** in the mapping), then the plain highlighter will be used. If it is provided, then the fast vector highlighter will be used. When term vectors are available, highlighting will be performed faster at the cost of bigger index size.
 
 
-Here is an example of setting the **content** field to allow for highlighting on it (this will cause the index to be bigger):
+Here is an example of setting the **content** field to allow for highlighting using the fast vector highlighter on it (this will cause the index to be bigger):
 
 
 .. code-block:: js
@@ -37,7 +37,7 @@ Here is an example of setting the **content** field to allow for highlighting on
 
     {
         "type_name" : {
-            "content" : {"store" : "yes", "term_vector" : "with_positions_offsets"}
+            "content" : {"term_vector" : "with_positions_offsets"}
         }
     }
 

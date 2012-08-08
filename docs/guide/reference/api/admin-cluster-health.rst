@@ -35,12 +35,12 @@ The API can also be executed against one or more indices to get just the specifi
 The cluster health is status is: **green**, **yellow** or **red**. On the shard level, a **red** status indicates that the specific shard is not allocated in the cluster, **yellow** means that the primary shard is allocated but replicas are not, and **green** means that all shards are allocated. The index level status is controlled by the worst shard status. The cluster status is controlled by the worst index status.
 
 
-One of the main benefits of the API is the ability to wait until the cluster reaches a certain health level. For example, the following Will wait till the cluster reaches the **green** level for 50 seconds (if it reaches the **green** status beforehand, it will return):
+One of the main benefits of the API is the ability to wait until the cluster reaches a certain high water-mark health level. For example, the following will wait till the cluster reaches the **yellow** level for 50 seconds (if it reaches the **green** or **yellow** status beforehand, it will return):
 
 
 .. code-block:: js
 
-    $ curl -XGET 'http://localhost:9200/_cluster/health?wait_for_status=green&timeout=50s'
+    $ curl -XGET 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=50s'
 
 
 Request Parameters

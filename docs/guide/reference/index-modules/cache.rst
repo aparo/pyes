@@ -16,7 +16,7 @@ The filter cache is responsible for caching the results of filters (used in the 
 Node Filter Cache
 -----------------
 
-The **node** filter cache may be configured to use either a percentage of the total memory allocated to the process or an specific amount of memory. All shards present on a node share a single node cache (thats why its called **node**`). The cache implements an LRU eviction policy: when a cache becomes full, the least recently used data is evicted to make way for new data.
+The **node** filter cache may be configured to use either a percentage of the total memory allocated to the process or an specific amount of memory. All shards present on a node share a single node cache (thats why its called **node**). The cache implements an LRU eviction policy: when a cache becomes full, the least recently used data is evicted to make way for new data.
 
 
 The setting that allows one to control the memory size for the filter cache is **indices.cache.filter.size**, which defaults to **20%**. *Note*, this is *not* an index level setting but a node level setting (can be configured in the node configuration).

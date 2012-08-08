@@ -88,7 +88,7 @@ The **TransportClient** connects remotely to an elasticsearch cluster using the 
     client.close();
 
 
-Note that you have to set the cluster name if you use one different to :ref:`elasticsearch <es-guide-reference-java-api>`  ch <es-guide-reference-java-api>`  
+Note that you have to set the cluster name if you use one different to :ref:`elasticsearch <es-guide-reference-java-api>`  
 
 .. code-block:: java
 
@@ -109,3 +109,14 @@ The client allows to sniff the rest of the cluster, and add those into its list 
     		.put("client.transport.sniff", true).build();
     TransportClient client = new TransportClient(settings);
 
+
+Other transport client level settings include:
+
+
+===============================================  ========================================================================================
+ Parameter                                        Description                                                                            
+===============================================  ========================================================================================
+ **client.transport.ignore_cluster_name**         Set to **true** to ignore cluster name validation of connected nodes. (since 0.19.4)   
+ **client.transport.ping_timeout**                The time to wait for a ping response from a node. Defaults to **5s**.                  
+ **client.transport.nodes_sampler_interval**      How often to sample / ping the nodes listed and connected. Defaults to **5s**.         
+===============================================  ========================================================================================

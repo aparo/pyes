@@ -18,7 +18,7 @@ We can create an index that will only deploy on nodes that have **tag** set to *
 
 .. code-block:: js
 
-    curl -XPUT localhost:9200/test -d '{
+    curl -XPUT localhost:9200/test/_settings -d '{
         "index.routing.allocation.include.tag" : "value1,value2"
     }'
 
@@ -29,7 +29,7 @@ On the other hand, we can create an index that will be deployed on all nodes exc
 
 .. code-block:: js
 
-    curl -XPUT localhost:9200/test -d '{
+    curl -XPUT localhost:9200/test/_settings -d '{
         "index.routing.allocation.exclude.tag" : "value3"
     }'
 
@@ -50,7 +50,7 @@ In the same manner, **include** and **exclude** can work against several attribu
 
 .. code-block:: js
 
-    curl -XPUT localhost:9200/test -d '{
+    curl -XPUT localhost:9200/test/_settings -d '{
         "index.routing.allocation.include.group1" : "xxx"
         "index.routing.allocation.include.group2" : "yyy",
         "index.routing.allocation.exclude.group3" : "zzz",

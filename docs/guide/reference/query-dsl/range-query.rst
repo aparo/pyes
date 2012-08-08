@@ -16,7 +16,7 @@ Matches documents with fields that have terms within a certain range. The type o
                 "from" : 10, 
                 "to" : 20, 
                 "include_lower" : true, 
-                :ref:`include_upper <es-guide-reference-query-dsl>`  er <es-guide-reference-query-dsl>`  false, 
+                "include_upper": false, 
                 "boost" : 2.0
             }
         }

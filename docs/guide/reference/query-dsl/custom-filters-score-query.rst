@@ -39,6 +39,12 @@ Score Mode
 A **score_mode** can be defined to control how multiple matching filters control the score. By default, it is set to **first** which means the first matching filter will control the score of the result. It can also be set to **min**/**max**/**total**/**avg**/**multiply** which will aggregate the result from all matching filters based on the aggregation type.  
 
 
+max_boost
+---------
+
+An option to cap the boost value computed.
+
+
 Script
 ------
 

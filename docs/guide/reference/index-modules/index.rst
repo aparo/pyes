@@ -1,4 +1,6 @@
 .. _es-guide-reference-index-modules-index:
+.. _es-guide-reference-index-module:
+
 =============
 Index Modules
 =============

@@ -67,6 +67,26 @@ Numeric fields support specific handling for missing fields in a doc. The **miss
     }
 
 
+Ignoring Unmapped Fields
+========================
+
+By default, the search request will fail if there is no mapping associated with a field. The **ignore_unmapped** option allows to ignore fields that have no mapping and not sort by them. Here is an example of how it can be used:
+
+
+.. code-block:: js
+
+
+    {
+        "sort" : [
+            { "price" : {"ignore_unmapped" : true} },
+        ],
+        "query" : {
+            "term" : { "user" : "kimchy" }
+        }
+    }
+
+
+
 Geo Distance Sorting
 ====================
 
@@ -231,7 +251,7 @@ When sorting on a field, scores are not computed. By setting **track_scores** to
 
 
     {
-        :ref:`track_scores <es-guide-reference-api-search>`  es <es-guide-reference-api-search>`  true,
+        "track_scores": true,
         "sort" : [
             { "post_date" : {"reverse" : true} },
             { "name" : "desc" },

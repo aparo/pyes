@@ -28,7 +28,7 @@ Most of the **query_string** parameters are allowed with the **field** query as 
             "name.first" : {
                 "query" : "+something -else",
                 "boost" : 2.0,
-                :ref:`enable_position_increments <es-guide-reference-query-dsl>`  ts <es-guide-reference-query-dsl>`  false
+                "enable_position_increments": false
             }
         }
     }

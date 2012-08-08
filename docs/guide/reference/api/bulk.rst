@@ -30,7 +30,7 @@ If you're providing text file input to **curl**, you *must* **--data-binary** in
     { "index" : { "_index" : "test", "_type" : "type1", "_id" : "1" } }
     { "field1" : "value1" }
     $ curl -s -XPOST localhost:9200/_bulk --data-binary **requests; echo
-    {:ref:`took <es-guide-reference-api-7,"items":[{"create":{"_index":"test","_type":"type1","_id":"1","_version":1,"ok":true}}]}>`  ,"_version":1,"ok":true}}]}>`  
+    {"took":7,"items":[{"create":{"_index":"test","_type":"type1","_id":"1","_version":1,"ok":true}}]}
 
 
 Because this format uses literal **\n**'s as delimiters, please be sure that the JSON actions and sources are not pretty printed. Here is an example of a correct sequence of bulk commands:
@@ -43,7 +43,7 @@ Because this format uses literal **\n**'s as delimiters, please be sure that the
     { "delete" : { "_index" : "test", "_type" : "type1", "_id" : "2" } }
     { "create" : { "_index" : "test", "_type" : "type1", "_id" : "3" } }
     { "field1" : "value3" }
-    
+
 
 The endpoints are **/_bulk**, **/{index}/_bulk**, and **{index}/type/_bulk**. When the index or the index/type are provided, they will be used by default on bulk items that don't provide them explicitly.
 

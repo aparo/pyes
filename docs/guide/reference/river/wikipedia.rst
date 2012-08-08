@@ -7,8 +7,8 @@ Wikipedia
 ---
 ---
 
-A simple river to index `Wikipedia <http://en.wikipedia.org>`_.  >`_  
+A simple river to index `Wikipedia <http://en.wikipedia.org>`_.  
 
-See `README file <https://github.com/elasticsearch/elasticsearch-river-wikipedia/blob/master/README.md>`_  `_  for details.
+See `README file <https://github.com/elasticsearch/elasticsearch-river-wikipedia/blob/master/README.md>`_  for details.
 
 

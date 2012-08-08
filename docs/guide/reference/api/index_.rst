@@ -72,7 +72,7 @@ Each indexed document is given a version number. The associated **version** numb
 *NOTE:* versioning is completely real time, and is not affected by the near real time aspects of search operations. If no version is provided, then the operation is executed without any version checks.
 
 
-By default, internal versioning is used that starts at 1 and increments with each update. Optionally, the version number can be supplemented with an external value (for example, if maintained in a database). To enable this functionality, **version_type** should be set to **external**. The value provided must be a numeric, long value greater than 0, and less than around 9.2e+18. When using the external version type, instead of checking for a matching version number, the system checks to see if the version number passed to the index request is greater than or equal to the version of the currently stored document. If true, the document will be indexed and the new version number used. If the value provided is lower than the stored document's version number, a version conflict will occur and the index operation will fail.
+By default, internal versioning is used that starts at 1 and increments with each update. Optionally, the version number can be supplemented with an external value (for example, if maintained in a database). To enable this functionality, **version_type** should be set to **external**. The value provided must be a numeric, long value greater than 0, and less than around 9.2e+18. When using the external version type, instead of checking for a matching version number, the system checks to see if the version number passed to the index request is greater than  the version of the currently stored document. If true, the document will be indexed and the new version number used. If the value provided is less than or equal to the stored document's version number, a version conflict will occur and the index operation will fail.
 
 
 A nice side effect is that there is no need to maintain strict ordering of async indexing operations executed a result of changes to a source database, as long as version numbers from the source database are used. Even the simple case of updating the elasticsearch index using data from a database is simplified if external versioning is used, as only the latest version will be used if the index operations are out of order for whatever reason.
@@ -188,7 +188,7 @@ A document can be indexed with a **timestamp** associated with it. The **timesta
     }'
 
 
-If the **timestamp** value is not provided externally or in the **_source**, the **timestamp** will be automatically set to the date the document was processed by the indexing chain. More information can be found on the :ref:`_timestamp mapping page <es-guide-reference-api-mapping-timestamp-field>`.  
+If the **timestamp** value is not provided externally or in the **_source**, the **timestamp** will be automatically set to the date the document was processed by the indexing chain. More information can be found on the :ref:`_timestamp mapping page <es-guide-reference-mapping-timestamp-field>`.  
 
 TTL
 ===
@@ -199,30 +199,29 @@ A document can be indexed with a **ttl** (time to live) associated with it. Expi
 .. code-block:: js
 
     curl -XPUT 'http://localhost:9200/twitter/tweet/1?ttl=86400000' -d '{
-        "user" : "kimchy",
-        "message" : "Trying out elasticsearch, so far so good?"
+        "user": "kimchy",
+        "message": "Trying out elasticsearch, so far so good?"
     }'
 
 
 .. code-block:: js
 
     curl -XPUT 'http://localhost:9200/twitter/tweet/1?ttl=1d' -d '{
-        "user" : "kimchy",
-        "message" : "Trying out elasticsearch, so far so good?"
+        "user": "kimchy",
+        "message": "Trying out elasticsearch, so far so good?"
     }'
 
 
 .. code-block:: js
 
     curl -XPUT 'http://localhost:9200/twitter/tweet/1' -d '{
-        "ttl" : "1d",
-        "user" : "kimchy",
-        "message" : "Trying out elasticsearch, so far so good?"
+        "_ttl": "1d",
+        "user": "kimchy",
+        "message": "Trying out elasticsearch, so far so good?"
     }'
 
 
-More information can be found on the :ref:`_ttl mapping page <es-guide-reference-api-mapping-ttl-field>`.  -mapping-ttl-field>`.  
-
+More information can be found on the :ref:`_ttl mapping page <es-guide-reference-api-mapping-ttl-field>`.  
 Percolate
 =========
 

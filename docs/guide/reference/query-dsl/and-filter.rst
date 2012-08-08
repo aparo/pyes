@@ -37,7 +37,7 @@ A filter that matches documents using **AND** boolean operator on other queries.
 Caching
 =======
 
-The result of the filter is not cached by default. The `_cache` can be set to `true` in order to cache it (tough usually not needed). Since the **_cache** element requires to be set on the **and** filter itself, the structure then changes a bit to have the filters provided within a **filters** element:
+The result of the filter is not cached by default. The **_cache** can be set to **true** in order to cache it (tough usually not needed). Since the **_cache** element requires to be set on the **and** filter itself, the structure then changes a bit to have the filters provided within a **filters** element:
 
 
 
@@ -51,7 +51,7 @@ The result of the filter is not cached by default. The `_cache` can be set to `t
             },
             "filter" : {
                 "and" : 
-                    :ref:`filters <es-guide-reference-query-dsl>`  rs <es-guide-reference-query-dsl>`  [
+                    "filters": [
                         {
                             "range" : { 
                                 "postDate" : { 

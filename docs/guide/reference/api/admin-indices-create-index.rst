@@ -1,4 +1,5 @@
 .. _es-guide-reference-api-admin-indices-create-index:
+.. _es-guide-reference-api-admin-indices-create:
 
 ==========================
 Admin Indices Create Index

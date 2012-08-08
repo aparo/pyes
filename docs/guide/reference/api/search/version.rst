@@ -11,7 +11,7 @@ Returns a version for each search hit.
 
 
     {
-        :ref:`version <es-guide-reference-api-search>`  on <es-guide-reference-api-search>`  true,
+        "version": true,
         "query" : {
             "term" : { "user" : "kimchy" }
         }

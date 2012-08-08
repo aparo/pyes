@@ -5,6 +5,7 @@
 :Web: http://pypi.python.org/pypi/pyes/
 :Download: http://pypi.python.org/pypi/pyes/
 :Source: http://github.com/aparo/pyes/
+:Documentation: http://packages.python.org/pyes/
 :Keywords: search, elastisearch, distribute search
 
 --

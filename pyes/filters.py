@@ -80,13 +80,13 @@ class BoolFilter(Filter):
     """
 
     def __init__(self, must=None, must_not=None, should=None,
-                 minimum_number_should_match=1, **kwargs):
+                 **kwargs):
         super(BoolFilter, self).__init__(**kwargs)
 
         self._must = []
         self._must_not = []
         self._should = []
-        self.minimum_number_should_match = minimum_number_should_match
+
         if must:
             self.add_must(must)
 
@@ -125,7 +125,6 @@ class BoolFilter(Filter):
             filters['must_not'] = [f.serialize() for f in self._must_not]
         if self._should:
             filters['should'] = [f.serialize() for f in self._should]
-            filters['minimum_number_should_match'] = self.minimum_number_should_match
         if not filters:
             raise RuntimeError("A least a filter must be declared")
         return self._add_parameters({"bool": filters})

@@ -30,7 +30,7 @@ try:
 except ImportError:
     from .fakettypes import Method, RestRequest
 
-    thrift_enable = False
+    thrift_connect = None
 
 from .connection_http import connect as http_connect
 from . import logger
@@ -306,7 +306,6 @@ class ListBulker(BaseBulker):
 
             return bulk_result
 
-
 class ES(object):
     """
     ES connection object.
@@ -432,7 +431,7 @@ class ES(object):
                 raise RuntimeError("Unable to recognize protocol: \"%s\"" % _type)
 
             if server.scheme == "thrift":
-                if not thrift_enable:
+                if not thrift_connect:
                     raise RuntimeError("If you want to use thrift, please install thrift. \"pip install thrift\"")
                 if server.port is None:
                     raise RuntimeError("If you want to use thrift, please provide a port number")

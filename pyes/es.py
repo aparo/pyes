@@ -1443,7 +1443,7 @@ class ES(object):
 
         return self._query_call("_search", body, indices, doc_types, **query_params)
 
-    def search(self, query, indices=None, doc_types=None, **query_params):
+    def search(self, query, indices=None, doc_types=None, model=None, scan=False, **query_params):
         """Execute a search against one or more indices to get the resultset.
 
         `query` must be a Search object, a Query object, or a custom
@@ -1458,12 +1458,16 @@ class ES(object):
             doc_types = [doc_types]
         if hasattr(query, 'search'):
             query = query.search()
-
+        if scan:
+            if "search_type" not in query_params:
+                query_params["search_type"]="scan"
+            if "scroll_timeout" not in query_params:
+                query_params["scroll_timeout"]="10m"
         if hasattr(query, 'to_search_json') or isinstance(query, dict):
             pass
         else:
             raise InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
-        return ResultSet(connection=self, query=query, indices=indices, doc_types=doc_types, query_params=query_params)
+        return ResultSet(connection=self, query=query, indices=indices, doc_types=doc_types, model=model, query_params=query_params)
 
     #    scan method is no longer working due to change in ES.search behavior.  May no longer warrant its own method.
     #    def scan(self, query, indices=None, doc_types=None, scroll_timeout="10m", **query_params):
@@ -1638,7 +1642,7 @@ def encode_json(data):
 
 class ResultSet(object):
     def __init__(self, connection, query, indices=None, doc_types=None, query_params=None,
-                 auto_fix_keys=False, auto_clean_highlight=False):
+                 auto_fix_keys=False, auto_clean_highlight=False, model=None):
         """
         results: an es query results dict
         fix_keys: remove the "_" from every key, useful for django views
@@ -1652,6 +1656,7 @@ class ResultSet(object):
         self.scroller_parameters = {}
         self.scroller_id = None
         self._results = None
+        self.model = model or self.connection.model
         self._total = None
         self.valid = False
         self._facets = {}
@@ -1813,7 +1818,7 @@ class ResultSet(object):
             return val, val + 1
 
         start, end = get_start_end(val)
-        model = self.connection.model
+        model= self.model
 
         if self._results:
             if start >= self.start and end < self.start + self.chuck_size:
@@ -1850,7 +1855,7 @@ class ResultSet(object):
             res = self.hits[self.iterpos]
             self.iterpos += 1
             self._current_item += 1
-            return self.connection.model(self.connection, res)
+            return self.model(self.connection, res)
 
         if self.iterpos == self.total:
             raise StopIteration
@@ -1861,7 +1866,7 @@ class ResultSet(object):
         res = self.hits[self.iterpos]
         self.iterpos += 1
         self._current_item += 1
-        return self.connection.model(self.connection, res)
+        return self.model(self.connection, res)
 
     def __iter__(self):
         self.iterpos = 0

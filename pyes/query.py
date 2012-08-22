@@ -9,7 +9,6 @@ except ImportError:
     import simplejson as json
 
 from .utils import clean_string, ESRange, EqualityComparableUsingAttributeDictionary
-from .facets import FacetFactory
 from .highlight import HighLighter
 from .scriptfields import ScriptFields
 from .exceptions import InvalidQuery, InvalidParameterQuery, QueryError, ScriptFieldsError
@@ -89,6 +88,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
         fields: if is [], the _source is not returned
         """
         if not index_boost: index_boost = {}
+        from .facets import FacetFactory
         self.query = query
         self.filter = filter
         self.fields = fields or []

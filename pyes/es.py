@@ -1286,12 +1286,14 @@ class ES(object):
                     raise
                 self.refresh(index)
 
-    def delete(self, index, doc_type, id, bulk=False, querystring_args=None):
+    def delete(self, index, doc_type, id, bulk=False, routing=None, **querystring_args):
         """
         Delete a typed JSON document from a specific index based on its id.
         If bulk is True, the delete operation is put in bulk mode.
         """
-        querystring_args = querystring_args or {}
+        if routing:
+            querystring_args["routing"]=routing
+
         if bulk:
             cmd = {"delete": {"_index": index, "_type": doc_type,
                               "_id": id}}

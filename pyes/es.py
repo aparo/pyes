@@ -1460,8 +1460,8 @@ class ES(object):
         if scan:
             if "search_type" not in query_params:
                 query_params["search_type"]="scan"
-            if "scroll_timeout" not in query_params:
-                query_params["scroll_timeout"]="10m"
+            if "scroll" not in query_params:
+                query_params["scroll"]="10m"
         if hasattr(query, 'to_search_json') or isinstance(query, dict):
             pass
         else:
@@ -1469,7 +1469,7 @@ class ES(object):
         return ResultSet(connection=self, query=query, indices=indices, doc_types=doc_types, model=model, query_params=query_params)
 
     #    scan method is no longer working due to change in ES.search behavior.  May no longer warrant its own method.
-    #    def scan(self, query, indices=None, doc_types=None, scroll_timeout="10m", **query_params):
+    #    def scan(self, query, indices=None, doc_types=None, scroll="10m", **query_params):
     #        """Return a generator which will scan against one or more indices and iterate over the search hits. (currently support only by ES Master)
     #
     #        `query` must be a Search object, a Query object, or a custom
@@ -1477,20 +1477,20 @@ class ES(object):
     #        directly.
     #
     #        """
-    #        results = self.search(query=query, indices=indices, doc_types=doc_types, search_type="scan", scroll=scroll_timeout, **query_params)
+    #        results = self.search(query=query, indices=indices, doc_types=doc_types, search_type="scan", scroll=scroll, **query_params)
     #        while True:
     #            scroll_id = results["_scroll_id"]
-    #            results = self._send_request('GET', "_search/scroll", scroll_id, {"scroll":scroll_timeout})
+    #            results = self._send_request('GET', "_search/scroll", scroll_id, {"scroll":scroll})
     #            total = len(results["hits"]["hits"])
     #            if not total:
     #                break
     #            yield results
 
-    def search_scroll(self, scroll_id, scroll_timeout="10m"):
+    def search_scroll(self, scroll_id, scroll="10m"):
         """
         Executes a scrolling given an scroll_id
         """
-        return self._send_request('GET', "_search/scroll", scroll_id, {"scroll": scroll_timeout})
+        return self._send_request('GET', "_search/scroll", scroll_id, {"scroll": scroll})
 
     def reindex(self, query, indices=None, doc_types=None, **query_params):
         """

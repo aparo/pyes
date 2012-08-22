@@ -9,15 +9,19 @@ class ScriptFields(object):
     """
     _internal_name = "script_fields"
 
-    def __init__(self, field_name, script, params=None):
+    def __init__(self, name=None, script=None, lang=None, params=None):
         self.fields = {}
-        self.add_field(field_name, script, params or {})
+        if name:
+            self.add_field(name, script, lang, params or {})
 
-    def add_field(self, field_name, script, params=None):
+    def add_field(self, name, script, lang=None, params=None):
         """
         Add a field to script_fields
         """
         data = {}
+        if lang:
+            data["lang"] = lang
+
         if script:
             data['script'] = script
         else:
@@ -29,7 +33,7 @@ class ScriptFields(object):
             else:
                 raise ScriptFieldsError("Parameters should be a valid dictionary")
 
-        self.fields[field_name] = data
+        self.fields[name] = data
 
     def add_parameter(self, field_name, param_name, param_value):
         """

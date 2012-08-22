@@ -1333,6 +1333,15 @@ class ES(object):
         path = self._make_path([index, doc_type])
         return self._send_request('DELETE', path)
 
+    def exists(self, index, doc_type, id, **get_params):
+        """
+        Return if a document exists
+        """
+        if isinstance(id, (int, long, float)):
+            id=str(id)
+        path = self._make_path([index, doc_type, urllib.quote_plus(id)])
+        return self._send_request('HEAD', path, params=get_params)
+
     def get(self, index, doc_type, id, fields=None, routing=None, **get_params):
         """
         Get a typed JSON document from an index based on its id.

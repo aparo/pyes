@@ -12,7 +12,8 @@ sys.path.append(pyespath)
 
 #import settings
 #from django.core.management import setup_environ
-from django.conf import settings as dsettings
+# Commenting out the following line as it is not used.
+#from django.conf import settings as dsettings
 #setup_environ(settings)
 #dsettings.configure()
 import pyes as info
@@ -80,4 +81,3 @@ latex_documents = [
   ('index', 'pyes.tex', ur'PyES Documentation',
    ur'Elastic Search', 'manual'),
 ]
-

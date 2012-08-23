@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 import unittest
-from .estestcase import ESTestCase, get_conn
+from estestcase import ESTestCase, get_conn
 import StringIO
 
 class DumpCurlTestCase(ESTestCase):

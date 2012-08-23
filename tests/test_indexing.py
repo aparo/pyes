@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 import unittest
-from .estestcase import ESTestCase
+from estestcase import ESTestCase
 
 from pyes.query import TermQuery
 from pyes.exceptions import (IndexAlreadyExistsException,

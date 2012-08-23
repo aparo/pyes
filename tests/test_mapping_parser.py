@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
-from .estestcase import ESTestCase
+from estestcase import ESTestCase
 from pyes import decode_json
 from pyes.mappings import Mapper
 

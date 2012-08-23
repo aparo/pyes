@@ -21,7 +21,7 @@ from urllib import quote
 import threading
 import copy
 from urlparse import urlparse
-
+from .managers import Indices, Cluster
 try:
     from .connection import connect as thrift_connect
     from .pyesthrift.ttypes import Method, RestRequest
@@ -400,11 +400,16 @@ class ES(object):
         else:
             self.servers = server
 
+        #init managers
+        self.indices=Indices(self)
+        self.cluster=Cluster(self)
+
         self.default_types = default_types or []
         #check the servers variable
         self._check_servers()
         #init connections
         self._init_connection()
+
 
     def __del__(self):
         """
@@ -666,24 +671,6 @@ class ES(object):
                                     document_object_field=self.document_object_field)
         return self._mappings
 
-    #---- Admin commands
-    def status(self, indices=None):
-        """
-        Retrieve the status of one or more indices
-        """
-        indices = self._validate_indices(indices)
-        path = self._make_path([','.join(indices), '_status'])
-        return self._send_request('GET', path)
-
-    def aliases(self, indices=None):
-        """
-        Retrieve the aliases of one or more indices
-        """
-        if indices is None:
-            indices = self.default_indices
-        path = self._make_path([','.join(indices), '_aliases'])
-        return self._send_request('GET', path)
-
     def create_bulker(self):
         """
         Create a bulker object and return it to allow to manage custom bulk policies
@@ -692,45 +679,86 @@ class ES(object):
                                   raise_on_bulk_item_failure=self.raise_on_bulk_item_failure)
 
 
+    #---- Indices commands
+    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.aliases")
+    def aliases(self, indices=None):
+        """
+        Deprecated:
+            use: indices.aliases(indices=indices)
+
+        Retrieve the aliases of one or more indices
+        """
+
+        return self.indices.aliases(indices=indices)
+
+    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.status")
+    def status(self, indices=None):
+        """
+        Deprecated:
+            use: indices.aliases(indices=indices)
+
+        Retrieve the status of one or more indices
+        """
+        return self.indices.status(indices=indices)
+
+
+
+    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.create_index")
     def create_index(self, index, settings=None):
         """
-        Creates an index with optional settings.
-        Settings must be a dictionary which will be converted to JSON.
-        Elasticsearch also accepts yaml, but we are only passing JSON.
-        """
-        return self._send_request('PUT', index, settings)
+        Deprecated:
+            use: indices.create_index(self, index, settings=None)
 
+        Creates an index with optional settings.
+        """
+        return self.indices.create_index(index=index, settings=settings)
+
+    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.create_index_if_missing")
     def create_index_if_missing(self, index, settings=None):
-        """Creates an index if it doesn't already exist.
+        """
+        Deprecated
+
+        Creates an index if it doesn't already exist.
 
         If supplied, settings must be a dictionary.
 
         """
-        try:
-            return self.create_index(index, settings)
-        except IndexAlreadyExistsException, e:
-            return e.result
+        return  self.indices.create_index_if_missing(index=index, settings=settings)
 
+    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.delete_index")
     def delete_index(self, index):
-        """Deletes an index.
         """
-        return self._send_request('DELETE', index)
+        Deprecated
 
+        Deletes an index.
+        """
+        return self.indices.delete_index(index=index)
+
+    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.exists_index")
     def exists_index(self, index):
         """
+        Deprecated
+
         Check if an index exists.
         """
-        return self._send_request('HEAD', index)
+        return self.indices.exists_index(index=index)
 
+    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.delete_index_if_exists")
     def delete_index_if_exists(self, index):
-        """Deletes an index if it exists.
+        """
+        Deprecated
+
+        Deletes an index if it exists.
 
         """
-        if self.exists_index(index):
-            return self.delete_index(index)
+        return self.indices.delete_index_if_exists(index=index)
 
+    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.get_indices")
     def get_indices(self, include_aliases=False):
-        """Get a dict holding an entry for each index which exists.
+        """
+        Deprecated
+
+        Get a dict holding an entry for each index which exists.
 
         If include_alises is True, the dict will also contain entries for
         aliases.
@@ -743,92 +771,76 @@ class ES(object):
            this is an alias for.
 
         """
-        state = self.cluster_state()
-        status = self.status()
-        result = {}
-        indices_status = status['indices']
-        indices_metadata = state['metadata']['indices']
-        for index in sorted(indices_status.keys()):
-            info = indices_status[index]
-            metadata = indices_metadata[index]
-            num_docs = info['docs']['num_docs']
-            result[index] = dict(num_docs=num_docs)
-            if not include_aliases:
-                continue
-            for alias in metadata.get('aliases', []):
-                try:
-                    alias_obj = result[alias]
-                except KeyError:
-                    alias_obj = {}
-                    result[alias] = alias_obj
-                alias_obj['num_docs'] = alias_obj.get('num_docs', 0) + num_docs
-                try:
-                    alias_obj['alias_for'].append(index)
-                except KeyError:
-                    alias_obj['alias_for'] = [index]
-        return result
+        return self.indices.get_indices(include_aliases=include_aliases)
 
+    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.get_closed_indices")
     def get_closed_indices(self):
         """
+        Deprecated
+
         Get all closed indices.
         """
-        state = self.cluster_state()
-        status = self.status()
 
-        indices_metadata = set(state['metadata']['indices'].keys())
-        indices_status = set(status['indices'].keys())
+        return self.indices.get_closed_indices()
 
-        return indices_metadata.difference(indices_status)
-
+    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.get_alias")
     def get_alias(self, alias):
-        """Get the index or indices pointed to by a given alias.
+        """
+        Deprecated
+
+        Get the index or indices pointed to by a given alias.
 
         Raises IndexMissingException if the alias does not exist.
 
         Otherwise, returns a list of index names.
 
         """
-        status = self.status([alias])
-        return status['indices'].keys()
+        return self.indices.get_alias(alias)
 
+    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.change_aliases")
     def change_aliases(self, commands):
-        """Change the aliases stored.
+        """
+        Deprecated
+
+        Change the aliases stored.
 
         `commands` is a list of 3-tuples; (command, index, alias), where
         `command` is one of "add" or "remove", and `index` and `alias` are the
         index and alias to add or remove.
 
         """
-        body = {
-            'actions': [
-                {command: dict(index=index, alias=alias)}
-            for (command, index, alias) in commands
-            ]
-        }
-        return self._send_request('POST', "_aliases", body)
+        return self.indices.change_aliases(commands)
 
+    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.add_alias")
     def add_alias(self, alias, indices=None):
-        """Add an alias to point to a set of indices.
+        """
+        Deprecated
+
+        Add an alias to point to a set of indices.
 
         """
-        indices = self._validate_indices(indices)
-        return self.change_aliases(['add', index, alias]
-        for index in indices)
+        return self.indices.add_alias(alias, indices)
 
+    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.delete_alias")
     def delete_alias(self, alias, indices=None):
-        """Delete an alias.
+        """
+        Deprecated
+
+        Delete an alias.
 
         The specified index or indices are deleted from the alias, if they are
         in it to start with.  This won't report an error even if the indices
         aren't present in the alias.
 
         """
-        indices = self._validate_indices(indices)
-        return self.change_aliases(['remove', index, alias]
-        for index in indices)
+        return self.indices.delete_alias(alias, indices)
 
+    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.set_alias")
     def set_alias(self, alias, indices=None):
-        """Set an alias.
+        """
+        Deprecated
+
+        Set an alias.
 
         This handles removing the old list of indices pointed to by the alias.
 
@@ -838,57 +850,51 @@ class ES(object):
         correctly set.
 
         """
-        indices = self._validate_indices(indices)
-        try:
-            old_indices = self.get_alias(alias)
-        except IndexMissingException:
-            old_indices = []
-        commands = [['remove', index, alias] for index in old_indices]
-        commands.extend([['add', index, alias] for index in indices])
-        if len(commands) > 0:
-            return self.change_aliases(commands)
+        return self.indices.set_alias(alias, indices)
 
+
+    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.close_index")
     def close_index(self, index):
         """
+        Deprecated
+
         Close an index.
         """
-        return self._send_request('POST', "/%s/_close" % index)
+        return self.indices.close_index(index)
 
+    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.open_index")
     def open_index(self, index):
         """
+        Deprecated
+
         Open an index.
         """
-        return self._send_request('POST', "/%s/_open" % index)
+        return self.indices.open_index(index)
 
+    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.flush")
     def flush(self, indices=None, refresh=None):
         """
+        Deprecated
+
         Flushes one or more indices (clear memory)
+        If a bulk is full, it sends it.
+
+        :keyword indices: an index or a list of indices
+        :keyword refresh: set the refresh parameter
+
         """
-        self.force_bulk()
+        return self.indices.flush(indices=indices, refresh=refresh)
 
-        indices = self._validate_indices(indices)
-
-        path = self._make_path([','.join(indices), '_flush'])
-        args = {}
-        if refresh is not None:
-            args['refresh'] = refresh
-        return self._send_request('POST', path, params=args)
-
+    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.refresh")
     def refresh(self, indices=None, timesleep=None):
         """
+        Deprecated
+
         Refresh one or more indices
 
         timesleep: seconds to wait
         """
-        self.force_bulk()
-        indices = self._validate_indices(indices)
-
-        path = self._make_path([','.join(indices), '_refresh'])
-        result = self._send_request('POST', path)
-        if timesleep:
-            time.sleep(timesleep)
-        self.cluster_health(wait_for_status='green')
-        return result
+        return self.indices.refresh(indices=indices, timesleep=timesleep)
 
 
     def optimize(self, indices=None,

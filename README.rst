@@ -27,6 +27,11 @@ Features
 - Percolator
 - River support
 
+Documentation
+=============
+
+http://pyes.rtfd.org/
+http://pyes.readthedocs.org/en/latest/
 
 Changelog
 =========

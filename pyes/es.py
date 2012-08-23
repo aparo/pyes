@@ -1873,5 +1873,4 @@ class ResultSet(object):
             self._results = None
         self._current_item = 0
 
-        self.start = 0
         return self

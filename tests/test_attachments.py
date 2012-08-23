@@ -2,9 +2,8 @@
 from __future__ import absolute_import
 import unittest
 from .estestcase import ESTestCase
-from ..query import TermQuery
-from ..es import file_to_attachment
-import os
+from pyes.query import TermQuery
+from pyes.es import file_to_attachment
 
 class TestFileSaveTestCase(ESTestCase):
     def test_filesave(self):

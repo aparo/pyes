@@ -2,7 +2,7 @@
 from __future__ import absolute_import
 import unittest
 from .estestcase import ESTestCase
-from ..query import TermQuery
+from pyes.query import TermQuery
 
 class MultifieldTestCase(ESTestCase):
     def setUp(self):

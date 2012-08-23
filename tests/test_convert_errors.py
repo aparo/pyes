@@ -2,8 +2,8 @@
 from __future__ import absolute_import
 import unittest
 from .estestcase import ESTestCase
-from ..exceptions import (NotFoundException, IndexAlreadyExistsException)
-from .. import convert_errors
+from pyes.exceptions import (NotFoundException, IndexAlreadyExistsException)
+from pyes import convert_errors
 
 
 class RaiseIfErrorTestCase(ESTestCase):

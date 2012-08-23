@@ -2,7 +2,7 @@
 from __future__ import absolute_import
 import unittest
 from .estestcase import ESTestCase
-from ..query import MatchAllQuery, Search
+from pyes.query import MatchAllQuery, Search
 
 class ResultsetTestCase(ESTestCase):
     def setUp(self):

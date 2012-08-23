@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 from .estestcase import ESTestCase
-from ..query import TermQuery
-from ..es import _raise_exception_if_bulk_item_failed, _is_bulk_item_ok
-from ..exceptions import BulkOperationException
+from pyes.query import TermQuery
+from pyes.es import _raise_exception_if_bulk_item_failed, _is_bulk_item_ok
+from pyes.exceptions import BulkOperationException
 
 class BulkTestCase(ESTestCase):
     def setUp(self):

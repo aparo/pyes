@@ -3,8 +3,8 @@ from __future__ import absolute_import
 import unittest
 from .estestcase import ESTestCase
 
-from ..query import TermQuery
-from ..exceptions import (IndexAlreadyExistsException,
+from pyes.query import TermQuery
+from pyes.exceptions import (IndexAlreadyExistsException,
                           DocumentAlreadyExistsEngineException,
                           VersionConflictEngineException)
 from time import sleep

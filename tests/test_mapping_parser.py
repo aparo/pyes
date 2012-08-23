@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 from .estestcase import ESTestCase
-from .. import decode_json
-from ..mappings import Mapper
+from pyes import decode_json
+from pyes.mappings import Mapper
 
 class MapperTestCase(ESTestCase):
     def test_parser(self):

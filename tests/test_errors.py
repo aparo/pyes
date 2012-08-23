@@ -2,7 +2,7 @@
 from __future__ import absolute_import
 import unittest
 from .estestcase import ESTestCase
-from .. import exceptions
+from pyes import exceptions
 
 class ErrorReportingTestCase(ESTestCase):
     def setUp(self):

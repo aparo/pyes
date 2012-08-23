@@ -2,7 +2,7 @@
 from __future__ import absolute_import
 import unittest
 from .estestcase import ESTestCase
-from ..query import *
+from pyes.query import *
 import unittest
 
 class PercolatorTestCase(ESTestCase):

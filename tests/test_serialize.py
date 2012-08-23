@@ -2,8 +2,8 @@
 from __future__ import absolute_import
 import unittest
 from .estestcase import ESTestCase
-from ..query import TermQuery, RangeQuery
-from ..utils import ESRange
+from pyes.query import TermQuery, RangeQuery
+from pyes.utils import ESRange
 from datetime import datetime
 
 class SerializationTestCase(ESTestCase):

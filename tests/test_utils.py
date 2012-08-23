@@ -2,8 +2,8 @@
 from __future__ import absolute_import
 import unittest
 from .estestcase import ESTestCase
-from ..utils import clean_string
-from ..es import ES
+from pyes.utils import clean_string
+from pyes.es import ES
 
 class UtilsTestCase(ESTestCase):
     def test_cleanstring(self):
@@ -22,12 +22,12 @@ class UtilsTestCase(ESTestCase):
         self.assertEquals(geturls(es.servers), ["http://127.0.0.1:9400"])
         es = ES(("thrift", "127.0.0.1", 9100))
         self.assertEquals(geturls(es.servers), ["thrift://127.0.0.1:9100"])
-        es = ES(["http://127.0.0.1:9100", 
-                 "127.0.0.1:9200", 
+        es = ES(["http://127.0.0.1:9100",
+                 "127.0.0.1:9200",
                  ("thrift", "127.0.0.1", 9000),
                  "127.0.0.1:9500",
                  ])
-        self.assertEquals(geturls(sorted(es.servers)), 
+        self.assertEquals(geturls(sorted(es.servers)),
                           ["http://127.0.0.1:9100",
                            "http://127.0.0.1:9200",
                            "thrift://127.0.0.1:9000",

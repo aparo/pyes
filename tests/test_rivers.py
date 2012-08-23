@@ -2,7 +2,7 @@
 from __future__ import absolute_import
 import unittest
 from .estestcase import ESTestCase
-from ..rivers import CouchDBRiver, RabbitMQRiver, TwitterRiver
+from pyes.rivers import CouchDBRiver, RabbitMQRiver, TwitterRiver
 
 class RiversTestCase(ESTestCase):
     def setUp(self):

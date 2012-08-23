@@ -10,7 +10,11 @@
 
 # temp files
 docs/_build
-pyes/tests/.noseids
+tests/.noseids
+/elasticsearch*
+/performance/*
+/pyes_coverage/*
+/scripts/*
 
 # IDEs
 .idea

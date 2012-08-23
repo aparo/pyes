@@ -2,8 +2,8 @@
 from __future__ import absolute_import
 import unittest
 from .estestcase import ESTestCase
-from ..filters import GeoBoundingBoxFilter, GeoDistanceFilter, GeoPolygonFilter
-from ..query import FilteredQuery, MatchAllQuery
+from pyes.filters import GeoBoundingBoxFilter, GeoDistanceFilter, GeoPolygonFilter
+from pyes.query import FilteredQuery, MatchAllQuery
 
 #--- Geo Queries Test case
 class GeoQuerySearchTestCase(ESTestCase):

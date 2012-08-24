@@ -74,7 +74,7 @@ That's because the primary purpose of facets is to enable `_faceted navigation_ 
 
 !/guide/images/linkedin-faceted-search.png(Faceted Search at LinkedIn)!
 
-Facets can be used, however, for other purposes: computing histograms, statistical aggregations, and more. See the article about :ref:`data visualization <es-guide-reference-api-search-facets-blog-2011-05-13-data-visualization-with-elasticsearch-and-protovis>`  on the ElasticSearch's blog for inspiration.
+Facets can be used, however, for other purposes: computing histograms, statistical aggregations, and more.
 
 Scope
 -----
@@ -91,7 +91,7 @@ As we have already mentioned, facet computation is restricted to the scope of th
                 "global" : true
             }
         }
-    }    
+    }
 
 
 There's one **important distinction** to keep in mind. While search **queries** restrict both the returned documents and facet counts, search **filters** restrict only returned documents &mdash; but **not** facet counts.
@@ -117,7 +117,7 @@ All facets can be configured with an additional filter (explained in the :ref:`Q
                 }
             }
         }
-    }    
+    }
 
 
 Note that this is different from a facet of the :ref:`filter <es-guide-reference-api-search-facets-filter-facet>`  type.

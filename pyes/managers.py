@@ -7,7 +7,7 @@ class Indices(object):
     def __init__(self, conn):
         self.conn=conn
 
-    #TODO: clearcache segments stats templates
+    #TODO: clearcache segments templates
 
     #Alias Management - START
     def aliases(self, indices=None):
@@ -29,7 +29,7 @@ class Indices(object):
         (See :ref:`es-guide-reference-api-admin-indices-aliases`)
 
         :param alias: the name of an alias
-        
+
         :return returns a list of index names.
         :raise IndexMissingException if the alias does not exist.
 
@@ -108,6 +108,21 @@ class Indices(object):
         if len(commands) > 0:
             return self.change_aliases(commands)
 
+    def stats(self, indices=None):
+        """
+        Retrieve the statistic of one or more indices
+        (See :ref:`es-guide-reference-api-admin-indices-stats`)
+
+        :keyword indices: an index or a list of indices
+        """
+        parts = ["_stats"]
+        if indices:
+            if isinstance(indices, basestring):
+                indices = [indices]
+            parts = [",".join(indices), "_stats"]
+
+        path = self.conn._make_path(parts)
+        return self.conn._send_request('GET', path)
 
     def status(self, indices=None):
         """
@@ -443,3 +458,107 @@ class Indices(object):
 class Cluster(object):
     def __init__(self, conn):
         self.conn=conn
+
+    #TODO: node shutdown, update settings
+
+    def health(self, indices=None, level="cluster", wait_for_status=None,
+                       wait_for_relocating_shards=None, timeout=30):
+        """
+        Check the current :ref:`cluster health <es-guide-reference-api-admin-cluster-health>`.
+        Request Parameters
+
+        The cluster health API accepts the following request parameters:
+
+        :param level: Can be one of cluster, indices or shards. Controls the
+                        details level of the health information returned.
+                        Defaults to *cluster*.
+        :param wait_for_status: One of green, yellow or red. Will wait (until
+                                the timeout provided) until the status of the
+                                cluster changes to the one provided.
+                                By default, will not wait for any status.
+        :param wait_for_relocating_shards: A number controlling to how many
+                                           relocating shards to wait for.
+                                           Usually will be 0 to indicate to
+                                           wait till all relocation have
+                                           happened. Defaults to not to wait.
+        :param timeout: A time based parameter controlling how long to wait
+                        if one of the wait_for_XXX are provided.
+                        Defaults to 30s.
+        """
+        path = self.conn._make_path(["_cluster", "health"])
+        mapping = {}
+        if level != "cluster":
+            if level not in ["cluster", "indices", "shards"]:
+                raise ValueError("Invalid level: %s" % level)
+            mapping['level'] = level
+        if wait_for_status:
+            if wait_for_status not in ["green", "yellow", "red"]:
+                raise ValueError("Invalid wait_for_status: %s" % wait_for_status)
+            mapping['wait_for_status'] = wait_for_status
+
+            mapping['timeout'] = "%ds" % timeout
+        return self.conn._send_request('GET', path, mapping)
+
+    def state(self, filter_nodes=None, filter_routing_table=None,
+                      filter_metadata=None, filter_blocks=None,
+                      filter_indices=None):
+        """
+        Retrieve the :ref:`cluster state <es-guide-reference-api-admin-cluster-state>`.
+
+        :param filter_nodes: set to **true** to filter out the **nodes** part
+                             of the response.
+        :param filter_routing_table: set to **true** to filter out the
+                                     **routing_table** part of the response.
+        :param filter_metadata: set to **true** to filter out the **metadata**
+                                part of the response.
+        :param filter_blocks: set to **true** to filter out the **blocks**
+                              part of the response.
+        :param filter_indices: when not filtering metadata, a comma separated
+                               list of indices to include in the response.
+
+        """
+        path = self.conn._make_path(["_cluster", "state"])
+        parameters = {}
+
+        if filter_nodes is not None:
+            parameters['filter_nodes'] = filter_nodes
+
+        if filter_routing_table is not None:
+            parameters['filter_routing_table'] = filter_routing_table
+
+        if filter_metadata is not None:
+            parameters['filter_metadata'] = filter_metadata
+
+        if filter_blocks is not None:
+            parameters['filter_blocks'] = filter_blocks
+
+        if filter_blocks is not None:
+            if isinstance(filter_indices, basestring):
+                parameters['filter_indices'] = filter_indices
+            else:
+                parameters['filter_indices'] = ",".join(filter_indices)
+
+        return self.conn._send_request('GET', path, params=parameters)
+
+    def nodes_info(self, nodes=None):
+        """
+        The cluster :ref:`nodes info <es-guide-reference-api-admin-cluster-state>` API allows to retrieve one or more (or all) of
+        the cluster nodes information.
+        """
+        parts = ["_cluster", "nodes"]
+        if nodes:
+            parts.append(",".join(nodes))
+        path = self.conn._make_path(parts)
+        return self.conn._send_request('GET', path)
+
+    def node_stats(self, nodes=None):
+        """
+        The cluster :ref:`nodes info <es-guide-reference-api-admin-cluster-nodes-stats>` API allows to retrieve one or more (or all) of
+        the cluster nodes information.
+        """
+        parts = ["_cluster", "nodes", "stats"]
+        if nodes:
+            parts = ["_cluster", "nodes", ",".join(nodes), "stats"]
+
+        path = self.conn._make_path(parts)
+        return self.conn._send_request('GET', path)

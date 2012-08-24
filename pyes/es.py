@@ -1014,6 +1014,7 @@ class ES(object):
             return False
 
     #--- cluster
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].cluster.cluster_health")
     def cluster_health(self, indices=None, level="cluster", wait_for_status=None,
                        wait_for_relocating_shards=None, timeout=30):
         """
@@ -1038,20 +1039,11 @@ class ES(object):
                         if one of the wait_for_XXX are provided.
                         Defaults to 30s.
         """
-        path = self._make_path(["_cluster", "health"])
-        mapping = {}
-        if level != "cluster":
-            if level not in ["cluster", "indices", "shards"]:
-                raise ValueError("Invalid level: %s" % level)
-            mapping['level'] = level
-        if wait_for_status:
-            if wait_for_status not in ["green", "yellow", "red"]:
-                raise ValueError("Invalid wait_for_status: %s" % wait_for_status)
-            mapping['wait_for_status'] = wait_for_status
+        return self.cluster.health(indices=indices, level=level, wait_for_status=wait_for_status,
+                                   wait_for_relocating_shards=wait_for_relocating_shards,
+                                   timeout=timeout)
 
-            mapping['timeout'] = "%ds" % timeout
-        return self._send_request('GET', path, mapping)
-
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].cluster.state")
     def cluster_state(self, filter_nodes=None, filter_routing_table=None,
                       filter_metadata=None, filter_blocks=None,
                       filter_indices=None):
@@ -1070,58 +1062,34 @@ class ES(object):
                                list of indices to include in the response.
 
         """
-        path = self._make_path(["_cluster", "state"])
-        parameters = {}
+        return self.cluster.state(filter_nodes=filter_nodes, filter_routing_table=filter_routing_table,
+                      filter_metadata=filter_metadata, filter_blocks=filter_blocks,
+                      filter_indices=filter_indices)
 
-        if filter_nodes is not None:
-            parameters['filter_nodes'] = filter_nodes
-
-        if filter_routing_table is not None:
-            parameters['filter_routing_table'] = filter_routing_table
-
-        if filter_metadata is not None:
-            parameters['filter_metadata'] = filter_metadata
-
-        if filter_blocks is not None:
-            parameters['filter_blocks'] = filter_blocks
-
-        if filter_blocks is not None:
-            if isinstance(filter_indices, basestring):
-                parameters['filter_indices'] = filter_indices
-            else:
-                parameters['filter_indices'] = ",".join(filter_indices)
-
-        return self._send_request('GET', path, params=parameters)
-
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].cluster.nodes_info")
     def cluster_nodes(self, nodes=None):
         """
         The cluster :ref:`nodes info <es-guide-reference-api-admin-cluster-state>` API allows to retrieve one or more (or all) of
         the cluster nodes information.
         """
-        parts = ["_cluster", "nodes"]
-        if nodes:
-            parts.append(",".join(nodes))
-        path = self._make_path(parts)
-        return self._send_request('GET', path)
+        return self.cluster.nodes_info(nodes=nodes)
 
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].cluster.node_stats")
     def cluster_stats(self, nodes=None):
         """
         The cluster :ref:`nodes info <es-guide-reference-api-admin-cluster-nodes-stats>` API allows to retrieve one or more (or all) of
         the cluster nodes information.
         """
-        parts = ["_cluster", "nodes", "stats"]
-        if nodes:
-            parts = ["_cluster", "nodes", ",".join(nodes), "stats"]
-
-        path = self._make_path(parts)
-        return self._send_request('GET', path)
+        return self.cluster.node_stats(nodes=nodes)
 
 
     def index_raw_bulk(self, header, document):
         """
         Function helper for fast inserting
 
-        header and document must be string "\n" ended
+        :param header: a string with the bulk header must be ended with a newline
+        :param header: a json document string must be ended with a newline
+
         """
         self.bulker.add(u"%s%s" % (header, document))
         return self.flush_bulk()
@@ -1183,18 +1151,12 @@ class ES(object):
         return self._send_request(request_method, path, doc, querystring_args)
 
 
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.stats")
     def index_stats(self, indices=None):
         """
         http://www.elasticsearch.org/guide/reference/api/admin-indices-stats.html
         """
-        parts = ["_stats"]
-        if indices:
-            if isinstance(indices, basestring):
-                indices = [indices]
-            parts = [",".join(indices), "_stats"]
-
-        path = self._make_path(parts)
-        return self._send_request('GET', path)
+        return self.indices.stats(indices=indices)
 
 
     def flush_bulk(self, forced=False):

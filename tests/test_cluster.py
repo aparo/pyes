@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
-from estestcase import ESTestCase
-import unittest
+from .estestcase import ESTestCase
 
 class ClusterTestCase(ESTestCase):
     def setUp(self):
@@ -52,5 +51,3 @@ class ClusterTestCase(ESTestCase):
         print "health"
         print result
 
-if __name__ == "__main__":
-    unittest.main()

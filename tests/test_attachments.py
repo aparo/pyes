@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
-import unittest
-from estestcase import ESTestCase
+from .estestcase import ESTestCase
 from pyes.query import TermQuery
 from pyes.es import file_to_attachment
 
@@ -83,6 +82,3 @@ class QueryAttachmentTestCase(ESTestCase):
         resultset = self.conn.search(query=q, indices=self.index_name)
         self.assertEquals(resultset.total, 1)
         self.assertEquals(resultset.hits[0]['fields']['attachment.author'], u'Tika Developers')
-
-if __name__ == "__main__":
-    unittest.main()

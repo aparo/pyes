@@ -1,8 +1,19 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 import base64
+from urllib import quote
 
-__all__ = ['clean_string', "ESRange", "ESRangeOp", "string_b64encode", "string_b64decode"]
+__all__ = ['clean_string', "ESRange", "ESRangeOp", "string_b64encode", "string_b64decode", "make_path"]
+
+def make_path(path_components):
+    """
+    Smash together the path components. Empty components will be ignored.
+    """
+    path_components = [quote(str(component), "") for component in path_components if component]
+    path = '/'.join(path_components)
+    if not path.startswith('/'):
+        path = '/' + path
+    return path
 
 def string_b64encode(s):
     """

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
-from estestcase import ESTestCase
-import unittest
+from .estestcase import ESTestCase
 from pyes import exceptions
 
 class ErrorReportingTestCase(ESTestCase):
@@ -103,6 +102,3 @@ class ErrorReportingTestCase(ESTestCase):
         self.assertEqual(result['test-index2'], {'num_docs': 1})
         self.assertEqual(result['test-alias'], {'alias_for': ['test-index'], 'num_docs': 2})
         self.assertEqual(result['test-alias2'], {'alias_for': ['test-index', 'test-index2'], 'num_docs': 3})
-
-if __name__ == "__main__":
-    unittest.main()

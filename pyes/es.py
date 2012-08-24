@@ -43,7 +43,7 @@ from .exceptions import (ElasticSearchException, IndexAlreadyExistsException,
                          ReduceSearchPhaseException, VersionConflictEngineException,
                          BulkOperationException)
 from .decorators import deprecated
-
+from .utils import make_path
 
 __all__ = ['ES', 'file_to_attachment', 'decode_json']
 
@@ -605,15 +605,6 @@ class ES(object):
             decoded = DotDict(decoded)
         return  decoded
 
-    def _make_path(self, path_components):
-        """
-        Smush together the path components. Empty components will be ignored.
-        """
-        path_components = [quote(str(component), "") for component in path_components if component]
-        path = '/'.join(path_components)
-        if not path.startswith('/'):
-            path = '/' + path
-        return path
 
     def _query_call(self, query_type, query, indices=None, doc_types=None, **query_params):
         """
@@ -627,7 +618,7 @@ class ES(object):
         if isinstance(doc_types, basestring):
             doc_types = [doc_types]
         body = query
-        path = self._make_path([','.join(indices), ','.join(doc_types), query_type])
+        path = make_path([','.join(indices), ','.join(doc_types), query_type])
         return self._send_request('GET', path, body, params=querystring_args)
 
     def _validate_indices(self, indices=None):
@@ -968,7 +959,7 @@ class ES(object):
         if field and index is None:
             raise ValueError('field can only be specified with an index')
 
-        path = self._make_path([index, '_analyze'])
+        path = make_path([index, '_analyze'])
         return self._send_request('POST', path, text, args)
 
     @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.gateway_snapshot")
@@ -1147,7 +1138,7 @@ class ES(object):
         else:
             request_method = 'PUT'
 
-        path = self._make_path([index, doc_type, id])
+        path = make_path([index, doc_type, id])
         return self._send_request(request_method, path, doc, querystring_args)
 
 
@@ -1183,7 +1174,7 @@ class ES(object):
             request_method = 'POST'
         else:
             request_method = 'PUT'
-        path = self._make_path([index, doc_type, id])
+        path = make_path([index, doc_type, id])
         doc = file_to_attachment(filename)
         if name:
             doc["_name"] = name
@@ -1246,7 +1237,7 @@ class ES(object):
             self.bulker.add(json.dumps(cmd, cls=self.encoder))
             return self.flush_bulk()
 
-        path = self._make_path([index, doc_type, id])
+        path = make_path([index, doc_type, id])
         return self._send_request('DELETE', path, params=querystring_args)
 
     def delete_by_query(self, indices, doc_types, query, **request_params):
@@ -1269,7 +1260,7 @@ class ES(object):
         else:
             raise InvalidQuery("delete_by_query() must be supplied with a Query object, or a dict")
 
-        path = self._make_path([','.join(indices), ','.join(doc_types), '_query'])
+        path = make_path([','.join(indices), ','.join(doc_types), '_query'])
         return self._send_request('DELETE', path, body, querystring_args)
 
     @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.delete_mapping")
@@ -1285,14 +1276,14 @@ class ES(object):
         """
         if isinstance(id, (int, long, float)):
             id=str(id)
-        path = self._make_path([index, doc_type, urllib.quote_plus(id)])
+        path = make_path([index, doc_type, urllib.quote_plus(id)])
         return self._send_request('HEAD', path, params=get_params)
 
     def get(self, index, doc_type, id, fields=None, routing=None, **get_params):
         """
         Get a typed JSON document from an index based on its id.
         """
-        path = self._make_path([index, doc_type, id])
+        path = make_path([index, doc_type, id])
         if fields is not None:
             get_params["fields"] = ",".join(fields)
         if routing:
@@ -1460,7 +1451,7 @@ class ES(object):
         querystring_args = query_params
         indices = self._validate_indices(indices)
         body = query
-        path = self._make_path([','.join(indices), ','.join(doc_types), "_reindexbyquery"])
+        path = make_path([','.join(indices), ','.join(doc_types), "_reindexbyquery"])
         return self._send_request('POST', path, body, querystring_args)
 
     def count(self, query=None, indices=None, doc_types=None, **query_params):
@@ -1519,7 +1510,7 @@ class ES(object):
         """
         Execute a "more like this" search query against one or more fields and get back search hits.
         """
-        path = self._make_path([index, doc_type, id, '_mlt'])
+        path = make_path([index, doc_type, id, '_mlt'])
         query_params['fields'] = ','.join(fields)
         body = query_params["body"] if query_params.has_key("body") else None
         return self._send_request('GET', path, body=body, params=query_params)
@@ -1531,7 +1522,7 @@ class ES(object):
         Any kwargs will be added to the document as extra properties.
 
         """
-        path = self._make_path(['_percolator', index, name])
+        path = make_path(['_percolator', index, name])
 
         if hasattr(query, 'serialize'):
             query = {'query': query.serialize()}
@@ -1560,7 +1551,7 @@ class ES(object):
         elif not isinstance(doc_types, list):
             doc_types = [doc_types]
 
-        path = self._make_path([index, ','.join(doc_types), '_percolate'])
+        path = make_path([index, ','.join(doc_types), '_percolate'])
 
         body = None
 

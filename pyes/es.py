@@ -1404,6 +1404,22 @@ class ES(object):
             pass
         else:
             raise InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
+
+        #propage the start and size in the query object
+        from .query import Search
+        if "start" in query_params:
+            start = query_params.pop("start")
+            if isinstance(query, dict):
+                query["from"]=start
+            elif isinstance(query, Search):
+                query.start=start
+        if "size" in query_params:
+            size = query_params.pop("size")
+            if isinstance(query, dict):
+                query["size"]=size
+            elif isinstance(query, Search):
+                query.size=size
+
         return ResultSet(connection=self, query=query, indices=indices, doc_types=doc_types, model=model, query_params=query_params)
 
     #    scan method is no longer working due to change in ES.search behavior.  May no longer warrant its own method.
@@ -1744,8 +1760,6 @@ class ResultSet(object):
                 start = val.start
                 if not start:
                     start = 0
-                else:
-                    start -= 1
                 end = val.stop or self.total
                 if end < 0:
                     end = self.total + end
@@ -1758,14 +1772,15 @@ class ResultSet(object):
         model= self.model
 
         if self._results:
-            if start >= self.start and end < self.start + self.chuck_size:
+            if start >= 0 and end < self.start + self.chuck_size and len(self._results['hits']['hits'])>0 and \
+                ("_source" in self._results['hits']['hits'][0] or "_fields" in self._results['hits']['hits'][0]):
                 if not isinstance(val, slice):
                     return model(self.connection, self._results['hits']['hits'][val - self.start])
                 else:
                     return [model(self.connection, hit) for hit in self._results['hits']['hits'][start:end]]
 
         query = self.query.serialize()
-        query['from'] = start
+        query['from'] = start+self.start
         query['size'] = end - start
 
         results = self.connection.search_raw(query, indices=self.indices,

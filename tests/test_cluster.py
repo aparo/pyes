@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
-from .estestcase import ESTestCase
+from estestcase import ESTestCase
 
 class ClusterTestCase(ESTestCase):
     def setUp(self):

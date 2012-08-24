@@ -132,6 +132,9 @@ class Indices(object):
         :keyword indices: an index or a list of indices
         """
         indices = self.conn._validate_indices(indices)
+        if indices==["_all"]:
+            indices=[]
+
         path = make_path([','.join(indices), '_status'])
         return self.conn._send_request('GET', path)
 
@@ -294,6 +297,8 @@ class Indices(object):
         """
         self.conn.force_bulk()
         indices = self.conn._validate_indices(indices)
+        if indices==["_all"]:
+            indices=[]
 
         path = make_path([','.join(indices), '_refresh'])
         result = self.conn._send_request('POST', path)

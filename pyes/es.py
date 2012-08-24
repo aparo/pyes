@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 from __future__ import with_statement
+import urllib
 
 try:
     # For Python >= 2.6
@@ -41,6 +42,8 @@ from .exceptions import (ElasticSearchException, IndexAlreadyExistsException,
                          IndexMissingException, InvalidQuery,
                          ReduceSearchPhaseException, VersionConflictEngineException,
                          BulkOperationException)
+from .decorators import deprecated
+
 
 __all__ = ['ES', 'file_to_attachment', 'decode_json']
 
@@ -680,7 +683,7 @@ class ES(object):
 
 
     #---- Indices commands
-    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.aliases")
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.aliases")
     def aliases(self, indices=None):
         """
         Deprecated:
@@ -691,7 +694,7 @@ class ES(object):
 
         return self.indices.aliases(indices=indices)
 
-    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.status")
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.status")
     def status(self, indices=None):
         """
         Deprecated:
@@ -703,7 +706,7 @@ class ES(object):
 
 
 
-    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.create_index")
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.create_index")
     def create_index(self, index, settings=None):
         """
         Deprecated:
@@ -713,7 +716,7 @@ class ES(object):
         """
         return self.indices.create_index(index=index, settings=settings)
 
-    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.create_index_if_missing")
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.create_index_if_missing")
     def create_index_if_missing(self, index, settings=None):
         """
         Deprecated
@@ -725,7 +728,7 @@ class ES(object):
         """
         return  self.indices.create_index_if_missing(index=index, settings=settings)
 
-    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.delete_index")
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.delete_index")
     def delete_index(self, index):
         """
         Deprecated
@@ -734,7 +737,7 @@ class ES(object):
         """
         return self.indices.delete_index(index=index)
 
-    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.exists_index")
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.exists_index")
     def exists_index(self, index):
         """
         Deprecated
@@ -743,7 +746,7 @@ class ES(object):
         """
         return self.indices.exists_index(index=index)
 
-    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.delete_index_if_exists")
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.delete_index_if_exists")
     def delete_index_if_exists(self, index):
         """
         Deprecated
@@ -753,7 +756,7 @@ class ES(object):
         """
         return self.indices.delete_index_if_exists(index=index)
 
-    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.get_indices")
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.get_indices")
     def get_indices(self, include_aliases=False):
         """
         Deprecated
@@ -773,7 +776,7 @@ class ES(object):
         """
         return self.indices.get_indices(include_aliases=include_aliases)
 
-    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.get_closed_indices")
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.get_closed_indices")
     def get_closed_indices(self):
         """
         Deprecated
@@ -783,7 +786,7 @@ class ES(object):
 
         return self.indices.get_closed_indices()
 
-    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.get_alias")
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.get_alias")
     def get_alias(self, alias):
         """
         Deprecated
@@ -797,7 +800,7 @@ class ES(object):
         """
         return self.indices.get_alias(alias)
 
-    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.change_aliases")
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.change_aliases")
     def change_aliases(self, commands):
         """
         Deprecated
@@ -811,7 +814,7 @@ class ES(object):
         """
         return self.indices.change_aliases(commands)
 
-    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.add_alias")
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.add_alias")
     def add_alias(self, alias, indices=None):
         """
         Deprecated
@@ -821,7 +824,7 @@ class ES(object):
         """
         return self.indices.add_alias(alias, indices)
 
-    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.delete_alias")
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.delete_alias")
     def delete_alias(self, alias, indices=None):
         """
         Deprecated
@@ -835,7 +838,7 @@ class ES(object):
         """
         return self.indices.delete_alias(alias, indices)
 
-    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.set_alias")
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.set_alias")
     def set_alias(self, alias, indices=None):
         """
         Deprecated
@@ -853,7 +856,7 @@ class ES(object):
         return self.indices.set_alias(alias, indices)
 
 
-    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.close_index")
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.close_index")
     def close_index(self, index):
         """
         Deprecated
@@ -862,7 +865,7 @@ class ES(object):
         """
         return self.indices.close_index(index)
 
-    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.open_index")
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.open_index")
     def open_index(self, index):
         """
         Deprecated
@@ -871,7 +874,7 @@ class ES(object):
         """
         return self.indices.open_index(index)
 
-    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.flush")
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.flush")
     def flush(self, indices=None, refresh=None):
         """
         Deprecated
@@ -885,7 +888,7 @@ class ES(object):
         """
         return self.indices.flush(indices=indices, refresh=refresh)
 
-    @DeprecationWarning("This will be removed in future version of pyes. Please use .indices.refresh")
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.refresh")
     def refresh(self, indices=None, timesleep=None):
         """
         Deprecated
@@ -896,7 +899,7 @@ class ES(object):
         """
         return self.indices.refresh(indices=indices, timesleep=timesleep)
 
-
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.optimize")
     def optimize(self, indices=None,
                  wait_for_merge=False,
                  max_num_segments=None,
@@ -929,19 +932,14 @@ class ES(object):
         Defaults to true.
 
         """
-        indices = self._validate_indices(indices)
-        path = self._make_path([','.join(indices), '_optimize'])
-        params = dict(
-            wait_for_merge=wait_for_merge,
-            only_expunge_deletes=only_expunge_deletes,
-            refresh=refresh,
-            flush=flush,
-            )
-        if max_num_segments is not None:
-            params['max_num_segments'] = max_num_segments
-        result = self._send_request('POST', path, params=params)
-        return result
+        return self.indices.optimize(indices=indices,
+                 wait_for_merge=wait_for_merge,
+                 max_num_segments=max_num_segments,
+                 only_expunge_deletes=only_expunge_deletes,
+                 refresh=refresh,
+                 flush=flush)
 
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.analyze")
     def analyze(self, text, index=None, analyzer=None, tokenizer=None, filters=None, field=None):
         """
         Performs the analysis process on a text and return the tokens breakdown of the text
@@ -973,47 +971,28 @@ class ES(object):
         path = self._make_path([index, '_analyze'])
         return self._send_request('POST', path, text, args)
 
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.gateway_snapshot")
     def gateway_snapshot(self, indices=None):
         """
         Gateway snapshot one or more indices
 
         :param indices: a list of indices or None for default configured.
         """
-        indices = self._validate_indices(indices)
-        path = self._make_path([','.join(indices), '_gateway', 'snapshot'])
-        return self._send_request('POST', path)
+        return self.indices.gateway_snapshot(indices=indices)
 
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.put_mapping")
     def put_mapping(self, doc_type=None, mapping=None, indices=None):
         """
         Register specific mapping definition for a specific type against one or more indices.
         """
-        indices = self._validate_indices(indices)
-        if mapping is None:
-            mapping = {}
-        if hasattr(mapping, "to_json"):
-            mapping = mapping.to_json()
-        if hasattr(mapping, "as_dict"):
-            mapping = mapping.as_dict()
+        return self.indices.put_mapping(doc_type=doc_type, mapping=mapping, indices=indices)
 
-        if doc_type:
-            path = self._make_path([','.join(indices), doc_type, "_mapping"])
-            if doc_type not in mapping:
-                mapping = {doc_type: mapping}
-        else:
-            path = self._make_path([','.join(indices), "_mapping"])
-
-        return self._send_request('PUT', path, mapping)
-
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.get_mapping")
     def get_mapping(self, doc_type=None, indices=None):
         """
         Register specific mapping definition for a specific type against one or more indices.
         """
-        indices = self._validate_indices(indices)
-        if doc_type:
-            path = self._make_path([','.join(indices), doc_type, "_mapping"])
-        else:
-            path = self._make_path([','.join(indices), "_mapping"])
-        return self._send_request('GET', path)
+        return self.indices.get_mapping(doc_type=doc_type, indices=indices)
 
     def collect_info(self):
         """
@@ -1331,12 +1310,12 @@ class ES(object):
         path = self._make_path([','.join(indices), ','.join(doc_types), '_query'])
         return self._send_request('DELETE', path, body, querystring_args)
 
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.delete_mapping")
     def delete_mapping(self, index, doc_type):
         """
         Delete a typed JSON document type from a specific index.
         """
-        path = self._make_path([index, doc_type])
-        return self._send_request('DELETE', path)
+        return self.indices.delete_mapping(index=index, doc_type=doc_type)
 
     def exists(self, index, doc_type, id, **get_params):
         """
@@ -1559,20 +1538,20 @@ class ES(object):
 
     #--- settings management
 
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.get_settings")
     def get_settings(self, index=None):
         """
         Returns the current settings for an index.
         """
-        path = self._make_path([index, "_settings"])
-        return self._send_request('GET', path)
+        return self.indices.get_settings(index=index)
 
+    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.update_settings")
     def update_settings(self, index, newvalues):
         """
         Update Settings of an index.
 
         """
-        path = self._make_path([index, "_settings"])
-        return self._send_request('PUT', path, newvalues)
+        return self.indices.update_settings(index=index, newvalues=newvalues)
 
     def morelikethis(self, index, doc_type, id, fields, **query_params):
         """

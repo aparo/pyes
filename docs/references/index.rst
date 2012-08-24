@@ -17,6 +17,7 @@
     pyes.fakettypes
     pyes.filters
     pyes.highlight
+    pyes.managers
     pyes.mappings
     pyes.query
     pyes.rivers

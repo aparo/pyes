@@ -7,11 +7,13 @@ class Indices(object):
     def __init__(self, conn):
         self.conn=conn
 
+    #TODO: clearcache segments stats templates
+
     #Alias Management - START
     def aliases(self, indices=None):
         """
         Retrieve the aliases of one or more indices.
-        :ref:`Admin Indices Alias <es-guide-reference-api-admin-indices-aliases>`
+        ( See :ref:`es-guide-reference-api-admin-indices-aliases`)
 
         :keyword indices: an index or a list of indices
 
@@ -24,11 +26,13 @@ class Indices(object):
     def get_alias(self, alias):
         """
         Get the index or indices pointed to by a given alias.
-        :ref:`Admin Indices Alias <es-guide-reference-api-admin-indices-aliases>`
+        (See :ref:`es-guide-reference-api-admin-indices-aliases`)
 
         :param alias: the name of an alias
+        
         :return returns a list of index names.
         :raise IndexMissingException if the alias does not exist.
+
         """
         status = self.status([alias])
         return status['indices'].keys()
@@ -36,11 +40,11 @@ class Indices(object):
     def change_aliases(self, commands):
         """
         Change the aliases stored.
-        :ref:`Admin Indices Alias <es-guide-reference-api-admin-indices-aliases>`
+        (See :ref:`es-guide-reference-api-admin-indices-aliases`)
 
         :param commands: is a list of 3-tuples; (command, index, alias), where
-        `command` is one of "add" or "remove", and `index` and `alias` are the
-        index and alias to add or remove.
+                         `command` is one of "add" or "remove", and `index` and
+                         `alias` are the index and alias to add or remove.
 
         """
         body = {
@@ -54,7 +58,7 @@ class Indices(object):
     def add_alias(self, alias, indices):
         """
         Add an alias to point to a set of indices.
-        :ref:`Admin Indices Alias <es-guide-reference-api-admin-indices-aliases>`
+        (See :ref:`es-guide-reference-api-admin-indices-aliases`)
 
         :param alias: the name of an alias
         :param indices: a list of indices
@@ -66,7 +70,7 @@ class Indices(object):
     def delete_alias(self, alias, indices):
         """
         Delete an alias.
-        :ref:`Admin Indices Alias <es-guide-reference-api-admin-indices-aliases>`
+        (See :ref:`es-guide-reference-api-admin-indices-aliases`)
 
         The specified index or indices are deleted from the alias, if they are
         in it to start with.  This won't report an error even if the indices
@@ -82,7 +86,7 @@ class Indices(object):
     def set_alias(self, alias, indices):
         """
         Set an alias.
-        :ref:`Admin Indices Alias <es-guide-reference-api-admin-indices-aliases>`
+        (See :ref:`es-guide-reference-api-admin-indices-aliases`)
 
         This handles removing the old list of indices pointed to by the alias.
 
@@ -108,7 +112,7 @@ class Indices(object):
     def status(self, indices=None):
         """
         Retrieve the status of one or more indices
-        :ref:`Admin Indices Status <es-guide-reference-api-admin-indices-status>`
+        (See :ref:`es-guide-reference-api-admin-indices-status`)
 
         :keyword indices: an index or a list of indices
         """
@@ -119,7 +123,7 @@ class Indices(object):
     def create_index(self, index, settings=None):
         """
         Creates an index with optional settings.
-        :ref:`Admin Create Index <es-guide-reference-api-admin-create-index>`
+        :ref:`es-guide-reference-api-admin-indices-create-index`
 
         :param index: the name of the index
         :keyword settings: a settings object or a dict containing settings
@@ -143,7 +147,7 @@ class Indices(object):
     def delete_index(self, index):
         """
         Deletes an index.
-        :ref:`Admin Delete Index <es-guide-reference-api-admin-delete-index>`
+        :ref:`es-guide-reference-api-admin-indices-delete-index`
 
         :param index: the name of the index
 
@@ -153,7 +157,7 @@ class Indices(object):
     def exists_index(self, index):
         """
         Check if an index exists.
-        :ref:`Admin Index Exists <es-guide-reference-api-admin-indices-indices-exists>`
+        (See :ref:`es-guide-reference-api-admin-indices-indices-exists`)
 
         :param index: the name of the index
         """
@@ -224,7 +228,7 @@ class Indices(object):
     def close_index(self, index):
         """
         Close an index.
-        :ref:`Admin Indices Open Close <es-guide-reference-api-admin-indices-open-close>`
+        (See :ref:`es-guide-reference-api-admin-indices-open-close`)
 
 
         :param index: the name of the index
@@ -235,7 +239,7 @@ class Indices(object):
     def open_index(self, index):
         """
         Open an index.
-        :ref:`Admin Indices Open Close <es-guide-reference-api-admin-indices-open-close>`
+        (See :ref:`es-guide-reference-api-admin-indices-open-close`)
 
         :param index: the name of the index
         """
@@ -246,7 +250,7 @@ class Indices(object):
         Flushes one or more indices (clear memory)
         If a bulk is full, it sends it.
 
-        :ref:`Admin Indices Flush <es-guide-reference-api-admin-indices-flush>`
+        (See :ref:`es-guide-reference-api-admin-indices-flush`)
 
 
         :keyword indices: an index or a list of indices
@@ -267,7 +271,7 @@ class Indices(object):
         """
         Refresh one or more indices
         If a bulk is full, it sends it.
-        :ref:`Admin Indices Refresh <es-guide-reference-api-admin-indices-refresh>`
+        (See :ref:`es-guide-reference-api-admin-indices-refresh`)
 
         :keyword indices: an index or a list of indices
         :keyword timesleep: seconds to wait
@@ -283,6 +287,158 @@ class Indices(object):
         self.conn.cluster.health(wait_for_status='green')
         return result
 
+    def optimize(self, indices=None,
+                 wait_for_merge=False,
+                 max_num_segments=None,
+                 only_expunge_deletes=False,
+                 refresh=True,
+                 flush=True):
+        """
+        Optimize one or more indices.
+        (See :ref:`es-guide-reference-api-admin-indices-optimize`)
+
+
+        :keyword indices: the list of indices to optimise.  If not supplied, all
+                          default_indices are optimised.
+
+        :keyword wait_for_merge: If True, the operation will not return until the merge has been completed.
+                                 Defaults to False.
+
+        :keyword max_num_segments: The number of segments to optimize to. To fully optimize the index, set it to 1.
+                                   Defaults to half the number configured by the merge policy (which in turn defaults
+                                   to 10).
+
+
+        :keyword only_expunge_deletes: Should the optimize process only expunge segments with deletes in it.
+                                       In Lucene, a document is not deleted from a segment, just marked as deleted.
+                                       During a merge process of segments, a new segment is created that does have
+                                       those deletes.
+                                       This flag allow to only merge segments that have deletes. Defaults to false.
+
+        :keyword refresh: Should a refresh be performed after the optimize. Defaults to true.
+
+        :keyword flush: Should a flush be performed after the optimize. Defaults to true.
+
+        """
+        indices = self.conn._validate_indices(indices)
+        path = self.conn._make_path([','.join(indices), '_optimize'])
+        params = dict(
+            wait_for_merge=wait_for_merge,
+            only_expunge_deletes=only_expunge_deletes,
+            refresh=refresh,
+            flush=flush,
+            )
+        if max_num_segments is not None:
+            params['max_num_segments'] = max_num_segments
+        return self.conn._send_request('POST', path, params=params)
+
+    def analyze(self, text, index=None, analyzer=None, tokenizer=None, filters=None, field=None):
+        """
+        Performs the analysis process on a text and return the tokens breakdown of the text
+
+        (See :ref:`es-guide-reference-api-admin-indices-optimize`)
+
+        """
+        if filters is None:
+            filters = []
+        argsets = 0
+        args = {}
+
+        if analyzer:
+            args['analyzer'] = analyzer
+            argsets += 1
+        if tokenizer or filters:
+            if tokenizer:
+                args['tokenizer'] = tokenizer
+            if filters:
+                args['filters'] = ','.join(filters)
+            argsets += 1
+        if field:
+            args['field'] = field
+            argsets += 1
+
+        if argsets > 1:
+            raise ValueError('Argument conflict: Specify either analyzer, tokenizer/filters or field')
+
+        if field and index is None:
+            raise ValueError('field can only be specified with an index')
+
+        path = self.conn._make_path([index, '_analyze'])
+        return self.conn._send_request('POST', path, text, args)
+
+    def gateway_snapshot(self, indices=None):
+        """
+        Gateway snapshot one or more indices
+        (See :ref:`es-guide-reference-api-admin-indices-gateway-snapshot`)
+
+        :keyword indices: a list of indices or None for default configured.
+        """
+        indices = self.conn._validate_indices(indices)
+        path = self.conn._make_path([','.join(indices), '_gateway', 'snapshot'])
+        return self.conn._send_request('POST', path)
+
+    def put_mapping(self, doc_type=None, mapping=None, indices=None):
+        """
+        Register specific mapping definition for a specific type against one or more indices.
+        (See :ref:`es-guide-reference-api-admin-indices-put-mapping`)
+
+        """
+        indices = self.conn._validate_indices(indices)
+        if mapping is None:
+            mapping = {}
+        if hasattr(mapping, "to_json"):
+            mapping = mapping.to_json()
+        if hasattr(mapping, "as_dict"):
+            mapping = mapping.as_dict()
+
+        if doc_type:
+            path = self.conn._make_path([','.join(indices), doc_type, "_mapping"])
+            if doc_type not in mapping:
+                mapping = {doc_type: mapping}
+        else:
+            path = self.conn._make_path([','.join(indices), "_mapping"])
+
+        return self.conn._send_request('PUT', path, mapping)
+
+    def get_mapping(self, doc_type=None, indices=None):
+        """
+        Register specific mapping definition for a specific type against one or more indices.
+        (See :ref:`es-guide-reference-api-admin-indices-get-mapping`)
+
+        """
+        indices = self.conn._validate_indices(indices)
+        if doc_type:
+            path = self.conn._make_path([','.join(indices), doc_type, "_mapping"])
+        else:
+            path = self.conn._make_path([','.join(indices), "_mapping"])
+        return self.conn._send_request('GET', path)
+
+    def delete_mapping(self, index, doc_type):
+        """
+        Delete a typed JSON document type from a specific index.
+        (See :ref:`es-guide-reference-api-admin-indices-delete-mapping`)
+
+        """
+        path = self.conn._make_path([index, doc_type])
+        return self.conn._send_request('DELETE', path)
+
+    def get_settings(self, index=None):
+        """
+        Returns the current settings for an index.
+        (See :ref:`es-guide-reference-api-admin-indices-get-settings`)
+
+        """
+        path = self.conn._make_path([index, "_settings"])
+        return self.conn._send_request('GET', path)
+
+    def update_settings(self, index, newvalues):
+        """
+        Update Settings of an index.
+        (See  :ref:`es-guide-reference-api-admin-indices-update-settings`)
+
+        """
+        path = self.conn._make_path([index, "_settings"])
+        return self.conn._send_request('PUT', path, newvalues)
 
 class Cluster(object):
     def __init__(self, conn):

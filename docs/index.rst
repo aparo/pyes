@@ -14,6 +14,7 @@ Contents:
     links
     guide/reference/index
     guide/appendix/index
+    guide/appendix/glossary
 
 
 Indices and tables

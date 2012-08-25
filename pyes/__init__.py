@@ -14,9 +14,9 @@ __docformat__ = "restructuredtext"
 
 
 def is_stable_release():
-    if len(VERSION) > 3 and isinstance(VERSION[3], basestring):
+    if len(VERSION) > 3:
         return False
-    return not VERSION[1] % 2
+    return True
 
 
 def version_with_meta():

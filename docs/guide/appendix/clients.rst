@@ -18,7 +18,7 @@ Clients
 * `em-elasticsearch <http://github.com/ichverstehe/em-elasticsearch>`_:  elasticsearch library for eventmachine.
 *  `elastic_searchable <https://github.com/wireframe/elastic_searchable/>`_:  Ruby client + Rails integration.
 * `erlastic_search <http://github.com/tsloughter/erlastic_search>`_:  Erlang client.
-* `elasticsearch <http://github.com/nervetattoo/elasticsearch>`_  `_  PHP client.
+* `elasticsearch <http://github.com/nervetattoo/elasticsearch>`_ :  PHP client.
 * `NEST <https://github.com/Mpdreamz/NEST>`_:  .NET client.
 * `ElasticSearch.NET <https://github.com/medcl/ElasticSearch.Net>`_:  .NET client.
 * `pyelasticsearch <http://github.com/rhec/pyelasticsearch>`_:  Python client.
@@ -58,5 +58,5 @@ Front Ends
 GitHub
 -------
 
-GitHub is a place where a lot of development is done around *elasticsearch*, here is a simple search for `repos <https://github.com/search?q=elasticsearch&type=Repositories>`_.  
+GitHub is a place where a lot of development is done around *elasticsearch*, here is a simple search for `repos <https://github.com/search?q=elasticsearch&type=Repositories>`_.
 

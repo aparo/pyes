@@ -27,25 +27,70 @@ Features
 - Percolator
 - River support
 
+Documentation
+=============
+
+http://pyes.rtfd.org/
+http://pyes.readthedocs.org/en/latest/
 
 Changelog
 =========
 
-v. 0.18.7-rc1:
+v. 0.19.1:
 
-    Tested against 0.18.7, with all tests passing
+    Renamed field_name in name in ScriptFields
 
-    Added support for index_stats
+    Fixed ResultSet slicing.
 
-v. 0.17.0:
+    Create Manager to manage API action grouped as Elasticsearch.
 
-    API BREAKING: Added new searcher iterator API. (To use the old code rename ".search" in ".search_raw")
+    Moved tests outside pyes code dir. Update references. Upgraded test elasticsearch to 0.19.9.
 
-    Tests refactory.
+    Added documentation links
+
+    Got docs building on readthedocs.org (Wraithan - Chris McDonald)
+
+    Renamed scroll_timeout in scroll
+
+    Moved FacetFactory include
+
+    Renamed field_name in name in ScriptFields
+
+    Using only thrift_connect to manage thrift existence
+
+    Added model and scan to query
+
+    Added exists document call
+
+    Added routing to delete
+
+    Removed minimum_number_should_match parameter.It is not supported by elastic search and causes errors when using a BoolFilter. (Jernej Kos)
+
+    Improved speed json conversion of datetime values
+
+    Add boost argument to TextQuery
+
+    Added boost argument to TextQuery. (Jernej Kos)
+
+    Go back to urllib3 instead of requests. (gsakkis)
+
+    Enhance Twitter River class. (thanks @dendright)
+
+    Add OAuth authentication and filtering abilities to Twitter River. (Jack Riches)
+
+    HasChildFilter expects a Query. (gsakkis)
+
+    Fixed _parent being pulled from _meta rather than the instance itself. (merrellb)
+
+    Add support of all_terms to TermFacet. (mouad)
+
+
 
 TODO
 ----
 
+- add ORM to manage objects
+- much more documentation
 - add coverage
 - add jython native client protocol
 

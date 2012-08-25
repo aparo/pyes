@@ -6,7 +6,7 @@ Reference:
 
 .. toctree::
     :maxdepth: 3
-	
+
     setup/index
     api/index
     query-dsl/index

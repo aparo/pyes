@@ -87,8 +87,8 @@ class Search(EqualityComparableUsingAttributeDictionary):
         """
         fields: if is [], the _source is not returned
         """
-        from .facets import FacetFactory
         if not index_boost: index_boost = {}
+        from .facets import FacetFactory
         self.query = query
         self.filter = filter
         self.fields = fields or []

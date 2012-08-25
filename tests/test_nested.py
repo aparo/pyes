@@ -2,8 +2,8 @@
 from __future__ import absolute_import
 import unittest
 from .estestcase import ESTestCase
-from ..filters import TermFilter, NestedFilter
-from ..query import FilteredQuery, MatchAllQuery, BoolQuery, TermQuery
+from pyes.filters import TermFilter, NestedFilter
+from pyes.query import FilteredQuery, MatchAllQuery, BoolQuery, TermQuery
 
 class NestedSearchTestCase(ESTestCase):
     def setUp(self):

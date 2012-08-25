@@ -1,12 +1,12 @@
 Usage
 =====
 
-Creating a connection:
+Creating a connection. (See more details here :ref:`pyes-connections`)
 
 .. code-block:: python
 
     >>> from pyes import *
-    >>> conn = ES('127.0.0.1:9200')
+    >>> conn = ES('127.0.0.1:9200') #for http
 
 Deleting an index:
 
@@ -17,7 +17,7 @@ Deleting an index:
     >>> except:
     >>>     pass
 
-(an exception is fored if the index is not present)
+(an exception is raised if the index is not present)
 
 Create an index:
 
@@ -25,7 +25,7 @@ Create an index:
 
     >>> conn.create_index("test-index")
 
-Creating a mapping:
+Creating a mapping via dictionary:
 
 .. code-block:: python
 
@@ -52,6 +52,29 @@ Creating a mapping:
     >>>                    'type': u'string'}}
     >>> conn.put_mapping("test-type", {'properties':mapping}, ["test-index"])
 
+Creating a mapping via objects:
+
+.. code-block:: python
+
+    >>> from pyes.mappings import *
+    >>> docmapping = DocumentObjectField(name=self.document_type)
+    >>> docmapping.add_property(
+    >>>     StringField(name="parsedtext", store=True, term_vector="with_positions_offsets", index="analyzed"))
+    >>> docmapping.add_property(
+    >>>     StringField(name="name", store=True, term_vector="with_positions_offsets", index="analyzed"))
+    >>> docmapping.add_property(
+    >>>     StringField(name="title", store=True, term_vector="with_positions_offsets", index="analyzed"))
+    >>> docmapping.add_property(IntegerField(name="position", store=True))
+    >>> docmapping.add_property(StringField(name="uuid", store=True, index="not_analyzed"))
+    >>> nested_object = NestedObject(name="nested")
+    >>> nested_object.add_property(StringField(name="name", store=True))
+    >>> nested_object.add_property(StringField(name="value", store=True))
+    >>> nested_object.add_property(IntegerField(name="num", store=True))
+    >>> docmapping.add_property(nested_object)
+    >>> settings.add_mapping(docmapping)
+    >>> conn.ensure_index(self.index_name, settings)
+
+
 Index some documents:
 
 .. code-block:: python
@@ -63,14 +86,17 @@ Refresh an index:
 
 .. code-block:: python
 
+    >>> conn.refresh("test-index")
     >>> conn.refresh(["test-index"])
 
-Execute a query
+Execute a query. (See :ref:`pyes-queries`)
 
 .. code-block:: python
 
     >>> q = TermQuery("name", "joe")
     >>> results = conn.search(query = q)
+
+results is a (See :ref:`pyes-resultset`), you can iterate it. It caches some results and pages them. The default returned objects are ElasticSearchModel (See :ref:`pyes-models`).
 
 Iterate on results:
 
@@ -79,4 +105,4 @@ Iterate on results:
     >>> for r in results:
     >>>    print r
 
-For more examples looks at the tests.
+The tests directory there are a lot of examples of functionalities.

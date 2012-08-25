@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
-import unittest
-from .estestcase import ESTestCase
-from ..query import MatchAllQuery, Search
+from estestcase import ESTestCase
+from pyes.query import MatchAllQuery, Search
 
 class ResultsetTestCase(ESTestCase):
     def setUp(self):
@@ -41,5 +39,14 @@ class ResultsetTestCase(ESTestCase):
             self.assertEqual(r.position, position + 10)
             position += 1
 
-if __name__ == "__main__":
-    unittest.main()
+        range = resultset[0:1]
+        self.assertEqual(len(range), 1)
+        self.assertEqual(range[0].position, 10)
+        range = resultset[1:1]
+        self.assertEqual(len(range), 0)
+
+        range = resultset[9:10]
+        self.assertEqual(len(range), 1)
+        self.assertEqual(range[0].position, 19)
+
+

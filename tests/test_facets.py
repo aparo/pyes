@@ -2,10 +2,10 @@
 from __future__ import absolute_import
 import unittest
 from .estestcase import ESTestCase
-from ..facets import DateHistogramFacet
-from ..filters import TermFilter, RangeFilter
-from ..query import FilteredQuery, MatchAllQuery, Search
-from ..utils import ESRange
+from pyes.facets import DateHistogramFacet
+from pyes.filters import TermFilter, RangeFilter
+from pyes.query import FilteredQuery, MatchAllQuery, Search
+from pyes.utils import ESRange
 import datetime
 
 class FacetSearchTestCase(ESTestCase):

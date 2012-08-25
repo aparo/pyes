@@ -5,29 +5,40 @@ from .utils import EqualityComparableUsingAttributeDictionary
 
 __author__ = 'Alberto Paro'
 
-__all__ = ['NoServerAvailable',
-           "QueryError",
-           "NotFoundException",
-           "AlreadyExistsException",
-           "IndexAlreadyExistsException",
-           "IndexMissingException",
-           "SearchPhaseExecutionException",
-           "InvalidQuery",
-           "InvalidParameterQuery",
-           "InvalidParameter",
-           "QueryParameterError",
-           "ScriptFieldsError",
-           "ReplicationShardOperationFailedException",
-           "ClusterBlockException",
-           "MapperParsingException",
-           "ElasticSearchException",
-           'ReduceSearchPhaseException',
-           "VersionConflictEngineException",
-           'DocumentAlreadyExistsEngineException',
-           "DocumentAlreadyExistsException",
-           "TypeMissingException",
-           "BulkOperationException"
+__all__ = [
+    'ESPendingDeprecationWarning',
+    'ESDeprecationWarning',
+    'NoServerAvailable',
+    "QueryError",
+    "NotFoundException",
+    "AlreadyExistsException",
+    "IndexAlreadyExistsException",
+    "IndexMissingException",
+    "SearchPhaseExecutionException",
+    "InvalidQuery",
+    "InvalidParameterQuery",
+    "InvalidParameter",
+    "QueryParameterError",
+    "ScriptFieldsError",
+    "ReplicationShardOperationFailedException",
+    "ClusterBlockException",
+    "MapperParsingException",
+    "ElasticSearchException",
+    'ReduceSearchPhaseException',
+    "VersionConflictEngineException",
+    'DocumentAlreadyExistsEngineException',
+    "DocumentAlreadyExistsException",
+    "TypeMissingException",
+    "BulkOperationException"
 ]
+
+class ESPendingDeprecationWarning(PendingDeprecationWarning):
+    pass
+
+
+class ESDeprecationWarning(DeprecationWarning):
+    pass
+
 
 class NoServerAvailable(Exception):
     pass

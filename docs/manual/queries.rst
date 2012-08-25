@@ -1,3 +1,5 @@
+.. _pyes-queries:
+
 Queries
 =======
 

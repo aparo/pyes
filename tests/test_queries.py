@@ -2,9 +2,9 @@
 from __future__ import absolute_import
 import unittest
 from .estestcase import ESTestCase
-from ..query import *
-from ..filters import TermFilter, ANDFilter, ORFilter, RangeFilter, RawFilter, IdsFilter, MatchAllFilter, NotFilter
-from ..utils import ESRangeOp
+from pyes.query import *
+from pyes.filters import TermFilter, ANDFilter, ORFilter, RangeFilter, RawFilter, IdsFilter, MatchAllFilter, NotFilter
+from pyes.utils import ESRangeOp
 
 class QuerySearchTestCase(ESTestCase):
     def setUp(self):

@@ -188,7 +188,7 @@ A document can be indexed with a **timestamp** associated with it. The **timesta
     }'
 
 
-If the **timestamp** value is not provided externally or in the **_source**, the **timestamp** will be automatically set to the date the document was processed by the indexing chain. More information can be found on the :ref:`_timestamp mapping page <es-guide-reference-mapping-timestamp-field>`.  
+If the **timestamp** value is not provided externally or in the **_source**, the **timestamp** will be automatically set to the date the document was processed by the indexing chain. More information can be found on the :ref:`_timestamp mapping page <es-guide-reference-mapping-timestamp-field>`.
 
 TTL
 ===
@@ -221,7 +221,7 @@ A document can be indexed with a **ttl** (time to live) associated with it. Expi
     }'
 
 
-More information can be found on the :ref:`_ttl mapping page <es-guide-reference-api-mapping-ttl-field>`.  
+More information can be found on the :ref:`_ttl mapping page <es-guide-reference-mapping-ttl-field>`.
 Percolate
 =========
 

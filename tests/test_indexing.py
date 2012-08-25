@@ -3,10 +3,9 @@ from __future__ import absolute_import
 import unittest
 from .estestcase import ESTestCase
 
-from ..query import TermQuery
-from ..exceptions import (IndexAlreadyExistsException,
-                          DocumentAlreadyExistsEngineException,
-                          VersionConflictEngineException)
+from pyes.query import TermQuery
+from pyes.exceptions import (IndexAlreadyExistsException,
+                          VersionConflictEngineException, DocumentAlreadyExistsException)
 from time import sleep
 
 class IndexingTestCase(ESTestCase):
@@ -227,7 +226,7 @@ class IndexingTestCase(ESTestCase):
 
     def testVersion(self):
         self.conn.index({"name": "Joe Test"}, self.index_name, self.document_type, 1, force_insert=True)
-        self.assertRaises(DocumentAlreadyExistsEngineException, self.conn.index,
+        self.assertRaises(DocumentAlreadyExistsException, self.conn.index,
             {"name": "Joe Test2"}, self.index_name, self.document_type, 1, force_insert=True)
         self.conn.index({"name": "Joe Test"}, self.index_name, self.document_type, 1, version=1)
         self.conn.index({"name": "Joe Test"}, self.index_name, self.document_type, 1, version=2)

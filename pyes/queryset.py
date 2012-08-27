@@ -138,17 +138,17 @@ class QuerySet(object):
         # iterating over the cache.
         return iter(self._result_cache)
 
-    def _result_iter(self):
-        pos = 0
-        while 1:
-            upper = len(self._result_cache)
-            while pos < upper:
-                yield self._result_cache[pos]
-                pos = pos + 1
-            if not self._iter:
-                raise StopIteration
-            if len(self._result_cache) <= pos:
-                self._fill_cache()
+#    def _result_iter(self):
+#        pos = 0
+#        while 1:
+#            upper = len(self._result_cache)
+#            while pos < upper:
+#                yield self._result_cache[pos]
+#                pos = pos + 1
+#            if not self._iter:
+#                raise StopIteration
+#            if len(self._result_cache) <= pos:
+#                self._fill_cache()
 
     def __nonzero__(self):
         if self._result_cache is not None:
@@ -261,8 +261,10 @@ class QuerySet(object):
         An iterator over the results from applying this QuerySet to the
         database.
         """
-        raise NotImplementedError()
-        #yield obj
+        if not self._result_cache:
+            len(self)
+        for r in self._result_cache:
+            yield r
 
     def aggregate(self, *args, **kwargs):
         """
@@ -583,7 +585,7 @@ class QuerySet(object):
                 filters=ANDFilter(filters)
             else:
                 filters=filters[0]
-            clone._filters.add(NotFilter(filters))
+            clone._filters.append(NotFilter(filters))
         else:
             clone._filters.extend(filters)
         return clone

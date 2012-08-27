@@ -43,3 +43,7 @@ class QuerySetTests(ESTestCase):
         self.assertEqual(len(queryset), 1)
         self.assertEqual(queryset.count(), 1)
         self.assertEqual([r.position for r in queryset], [2])
+        queryset = model.objects.exclude(position=1)
+        self.assertEqual(len(queryset), 2)
+        self.assertEqual(queryset.count(), 2)
+        self.assertEqual([r.position for r in queryset], [2,3])

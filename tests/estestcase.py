@@ -69,31 +69,28 @@ class ESTestCase(unittest.TestCase):
 
     def init_default_index(self):
         settings = SettingsBuilder()
-        settings.add_mapping({self.document_type: {'properties':
-                                                           {u'parsedtext': {'boost': 1.0,
-                                                                            'index': 'analyzed',
-                                                                            'store': 'yes',
-                                                                            'type': u'string',
-                                                                            "term_vector": "with_positions_offsets"},
-                                                            u'name': {'boost': 1.0,
-                                                                      'index': 'analyzed',
-                                                                      'store': 'yes',
-                                                                      'type': u'string',
-                                                                      "term_vector": "with_positions_offsets"},
-                                                            u'title': {'boost': 1.0,
-                                                                       'index': 'analyzed',
-                                                                       'store': 'yes',
-                                                                       'type': u'string',
-                                                                       "term_vector": "with_positions_offsets"},
-                                                            u'pos': {'store': 'yes',
-                                                                     'type': u'integer'},
-                                                            u'uuid': {'boost': 1.0,
-                                                                      'index': 'not_analyzed',
-                                                                      'store': 'yes',
-                                                                      'type': u'string'}}
-        }}, name=self.document_type)
+        from pyes.mappings import DocumentObjectField
+        from pyes.mappings import IntegerField
+        from pyes.mappings import NestedObject
+        from pyes.mappings import StringField
 
-        self.conn.create_index(self.index_name, settings)
+        docmapping = DocumentObjectField(name=self.document_type)
+        docmapping.add_property(
+            StringField(name="parsedtext", store=True, term_vector="with_positions_offsets", index="analyzed"))
+        docmapping.add_property(
+            StringField(name="name", store=True, term_vector="with_positions_offsets", index="analyzed"))
+        docmapping.add_property(
+            StringField(name="title", store=True, term_vector="with_positions_offsets", index="analyzed"))
+        docmapping.add_property(IntegerField(name="position", store=True))
+        docmapping.add_property(StringField(name="uuid", store=True, index="not_analyzed"))
+        nested_object = NestedObject(name="nested")
+        nested_object.add_property(StringField(name="name", store=True))
+        nested_object.add_property(StringField(name="value", store=True))
+        nested_object.add_property(IntegerField(name="num", store=True))
+        docmapping.add_property(nested_object)
+        settings.add_mapping(docmapping)
+
+        self.conn.ensure_index(self.index_name, settings)
 
 
 def setUp():

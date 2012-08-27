@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 from __future__ import with_statement
 import urllib
+from pyes.helpers import SettingsBuilder
 
 try:
     # For Python >= 2.6
@@ -736,6 +737,56 @@ class ES(object):
         Check if an index exists.
         """
         return self.indices.exists_index(index=index)
+
+    def ensure_index(self, index, mappings=None, settings=None, clear=False):
+        """
+        Ensure if an index with mapping exists
+        """
+        mappings = mappings or []
+        if isinstance(mappings, dict):
+            mappings = [mappings]
+        exists = self.exists_index(index)
+        if exists and not mappings and not clear:
+            return
+
+        if exists:
+            if not mappings:
+                self.delete_index(index)
+                self.refresh()
+                self.create_index(index, settings)
+                return
+
+            if clear:
+                for maps in mappings:
+                    for key in maps.keys():
+                        self.delete_mapping(index, doc_type=key)
+                self.refresh()
+            if isinstance(mappings, SettingsBuilder):
+                for name, data in mappings.mappings.items():
+                    self.put_mapping(doc_type=name, mapping=data, indices=index)
+
+            else:
+                for maps in mappings:
+                    if isinstance(maps, tuple):
+                        name, mapping = maps
+                        self.put_mapping(doc_type=name, mapping=mapping, indices=index)
+                    elif isinstance(maps, dict):
+                        for name, data in maps.items():
+                            self.put_mapping(doc_type=name, mapping=maps, indices=index)
+
+                return
+
+        if settings:
+            if isinstance(settings, dict):
+                settings = SettingsBuilder(settings, mappings)
+        else:
+            if isinstance(mappings, SettingsBuilder):
+                settings = mappings
+            else:
+                settings = SettingsBuilder(mappings=mappings)
+        if not exists:
+            self.create_index(index, settings)
+
 
     @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.delete_index_if_exists")
     def delete_index_if_exists(self, index):

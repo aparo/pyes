@@ -7,6 +7,7 @@ The main QuerySet implementation. This provides the public API for the ORM.
 Taken from django one and from django-elasticsearch.
 """
 
+
 import copy
 
 # The maximum number of items to display in a QuerySet.__repr__
@@ -18,6 +19,13 @@ from .utils import ESRange
 
 REPR_OUTPUT_SIZE = 20
 
+class DoesNotExist(Exception):
+    pass
+
+
+class MultipleObjectsReturned(Exception):
+    pass
+
 def get_es_connection():
     return ES()
 
@@ -27,6 +35,8 @@ class ESModel(object):
         self._index=index
         self._type=type
         self.objects = QuerySet(self)
+        setattr(self, "DoesNotExist", DoesNotExist)
+        setattr(self, "MultipleObjectsReturned", MultipleObjectsReturned)
 
 
 class Query(object):
@@ -291,22 +301,21 @@ class QuerySet(object):
         Performs the query and returns a single object matching the given
         keyword arguments.
         """
-#        clone = self.filter(*args, **kwargs)
-#        if self.query.can_filter():
-#            clone = clone.order_by()
-#        num = len(clone)
-#        if num == 1:
-#            return clone._result_cache[0]
-#        if not num:
-#            raise self.model.DoesNotExist(
-#                "%s matching query does not exist. "
-#                "Lookup parameters were %s" %
-#                (self.model._meta.object_name, kwargs))
-#        raise self.model.MultipleObjectsReturned(
-#            "get() returned more than one %s -- it returned %s! "
-#            "Lookup parameters were %s" %
-#            (self.model._meta.object_name, num, kwargs))
-        raise NotImplementedError()
+        clone = self.filter(*args, **kwargs)
+        num = len(clone)
+        if num == 1:
+            return clone._result_cache[0]
+        if not num:
+            raise self.model.DoesNotExist(
+                "%s matching query does not exist. "
+                "Lookup parameters were %s" %
+                #(self.model._meta.object_name, kwargs))
+                (self.model.__class__.__name__, kwargs))
+        raise self.model.MultipleObjectsReturned(
+            "get() returned more than one %s -- it returned %s! "
+            "Lookup parameters were %s" %
+            #(self.model._meta.object_name, num, kwargs))
+            (self.model.__class__.__name__, num, kwargs))
 
     def create(self, **kwargs):
         """

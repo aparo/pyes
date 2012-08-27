@@ -3,7 +3,7 @@
 
 from estestcase import ESTestCase
 import unittest
-from pyes.queryset import ESModel, QuerySet
+from pyes.queryset import ESModel, QuerySet, DoesNotExist
 
 
 class QuerySetTests(ESTestCase):
@@ -31,6 +31,8 @@ class QuerySetTests(ESTestCase):
         model = ESModel(self.index_name, self.document_type)
         queryset = model.objects
         self.assertEqual(len(queryset), 3)
+        queryset = model.objects.all()
+        self.assertEqual(len(queryset), 3)
         queryset = model.objects.filter(uuid="33333")
         self.assertEqual(len(queryset), 1)
         queryset = model.objects.filter(position=1)
@@ -47,3 +49,11 @@ class QuerySetTests(ESTestCase):
         self.assertEqual(len(queryset), 2)
         self.assertEqual(queryset.count(), 2)
         self.assertEqual([r.position for r in queryset], [2,3])
+        queryset = model.objects.exclude(position__in=[1,2])
+        self.assertEqual(len(queryset), 1)
+        self.assertEqual(queryset.count(), 1)
+        self.assertEqual([r.position for r in queryset], [3])
+
+        item = model.objects.get(position=1)
+        self.assertEqual(item.position, 1)
+        self.assertRaises(DoesNotExist, model.objects.get, position=0)

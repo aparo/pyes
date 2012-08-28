@@ -142,8 +142,7 @@ class QuerySet(object):
 
     def __iter__(self):
         if self._result_cache is None:
-            self._iter = self.iterator()
-            self._result_cache = []
+            len(self)
         # Python's list iterator is better than our version when we're just
         # iterating over the cache.
         return iter(self._result_cache)
@@ -162,42 +161,43 @@ class QuerySet(object):
 
     def __nonzero__(self):
         if self._result_cache is not None:
-            return bool(self._result_cache)
+            len(self)
+            return bool(self._result_cache.total!=0)
         try:
             next(iter(self))
         except StopIteration:
             return False
         return True
 
-    def __contains__(self, val):
-        # The 'in' operator works without this method, due to __iter__. This
-        # implementation exists only to shortcut the creation of Model
-        # instances, by bailing out early if we find a matching element.
-        pos = 0
-        if self._result_cache is not None:
-            if val in self._result_cache:
-                return True
-            elif self._iter is None:
-                # iterator is exhausted, so we have our answer
-                return False
-            # remember not to check these again:
-            pos = len(self._result_cache)
-        else:
-            # We need to start filling the result cache out. The following
-            # ensures that self._iter is not None and self._result_cache is not
-            # None
-            it = iter(self)
-
-        # Carry on, one result at a time.
-        while True:
-            if len(self._result_cache) <= pos:
-                self._fill_cache(num=1)
-            if self._iter is None:
-                # we ran out of items
-                return False
-            if self._result_cache[pos] == val:
-                return True
-            pos += 1
+#    def __contains__(self, val):
+#        # The 'in' operator works without this method, due to __iter__. This
+#        # implementation exists only to shortcut the creation of Model
+#        # instances, by bailing out early if we find a matching element.
+#        pos = 0
+#        if self._result_cache is not None:
+#            if val in self._result_cache:
+#                return True
+#            elif self._iter is None:
+#                # iterator is exhausted, so we have our answer
+#                return False
+#            # remember not to check these again:
+#            pos = len(self._result_cache)
+#        else:
+#            # We need to start filling the result cache out. The following
+#            # ensures that self._iter is not None and self._result_cache is not
+#            # None
+#            it = iter(self)
+#
+#        # Carry on, one result at a time.
+#        while True:
+#            if len(self._result_cache) <= pos:
+#                self._fill_cache(num=1)
+#            if self._iter is None:
+#                # we ran out of items
+#                return False
+#            if self._result_cache[pos] == val:
+#                return True
+#            pos += 1
 
     def __getitem__(self, k):
         """
@@ -247,7 +247,6 @@ class QuerySet(object):
         raise NotImplementedError()
 
     def __and__(self, other):
-        self._merge_sanity_check(other)
         if isinstance(other, EmptyQuerySet):
             return other._clone()
         combined = self._clone()
@@ -383,34 +382,19 @@ class QuerySet(object):
         Returns a tuple of (object, created), where created is a boolean
         specifying whether an object was created.
         """
-#        assert kwargs, \
-#                'get_or_create() must be passed at least one keyword argument'
-#        defaults = kwargs.pop('defaults', {})
-#        lookup = kwargs.copy()
-#        for f in self.model._meta.fields:
-#            if f.attname in lookup:
-#                lookup[f.name] = lookup.pop(f.attname)
-#        try:
-#            self._for_write = True
-#            return self.get(**lookup), False
-#        except self.model.DoesNotExist:
-#            try:
-#                params = dict([(k, v) for k, v in kwargs.items() if '__' not in k])
-#                params.update(defaults)
-#                obj = self.model(**params)
-#                sid = transaction.savepoint(using=self.db)
-#                obj.save(force_insert=True, using=self.db)
-#                transaction.savepoint_commit(sid, using=self.db)
-#                return obj, True
-#            except IntegrityError as e:
-#                transaction.savepoint_rollback(sid, using=self.db)
-#                exc_info = sys.exc_info()
-#                try:
-#                    return self.get(**lookup), False
-#                except self.model.DoesNotExist:
-#                    # Re-raise the IntegrityError with its original traceback.
-#                    six.reraise(exc_info[1], None, exc_info[2])
-        raise NotImplementedError()
+        assert kwargs, \
+                'get_or_create() must be passed at least one keyword argument'
+        defaults = kwargs.pop('defaults', {})
+        lookup = kwargs.copy()
+        #TODO: check fields
+        try:
+            return self.get(**lookup), False
+        except self.model.DoesNotExist:
+            params = dict([(k, v) for k, v in kwargs.items() if '__' not in k])
+            params.update(defaults)
+            obj = self.model(**params)
+            obj.save(force_insert=True)
+            return obj, True
 
     def latest(self, field_name=None):
         """
@@ -517,10 +501,9 @@ class QuerySet(object):
         raise NotImplementedError()
 
     def exists(self):
-#        if self._result_cache is None:
-#            return self.query.has_results(using=self.db)
-#        return bool(self._result_cache)
-        raise NotImplementedError()
+        if self._result_cache is None:
+            len(self)
+        return bool(self._result_cache.total!=0)
 
     ##################################################
     # PUBLIC METHODS THAT RETURN A QUERYSET SUBCLASS #

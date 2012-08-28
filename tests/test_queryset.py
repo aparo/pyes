@@ -57,3 +57,8 @@ class QuerySetTests(ESTestCase):
         item = model.objects.get(position=1)
         self.assertEqual(item.position, 1)
         self.assertRaises(DoesNotExist, model.objects.get, position=0)
+        item, created = model.objects.get_or_create(position=1, defaults={"name":"nasty"})
+        self.assertEqual(created, False)
+        self.assertEqual(item.position, 1)
+        self.assertEqual(item.get_meta().id, "1")
+

@@ -3,30 +3,30 @@
 from __future__ import absolute_import
 from __future__ import with_statement
 import urllib
-from pyes.helpers import SettingsBuilder
+from .helpers import SettingsBuilder
 from .models import ElasticSearchModel, DotDict, ListBulker
 
 try:
     # For Python >= 2.6
     import json
+    from json import JSONDecoder, JSONEncoder
 except ImportError:
     # For Python < 2.6 or people using a newer version of simplejson
     import simplejson as json
+    from simplejson import JSONDecoder, JSONEncoder
 
 import random
 from datetime import date, datetime
 from urllib import urlencode
-from urlparse import urlunsplit
+from urlparse import urlunsplit, urlparse
 import base64
 import time
 from decimal import Decimal
-from urlparse import urlparse
 from .managers import Indices, Cluster
 try:
     from .connection import connect as thrift_connect
     from .pyesthrift.ttypes import Method, RestRequest
 
-    thrift_enable = True
 except ImportError:
     from .fakettypes import Method, RestRequest
 

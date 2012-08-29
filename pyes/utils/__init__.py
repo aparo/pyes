@@ -59,6 +59,11 @@ class ESRange(EqualityComparableUsingAttributeDictionary):
         self.include_upper = include_upper
         self.boost = boost
 
+    def negate(self):
+        """Reverse the range"""
+        self.from_value, self.to_value = self.to_value, self.from_value
+        self.include_lower, self.include_upper = self.include_upper, self.include_lower
+
     def serialize(self):
         filters = {}
         if self.from_value is not None:

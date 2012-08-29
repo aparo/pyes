@@ -39,21 +39,13 @@ class ESModel(object):
         setattr(self, "MultipleObjectsReturned", MultipleObjectsReturned)
 
 
-class Query(object):
-    def __init__(self, model=None, index=None, type=None):
-        self.model = model
-        self.index = index
-        self.type = type
-        if self.model:
-            self.index = self.model._index
-            self.type = self.model._type
-
-
 class QuerySet(object):
     """
     Represents a lazy database lookup for a set of objects.
     """
-    def __init__(self, model=None, query=None, using=None, index=None, type=None):
+    def __init__(self, model=None, using=None, index=None, type=None):
+        if model is None and index and type:
+            model = ESModel(index, type)
         self.model = model
         # EmptyQuerySet instantiates QuerySet with model as None
         self._index=index

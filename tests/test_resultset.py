@@ -28,6 +28,7 @@ class ResultsetTestCase(ESTestCase):
             self.index_name, self.document_type,
             start=10, size=10)
 
+        self.assertGreater(resultset.took, 0.0)
         # Ensure that there are 1000 results:
         #
         self.assertEqual(len(resultset), 1000)

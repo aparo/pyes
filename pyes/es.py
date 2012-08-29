@@ -1607,6 +1607,14 @@ class ResultSet(object):
             self._do_search()
         if name == "facets":
             return self._facets
+
+        elif name in self._results:
+            #we manage took, timed_out, _shards
+            return self._results[name]
+
+        elif name == "shards" and "_shards" in self._results:
+            #trick shards -> _shards
+            return self._results["_shards"]
         return self._results['hits'][name]
 
     def __getitem__(self, val):

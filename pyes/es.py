@@ -1246,6 +1246,8 @@ class ES(object):
 
         """
         indices = self._validate_indices(indices)
+        if indices ==["_all"]:
+            indices=None
         if doc_types is None:
             doc_types = []
         elif isinstance(doc_types, basestring):

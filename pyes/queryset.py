@@ -64,7 +64,12 @@ class QuerySet(object):
         self._queries = []
         self._filters = []
         self._facets = []
+        self._ordering = []
         self._result_cache = None #hold the resultset
+
+    def _clear_ordering(self):
+        #reset ordering
+        self._ordering=[]
 
     @property
     def index(self):
@@ -401,16 +406,13 @@ class QuerySet(object):
         Returns the latest object, according to the model's 'get_latest_by'
         option or optional given field_name.
         """
-#        latest_by = field_name or self.model._meta.get_latest_by
-#        assert bool(latest_by), "latest() requires either a field_name parameter or 'get_latest_by' in the model"
-#        assert self.query.can_filter(), \
-#                "Cannot change a query once a slice has been taken."
-#        obj = self._clone()
-#        obj.query.set_limits(high=1)
-#        obj.query.clear_ordering()
-#        obj.query.add_ordering('-%s' % latest_by)
-#        return obj.get()
-        raise NotImplementedError()
+        latest_by = field_name or self.model._meta.get_latest_by
+        assert bool(latest_by), "latest() requires either a field_name parameter or 'get_latest_by' in the model"
+        obj = self._clone()
+        obj.size=1
+        obj._clear_ordering()
+        obj.order_by('-%s' % latest_by)
+        return obj.get()
 
     def in_bulk(self, id_list):
         """

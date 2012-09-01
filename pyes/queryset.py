@@ -68,6 +68,7 @@ class QuerySet(object):
         self._filters = []
         self._facets = []
         self._ordering = []
+        self._fields = [] #fields to load
         self._result_cache = None #hold the resultset
 
     def _clear_ordering(self):
@@ -423,6 +424,9 @@ class QuerySet(object):
         fields to the appropriate values.
         """
         query = self._build_query()
+
+        for item in
+
         query.add_update_values(kwargs)
         updates=[{"script": 'ctx._source.%s=value'%k,"params": {"value": v}} for k,v in kwargs.items()]
         get_es_connection().update_by_query(indices=self.index, doc_types=self.type, query=query, updates=updates)
@@ -677,14 +681,9 @@ class QuerySet(object):
         method and that are not already specified as deferred are loaded
         immediately when the queryset is evaluated.
         """
-#        if fields == (None,):
-#            # Can only pass None to defer(), not only(), as the rest option.
-#            # That won't stop people trying to do this, so let's be explicit.
-#            raise TypeError("Cannot pass None as an argument to only().")
-#        clone = self._clone()
-#        clone.query.add_immediate_loading(fields)
-#        return clone
-        raise NotImplementedError()
+        clone = self._clone()
+        clone._fields=fields
+        return clone
 
     def using(self, alias):
         """
@@ -764,6 +763,7 @@ class QuerySet(object):
         c._queries=list(self._queries)
         c._filters=list(self._filters)
         c._facets=list(self._facets)
+        c._fields=list(self._fields)
         return c
 
     # When used as part of a nested query, a queryset will never be an "always

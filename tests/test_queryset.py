@@ -3,7 +3,7 @@
 
 from estestcase import ESTestCase
 import unittest
-from pyes.queryset import ESModel, QuerySet, DoesNotExist
+from pyes.queryset import ESModel, QuerySet, DoesNotExist, generate_model
 
 
 class QuerySetTests(ESTestCase):
@@ -28,7 +28,7 @@ class QuerySetTests(ESTestCase):
                 nice guy""", "uuid": "33333", "position": 3}, self.index_name, self.document_type, 3)
 
     def test_get(self):
-        model = ESModel(self.index_name, self.document_type)
+        model = generate_model(self.index_name, self.document_type)
         queryset = model.objects
         self.assertEqual(len(queryset), 3)
         queryset = model.objects.all()
@@ -57,8 +57,17 @@ class QuerySetTests(ESTestCase):
         item = model.objects.get(position=1)
         self.assertEqual(item.position, 1)
         self.assertRaises(DoesNotExist, model.objects.get, position=0)
+
+        queryset = model.objects.order_by("position")
+        self.assertEqual(queryset[0].position, 1)
+        queryset = model.objects.order_by("-position")
+        self.assertEqual(queryset[0].position, 3)
+
+
         item, created = model.objects.get_or_create(position=1, defaults={"name":"nasty"})
         self.assertEqual(created, False)
         self.assertEqual(item.position, 1)
         self.assertEqual(item.get_meta().id, "1")
-
+        item, created = model.objects.get_or_create(position=10, defaults={"name":"nasty"})
+        self.assertEqual(created, True)
+        self.assertEqual(item.position, 10)

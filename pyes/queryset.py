@@ -14,6 +14,7 @@ import copy
 import six
 from .es import ES
 from .filters import ANDFilter, ORFilter, NotFilter, Filter, TermsFilter, TermFilter, RangeFilter, ExistsFilter
+from pyes.models import ElasticSearchModel
 from .query import MatchAllQuery, BoolQuery, FilteredQuery, Search
 from .utils import ESRange
 
@@ -29,7 +30,7 @@ class MultipleObjectsReturned(Exception):
 def get_es_connection():
     return ES()
 
-class ESModel(object):
+class ESModel(ElasticSearchModel):
 
     def __init__(self, index, type):
         self._index=index
@@ -38,6 +39,16 @@ class ESModel(object):
         setattr(self, "DoesNotExist", DoesNotExist)
         setattr(self, "MultipleObjectsReturned", MultipleObjectsReturned)
 
+def generate_model(index, doc_type):
+    MyModel = type(
+           'MyModel',
+           (ElasticSearchModel,),
+           {}
+           )
+    setattr(MyModel, "objects", QuerySet(MyModel, index=index, type=doc_type))
+    setattr(MyModel, "DoesNotExist", DoesNotExist)
+    setattr(MyModel, "MultipleObjectsReturned", MultipleObjectsReturned)
+    return MyModel
 
 class QuerySet(object):
     """
@@ -126,6 +137,8 @@ class QuerySet(object):
 
     def _do_query(self):
         query=Search(self._build_query())
+        if self._ordering:
+            query.sort=self._ordering
         return get_es_connection().search(query, indices=self.index, doc_types=self.type)
 
 
@@ -207,41 +220,9 @@ class QuerySet(object):
                     and (k.stop is None or k.stop >= 0))), \
                 "Negative indexing is not supported."
 
-        if self._result_cache is not None:
-            if self._iter is not None:
-                # The result cache has only been partially populated, so we may
-                # need to fill it out a bit more.
-                if isinstance(k, slice):
-                    if k.stop is not None:
-                        # Some people insist on passing in strings here.
-                        bound = int(k.stop)
-                    else:
-                        bound = None
-                else:
-                    bound = k + 1
-                if len(self._result_cache) < bound:
-                    self._fill_cache(bound - len(self._result_cache))
-            return self._result_cache[k]
-
-        if isinstance(k, slice):
-            qs = self._clone()
-            if k.start is not None:
-                start = int(k.start)
-            else:
-                start = None
-            if k.stop is not None:
-                stop = int(k.stop)
-            else:
-                stop = None
-            qs.query.set_limits(start, stop)
-            return k.step and list(qs)[::k.step] or qs
-        try:
-            qs = self._clone()
-            qs.query.set_limits(k, k + 1)
-            return list(qs)[0]
-        except self.model.DoesNotExist as e:
-            raise IndexError(e.args)
-        raise NotImplementedError()
+        if self._result_cache is None:
+            len(self)
+        return self._result_cache.__getitem__(k)
 
     def __and__(self, other):
         if isinstance(other, EmptyQuerySet):
@@ -390,7 +371,11 @@ class QuerySet(object):
             params = dict([(k, v) for k, v in kwargs.items() if '__' not in k])
             params.update(defaults)
             obj = self.model(**params)
-            obj.save(force_insert=True)
+            meta = obj.get_meta()
+            meta.connection = get_es_connection()
+            meta.index=self.index
+            meta.type=self.type
+            obj.save(force=True)
             return obj, True
 
     def latest(self, field_name=None):
@@ -398,12 +383,12 @@ class QuerySet(object):
         Returns the latest object, according to the model's 'get_latest_by'
         option or optional given field_name.
         """
-        latest_by = field_name or self.model._meta.get_latest_by
+        latest_by = field_name or "_id"#self.model._meta.get_latest_by
         assert bool(latest_by), "latest() requires either a field_name parameter or 'get_latest_by' in the model"
         obj = self._clone()
         obj.size=1
         obj._clear_ordering()
-        obj.order_by('-%s' % latest_by)
+        obj._ordering.append({ latest_by : "desc" })
         return obj.get()
 
     def in_bulk(self, id_list):
@@ -411,88 +396,39 @@ class QuerySet(object):
         Returns a dictionary mapping each of the given IDs to the object with
         that ID.
         """
-#        assert self.query.can_filter(), \
-#                "Cannot use 'limit' or 'offset' with in_bulk"
-#        if not id_list:
-#            return {}
-#        qs = self._clone()
-#        qs.query.add_filter(('pk__in', id_list))
-#        qs.query.clear_ordering(force_empty=True)
-#        return dict([(obj._get_pk_val(), obj) for obj in qs])
-        raise NotImplementedError()
+        if not id_list:
+            return {}
+        qs = self._clone()
+        qs.add_filter(('pk__in', id_list))
+        qs._clear_ordering(force_empty=True)
+        return dict([(obj._get_pk_val(), obj) for obj in qs])
 
     def delete(self):
         """
         Deletes the records in the current QuerySet.
         """
-#        assert self.query.can_filter(), \
-#                "Cannot use 'limit' or 'offset' with delete."
-#
-#        del_query = self._clone()
-#
-#        # The delete is actually 2 queries - one to find related objects,
-#        # and one to delete. Make sure that the discovery of related
-#        # objects is performed on the same database as the deletion.
-#        del_query._for_write = True
-#
-#        # Disable non-supported fields.
-#        del_query.query.select_for_update = False
-#        del_query.query.select_related = False
-#        del_query.query.clear_ordering()
-#
-#        collector = Collector(using=del_query.db)
-#        collector.collect(del_query)
-#        collector.delete()
-#
-#        # Clear the result cache, in case this QuerySet gets reused.
-#        self._result_cache = None
-#    delete.alters_data = True
-        raise NotImplementedError()
+        del_query = self._clone()
+
+        # The delete is actually 2 queries - one to find related objects,
+        # and one to delete. Make sure that the discovery of related
+        # objects is performed on the same database as the deletion.
+        del_query._clear_ordering()
+        get_es_connection().delete_by_query(self._build_query())
+        # Clear the result cache, in case this QuerySet gets reused.
+        self._result_cache = None
 
     def update(self, **kwargs):
         """
         Updates all elements in the current QuerySet, setting all the given
         fields to the appropriate values.
         """
-#        assert self.query.can_filter(), \
-#                "Cannot update a query once a slice has been taken."
-#        self._for_write = True
-#        query = self.query.clone(sql.UpdateQuery)
-#        query.add_update_values(kwargs)
-#        if not transaction.is_managed(using=self.db):
-#            transaction.enter_transaction_management(using=self.db)
-#            forced_managed = True
-#        else:
-#            forced_managed = False
-#        try:
-#            rows = query.get_compiler(self.db).execute_sql(None)
-#            if forced_managed:
-#                transaction.commit(using=self.db)
-#            else:
-#                transaction.commit_unless_managed(using=self.db)
-#        finally:
-#            if forced_managed:
-#                transaction.leave_transaction_management(using=self.db)
-#        self._result_cache = None
-#        return rows
-#    update.alters_data = True
-        raise NotImplementedError()
+        query = self._build_query()
+        query.add_update_values(kwargs)
+        updates=[{"script": 'ctx._source.%s=value'%k,"params": {"value": v}} for k,v in kwargs.items()]
+        get_es_connection().update_by_query(indices=self.index, doc_types=self.type, query=query, updates=updates)
+        # Clear the result cache, in case this QuerySet gets reused.
+        self._result_cache = None
 
-    def _update(self, values):
-        """
-        A version of update that accepts field objects instead of field names.
-        Used primarily for model saving and not intended for use by general
-        code (it requires too much poking around at model internals to be
-        useful at that level).
-#        """
-#        assert self.query.can_filter(), \
-#                "Cannot update a query once a slice has been taken."
-#        query = self.query.clone(sql.UpdateQuery)
-#        query.add_update_fields(values)
-#        self._result_cache = None
-#        return query.get_compiler(self.db).execute_sql(None)
-#    _update.alters_data = True
-        raise NotImplementedError()
 
     def exists(self):
         if self._result_cache is None:
@@ -641,55 +577,6 @@ class QuerySet(object):
         else:
             return self._filter_or_exclude(None, **filter_obj)
 
-    def select_for_update(self, **kwargs):
-        """
-        Returns a new QuerySet instance that will select objects with a
-        FOR UPDATE lock.
-        """
-        # Default to false for nowait
-        raise NotImplementedError()
-
-    def select_related(self, *fields, **kwargs):
-        """
-        Returns a new QuerySet instance that will select related objects.
-
-        If fields are specified, they must be ForeignKey fields and only those
-        related objects are included in the selection.
-        """
-        raise NotImplementedError()
-#        depth = kwargs.pop('depth', 0)
-#        if kwargs:
-#            raise TypeError('Unexpected keyword arguments to select_related: %s'
-#                    % (kwargs.keys(),))
-#        obj = self._clone()
-#        if fields:
-#            if depth:
-#                raise TypeError('Cannot pass both "depth" and fields to select_related()')
-#            obj.query.add_select_related(fields)
-#        else:
-#            obj.query.select_related = True
-#        if depth:
-#            obj.query.max_depth = depth
-#        return obj
-
-    def prefetch_related(self, *lookups):
-        """
-        Returns a new QuerySet instance that will prefetch the specified
-        Many-To-One and Many-To-Many related objects when the QuerySet is
-        evaluated.
-
-        When prefetch_related() is called more than once, the list of lookups to
-        prefetch is appended to. If prefetch_related(None) is called, the
-        the list is cleared.
-        """
-        raise NotImplementedError()
-
-    def dup_select_related(self, other):
-        """
-        Copies the related selection status from the QuerySet 'other' to the
-        current QuerySet.
-        """
-        raise NotImplementedError()
 
     def annotate(self, *args, **kwargs):
         """
@@ -727,13 +614,14 @@ class QuerySet(object):
         """
         Returns a new QuerySet instance with the ordering changed.
         """
-#        assert self.query.can_filter(), \
-#                "Cannot reorder a query once a slice has been taken."
-#        obj = self._clone()
-#        obj.query.clear_ordering()
-#        obj.query.add_ordering(*field_names)
-#        return obj
-        raise NotImplementedError()
+        obj = self._clone()
+        obj._clear_ordering()
+        for field in field_names:
+            if field.startswith("-"):
+                obj._ordering.append({ field.lstrip("-") : "desc" })
+            else:
+                obj._ordering.append(field)
+        return obj
 
     def distinct(self, *field_names):
         """

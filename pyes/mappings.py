@@ -2,6 +2,7 @@
 from __future__ import absolute_import
 
 import threading
+from .models import SortedDict, DotDict
 
 _thread_locals = threading.local()
 #store threadsafe data
@@ -402,16 +403,13 @@ class ObjectField(object):
         result = []
         for k, v in self.properties.items():
             if isinstance(v, DateField):
-                if not v.tokenize:
-                    result.append((k, "date"))
+                result.append((k, "date"))
             elif isinstance(v, NumericFieldAbstract):
                 result.append((k, "numeric"))
             elif isinstance(v, StringField):
-                if not v.tokenize:
-                    result.append((k, "term"))
+                result.append((k, "term"))
             elif isinstance(v, GeoPointField):
-                if not v.tokenize:
-                    result.append((k, "geo"))
+                result.append((k, "geo"))
             elif isinstance(v, ObjectField):
                 for n, t in self.get_available_facets():
                     result.append((self.name + "." + k, t))

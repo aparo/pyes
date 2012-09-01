@@ -63,7 +63,7 @@ def file_to_attachment(filename, filehandler=None):
         }
 
 
-class ESJsonEncoder(json.JSONEncoder):
+class ESJsonEncoder(JSONEncoder):
     def default(self, value):
         """Convert rogue and mysterious data types.
         Conversion notes:
@@ -83,7 +83,7 @@ class ESJsonEncoder(json.JSONEncoder):
         return value
 
 
-class ESJsonDecoder(json.JSONDecoder):
+class ESJsonDecoder(JSONDecoder):
     def __init__(self, *args, **kwargs):
         kwargs['object_hook'] = self.dict_to_object
         json.JSONDecoder.__init__(self, *args, **kwargs)
@@ -440,6 +440,20 @@ class ES(object):
         if isinstance(indices, basestring):
             indices = [indices]
         return indices
+
+    def _validate_types(self, types=None):
+        """Return a valid list of types.
+
+        `types` may be a string or a list of strings.
+        If `types` is not supplied, returns the default_types.
+
+        """
+        types = types or self.default_types
+        if types is None:
+            types = []
+        if isinstance(types, basestring):
+            types = [types]
+        return types
 
     def _dump_curl_request(self, request):
         print >> self.dump_curl, "# [%s]" % datetime.now().isoformat()

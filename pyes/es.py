@@ -235,7 +235,7 @@ class ES(object):
                          "operations have not been flushed. Call force_bulk()!",
                          self)
             # Do our best to save the client anyway...
-            self.bulker.force_bulk()
+            self.bulker.flush_bulk(True)
 
     def _check_servers(self):
         """Check the servers variable and convert in a valid tuple form"""

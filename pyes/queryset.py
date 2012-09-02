@@ -14,7 +14,8 @@ import copy
 import six
 from .es import ES
 from .filters import ANDFilter, ORFilter, NotFilter, Filter, TermsFilter, TermFilter, RangeFilter, ExistsFilter
-from pyes.models import ElasticSearchModel
+from .facets import Facet, TermFacet
+from .models import ElasticSearchModel
 from .query import MatchAllQuery, BoolQuery, FilteredQuery, Search
 from .utils import ESRange
 
@@ -135,12 +136,20 @@ class QuerySet(object):
             return FilteredQuery(query, self._filters[0])
         return FilteredQuery(query, ANDFilter(self._filters))
 
-
-    def _do_query(self):
+    def _build_search(self):
         query=Search(self._build_query())
         if self._ordering:
             query.sort=self._ordering
-        return get_es_connection().search(query, indices=self.index, doc_types=self.type)
+        if self._ordering:
+            query.sort=self._ordering
+        if self._facets:
+            for facet in self._facets:
+                query.facet.add(facet)
+        return query
+
+    def _do_query(self):
+
+        return get_es_connection().search(self._build_search(), indices=self.index, doc_types=self.type)
 
 
     def __len__(self):
@@ -424,12 +433,13 @@ class QuerySet(object):
         fields to the appropriate values.
         """
         query = self._build_query()
-
-        for item in
-
-        query.add_update_values(kwargs)
-        updates=[{"script": 'ctx._source.%s=value'%k,"params": {"value": v}} for k,v in kwargs.items()]
-        get_es_connection().update_by_query(indices=self.index, doc_types=self.type, query=query, updates=updates)
+        connection =get_es_connection()
+        results = connection.search(query, indices=self.index, doc_types=self.type,
+                                             model=self.model, scan=True)
+        for item in results:
+            item.update(kwargs)
+            item.save(bulk=True)
+        connection.flush_bulk(True)
         # Clear the result cache, in case this QuerySet gets reused.
         self._result_cache = None
 
@@ -444,19 +454,28 @@ class QuerySet(object):
     ##################################################
 
     def values(self, *fields):
-        raise NotImplementedError()
-#        return self._clone(klass=ValuesQuerySet, setup=True, _fields=fields)
+        assert fields, "A least a field is required"
+        search = self._build_search()
+        search.facet.reset()
+        search.fields=fields
+        return get_es_connection().search(search, indices=self.index, doc_types=self.type)
 
     def values_list(self, *fields, **kwargs):
-#        flat = kwargs.pop('flat', False)
-#        if kwargs:
-#            raise TypeError('Unexpected keyword arguments to values_list: %s'
-#                    % (kwargs.keys(),))
-#        if flat and len(fields) > 1:
-#            raise TypeError("'flat' is not valid when values_list is called with more than one field.")
-#        return self._clone(klass=ValuesListQuerySet, setup=True, flat=flat,
-#                _fields=fields)
-        raise NotImplementedError()
+        flat = kwargs.pop('flat', False)
+        if kwargs:
+            raise TypeError('Unexpected keyword arguments to values_list: %s'
+                    % (kwargs.keys(),))
+        if flat and len(fields) > 1:
+            raise TypeError("'flat' is not valid when values_list is called with more than one field.")
+        assert fields, "A least a field is required"
+        search = self._build_search()
+        search.facet.reset()
+        search.fields=fields
+        if flat:
+            return get_es_connection().search(search, indices=self.index, doc_types=self.type,
+                                              model=lambda x,y: y.get("fields", {}).get(fields[0], None))
+
+        return get_es_connection().search(search, indices=self.index, doc_types=self.type)
 
     def dates(self, field_name, kind, order='ASC'):
         """
@@ -578,41 +597,32 @@ class QuerySet(object):
             clone = self._clone()
             clone._filters.add(filter_obj)
             return clone
-        else:
-            return self._filter_or_exclude(None, **filter_obj)
+        return self._filter_or_exclude(None, **filter_obj)
 
+
+    def facet(self, *args, **kwargs):
+        return self.annotate(*args, **kwargs)
 
     def annotate(self, *args, **kwargs):
         """
         Return a query set in which the returned objects have been annotated
         with data aggregated from related fields.
         """
-#        for arg in args:
-#            if arg.default_alias in kwargs:
-#                raise ValueError("The named annotation '%s' conflicts with the "
-#                                 "default name for another annotation."
-#                                 % arg.default_alias)
-#            kwargs[arg.default_alias] = arg
-#
-#        names = getattr(self, '_fields', None)
-#        if names is None:
-#            names = set(self.model._meta.get_all_field_names())
-#        for aggregate in kwargs:
-#            if aggregate in names:
-#                raise ValueError("The annotation '%s' conflicts with a field on "
-#                    "the model." % aggregate)
-#
-#        obj = self._clone()
-#
-#        obj._setup_aggregate_query(kwargs.keys())
-#
-#        # Add the aggregates to the query
-#        for (alias, aggregate_expr) in kwargs.items():
-#            obj.query.add_aggregate(aggregate_expr, self.model, alias,
-#                is_summary=False)
-#
-#        return obj
-        raise NotImplementedError()
+        obj = self._clone()
+
+        for arg in args:
+            if isinstance(arg, Facet):
+                obj._facets.append(arg)
+            elif isinstance(arg, basestring):
+                obj._facets.append(TermFacet(arg.replace("__", ".")))
+            else:
+                raise NotImplementedError("invalid type")
+
+
+        # Add the aggregates/facet to the query
+        for name, field in kwargs.items():
+            obj._facets.append(TermFacet(field=field.replace("__", "."), name=name.replace("__", ".")))
+        return obj
 
     def order_by(self, *field_names):
         """
@@ -622,9 +632,9 @@ class QuerySet(object):
         obj._clear_ordering()
         for field in field_names:
             if field.startswith("-"):
-                obj._ordering.append({ field.lstrip("-") : "desc" })
+                obj._ordering.append({ field.lstrip("-").replace("__", ".") : "desc" })
             else:
-                obj._ordering.append(field)
+                obj._ordering.append({ field : "asc" })
         return obj
 
     def distinct(self, *field_names):
@@ -654,10 +664,17 @@ class QuerySet(object):
         """
         Reverses the ordering of the QuerySet.
         """
-#        clone = self._clone()
-#        clone.query.standard_ordering = not clone.query.standard_ordering
-#        return clone
-        raise NotImplementedError()
+        clone = self._clone()
+        assert self._ordering, "You need to set an ordering for reverse"
+        ordering = []
+        for order in self._ordering:
+            for k,v in order.items():
+                if v=="asc":
+                    ordering.append({k: "desc"})
+                else:
+                    ordering.append({k: "asc"})
+        clone._ordering=ordering
+        return clone
 
     def defer(self, *fields):
         """
@@ -702,13 +719,7 @@ class QuerySet(object):
         Returns True if the QuerySet is ordered -- i.e. has an order_by()
         clause or a default ordering on the model.
         """
-#        if self.query.extra_order_by or self.query.order_by:
-#            return True
-#        elif self.query.default_ordering and self.query.model._meta.ordering:
-#            return True
-#        else:
-#            return False
-        raise NotImplementedError()
+        return len(self._ordering)>0
     ordered = property(ordered)
 
 

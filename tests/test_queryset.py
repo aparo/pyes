@@ -19,10 +19,14 @@ class QuerySetTests(ESTestCase):
         """
         self.conn.index({"name": ["Joe Tester", "J. Tester"], "parsedtext": "Joe Testere nice guy", "uuid": "11111",
                          "position": 1},
-            self.index_name, self.document_type, 1)
+                                       self.index_name, self.document_type, 1)
         self.conn.index({"name": "data1", "value": "value1"}, self.index_name, "test-type2", 1, parent=1)
         self.conn.index({"name": "Bill Baloney", "parsedtext": "Bill Testere nice guy", "uuid": "22222", "position": 2},
-            self.index_name, self.document_type, 2)
+                                                                                                                       self.index_name
+                                                                                                                       ,
+                                                                                                                       self.document_type
+                                                                                                                       ,
+                                                                                                                       2)
         self.conn.index({"name": "data2", "value": "value2"}, self.index_name, "test-type2", 2, parent=2)
         self.conn.index({"name": ["Bill Clinton", "B. Clinton"], "parsedtext": """Bill is not
                 nice guy""", "uuid": "33333", "position": 3}, self.index_name, self.document_type, 3)
@@ -48,8 +52,8 @@ class QuerySetTests(ESTestCase):
         queryset = model.objects.exclude(position=1)
         self.assertEqual(len(queryset), 2)
         self.assertEqual(queryset.count(), 2)
-        self.assertEqual([r.position for r in queryset], [2,3])
-        queryset = model.objects.exclude(position__in=[1,2])
+        self.assertEqual([r.position for r in queryset], [2, 3])
+        queryset = model.objects.exclude(position__in=[1, 2])
         self.assertEqual(len(queryset), 1)
         self.assertEqual(queryset.count(), 1)
         self.assertEqual([r.position for r in queryset], [3])
@@ -63,11 +67,22 @@ class QuerySetTests(ESTestCase):
         queryset = model.objects.order_by("-position")
         self.assertEqual(queryset[0].position, 3)
 
-
-        item, created = model.objects.get_or_create(position=1, defaults={"name":"nasty"})
+        item, created = model.objects.get_or_create(position=1, defaults={"name": "nasty"})
         self.assertEqual(created, False)
         self.assertEqual(item.position, 1)
         self.assertEqual(item.get_meta().id, "1")
-        item, created = model.objects.get_or_create(position=10, defaults={"name":"nasty"})
+        item, created = model.objects.get_or_create(position=10, defaults={"name": "nasty"})
         self.assertEqual(created, True)
         self.assertEqual(item.position, 10)
+
+        values = list(model.objects.values("uuid", "position"))
+        self.assertEqual(len(values), 3)
+        self.assertEqual([dict(t) for t in values], [{u'position': 1, u'uuid': u'11111'},
+                {u'position': 2, u'uuid': u'22222'},
+                {u'position': 3, u'uuid': u'33333'}])
+
+        values = list(model.objects.values_list("uuid", flat=True))
+        self.assertEqual(len(values), 3)
+        self.assertEqual(values, [u'11111', u'22222',u'33333'])
+
+

@@ -235,18 +235,18 @@ class QuerySet(object):
         return self._result_cache.__getitem__(k)
 
     def __and__(self, other):
-        if isinstance(other, EmptyQuerySet):
-            return other._clone()
         combined = self._clone()
-        combined.query.combine(other.query, ANDFilter)
+        if not other._filters:
+            return combined
+        if other._filters:
+            combined._filters.extend(other._filters)
         return combined
 
     def __or__(self, other):
         combined = self._clone()
-        if isinstance(other, EmptyQuerySet):
-            return combined
-        combined.query.combine(other.query, ORFilter)
-        raise NotImplementedError()
+        if not other._filters:
+            return other._clone()
+        combined._filters = ORFilter([combined._filters, other._filters])
         return combined
 
     ####################################

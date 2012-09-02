@@ -2,9 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from estestcase import ESTestCase
-import unittest
-from pyes.queryset import ESModel, QuerySet, DoesNotExist, generate_model
-
+from pyes.queryset import DoesNotExist, generate_model
+from datetime import datetime
 
 class QuerySetTests(ESTestCase):
     def setUp(self):
@@ -18,10 +17,12 @@ class QuerySetTests(ESTestCase):
         Init default index data
         """
         self.conn.index({"name": ["Joe Tester", "J. Tester"], "parsedtext": "Joe Testere nice guy", "uuid": "11111",
-                         "position": 1},
+                         "position": 1, "date":datetime(2012, 9, 1, 12, 34, 33)},
                                        self.index_name, self.document_type, 1)
         self.conn.index({"name": "data1", "value": "value1"}, self.index_name, "test-type2", 1, parent=1)
-        self.conn.index({"name": "Bill Baloney", "parsedtext": "Bill Testere nice guy", "uuid": "22222", "position": 2},
+        self.conn.index({"name": "Bill Baloney",
+                         "parsedtext": "Bill Testere nice guy",
+                         "uuid": "22222", "position": 2, "date":datetime(2012, 8, 1, 10, 34, 33)},
                                                                                                                        self.index_name
                                                                                                                        ,
                                                                                                                        self.document_type
@@ -29,7 +30,7 @@ class QuerySetTests(ESTestCase):
                                                                                                                        2)
         self.conn.index({"name": "data2", "value": "value2"}, self.index_name, "test-type2", 2, parent=2)
         self.conn.index({"name": ["Bill Clinton", "B. Clinton"], "parsedtext": """Bill is not
-                nice guy""", "uuid": "33333", "position": 3}, self.index_name, self.document_type, 3)
+                nice guy""", "uuid": "33333", "position": 3, "date":datetime(2012, 6, 2, 11, 34, 3)}, self.index_name, self.document_type, 3)
 
     def test_get(self):
         model = generate_model(self.index_name, self.document_type)
@@ -84,5 +85,9 @@ class QuerySetTests(ESTestCase):
         values = list(model.objects.values_list("uuid", flat=True))
         self.assertEqual(len(values), 3)
         self.assertEqual(values, [u'11111', u'22222',u'33333'])
+        values = model.objects.dates("date", kind="year")
+        self.assertEqual(len(values), 1)
+        self.assertEqual(values, [datetime(2012, 1, 1, 1, 0)])
+
 
 

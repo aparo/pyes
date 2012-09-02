@@ -72,7 +72,7 @@ class ESTestCase(unittest.TestCase):
         from pyes.mappings import DocumentObjectField
         from pyes.mappings import IntegerField
         from pyes.mappings import NestedObject
-        from pyes.mappings import StringField
+        from pyes.mappings import StringField, DateField
 
         docmapping = DocumentObjectField(name=self.document_type)
         docmapping.add_property(
@@ -82,6 +82,7 @@ class ESTestCase(unittest.TestCase):
         docmapping.add_property(
             StringField(name="title", store=True, term_vector="with_positions_offsets", index="analyzed"))
         docmapping.add_property(IntegerField(name="position", store=True))
+        docmapping.add_property(DateField(name="date", store=True))
         docmapping.add_property(StringField(name="uuid", store=True, index="not_analyzed"))
         nested_object = NestedObject(name="nested")
         nested_object.add_property(StringField(name="name", store=True))

@@ -482,13 +482,27 @@ class QuerySet(object):
         Returns a list of datetime objects representing all available dates for
         the given field_name, scoped to 'kind'.
         """
-#        assert kind in ("month", "year", "day"), \
-#                "'kind' must be one of 'year', 'month' or 'day'."
-#        assert order in ('ASC', 'DESC'), \
-#                "'order' must be either 'ASC' or 'DESC'."
-#        return self._clone(klass=DateQuerySet, setup=True,
-#                _field_name=field_name, _kind=kind, _order=order)
-        raise NotImplementedError()
+
+        assert kind in ("month", "year", "day", "week", "hour", "minute"), \
+                "'kind' must be one of 'year', 'month', 'day', 'week', 'hour' and 'minute'."
+        assert order in ('ASC', 'DESC'), \
+                "'order' must be either 'ASC' or 'DESC'."
+
+        search= self._build_search()
+        search.facet.reset()
+        search.facet.add_date_facet(name=field_name.replace("__", "."),
+                 field=field_name, interval=kind)
+        search.size=0
+        resulset= get_es_connection().search(search, indices=self.index, doc_types=self.type)
+        resulset.fix_facets()
+        entries = []
+        for val in resulset.facets.get(field_name.replace("__", ".")).get("entries", []):
+            if "time" in val:
+                entries.append(val["time"])
+        if order=="ASC":
+            return sorted(entries)
+
+        return sorted(entries, reverse=True)
 
     def none(self):
         """
@@ -648,17 +662,6 @@ class QuerySet(object):
 #        return obj
         raise NotImplementedError()
 
-    def extra(self, select=None, where=None, params=None, tables=None,
-              order_by=None, select_params=None):
-        """
-        Adds extra SQL fragments to the query.
-        """
-#        assert self.query.can_filter(), \
-#                "Cannot change a query once a slice has been taken"
-#        clone = self._clone()
-#        clone.query.add_extra(select, select_params, where, params, tables, order_by)
-#        return clone
-        raise NotImplementedError()
 
     def reverse(self):
         """

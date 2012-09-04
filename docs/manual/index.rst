@@ -14,3 +14,4 @@
     models
     queries
     resultset
+    queryset

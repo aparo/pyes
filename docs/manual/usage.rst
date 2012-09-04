@@ -105,4 +105,14 @@ Iterate on results:
     >>> for r in results:
     >>>    print r
 
+Execute a query via queryset, via a simple ORM django like interface. (See :ref:`pyes-queryset`)
+
+.. code-block:: python
+
+    >>> model = generate_model("test-index", "test-type")
+    >>> results = model.objects.all()
+    >>> results = model.objects.filter(name="joe")
+
+
+
 The tests directory there are a lot of examples of functionalities.

@@ -70,6 +70,8 @@ class QuerySet(object):
         self._facets = []
         self._ordering = []
         self._fields = [] #fields to load
+        self._size=None
+        self._start=0
         self._result_cache = None #hold the resultset
 
     def _clear_ordering(self):
@@ -145,6 +147,8 @@ class QuerySet(object):
         if self._facets:
             for facet in self._facets:
                 query.facet.add(facet)
+        if self._size is not None:
+            query.size = self._size
         return query
 
     def _do_query(self):
@@ -252,6 +256,16 @@ class QuerySet(object):
     ####################################
     # METHODS THAT DO DATABASE QUERIES #
     ####################################
+
+    def size(self, number):
+        clone = self._clone()
+        clone._size=number
+        return clone
+
+    def start(self, number):
+        clone = self._clone()
+        clone._start=number
+        return clone
 
     def iterator(self):
         """
@@ -396,7 +410,7 @@ class QuerySet(object):
         latest_by = field_name or "_id"#self.model._meta.get_latest_by
         assert bool(latest_by), "latest() requires either a field_name parameter or 'get_latest_by' in the model"
         obj = self._clone()
-        obj.size=1
+        obj._size=1
         obj._clear_ordering()
         obj._ordering.append({ latest_by : "desc" })
         return obj.get()
@@ -508,7 +522,8 @@ class QuerySet(object):
         """
         Returns an empty QuerySet.
         """
-        return self._clone(klass=EmptyQuerySet)
+        #return self._clone(klass=EmptyQuerySet)
+        raise NotImplementedError()
 
     ##################################################################
     # PUBLIC METHODS THAT ALTER ATTRIBUTES AND RETURN A NEW QUERYSET #
@@ -749,24 +764,17 @@ class QuerySet(object):
         """
         return not self._result_cache is None
 
+    @property
+    def facets(self):
+        if len(self._facets)==0:
+            return {}
+        if self._result_cache is None:
+            len(self)
+        return self._result_cache.facets
+
     ###################
     # PRIVATE METHODS #
     ###################
-    def _batched_insert(self, objs, fields, batch_size):
-        """
-        A little helper method for bulk_insert to insert the bulk one batch
-        at a time. Inserts recursively a batch from the front of the bulk and
-        then _batched_insert() the remaining objects again.
-        """
-        raise NotImplementedError()
-#        if not objs:
-#            return
-#        ops = connections[self.db].ops
-#        batch_size = (batch_size or max(ops.bulk_batch_size(fields, objs), 1))
-#        for batch in [objs[i:i+batch_size]
-#                      for i in range(0, len(objs), batch_size)]:
-#            self.model._base_manager._insert(batch, fields=fields,
-#                                             using=self.db)
 
     def _clone(self, klass=None, setup=False, **kwargs):
         if klass is None:
@@ -778,129 +786,11 @@ class QuerySet(object):
         c._filters=list(self._filters)
         c._facets=list(self._facets)
         c._fields=list(self._fields)
+        c._size=self._size
+        c._start=self._start
         return c
+
 
     # When used as part of a nested query, a queryset will never be an "always
     # empty" result.
     value_annotation = True
-
-
-class EmptyQuerySet(QuerySet):
-    def __init__(self, model=None, query=None, using=None):
-        super(EmptyQuerySet, self).__init__(model, query, using)
-        self._result_cache = []
-
-    def __and__(self, other):
-        return self._clone()
-
-    def __or__(self, other):
-        return other._clone()
-
-    def count(self):
-        return 0
-
-    def delete(self):
-        pass
-
-    def _clone(self, klass=None, setup=False, **kwargs):
-        c = super(EmptyQuerySet, self)._clone(klass, setup=setup, **kwargs)
-        c._result_cache = []
-        return c
-
-    def iterator(self):
-        # This slightly odd construction is because we need an empty generator
-        # (it raises StopIteration immediately).
-        yield next(iter([]))
-
-    def all(self):
-        """
-        Always returns EmptyQuerySet.
-        """
-        return self
-
-    def filter(self, *args, **kwargs):
-        """
-        Always returns EmptyQuerySet.
-        """
-        return self
-
-    def exclude(self, *args, **kwargs):
-        """
-        Always returns EmptyQuerySet.
-        """
-        return self
-
-    def complex_filter(self, filter_obj):
-        """
-        Always returns EmptyQuerySet.
-        """
-        return self
-
-    def select_related(self, *fields, **kwargs):
-        """
-        Always returns EmptyQuerySet.
-        """
-        return self
-
-    def annotate(self, *args, **kwargs):
-        """
-        Always returns EmptyQuerySet.
-        """
-        return self
-
-    def order_by(self, *field_names):
-        """
-        Always returns EmptyQuerySet.
-        """
-        return self
-
-    def distinct(self, fields=None):
-        """
-        Always returns EmptyQuerySet.
-        """
-        return self
-
-    def extra(self, select=None, where=None, params=None, tables=None,
-              order_by=None, select_params=None):
-        """
-        Always returns EmptyQuerySet.
-        """
-        assert self.query.can_filter(), \
-                "Cannot change a query once a slice has been taken"
-        return self
-
-    def reverse(self):
-        """
-        Always returns EmptyQuerySet.
-        """
-        return self
-
-    def defer(self, *fields):
-        """
-        Always returns EmptyQuerySet.
-        """
-        return self
-
-    def only(self, *fields):
-        """
-        Always returns EmptyQuerySet.
-        """
-        return self
-
-    def update(self, **kwargs):
-        """
-        Don't update anything.
-        """
-        return 0
-
-    def aggregate(self, *args, **kwargs):
-        """
-        Return a dict mapping the aggregate names to None
-        """
-        for arg in args:
-            kwargs[arg.default_alias] = arg
-        return dict([(key, None) for key in kwargs])
-
-    # EmptyQuerySet is always an empty result in where-clauses (and similar
-    # situations).
-    value_annotation = False

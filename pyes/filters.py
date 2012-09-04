@@ -176,6 +176,11 @@ class RangeFilter(Filter):
         elif isinstance(qrange, ESRange):
             self.ranges.append(qrange)
 
+    def negate(self):
+        """Negate some ranges: useful to resolve a NotFilter(RangeFilter(**))"""
+        for r in self.ranges:
+            r.negate()
+
     def serialize(self):
         if not self.ranges:
             raise RuntimeError("A least a range must be declared")
@@ -262,15 +267,19 @@ class MissingFilter(TermFilter):
 class RegexTermFilter(Filter):
     _internal_name = "regex_term"
 
-    def __init__(self, field=None, value=None, **kwargs):
+    def __init__(self, field=None, value=None, ignorecase=False, **kwargs):
         super(RegexTermFilter, self).__init__(**kwargs)
         self._values = {}
+        self.ignorecase = ignorecase
 
         if field is not None and value is not None:
-            self.add(field, value)
+            self.add(field, value, ignorecase=ignorecase)
 
-    def add(self, field, value):
-        self._values[field] = value
+    def add(self, field, value, ignorecase=False):
+        if ignorecase:
+            self._values[field] = {"term":value, "ignorecase":ignorecase}
+        else:
+            self._values[field] = value
 
     def serialize(self):
         if not self._values:

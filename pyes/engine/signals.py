@@ -1,49 +1,16 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+from pyes.engine.dispatch import Signal
 
-# -*- coding: utf-8 -*-
+class_prepared = Signal(providing_args=["class"])
 
-__all__ = ['pre_init', 'post_init', 'pre_save', 'post_save',
-           'pre_delete', 'post_delete']
+pre_init = Signal(providing_args=["instance", "args", "kwargs"])
+post_init = Signal(providing_args=["instance"])
 
-signals_available = False
-try:
-    from blinker import Namespace
-    signals_available = True
-except ImportError:
-    class Namespace(object):
-        def signal(self, name, doc=None):
-            return _FakeSignal(name, doc)
+pre_save = Signal(providing_args=["instance", "raw", "using", "update_fields"])
+post_save = Signal(providing_args=["instance", "raw", "created", "using", "update_fields"])
 
-    class _FakeSignal(object):
-        """If blinker is unavailable, create a fake class with the same
-        interface that allows sending of signals but will fail with an
-        error on anything else.  Instead of doing anything on send, it
-        will just ignore the arguments and do nothing instead.
-        """
+pre_delete = Signal(providing_args=["instance", "using"])
+post_delete = Signal(providing_args=["instance", "using"])
 
-        def __init__(self, name, doc=None):
-            self.name = name
-            self.__doc__ = doc
+post_syncdb = Signal(providing_args=["class", "app", "created_models", "verbosity", "interactive"])
 
-        def _fail(self, *args, **kwargs):
-            raise RuntimeError('signalling support is unavailable '
-                               'because the blinker library is '
-                               'not installed.')
-        send = lambda *a, **kw: None
-        connect = disconnect = has_receivers_for = receivers_for = \
-            temporarily_connected_to = _fail
-        del _fail
-
-# the namespace for code signals.  If you are not esengine code, do
-# not put signals in here.  Create your own namespace instead.
-_signals = Namespace()
-
-pre_init = _signals.signal('pre_init')
-post_init = _signals.signal('post_init')
-pre_save = _signals.signal('pre_save')
-post_save = _signals.signal('post_save')
-pre_delete = _signals.signal('pre_delete')
-post_delete = _signals.signal('post_delete')
-pre_bulk_insert = _signals.signal('pre_bulk_insert')
-post_bulk_insert = _signals.signal('post_bulk_insert')
+m2m_changed = Signal(providing_args=["action", "instance", "reverse", "model", "pk_set", "using"])

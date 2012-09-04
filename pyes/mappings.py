@@ -2,10 +2,29 @@
 from __future__ import absolute_import
 
 import threading
+from .models import SortedDict, DotDict
 
 _thread_locals = threading.local()
 #store threadsafe data
 from .utils import keys_to_string
+
+def to_bool(value):
+    """
+    Convert a value to boolean
+    :param value: the value to convert
+    :type value: any type
+    :return: a boolean value
+    :rtype: a boolean
+    """
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    elif isinstance(value, basestring):
+        if value=="no":
+            return False
+        elif value=="yes":
+            return True
 
 check_values = {
     'index': ['no', 'analyzed', 'not_analyzed'],
@@ -22,11 +41,12 @@ class AbstractField(object):
                  term_vector="no", omit_norms=True,
                  omit_term_freq_and_positions=True,
                  type=None, index_name=None,
+                 path=None,
                  analyzer=None,
                  index_analyzer=None,
                  search_analyzer=None,
                  name=None):
-        self.store = store
+        self.store = to_bool(store)
         self.boost = boost
         self.term_vector = term_vector
         self.index = index
@@ -38,6 +58,7 @@ class AbstractField(object):
         self.index_analyzer = index_analyzer
         self.search_analyzer = search_analyzer
         self.name = name
+        self.path = path
 
     def as_dict(self):
         result = {"type": self.type,
@@ -66,9 +87,17 @@ class AbstractField(object):
             result['index_analyzer'] = self.index_analyzer
         if self.search_analyzer:
             result['search_analyzer'] = self.search_analyzer
+        if self.path is not None:
+            result['path'] = self.path
 
         return result
 
+    def get_code(self, num=0):
+        data = SortedDict(self.as_dict())
+        if "store" in data:
+            data["store"]=to_bool(data["store"])
+        var_name = "prop_"+self.name
+        return var_name, var_name+" = "+self.__class__.__name__+"(name=%r, "%self.name+", ".join(["%s=%r"%(k,v) for k,v in data.items()])+")"
 
 class StringField(AbstractField):
     def __init__(self, null_value=None, include_in_all=None, *args, **kwargs):
@@ -89,6 +118,8 @@ class StringField(AbstractField):
 class GeoPointField(AbstractField):
     def __init__(self, null_value=None, include_in_all=None,
                  lat_lon=None, geohash=None, geohash_precision=None,
+                 normalize_lon=None, normalize_lat=None,
+                 validate_lon=None, validate_lat=None,
                  *args, **kwargs):
         super(GeoPointField, self).__init__(*args, **kwargs)
         self.null_value = null_value
@@ -96,6 +127,10 @@ class GeoPointField(AbstractField):
         self.lat_lon = lat_lon
         self.geohash = geohash
         self.geohash_precision = geohash_precision
+        self.normalize_lon = normalize_lon
+        self.normalize_lat = normalize_lat
+        self.validate_lat = validate_lat
+        self.validate_lon = validate_lon
         self.type = "geo_point"
 
     def as_dict(self):
@@ -108,6 +143,18 @@ class GeoPointField(AbstractField):
             result['lat_lon'] = self.lat_lon
         if self.geohash is not None:
             result['geohash'] = self.geohash
+        if self.normalize_lon is not None:
+            result['normalize_lon'] = self.normalize_lon
+        if self.normalize_lat is not None:
+            result['normalize_lat'] = self.normalize_lat
+
+        if self.validate_lon is not None:
+            result['validate_lon'] = self.validate_lon
+
+
+        if self.validate_lat is not None:
+            result['validate_lat'] = self.validate_lat
+
         if self.geohash_precision is not None:
             try:
                 int(self.geohash_precision)
@@ -119,12 +166,13 @@ class GeoPointField(AbstractField):
 
 class NumericFieldAbstract(AbstractField):
     def __init__(self, null_value=None, include_in_all=None, precision_step=4,
-                 numeric_resolution=None, **kwargs):
+                 numeric_resolution=None, ignore_malformed=None, **kwargs):
         super(NumericFieldAbstract, self).__init__(**kwargs)
         self.null_value = null_value
         self.include_in_all = include_in_all
         self.precision_step = precision_step
         self.numeric_resolution = numeric_resolution
+        self.ignore_malformed=ignore_malformed
 
     def as_dict(self):
         result = super(NumericFieldAbstract, self).as_dict()
@@ -136,6 +184,8 @@ class NumericFieldAbstract(AbstractField):
             result['precision_step'] = self.precision_step
         if self.numeric_resolution:
             result['numeric_resolution'] = self.numeric_resolution
+        if self.ignore_malformed is not None:
+            result['ignore_malformed'] = self.ignore_malformed
         return result
 
 
@@ -257,7 +307,7 @@ class ObjectField(object):
     def __init__(self, name=None, type=None, path=None, properties=None,
                  dynamic=None, enabled=None, include_in_all=None, dynamic_templates=None,
                  include_in_parent=None, include_in_root=None,
-                 connection=None, index_name=None):
+                 connection=None, index_name=None, *args, **kwargs):
         self.name = name
         self.type = "object"
         self.path = path
@@ -313,6 +363,70 @@ class ObjectField(object):
 
         self.connection.put_mapping(doc_type=self.name, mapping=self.as_dict(), indices=self.index_name)
 
+    def get_properties_by_type(self, type, recursive=True, parent_path=""):
+        """
+        Returns a sorted list of fields that match the type.
+
+        :param type the type of the field "string","integer" or a list of types
+        :param recursive recurse to sub object
+        :returns a sorted list of fields the match the type
+
+        """
+        if parent_path:
+            parent_path += "."
+
+        if isinstance(type, basestring):
+            if type == "*":
+                type = set(MAPPING_NAME_TYPE.keys()) - set(["nested", "multi_field", "multifield"])
+            else:
+                type = [type]
+        properties = []
+        for prop in self.properties.values():
+            if prop.type in type:
+                properties.append((parent_path + prop.name, prop))
+                continue
+            elif prop.type == "multi_field" and prop.name in prop.fields and prop.fields[prop.name].type in type:
+                properties.append((parent_path + prop.name, prop))
+                continue
+
+            if not recursive:
+                continue
+            if prop.type in ["nested", "object"]:
+                properties.extend(
+                    prop.get_properties_by_type(type, recursive=recursive, parent_path=parent_path + prop.name))
+        return sorted(properties)
+
+    def get_available_facets(self):
+        """
+        Returns Available facets for the document
+        """
+        result = []
+        for k, v in self.properties.items():
+            if isinstance(v, DateField):
+                result.append((k, "date"))
+            elif isinstance(v, NumericFieldAbstract):
+                result.append((k, "numeric"))
+            elif isinstance(v, StringField):
+                result.append((k, "term"))
+            elif isinstance(v, GeoPointField):
+                result.append((k, "geo"))
+            elif isinstance(v, ObjectField):
+                for n, t in self.get_available_facets():
+                    result.append((self.name + "." + k, t))
+        return result
+
+    def get_code(self, num=1):
+        data = SortedDict(self.as_dict())
+        data.pop("properties", [])
+        var_name ="obj_%s"%self.name
+        code= [var_name+" = "+self.__class__.__name__+"(name=%r, "%self.name+", ".join(["%s=%r"%(k,v) for k,v in data.items()])+")"]
+        for name, field in self.properties.items():
+            num+=1
+            vname, vcode = field.get_code(num)
+            code.append(vcode)
+            code.append("%s.add_property(%s)"%(var_name, vname))
+
+        return var_name, u'\n'.join(code)
 
 class NestedObject(ObjectField):
     def __init__(self, *args, **kwargs):
@@ -324,7 +438,7 @@ class DocumentObjectField(ObjectField):
     def __init__(self, _all=None, _boost=None, _id=None,
                  _index=None, _source=None, _type=None, date_formats=None, _routing=None, _ttl=None,
                  _parent=None, _timestamp=None, _analyzer=None, _size=None, date_detection=None,
-                 numeric_detection=None, dynamic_date_formats=None, *args, **kwargs):
+                 numeric_detection=None, dynamic_date_formats=None, _meta=None, *args, **kwargs):
         super(DocumentObjectField, self).__init__(*args, **kwargs)
         self._timestamp = _timestamp
         self._all = _all
@@ -349,6 +463,16 @@ class DocumentObjectField(ObjectField):
         self.date_detection = date_detection
         self.numeric_detection = numeric_detection
         self.dynamic_date_formats = dynamic_date_formats
+        self._meta = DotDict(_meta or {})
+
+
+    def get_meta(self, subtype=None):
+        """
+        Return the meta data.
+        """
+        if subtype:
+            return DotDict(self._meta.get(subtype, {}))
+        return  self._meta
 
     def enable_compression(self, threshold="5kb"):
         self._source.update({"compress": True, "compression_threshold": threshold})
@@ -403,8 +527,20 @@ class DocumentObjectField(ObjectField):
             raise RuntimeError("No connection available")
         self.connection.put_mapping(doc_type=self.name, mapping=self.as_dict(), indices=self.index_name)
 
+    def get_code(self, num=1):
+        data = SortedDict(self.as_dict())
+        data.pop("properties", [])
+        var_name ="doc_%s"%self.name
+        code= [var_name+" = "+self.__class__.__name__+"(name=%r, "%self.name+", ".join(["%s=%r"%(k,v) for k,v in data.items()])+")"]
+        for name, field in self.properties.items():
+            num+=1
+            vname, vcode = field.get_code(num)
+            code.append(vcode)
+            code.append("%s.add_property(%s)"%(var_name, vname))
 
-def get_field(name, data, default="object", document_object_field=None):
+        return u'\n'.join(code)
+
+def get_field(name, data, default="object", document_object_field=None, is_document=False):
     """
     Return a valid Field by given data
     """
@@ -436,7 +572,7 @@ def get_field(name, data, default="object", document_object_field=None):
         return GeoPointField(name=name, **data)
     elif _type == "attachment":
         return AttachmentField(name=name, **data)
-    elif _type == "document":
+    elif is_document or _type == "document":
         if document_object_field:
             return document_object_field(name=name, **data)
         else:
@@ -480,16 +616,28 @@ class Mapper(object):
         if self.is_mapping:
             for docname, docdata in data.items():
                 self.mappings[docname] = get_field(docname, docdata, "document",
-                    document_object_field=self.document_object_field)
+                                                   document_object_field=self.document_object_field, is_document=True)
         else:
+            indices = []
             for indexname, indexdata in data.items():
-                self.indices[indexname] = {}
+                idata = []
                 for docname, docdata in indexdata.items():
-                    o = get_field(docname, docdata, "document",
-                        document_object_field=self.document_object_field)
+                    o = get_field(docname, docdata, document_object_field=self.document_object_field, is_document=True)
                     o.connection = self.connection
                     o.index_name = indexname
-                    self.indices[indexname][docname] = o
+                    idata.append((docname, o))
+                idata.sort()
+                indices.append((indexname, idata))
+            indices.sort()
+            self.indices = indices
+
+
+    def get_doctypes(self, index, edges=True):
+        """
+        Returns a list of doctypes given an index
+        """
+        #TODO lazy loading of index in mapping not exists
+        return self.indices[index]
 
     def get_doctype(self, index, name):
         """
@@ -514,6 +662,7 @@ MAPPING_NAME_TYPE = {
     "float": FloatField,
     "geopoint": GeoPointField,
     "integer": IntegerField,
+    "int": IntegerField,
     "ip": IpField,
     "long": LongField,
     "multifield": MultiField,

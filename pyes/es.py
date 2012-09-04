@@ -3,31 +3,30 @@
 from __future__ import absolute_import
 from __future__ import with_statement
 import urllib
+from .helpers import SettingsBuilder
+from .models import ElasticSearchModel, DotDict, ListBulker
 
 try:
     # For Python >= 2.6
     import json
+    from json import JSONDecoder, JSONEncoder
 except ImportError:
     # For Python < 2.6 or people using a newer version of simplejson
     import simplejson as json
+    from simplejson import JSONDecoder, JSONEncoder
 
 import random
 from datetime import date, datetime
 from urllib import urlencode
-from urlparse import urlunsplit
+from urlparse import urlunsplit, urlparse
 import base64
 import time
 from decimal import Decimal
-from urllib import quote
-import threading
-import copy
-from urlparse import urlparse
 from .managers import Indices, Cluster
 try:
     from .connection import connect as thrift_connect
     from .pyesthrift.ttypes import Method, RestRequest
 
-    thrift_enable = True
 except ImportError:
     from .fakettypes import Method, RestRequest
 
@@ -38,10 +37,8 @@ from . import logger
 from .mappings import Mapper
 
 from .convert_errors import raise_if_error
-from .exceptions import (ElasticSearchException, IndexAlreadyExistsException,
-                         IndexMissingException, InvalidQuery,
-                         ReduceSearchPhaseException, VersionConflictEngineException,
-                         BulkOperationException)
+from .exceptions import (ElasticSearchException, InvalidQuery,
+                         ReduceSearchPhaseException, VersionConflictEngineException )
 from .decorators import deprecated
 from .utils import make_path
 
@@ -50,106 +47,6 @@ __all__ = ['ES', 'file_to_attachment', 'decode_json']
 #
 # models
 #
-
-class DotDict(dict):
-    def __getattr__(self, attr):
-        if attr.startswith('__'):
-            raise AttributeError
-        return self.get(attr, None)
-
-    __setattr__ = dict.__setitem__
-
-    __delattr__ = dict.__delitem__
-
-    def __deepcopy__(self, memo):
-        return DotDict([(copy.deepcopy(k, memo), copy.deepcopy(v, memo)) for k, v in self.items()])
-
-class ElasticSearchModel(DotDict):
-    def __init__(self, *args, **kwargs):
-        self._meta = DotDict()
-        self.__initialised = True
-        if len(args) == 2 and isinstance(args[0], ES):
-            item = args[1]
-            self.update(item.pop("_source", DotDict()))
-            self.update(item.pop("fields", {}))
-            self._meta = DotDict([(k.lstrip("_"), v) for k, v in item.items()])
-            self._meta.parent = self.pop("_parent", None)
-            self._meta.connection = args[0]
-        else:
-            self.update(dict(*args, **kwargs))
-
-    def __setattr__(self, key, value):
-        if not self.__dict__.has_key(
-            '_ElasticSearchModel__initialised'):  # this test allows attributes to be set in the __init__ method
-            return dict.__setattr__(self, key, value)
-        elif self.__dict__.has_key(key):       # any normal attributes are handled normally
-            dict.__setattr__(self, key, value)
-        else:
-            self.__setitem__(key, value)
-
-    def get_meta(self):
-        return self._meta
-
-    def delete(self, bulk=False):
-        """
-        Delete the object
-        """
-        meta = self._meta
-        conn = meta['connection']
-        conn.delete(meta.index, meta.type, meta.id, bulk=bulk)
-
-    def save(self, bulk=False, id=None, parent=None, force=False):
-        """
-        Save the object and returns id
-        """
-        meta = self._meta
-        conn = meta['connection']
-        id = id or meta.get("id", None)
-        parent = parent or meta.get('parent', None)
-        version = meta.get('version', None)
-        if force:
-            version = None
-        res = conn.index(self,
-                         meta.index, meta.type, id, parent=parent, bulk=bulk, version=version, force_insert=force)
-        if not bulk:
-            self._meta.id = res._id
-            self._meta.version = res._version
-            return res._id
-        return id
-
-    def reload(self):
-        meta = self._meta
-        conn = meta['connection']
-        res = conn.get(meta.index, meta.type, meta["id"])
-        self.update(res)
-
-
-    def get_id(self):
-        """ Force the object saveing to get an id"""
-        _id = self._meta.get("id", None)
-        if _id is None:
-            _id = self.save()
-        return _id
-
-    def get_bulk(self, create=False):
-        """Return bulk code"""
-        result = []
-        op_type = "index"
-        if create:
-            op_type = "create"
-        meta = self._meta
-        cmd = {op_type: {"_index": meta.index, "_type": meta.type}}
-        if meta.parent:
-            cmd[op_type]['_parent'] = meta.parent
-        if meta.version:
-            cmd[op_type]['_version'] = meta.version
-        if meta.id:
-            cmd[op_type]['_id'] = meta.id
-        result.append(json.dumps(cmd, cls=self._meta.connection.encoder))
-        result.append("\n")
-        result.append(json.dumps(self, cls=self._meta.connection.encoder))
-        result.append("\n")
-        return ''.join(result)
 
 
 def file_to_attachment(filename, filehandler=None):
@@ -166,24 +63,7 @@ def file_to_attachment(filename, filehandler=None):
         }
 
 
-def _is_bulk_item_ok(item):
-    if "index" in item:
-        return "ok" in item["index"]
-    elif "delete" in item:
-        return "ok" in item["delete"]
-    else:
-        # unknown response type; be conservative
-        return False
-
-
-def _raise_exception_if_bulk_item_failed(bulk_result):
-    errors = [item for item in bulk_result["items"] if not _is_bulk_item_ok(item)]
-    if len(errors) > 0:
-        raise BulkOperationException(errors, bulk_result)
-    return None
-
-
-class ESJsonEncoder(json.JSONEncoder):
+class ESJsonEncoder(JSONEncoder):
     def default(self, value):
         """Convert rogue and mysterious data types.
         Conversion notes:
@@ -203,13 +83,14 @@ class ESJsonEncoder(json.JSONEncoder):
         return value
 
 
-class ESJsonDecoder(json.JSONDecoder):
+class ESJsonDecoder(JSONDecoder):
     def __init__(self, *args, **kwargs):
         kwargs['object_hook'] = self.dict_to_object
         json.JSONDecoder.__init__(self, *args, **kwargs)
 
     def string_to_datetime(self, obj):
-        """Decode a datetime string to a datetime object
+        """
+        Decode a datetime string to a datetime object
         """
         if isinstance(obj, basestring) and len(obj) == 19:
             try:
@@ -225,7 +106,7 @@ class ESJsonDecoder(json.JSONDecoder):
         """
         for k, v in d.items():
             if isinstance(v, basestring) and len(v) == 19:
-                """Decode a datetime string to a datetime object"""
+                # Decode a datetime string to a datetime object
                 try:
                     d[k] = datetime(*time.strptime(v, "%Y-%m-%dT%H:%M:%S")[:6])
                 except ValueError:
@@ -234,80 +115,6 @@ class ESJsonDecoder(json.JSONDecoder):
                 d[k] = [self.string_to_datetime(elem) for elem in v]
         return DotDict(d)
 
-
-class BaseBulker(object):
-    """
-    Base class to implement a bulker strategy
-
-    """
-
-    def __init__(self, conn, bulk_size=400, raise_on_bulk_item_failure=False):
-        self.conn = conn
-        self._bulk_size = bulk_size
-        # protects bulk_data
-        self.bulk_lock = threading.RLock()
-        with self.bulk_lock:
-            self.bulk_data = []
-        self.raise_on_bulk_item_failure = raise_on_bulk_item_failure
-
-    def get_bulk_size(self):
-        """
-        Get the current bulk_size
-
-        :return a int: the size of the bulk holder
-        """
-        return self._bulk_size
-
-    def set_bulk_size(self, bulk_size):
-        """
-        Set the bulk size
-
-        :param bulk_size the bulker size
-        """
-        self._bulk_size = bulk_size
-        self.flush_bulk()
-
-    bulk_size = property(get_bulk_size, set_bulk_size)
-
-    def add(self, content):
-        raise NotImplementedError
-
-    def flush_bulk(self, forced=False):
-        raise NotImplementedError
-
-
-class ListBulker(BaseBulker):
-    """
-    A bulker that store data in a list
-    """
-
-    def __init__(self, conn, bulk_size=400, raise_on_bulk_item_failure=False):
-        super(ListBulker, self).__init__(conn=conn, bulk_size=bulk_size,
-                                         raise_on_bulk_item_failure=raise_on_bulk_item_failure)
-        with self.bulk_lock:
-            self.bulk_data = []
-
-    def add(self, content):
-        with self.bulk_lock:
-            self.bulk_data.append(content)
-
-    def flush_bulk(self, forced=False):
-        with self.bulk_lock:
-            if forced or len(self.bulk_data) >= self.bulk_size:
-                batch = self.bulk_data
-                self.bulk_data = []
-            else:
-                return None
-
-        if len(batch) > 0:
-            bulk_result = self.conn._send_request("POST",
-                                                  "/_bulk",
-                                                  "\n".join(batch) + "\n")
-
-            if self.raise_on_bulk_item_failure:
-                _raise_exception_if_bulk_item_failed(bulk_result)
-
-            return bulk_result
 
 class ES(object):
     """
@@ -428,7 +235,7 @@ class ES(object):
                          "operations have not been flushed. Call force_bulk()!",
                          self)
             # Do our best to save the client anyway...
-            self.bulker.force_bulk()
+            self.bulker.flush_bulk(True)
 
     def _check_servers(self):
         """Check the servers variable and convert in a valid tuple form"""
@@ -634,6 +441,20 @@ class ES(object):
             indices = [indices]
         return indices
 
+    def _validate_types(self, types=None):
+        """Return a valid list of types.
+
+        `types` may be a string or a list of strings.
+        If `types` is not supplied, returns the default_types.
+
+        """
+        types = types or self.default_types
+        if types is None:
+            types = []
+        if isinstance(types, basestring):
+            types = [types]
+        return types
+
     def _dump_curl_request(self, request):
         print >> self.dump_curl, "# [%s]" % datetime.now().isoformat()
         params = {'pretty': 'true'}
@@ -736,6 +557,56 @@ class ES(object):
         Check if an index exists.
         """
         return self.indices.exists_index(index=index)
+
+    def ensure_index(self, index, mappings=None, settings=None, clear=False):
+        """
+        Ensure if an index with mapping exists
+        """
+        mappings = mappings or []
+        if isinstance(mappings, dict):
+            mappings = [mappings]
+        exists = self.exists_index(index)
+        if exists and not mappings and not clear:
+            return
+
+        if exists:
+            if not mappings:
+                self.delete_index(index)
+                self.refresh()
+                self.create_index(index, settings)
+                return
+
+            if clear:
+                for maps in mappings:
+                    for key in maps.keys():
+                        self.delete_mapping(index, doc_type=key)
+                self.refresh()
+            if isinstance(mappings, SettingsBuilder):
+                for name, data in mappings.mappings.items():
+                    self.put_mapping(doc_type=name, mapping=data, indices=index)
+
+            else:
+                for maps in mappings:
+                    if isinstance(maps, tuple):
+                        name, mapping = maps
+                        self.put_mapping(doc_type=name, mapping=mapping, indices=index)
+                    elif isinstance(maps, dict):
+                        for name, data in maps.items():
+                            self.put_mapping(doc_type=name, mapping=maps, indices=index)
+
+                return
+
+        if settings:
+            if isinstance(settings, dict):
+                settings = SettingsBuilder(settings, mappings)
+        else:
+            if isinstance(mappings, SettingsBuilder):
+                settings = mappings
+            else:
+                settings = SettingsBuilder(mappings=mappings)
+        if not exists:
+            self.create_index(index, settings)
+
 
     @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.delete_index_if_exists")
     def delete_index_if_exists(self, index):
@@ -1389,6 +1260,8 @@ class ES(object):
 
         """
         indices = self._validate_indices(indices)
+        if indices ==["_all"]:
+            indices=None
         if doc_types is None:
             doc_types = []
         elif isinstance(doc_types, basestring):
@@ -1748,6 +1621,14 @@ class ResultSet(object):
             self._do_search()
         if name == "facets":
             return self._facets
+
+        elif name in self._results:
+            #we manage took, timed_out, _shards
+            return self._results[name]
+
+        elif name == "shards" and "_shards" in self._results:
+            #trick shards -> _shards
+            return self._results["_shards"]
         return self._results['hits'][name]
 
     def __getitem__(self, val):

@@ -25,6 +25,9 @@ class FacetFactory(EqualityComparableUsingAttributeDictionary):
         """Add a term factory"""
         self.facets.append(facet)
 
+    def reset(self):
+        """Reset the facets"""
+        self.facets=[]
     @property
     def q(self):
         res = {}

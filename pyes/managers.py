@@ -502,7 +502,7 @@ class Cluster(object):
             mapping['wait_for_status'] = wait_for_status
 
             mapping['timeout'] = "%ds" % timeout
-        return self.conn._send_request('GET', path, mapping)
+        return self.conn._send_request('GET', path, params=mapping)
 
     def state(self, filter_nodes=None, filter_routing_table=None,
                       filter_metadata=None, filter_blocks=None,

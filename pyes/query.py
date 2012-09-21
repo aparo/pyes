@@ -445,6 +445,23 @@ class HasChildQuery(Query):
             data['_scope'] = self._scope
         return {self._internal_name: data}
 
+class HasParentQuery(Query):
+    _internal_name = "has_parent"
+
+    def __init__(self, type, query, _scope=None, **kwargs):
+        super(HasParentQuery, self).__init__(**kwargs)
+        self.type = type
+        self._scope = _scope
+        self.query = query
+
+    def serialize(self):
+        data = {
+            'type': self.type,
+            'query': self.query.serialize()}
+        if self._scope is not None:
+            data['_scope'] = self._scope
+        return {self._internal_name: data}
+
 
 class TopChildrenQuery(ConstantScoreQuery):
     _internal_name = "top_children"

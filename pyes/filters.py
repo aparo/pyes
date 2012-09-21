@@ -451,6 +451,29 @@ class HasChildFilter(Filter):
             data['_scope'] = self._scope
         return self._add_parameters({self._internal_name: data})
 
+class HasParentFilter(Filter):
+    """
+    The has_parent filter accepts a query and the parent type to run against,
+    and results in child documents that have parent docs matching the query
+    """
+    _internal_name = "has_parent"
+
+    def __init__(self, type, query, _scope=None, **kwargs):
+        if not isinstance(query, Query):
+            raise RuntimeError("HasParentFilter expects a Query")
+        super(HasChildFilter, self).__init__(**kwargs)
+        self.query = query
+        self.type = type
+        self._scope = _scope
+
+    def serialize(self):
+        data = {"query": self.query.serialize(),
+                "type": self.type}
+        if self._scope is not None:
+            data['_scope'] = self._scope
+        return self._add_parameters({self._internal_name: data})
+
+
 
 class NestedFilter(Filter):
     """

@@ -211,11 +211,11 @@ class PrefixFilter(Filter):
 class ScriptFilter(Filter):
     _internal_name = "script"
 
-    def __init__(self, script, params=None, **kwargs):
+    def __init__(self, script, params=None, lang=None, **kwargs):
         super(ScriptFilter, self).__init__(**kwargs)
         self.script = script
         self.params = params
-
+        self.lang = lang
 
     def add(self, field, value):
         self.params[field] = {'value': value}
@@ -224,6 +224,8 @@ class ScriptFilter(Filter):
         data = {'script': self.script}
         if self.params is not None:
             data['params'] = self.params
+        if self.lang is not None:
+            data['lang'] = self.lang
         return self._add_parameters({self._internal_name: data})
 
 

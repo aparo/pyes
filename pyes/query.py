@@ -2,11 +2,11 @@
 from __future__ import absolute_import
 
 try:
-    # For Python >= 2.6
-    import json
-except ImportError:
     # For Python < 2.6 or people using a newer version of simplejson
     import simplejson as json
+except ImportError:
+    # For Python >= 2.6
+    import json
 
 from .utils import clean_string, ESRange, EqualityComparableUsingAttributeDictionary
 from .highlight import HighLighter

@@ -7,13 +7,13 @@ from .helpers import SettingsBuilder
 from .models import ElasticSearchModel, DotDict, ListBulker
 
 try:
-    # For Python >= 2.6
-    import json
-    from json import JSONDecoder, JSONEncoder
-except ImportError:
     # For Python < 2.6 or people using a newer version of simplejson
     import simplejson as json
     from simplejson import JSONDecoder, JSONEncoder
+except ImportError:
+    # For Python >= 2.6
+    import json
+    from json import JSONDecoder, JSONEncoder
 
 import random
 from datetime import date, datetime

@@ -256,7 +256,7 @@ class ES(object):
         for server in self.servers:
             if isinstance(server, (tuple, list)):
                 if len(list(server)) != 3:
-                    raise RuntimeError("Invalid server definition: \"%s\"" % server)
+                    raise RuntimeError("Invalid server definition: \"%s\"" % repr(server))
                 _type, host, port = server
                 server = urlparse('%s://%s:%s' % (_type, host, port))
                 check_format(server)

@@ -93,16 +93,7 @@ class Connection(object):
                 return RestResponse(status=response.status,
                                     body=response.data,
                                     headers=response.headers)
-             except socket.error:
-                 self._drop_server(server)
-                 self._local.server = server = None
-                 if retry >= self._max_retries:
-                     logger.error("Client error: bailing out after %d failed retries",
-                                  self._max_retries, exc_info=1)
-                     raise NoServerAvailable
-                 logger.exception("Client error: %d retries left", self._max_retries - retry)
-                 retry += 1
-            except urllib3.exceptions.HTTPError:
+            except (socket.error, urllib3.exceptions.HTTPError):
                 self._drop_server(server)
                 self._local.server = server = None
                 if retry >= self._max_retries:

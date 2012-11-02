@@ -5,7 +5,7 @@
 :Web: http://pypi.python.org/pypi/pyes/
 :Download: http://pypi.python.org/pypi/pyes/
 :Source: http://github.com/aparo/pyes/
-:Documentation: http://packages.python.org/pyes/
+:Documentation: http://pyes.rtfd.org/
 :Keywords: search, elastisearch, distribute search
 
 --
@@ -26,12 +26,6 @@ Features
 - Highlighting
 - Percolator
 - River support
-
-Documentation
-=============
-
-http://pyes.rtfd.org/
-http://pyes.readthedocs.org/en/latest/
 
 Changelog
 =========

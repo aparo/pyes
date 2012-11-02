@@ -6,14 +6,14 @@ Creating a connection. (See more details here :ref:`pyes-connections`)
 .. code-block:: python
 
     >>> from pyes import *
-    >>> conn = ES('127.0.0.1:9200') #for http
+    >>> conn = ES('127.0.0.1:9200') # Use HTTP
 
 Deleting an index:
 
 .. code-block:: python
 
     >>> try:
-    >>>     conn.delete_index("test-index")
+    >>>     conn.indices.delete_index("test-index")
     >>> except:
     >>>     pass
 
@@ -23,34 +23,46 @@ Create an index:
 
 .. code-block:: python
 
-    >>> conn.create_index("test-index")
+    >>> conn.indices.create_index("test-index")
 
 Creating a mapping via dictionary:
 
 .. code-block:: python
 
-    >>> mapping = { u'parsedtext': {'boost': 1.0,
-    >>>                  'index': 'analyzed',
-    >>>                  'store': 'yes',
-    >>>                  'type': u'string',
-    >>>                  "term_vector" : "with_positions_offsets"},
-    >>>          u'name': {'boost': 1.0,
-    >>>                     'index': 'analyzed',
-    >>>                     'store': 'yes',
-    >>>                     'type': u'string',
-    >>>                     "term_vector" : "with_positions_offsets"},
-    >>>          u'title': {'boost': 1.0,
-    >>>                     'index': 'analyzed',
-    >>>                     'store': 'yes',
-    >>>                     'type': u'string',
-    >>>                     "term_vector" : "with_positions_offsets"},
-    >>>          u'pos': {'store': 'yes',
-    >>>                     'type': u'integer'},
-    >>>          u'uuid': {'boost': 1.0,
-    >>>                    'index': 'not_analyzed',
-    >>>                    'store': 'yes',
-    >>>                    'type': u'string'}}
-    >>> conn.put_mapping("test-type", {'properties':mapping}, ["test-index"])
+    >>> mapping = {
+    >>>     'parsedtext': {
+    >>>         'boost': 1.0,
+    >>>         'index': 'analyzed',
+    >>>         'store': 'yes',
+    >>>         'type': 'string',
+    >>>         "term_vector": "with_positions_offsets"
+    >>>     },
+    >>>     'name': {
+    >>>         'boost': 1.0,
+    >>>         'index': 'analyzed',
+    >>>         'store': 'yes',
+    >>>         'type': 'string',
+    >>>         "term_vector": "with_positions_offsets"
+    >>>     },
+    >>>     'title': {
+    >>>         'boost': 1.0,
+    >>>         'index': 'analyzed',
+    >>>         'store': 'yes',
+    >>>         'type': 'string',
+    >>>         "term_vector": "with_positions_offsets"
+    >>>     },
+    >>>     'pos': {
+    >>>         'store': 'yes',
+    >>>         'type': 'integer'
+    >>>     },
+    >>>     'uuid': {
+    >>>         'boost': 1.0,
+    >>>         'index': 'not_analyzed',
+    >>>         'store': 'yes',
+    >>>         'type': 'string'
+    >>>     }
+    >>> }
+    >>> conn.indices.put_mapping("test-type", {'properties':mapping}, ["test-index"])
 
 Creating a mapping via objects:
 
@@ -74,7 +86,6 @@ Creating a mapping via objects:
     >>> settings.add_mapping(docmapping)
     >>> conn.ensure_index(self.index_name, settings)
 
-
 Index some documents:
 
 .. code-block:: python
@@ -82,12 +93,12 @@ Index some documents:
     >>> conn.index({"name":"Joe Tester", "parsedtext":"Joe Testere nice guy", "uuid":"11111", "position":1}, "test-index", "test-type", 1)
     >>> conn.index({"name":"Bill Baloney", "parsedtext":"Joe Testere nice guy", "uuid":"22222", "position":2}, "test-index", "test-type", 2)
 
-Refresh an index:
+Refreshing indexes:
 
 .. code-block:: python
 
-    >>> conn.refresh("test-index")
-    >>> conn.refresh(["test-index"])
+    >>> conn.indices.refresh("test-index") # Single index.
+    >>> conn.indices.refresh(["test-index", "test-index-2"]) # Multiple Indexes
 
 Execute a query. (See :ref:`pyes-queries`)
 
@@ -112,7 +123,5 @@ Execute a query via queryset, via a simple ORM django like interface. (See :ref:
     >>> model = generate_model("test-index", "test-type")
     >>> results = model.objects.all()
     >>> results = model.objects.filter(name="joe")
-
-
 
 The tests directory there are a lot of examples of functionalities.

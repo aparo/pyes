@@ -412,7 +412,6 @@ class ES(object):
                 # in the exception.
                 raise ElasticSearchException(response.body, response.status, response.body)
         if response.status != 200:
-            print response.body
             raise_if_error(response.status, decoded)
         if not raw and isinstance(decoded, dict):
             decoded = DotDict(decoded)
@@ -853,7 +852,6 @@ class ES(object):
         """
         Register specific mapping definition for a specific type against one or more indices.
         """
-        print mapping
         return self.indices.put_mapping(doc_type=doc_type, mapping=mapping, indices=indices)
 
     @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.get_mapping")

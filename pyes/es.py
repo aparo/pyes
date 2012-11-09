@@ -79,6 +79,10 @@ class ESJsonEncoder(JSONEncoder):
             return dt.isoformat()
         elif isinstance(value, Decimal):
             return float(str(value))
+        elif isinstance(value, Decimal):
+            return float(str(value))       
+        elif isinstance(value, set):
+            return list(value)
         # use no special encoding and hope for the best
         return value
 
@@ -378,7 +382,8 @@ class ES(object):
                 body = body.as_dict()
 
             if isinstance(body, dict):
-                body = json.dumps(body, cls=self.encoder)
+               body = json.dumps(body, cls=self.encoder)
+                
         else:
             body = ""
         request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()],
@@ -407,6 +412,7 @@ class ES(object):
                 # in the exception.
                 raise ElasticSearchException(response.body, response.status, response.body)
         if response.status != 200:
+            print response.body
             raise_if_error(response.status, decoded)
         if not raw and isinstance(decoded, dict):
             decoded = DotDict(decoded)
@@ -847,6 +853,7 @@ class ES(object):
         """
         Register specific mapping definition for a specific type against one or more indices.
         """
+        print mapping
         return self.indices.put_mapping(doc_type=doc_type, mapping=mapping, indices=indices)
 
     @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.get_mapping")

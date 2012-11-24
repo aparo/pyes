@@ -1690,7 +1690,7 @@ class ResultSet(object):
             self._current_item += 1
             return self.model(self.connection, res)
 
-        if self.iterpos == self.total:
+        if (self.start + self.iterpos) == self.total:
             raise StopIteration
         self._do_search(auto_increment=True)
         self.iterpos = 0

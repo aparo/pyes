@@ -79,9 +79,9 @@ class ESJsonEncoder(JSONEncoder):
             return dt.isoformat()
         elif isinstance(value, Decimal):
             return float(str(value))
-        # use no special encoding and hope for the best
-        return value
-
+        else:
+            # Fall back to converting the value to a string
+            return str(value)
 
 class ESJsonDecoder(JSONDecoder):
     def __init__(self, *args, **kwargs):

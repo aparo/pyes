@@ -32,18 +32,18 @@ The numeric range filter works by loading all the relevant field values into mem
 The **numeric_range** filter top level parameters include:
 
 
-======================  ============================================================================
- Name                    Description                                                                
-======================  ============================================================================
- **from**                The lower bound. Defaults to start from the first.                         
- **to**                  The upper bound. Defaults to unbounded.                                    
- **from_inclusive**      Should the first from (if set) be inclusive or not. Defaults to **true**   
- **to_inclusive**        Should the last to (if set) be inclusive or not. Defaults to **true**.     
- **gt**                  Same as setting **from** and **from_inclusive** to **false**.              
- **gte**                 Same as setting **from** and **from_inclusive** to **true**.               
- **lt**                  Same as setting **to** and **to_inclusive** to **false**.                  
- **lte**                 Same as setting **to** and **to_inclusive** to **true**.                   
-======================  ============================================================================
+=====================  ============================================================================
+ Name                   Description                                                                
+=====================  ============================================================================
+ **from**               The lower bound. Defaults to start from the first.                         
+ **to**                 The upper bound. Defaults to unbounded.                                    
+ **include_lower**      Should the first from (if set) be inclusive or not. Defaults to **true**   
+ **include_upper**      Should the last to (if set) be inclusive or not. Defaults to **true**.     
+ **gt**                 Same as setting **from** and **include_lower** to **false**.               
+ **gte**                Same as setting **from** and **include_lower** to **true**.                
+ **lt**                 Same as setting **to** and **include_upper** to **false**.                 
+ **lte**                Same as setting **to** and **include_upper** to **true**.                  
+=====================  ============================================================================
 
 Caching
 =======

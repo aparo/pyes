@@ -10,6 +10,9 @@ A shard in elasticsearch is a Lucene index, and a lucene index is broken down in
 The more segments one has in the Lucene index mean slower searches and more memory used, but, low number of segments means more merging that has to go on.
 
 
+Since merges can be expensive to perform, especially on low IO environments, they can be throtted using store level throttling. Read the store module documentation on how to set it.
+
+
 Policy
 ======
 

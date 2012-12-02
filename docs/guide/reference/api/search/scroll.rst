@@ -15,7 +15,7 @@ A **scroll_id** is returned from the first search request (and from continuous) 
 .. code-block:: js
 
     $ curl -XGET 'http://localhost:9200/twitter/tweet/_search?scroll=5m' -d '{
-        :ref:`query <es-guide-reference-api-search>`  ry <es-guide-reference-api-search>`  {
+        "query": {
             "query_string" : {
                 "query" : "some query string here"
             }

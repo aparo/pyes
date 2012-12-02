@@ -4,4 +4,4 @@
 Phonetic Tokenfilter
 ====================
 
-The **phonteic** token filter is provided as a plugin and located `here <https://github.com/elasticsearch/elasticsearch-analysis-phonetic>`_.  
+The **phonetic** token filter is provided as a plugin and located `here <https://github.com/elasticsearch/elasticsearch-analysis-phonetic>`_.  

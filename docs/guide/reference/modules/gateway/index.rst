@@ -1,5 +1,6 @@
 .. _es-guide-reference-modules-gateway-index:
-.. _es-guide-reference-modules-gatewa:
+.. _es-guide-reference-modules-gateway:
+
 =======
 Gateway
 =======

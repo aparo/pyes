@@ -37,4 +37,4 @@ Or :
     }
 
 
-This multi term query allows to control how it gets rewritten using the :ref:`rewrite <es-guide-reference-query-dsl-multi-term-rewrite>`  query-dsl-multi-term-rewrite>`  parameter.
+This multi term query allows to control how it gets rewritten using the :ref:`rewrite <es-guide-reference-query-dsl-multi-term-rewrite>`  parameter.

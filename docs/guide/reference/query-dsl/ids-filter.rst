@@ -12,7 +12,7 @@ Filters documents that only have the provided ids. Note, this filter does not re
 
     {
         "ids" : {
-            "type" : "my_type"
+            "type" : "my_type",
             "values" : ["1", "4", "100"]
         }
     }    

@@ -20,4 +20,4 @@ The count API is very similar to the :ref:`Java count API <es-guide-reference-ja
     }
 
 
-The query follows the same :ref:`Query DSL <es-guide-reference-query-dsl>`.
+The query follows the same :ref:`Query DSL <es-guide-reference-query-dsl>`.  

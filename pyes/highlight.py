@@ -30,7 +30,7 @@ class HighLighter(object):
         self.number_of_fragments = number_of_fragments
         self.fragment_offset = fragment_offset
 
-    def add_field(self, name, fragment_size=150, number_of_fragments=3, fragment_offset=None):
+    def add_field(self, name, fragment_size=150, number_of_fragments=3, fragment_offset=None, order="score"):
         """
         Add a field to Highlinghter
         """
@@ -41,6 +41,7 @@ class HighLighter(object):
             data['number_of_fragments'] = number_of_fragments
         if fragment_offset is not None:
             data['fragment_offset'] = fragment_offset
+        data['order'] = order
         self.fields[name] = data
 
     def serialize(self):

@@ -26,10 +26,10 @@ Wraps any query to be used as a filter. Can be placed within queries that accept
 Caching
 =======
 
-The result of the filter is not cached by default. The `_cache` can be set to `true` to cache the *result* of the filter. This is handy when the same query is used on several (many) other queries. Note, the process of caching the first execution is higher when not caching (since it needs to satisfy different queries).
+The result of the filter is not cached by default. The **_cache** can be set to **true** to cache the *result* of the filter. This is handy when the same query is used on several (many) other queries. Note, the process of caching the first execution is higher when not caching (since it needs to satisfy different queries).
 
 
-Setting the `_cache` element requires a different format for the `query`:
+Setting the **_cache** element requires a different format for the **query**:
 
 
 .. code-block:: js

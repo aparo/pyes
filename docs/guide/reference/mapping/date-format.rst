@@ -84,4 +84,4 @@ year_month_day                       A formatter for a four digit year, two digi
 Custom Format
 =============
 
-Allows for a completely customizable date format explained `here <http://joda-time.sourceforge.net/api-release/org/joda/time/format/DateTimeFormat.html>`_.  _.  
+Allows for a completely customizable date format explained `here <http://joda-time.sourceforge.net/api-release/org/joda/time/format/DateTimeFormat.html>`_.  

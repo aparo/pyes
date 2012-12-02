@@ -60,7 +60,7 @@ Or, in a longer form with a **filter** element:
 Caching
 =======
 
-The result of the filter is not cached by default. The `_cache` can be set to `true` in order to cache it (tough usually not needed). Here is an example:
+The result of the filter is not cached by default. The **_cache** can be set to **true** in order to cache it (tough usually not needed). Here is an example:
 
 
 .. code-block:: js

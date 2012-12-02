@@ -16,6 +16,36 @@ When using a local gateway (the default), file system storage with *no* in memor
 Another important aspect of memory based storage is the fact that ElasticSearch supports storing the index in memory *outside of the JVM heap space* using the "Memory" (see below) storage type. It translates to the fact that there is no need for extra large JVM heaps (with their own consequences) for storing the index in memory.
 
 
+Store Level Compression
+=======================
+
+(0.19.5 and above).
+
+
+In the mapping, one can configure the **_source** field to be compressed. The problem with it is the fact that small documents don't end up compressing well, as several documents compressed in a single compression "block" will provide a considerable better compression ratio. This version introduces the ability to compress stored fieds using the **index.store.compress.stored** setting, as well as term vector using the **index.store.compress.tv** setting.
+
+
+The settings can be set on the index level, and are dynamic, allowing to change them using the index update settings API. elasticsearch can handle mixed stored / non stored cases. This allows, for example, to enable compression at a later stage in the index lifecycle, and optimize the index to make use of it (generating new segmetns that use compression).
+
+
+Best compression, compared to _source level compression, will mainly happen when indexing smaller documents (less than 64k). The price on the other hand is the fact that for each doc returned, a block will need to be decompressed (its fast though) in order to extract the document data.
+
+
+Store Level Throttling
+======================
+
+(0.19.5 and above).
+
+
+The way Lucene, the IR library elasticsearch uses under the covers, works is by creating immutable segments (up to deletes) and constantly merging them (the merge policy settings allow to control how those merges happen). The merge process happen in an asyncronous manner without affecting the indexing / search speed. The problem though, especially on systems with low IO, is that the merge process can be expensive and affect search / index operation simply by the fact that the box is now taxed with more IO happening.
+
+
+The store module allows to have throttling configured for merges (or all) either on the node level, or on the index level. The node level throttling will make sure that out of all the shards allocated on that node, the merge process won't pass the specific setting bytes per second. It can be set by setting **indices.store.throttle.type** to **merge**, and setting **indices.store.throttle.max_bytes_per_sec** to something like **5mb**. The node level settings can be changed dynamically using the cluster update settings API.
+
+
+If specific index level configuration is needed, regardless of the node level settings, it can be set as well using the **index.store.throttle.type**, and **index.store.throttle.max_bytes_per_sec**. The default value for the type is **node**, meaning it will throttle based on the node level settings and participate in the global throttling happening. Both settings can be set using the index udpate settings API dynamically.
+
+
 The following sections lists all the different storage types supported.
 
 

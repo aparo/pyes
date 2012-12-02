@@ -63,3 +63,6 @@ The endpoint allows to also search against an index/indices and type/types in th
 The above will execute the search against the **test** index for all the requests that don't define an index, and the last one will be executed against the **test2** index.
 
 
+The **search_type** can be set in a similar manner to globally apply to all search requests.
+
+

@@ -50,7 +50,7 @@ The above JSON has the **tags** property defining a list of a simple **string** 
     }
 
 
-The fact that array types are automatically support can be shown by the fact that the following JSON document is perfectly fine:
+The fact that array types are automatically supported can be shown by the fact that the following JSON document is perfectly fine:
 
 
 .. code-block:: js

@@ -1,4 +1,5 @@
 .. _es-guide-reference-api-admin-indices-delete-index:
+.. _es-guide-reference-api-admin-indices-delete:
 
 ==========================
 Admin Indices Delete Index

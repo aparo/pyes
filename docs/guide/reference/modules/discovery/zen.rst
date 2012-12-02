@@ -92,7 +92,7 @@ The multicast discovery also supports external multicast requests to discover no
 
     {
         "request" : {
-            :ref:`cluster_name <es-guide-reference-modules-discovery>`  me <es-guide-reference-modules-discovery>`  "test_cluster"
+            "cluster_name": "test_cluster"
         }
     }
 

@@ -80,13 +80,13 @@ class BoolFilter(Filter):
     """
 
     def __init__(self, must=None, must_not=None, should=None,
-                 minimum_number_should_match=1, **kwargs):
+                 **kwargs):
         super(BoolFilter, self).__init__(**kwargs)
 
         self._must = []
         self._must_not = []
         self._should = []
-        self.minimum_number_should_match = minimum_number_should_match
+
         if must:
             self.add_must(must)
 
@@ -125,7 +125,6 @@ class BoolFilter(Filter):
             filters['must_not'] = [f.serialize() for f in self._must_not]
         if self._should:
             filters['should'] = [f.serialize() for f in self._should]
-            filters['minimum_number_should_match'] = self.minimum_number_should_match
         if not filters:
             raise RuntimeError("A least a filter must be declared")
         return self._add_parameters({"bool": filters})
@@ -177,6 +176,11 @@ class RangeFilter(Filter):
         elif isinstance(qrange, ESRange):
             self.ranges.append(qrange)
 
+    def negate(self):
+        """Negate some ranges: useful to resolve a NotFilter(RangeFilter(**))"""
+        for r in self.ranges:
+            r.negate()
+
     def serialize(self):
         if not self.ranges:
             raise RuntimeError("A least a range must be declared")
@@ -207,11 +211,11 @@ class PrefixFilter(Filter):
 class ScriptFilter(Filter):
     _internal_name = "script"
 
-    def __init__(self, script, params=None, **kwargs):
+    def __init__(self, script, params=None, lang=None, **kwargs):
         super(ScriptFilter, self).__init__(**kwargs)
         self.script = script
         self.params = params
-
+        self.lang = lang
 
     def add(self, field, value):
         self.params[field] = {'value': value}
@@ -220,6 +224,8 @@ class ScriptFilter(Filter):
         data = {'script': self.script}
         if self.params is not None:
             data['params'] = self.params
+        if self.lang is not None:
+            data['lang'] = self.lang
         return self._add_parameters({self._internal_name: data})
 
 
@@ -263,15 +269,19 @@ class MissingFilter(TermFilter):
 class RegexTermFilter(Filter):
     _internal_name = "regex_term"
 
-    def __init__(self, field=None, value=None, **kwargs):
+    def __init__(self, field=None, value=None, ignorecase=False, **kwargs):
         super(RegexTermFilter, self).__init__(**kwargs)
         self._values = {}
+        self.ignorecase = ignorecase
 
         if field is not None and value is not None:
-            self.add(field, value)
+            self.add(field, value, ignorecase=ignorecase)
 
-    def add(self, field, value):
-        self._values[field] = value
+    def add(self, field, value, ignorecase=False):
+        if ignorecase:
+            self._values[field] = {"term":value, "ignorecase":ignorecase}
+        else:
+            self._values[field] = value
 
     def serialize(self):
         if not self._values:
@@ -442,6 +452,29 @@ class HasChildFilter(Filter):
         if self._scope is not None:
             data['_scope'] = self._scope
         return self._add_parameters({self._internal_name: data})
+
+class HasParentFilter(Filter):
+    """
+    The has_parent filter accepts a query and the parent type to run against,
+    and results in child documents that have parent docs matching the query
+    """
+    _internal_name = "has_parent"
+
+    def __init__(self, type, query, _scope=None, **kwargs):
+        if not isinstance(query, Query):
+            raise RuntimeError("HasParentFilter expects a Query")
+        super(HasChildFilter, self).__init__(**kwargs)
+        self.query = query
+        self.type = type
+        self._scope = _scope
+
+    def serialize(self):
+        data = {"query": self.query.serialize(),
+                "type": self.type}
+        if self._scope is not None:
+            data['_scope'] = self._scope
+        return self._add_parameters({self._internal_name: data})
+
 
 
 class NestedFilter(Filter):

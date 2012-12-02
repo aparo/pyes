@@ -4,7 +4,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-VERSION = (0, 19, 0)
+VERSION = (0, 19, 2, "dev")
 
 __version__ = ".".join(map(str, VERSION[0:3])) + "".join(VERSION[3:])
 __author__ = "Alberto Paro"
@@ -14,9 +14,9 @@ __docformat__ = "restructuredtext"
 
 
 def is_stable_release():
-    if len(VERSION) > 3 and isinstance(VERSION[3], basestring):
+    if len(VERSION) > 3:
         return False
-    return not VERSION[1] % 2
+    return True
 
 
 def version_with_meta():

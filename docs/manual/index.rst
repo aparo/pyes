@@ -11,4 +11,7 @@
     installation
     usage
     connections
+    models
     queries
+    resultset
+    queryset

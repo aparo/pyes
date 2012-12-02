@@ -35,7 +35,7 @@ Also, don't forget to give your production cluster a name, which is used to disc
       name: <NAME OF YOUR CLUSTER>
 
 
-Internally, all settings are collapsed into `namespaced" settings. For example, the above gets collapsed into **network.host**. This means that its easy to support other configuration formats, for example, "JSON <http://www.json.org>`_.  _.  If JSON is a preferred configuration format, simply rename the **elasticsearch.yml** file to **elasticsearch.json** and add:
+Internally, all settings are collapsed into `namespaced" settings. For example, the above gets collapsed into **network.host**. This means that its easy to support other configuration formats, for example, "JSON <http://www.json.org>`_.  If JSON is a preferred configuration format, simply rename the **elasticsearch.yml** file to **elasticsearch.json** and add:
 
 .. code-block:: js
 
@@ -52,6 +52,9 @@ It also means that its easy to provide the settings externally either using the 
 .. code-block:: js
 
     $ elasticsearch -f -Des.network.host=10.0.0.4
+
+
+Another option is to set **es.default.** prefix instead of **es.** prefix, which means the default setting will be used only if not explicitly set in the configuration file.
 
 
 Another option is to use the **${...}** notation within the configuration file which will resolve to an environment setting, for example:

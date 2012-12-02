@@ -1,3 +1,5 @@
+.. _pyes-connections:
+
 Connections
 ===========
 
@@ -16,12 +18,16 @@ For thrift:
 
     >>> conn = pyes.ES() # Defaults to connecting to the server at '127.0.0.1:9500'
     >>> conn = pyes.ES(['127.0.0.1:9500'])
+    >>> conn = pyes.ES(("thrift", "127.0.0.1", "9500"))
+    >>> conn = pyes.ES([("thrift", "127.0.0.1", "9500"), ("thrift", "192.168.1.1", "9500"),])
 
 For http:
 
 .. code-block:: python
 
     >>> conn = pyes.ES(['127.0.0.1:9200'])
+    >>> conn = pyes.ES(("http", "127.0.0.1","9200"))
+    >>> conn = pyes.ES([("thrift", "127.0.0.1", "9200"), ("thrift", "192.168.1.1", "8000"),])
 
 Connections are robust to server failures. Upon a disconnection, it will attempt to connect to each server in the list in turn. If no server is available, it will raise a NoServerAvailable exception.
 

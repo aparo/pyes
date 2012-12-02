@@ -11,7 +11,7 @@ Allows to filter out documents based on a minimum score:
 
 
     {
-        "min_score":  0.5,
+        "min_score": 0.5,
         "query" : {
             "term" : { "user" : "kimchy" }
         }

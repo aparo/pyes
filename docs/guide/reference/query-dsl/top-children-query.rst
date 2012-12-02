@@ -13,7 +13,7 @@ The **top_children** also provide scoring capabilities, with the ability to spec
 One downside of using the **top_children** is that if there are more child docs matching the required hits when executing the child query, then the **total_hits** result of the search response will be incorrect.
 
 
-How many hits are asked for in the first child query run is controlled using the **factor** parameter (defaults to **5**). For example, when asking for 10 docs with from 0, then the child query will execute with 50 hits expected. If not enough parents are found (in our example, 10), and there are still more child docs to query, then the search hits are expanded my multiplying by the **incremental_factor** (defaults to 2).
+How many hits are asked for in the first child query run is controlled using the **factor** parameter (defaults to **5**). For example, when asking for 10 parent docs (with **from** set to 0), then the child query will execute with 50 hits expected. If not enough parents are found (in our example 10), and there are still more child docs to query, then the child search hits are expanded by multiplying by the **incremental_factor** (defaults to **2**). 
 
 
 The required parameters are the **query** and **type** (the child type to execute the query on). Here is an example with all different parameters, including the default values:

@@ -26,6 +26,4 @@ Hacking
 
 Maven is supported by all major IDEs these days:
 
-   * `IntelliJ IDEA <http://www.jetbrains.com/idea/features/ant_maven.html>`_  `_  
-   * `NetBeans <http://wiki.netbeans.org/Maven>`_  `_  
-   * `Eclipse <http://maven.apache.org/eclipse-plugin.html>`_  `_  - You'll need a maven plugin
+   * `IntelliJ IDEA <http://www.jetbrains.com/idea/features/ant_maven.html>`_     * `NetBeans <http://wiki.netbeans.org/Maven>`_     * `Eclipse <http://maven.apache.org/eclipse-plugin.html>`_  - You'll need a maven plugin

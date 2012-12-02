@@ -7,7 +7,7 @@ Percolate
 The percolator allows to register queries against an index, and then send **percolate** requests which include a doc, and getting back the queries that match on that doc out of the set of registered queries.
 
 
-Read the main :ref:`percolate <es-guide-reference-java-api-percolate>`  colate>`  documentation before reading this guide.
+Read the main :ref:`percolate <es-guide-reference-java-api-percolate>`  documentation before reading this guide.
 
 .. code-block:: java
 

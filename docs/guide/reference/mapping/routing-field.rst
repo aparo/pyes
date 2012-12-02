@@ -35,7 +35,7 @@ The routing value can be provided as an external value when indexing (and still 
                 "path" : "blog.post_id"
             }
         }
-    }    
+    }
 
 
 Will cause the following doc to be routed based on the **111222** value:

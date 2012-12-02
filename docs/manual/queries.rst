@@ -1,3 +1,5 @@
+.. _pyes-queries:
+
 Queries
 =======
 
@@ -95,6 +97,7 @@ Execute a query
 
     >>> q = TermQuery("name", "joe")
     >>> results = self.conn.search(query = q)
+
 
 Iterate on results:
 

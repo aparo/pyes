@@ -68,36 +68,26 @@ def connect(servers=None, framed_transport=False, timeout=None,
     Failing servers are kept on a separate list and eventually retried, no
     sooner than `retry_time` seconds after failure.
 
-    Parameters
-    ----------
-    servers : [server]
-              List of ES servers with format: "hostname:port"
+    :keyword servers: [server]
+                      List of ES servers with format: "hostname:port"
+                      Default: [("127.0.0.1",9500)]
 
-              Default: [("127.0.0.1",9500)]
-    framed_transport: bool
-              If True, use a TFramedTransport instead of a TBufferedTransport
-    timeout: float
-              Timeout in seconds (e.g. 0.5)
+    :keyword framed_transport: If True, use a TFramedTransport instead of a TBufferedTransport
 
-              Default: None (it will stall forever)
-    retry_time: float
-              Minimum time in seconds until a failed server is reinstated. (e.g. 0.5)
+    :keyword timeout: Timeout in seconds (e.g. 0.5)
+                      Default: None (it will stall forever)
 
-              Default: 60
-    recycle: float
-              Max time in seconds before an open connection is closed and returned to the pool.
+    :keyword retry_time: Minimum time in seconds until a failed server is reinstated. (e.g. 0.5)
+                         Default: 60
 
-              Default: None (Never recycle)
+    :keyword recycle:  Max time in seconds before an open connection is closed and returned to the pool.
+                       Default: None (Never recycle)
 
-    max_retries: int
-              Max retry time on connection down
+    :keyword max_retries: Max retry time on connection down
 
-    round_robin: bool
-              *DEPRECATED*
+    :keyword round_robin: *DEPRECATED*
 
-    Returns
-    -------
-    ES client
+    :return ES client
     """
 
     if servers is None:

@@ -170,5 +170,5 @@ The **geo_distance** filter can work with multiple locations / points per docume
 Caching
 =======
 
-The result of the filter is not cached by default. The `_cache` can be set to `true` to cache the *result* of the filter. This is handy when the same point and distance parameters are used on several (many) other queries. Note, the process of caching the first execution is higher when caching (since it needs to satisfy different queries).
+The result of the filter is not cached by default. The **_cache** can be set to **true** to cache the *result* of the filter. This is handy when the same point and distance parameters are used on several (many) other queries. Note, the process of caching the first execution is higher when caching (since it needs to satisfy different queries).
 

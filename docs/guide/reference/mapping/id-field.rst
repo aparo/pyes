@@ -18,7 +18,7 @@ The **_id** field can be enabled to be indexed, and possibly stored, using:
 
     {
         "tweet" : {
-            :ref:`_id" : {"index <es-guide-reference-mapping>`  ex <es-guide-reference-mapping>`  "not_analyzed", "store" : "yes"}
+            "_id" : {"index": "not_analyzed", "store" : "yes"}
         }
     }
 

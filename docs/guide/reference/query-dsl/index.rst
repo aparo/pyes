@@ -44,6 +44,7 @@ Query:
     bool-query
     boosting-query
     constant-score-query
+    custom-boost-factor-query
     custom-score-query
     dis-max-query
     field-query
@@ -53,6 +54,7 @@ Query:
     fuzzy-query
     has-child-query
     ids-query
+    indices-query
     match-all-query
     mlt-field-query
     mlt-query

@@ -58,7 +58,7 @@ The filter also does lowercasing, which means the lowercase filter can normally 
 Filtering
 ---------
 
-The folding can be filtered by a set of unicode characters with the parameter **unicodeSetFilter**. This is useful for a non-internationalized search engine where retaining a set of national characters which are primary letters in a specific language is wanted. See syntax for the UnicodeSet `here <http://icu-project.org/apiref/icu4j/com/ibm/icu/text/UnicodeSet.html>`_.  
+The folding can be filtered by a set of unicode characters with the parameter **unicodeSetFilter**. This is useful for a non-internationalized search engine where retaining a set of national characters which are primary letters in a specific language is wanted. See syntax for the UnicodeSet `here2 <http://icu-project.org/apiref/icu4j/com/ibm/icu/text/UnicodeSet.html>`_.  
 
 The Following example excempt Swedish characters from the folding. Note that the filtered characters are NOT lowercased which is why we add that filter below.
 
@@ -88,7 +88,7 @@ The Following example excempt Swedish characters from the folding. Note that the
 ICU Collation
 =============
 
-Uses collation token filter. Allows to either specify the rules for collation (defined `here <http://www.icu-project.org/userguide/Collate_Customization.html)>`_  using the **rules** parameter (can point to a location or expressed in the settings, location can be relative to config location), or using the **language** parameter (further specialized by country and variant). By default registers under **icu_collation** or **icuCollation** and uses the default locale.
+Uses collation token filter. Allows to either specify the rules for collation (defined `here3 <http://www.icu-project.org/userguide/Collate_Customization.html)>`_  using the **rules** parameter (can point to a location or expressed in the settings, location can be relative to config location), or using the **language** parameter (further specialized by country and variant). By default registers under **icu_collation** or **icuCollation** and uses the default locale.
 
 
 Here is a sample settings:

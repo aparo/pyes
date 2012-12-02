@@ -58,7 +58,6 @@ Will cause **2009-11-15T14:12:12** to be used as the timestamp value for:
     {
         "message" : "You know, for Search",
         "post_date" : "2009-11-15T14:12:12"
-        }
     }
 
 

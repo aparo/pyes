@@ -4,7 +4,7 @@
 Delete
 ======
 
-The delete API is very similar to the :ref:`Java delete API <es-guide-reference-groovy-java-api-delete>`,  here is an example:
+The delete API is very similar to the :ref:`Java delete API <es-guide-reference-java-api-delete>`,  here is an example:
 
 
 .. code-block:: js

@@ -9,6 +9,7 @@ from urlparse import urlparse
 import random
 import threading
 import urllib3
+import socket
 
 __all__ = ["connect"]
 
@@ -92,7 +93,7 @@ class Connection(object):
                 return RestResponse(status=response.status,
                                     body=response.data,
                                     headers=response.headers)
-            except urllib3.exceptions.HTTPError:
+            except (socket.error, urllib3.exceptions.HTTPError):
                 self._drop_server(server)
                 self._local.server = server = None
                 if retry >= self._max_retries:

@@ -195,7 +195,7 @@ class ES(object):
 
         #used in bulk
         self._bulk_size = bulk_size #size of the bulk
-        self.bulker = bulker_class(weakref.ref(self), bulk_size=bulk_size, raise_on_bulk_item_failure=raise_on_bulk_item_failure)
+        self.bulker = bulker_class(weakref.proxy(self), bulk_size=bulk_size, raise_on_bulk_item_failure=raise_on_bulk_item_failure)
         self.bulker_class = bulker_class
         self._raise_on_bulk_item_failure = raise_on_bulk_item_failure
 
@@ -212,8 +212,8 @@ class ES(object):
             self.servers = server
 
         #init managers
-        self.indices=Indices(weakref.ref(self))
-        self.cluster=Cluster(weakref.ref(self))
+        self.indices=Indices(weakref.proxy(self))
+        self.cluster=Cluster(weakref.proxy(self))
 
         self.default_types = default_types or []
         #check the servers variable

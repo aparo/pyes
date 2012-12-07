@@ -79,6 +79,10 @@ class ESJsonEncoder(JSONEncoder):
             return dt.isoformat()
         elif isinstance(value, Decimal):
             return float(str(value))
+        elif isinstance(value, Decimal):
+            return float(str(value))       
+        elif isinstance(value, set):
+            return list(value)
         # use no special encoding and hope for the best
         return value
 
@@ -378,7 +382,8 @@ class ES(object):
                 body = body.as_dict()
 
             if isinstance(body, dict):
-                body = json.dumps(body, cls=self.encoder)
+               body = json.dumps(body, cls=self.encoder)
+                
         else:
             body = ""
         request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()],

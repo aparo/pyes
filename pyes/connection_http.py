@@ -9,6 +9,7 @@ from urlparse import urlparse
 import random
 import threading
 import urllib3
+import heapq
 
 __all__ = ["connect"]
 
@@ -105,12 +106,12 @@ class Connection(object):
     def _get_server(self):
         with self._lock:
             try:
-                ts, server = self._inactive_servers.pop()
+                ts, server = heapq.heappop(self._inactive_servers)
             except IndexError:
                 pass
             else:
                 if ts > time():  # Not yet, put it back
-                    self._inactive_servers.append((ts, server))
+                    heapq.heappush(self._inactive_servers, (ts, server))
                 else:
                     self._active_servers.append(server)
                     logger.info("Restored server %s into active pool", server)
@@ -127,7 +128,7 @@ class Connection(object):
             except ValueError:
                 pass
             else:
-                self._inactive_servers.insert(0, (time() + self._retry_time, server))
+                heapq.heappush(self._inactive_servers, (time() + self._retry_time, server))
                 logger.warning("Removed server %s from active pool", server)
 
 connect = Connection

@@ -158,7 +158,7 @@ class ThreadLocalConnection(object):
                     if retry < self._max_retries:
                         continue
 
-                    raise NoServerAvailable
+                    raise NoServerAvailable(exc)
 
         setattr(self, attr, _client_call)
         return getattr(self, attr)

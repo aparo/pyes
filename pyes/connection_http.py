@@ -9,6 +9,7 @@ from urlparse import urlparse
 import random
 import threading
 import urllib3
+import heapq
 
 __all__ = ["connect"]
 
@@ -92,33 +93,33 @@ class Connection(object):
                 return RestResponse(status=response.status,
                                     body=response.data,
                                     headers=response.headers)
-            except urllib3.exceptions.HTTPError:
+            except urllib3.exceptions.HTTPError, ex:
                 self._drop_server(server)
                 self._local.server = server = None
                 if retry >= self._max_retries:
                     logger.error("Client error: bailing out after %d failed retries",
                                  self._max_retries, exc_info=1)
-                    raise NoServerAvailable
+                    raise NoServerAvailable(ex)
                 logger.exception("Client error: %d retries left", self._max_retries - retry)
                 retry += 1
 
     def _get_server(self):
         with self._lock:
             try:
-                ts, server = self._inactive_servers.pop()
+                ts, server = heapq.heappop(self._inactive_servers)
             except IndexError:
                 pass
             else:
                 if ts > time():  # Not yet, put it back
-                    self._inactive_servers.append((ts, server))
+                    heapq.heappush(self._inactive_servers, (ts, server))
                 else:
                     self._active_servers.append(server)
                     logger.info("Restored server %s into active pool", server)
 
             try:
                 return random.choice(self._active_servers)
-            except IndexError:
-                raise NoServerAvailable
+            except IndexError, ex:
+                raise NoServerAvailable(ex)
 
     def _drop_server(self, server):
         with self._lock:
@@ -127,7 +128,7 @@ class Connection(object):
             except ValueError:
                 pass
             else:
-                self._inactive_servers.insert(0, (time() + self._retry_time, server))
+                heapq.heappush(self._inactive_servers, (time() + self._retry_time, server))
                 logger.warning("Removed server %s from active pool", server)
 
 connect = Connection

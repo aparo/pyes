@@ -110,8 +110,7 @@ class ServerSet(object):
         self._dead = []
 
     def get(self):
-        self._lock.acquire()
-        try:
+        with self._lock:
             if self._dead:
                 ts, revived = self._dead.pop()
                 if ts > time.time():  # Not yet, put it back
@@ -123,16 +122,11 @@ class ServerSet(object):
                 logger.critical('No servers available')
                 raise NoServerAvailable()
             return random.choice(self._servers)
-        finally:
-            self._lock.release()
 
     def mark_dead(self, server):
-        self._lock.acquire()
-        try:
+        with self._lock:
             self._servers.remove(server)
             self._dead.insert(0, (time.time() + self._retry_time, server))
-        finally:
-            self._lock.release()
 
 
 class ThreadLocalConnection(object):
@@ -158,7 +152,7 @@ class ThreadLocalConnection(object):
                     if retry < self._max_retries:
                         continue
 
-                    raise NoServerAvailable
+                    raise NoServerAvailable(exc)
 
         setattr(self, attr, _client_call)
         return getattr(self, attr)

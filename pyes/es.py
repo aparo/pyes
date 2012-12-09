@@ -22,6 +22,7 @@ from urllib import urlencode
 from urlparse import urlunsplit, urlparse
 import base64
 import time
+import weakref
 from decimal import Decimal
 from .managers import Indices, Cluster
 try:
@@ -80,8 +81,10 @@ class ESJsonEncoder(JSONEncoder):
             return dt.isoformat()
         elif isinstance(value, Decimal):
             return float(str(value))
-        # use no special encoding and hope for the best
-        return value
+        elif isinstance(value, set):
+            return list(value)
+        # raise TypeError
+        return super(ESJsonEncoder, self).default(value)
 
 
 class ESJsonDecoder(JSONDecoder):
@@ -197,7 +200,7 @@ class ES(object):
 
         #used in bulk
         self._bulk_size = bulk_size #size of the bulk
-        self.bulker = bulker_class(self, bulk_size=bulk_size, raise_on_bulk_item_failure=raise_on_bulk_item_failure)
+        self.bulker = bulker_class(weakref.proxy(self), bulk_size=bulk_size, raise_on_bulk_item_failure=raise_on_bulk_item_failure)
         self.bulker_class = bulker_class
         self._raise_on_bulk_item_failure = raise_on_bulk_item_failure
 
@@ -214,8 +217,8 @@ class ES(object):
             self.servers = server
 
         #init managers
-        self.indices=Indices(self)
-        self.cluster=Cluster(self)
+        self.indices=Indices(weakref.proxy(self))
+        self.cluster=Cluster(weakref.proxy(self))
 
         self.default_types = default_types or []
         #check the servers variable
@@ -381,7 +384,8 @@ class ES(object):
                 body = body.as_dict()
 
             if isinstance(body, dict):
-                body = json.dumps(body, cls=self.encoder)
+               body = json.dumps(body, cls=self.encoder)
+
         else:
             body = ""
         request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()],

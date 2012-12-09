@@ -14,7 +14,7 @@ import heapq
 __all__ = ["connect"]
 
 DEFAULT_SERVER = ("http", "127.0.0.1", 9200)
-POOL_MANAGER = urllib3.PoolManager()
+POOL_MANAGER = None
 
 def update_connection_pool(maxsize=1):
     """Update the global connection pool manager parameters.
@@ -49,10 +49,14 @@ class Connection(object):
 
     basic_auth: Use HTTP Basic Auth. A (`username`, `password`) tuple or a dict
                 with `username` and `password` keys.
+
+    http_maxsize: Number of connections to save that can be reused. More
+                   than 1 is useful in multithreaded situations.
+                   Default: 1
     """
 
     def __init__(self, servers=None, retry_time=60, max_retries=3, timeout=None,
-                 basic_auth=None):
+                 basic_auth=None, http_maxsize=1):
         if servers is None:
             servers = [DEFAULT_SERVER]
         self._active_servers = [server.geturl() for server in servers]
@@ -66,6 +70,10 @@ class Connection(object):
             self._headers = {}
         self._lock = threading.RLock()
         self._local = threading.local()
+
+        global POOL_MANAGER
+        if not POOL_MANAGER:
+            POOL_MANAGER = urllib3.PoolManager(maxsize=http_maxsize)
 
     def execute(self, request):
         """Execute a request and return a response"""

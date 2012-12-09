@@ -135,6 +135,7 @@ class ES(object):
                  dump_curl=False,
                  model=ElasticSearchModel,
                  basic_auth=None,
+                 http_maxsize=1,
                  raise_on_bulk_item_failure=False,
                  document_object_field=None,
                  bulker_class=ListBulker):
@@ -155,6 +156,8 @@ class ES(object):
         :param encoder: tojson encoder
         :param max_retries: number of max retries for server if a server is down
         :param basic_auth: Dictionary with 'username' and 'password' keys for HTTP Basic Auth.
+        :param http_maxsize: Number of connections to save that can be reused. More than 1 is
+        useful in multithreaded situations.
         :param model: used to objectify the dictinary. If None, the raw dict is returned.
 
 
@@ -177,6 +180,7 @@ class ES(object):
         self.debug_dump = False
         self.cluster_name = "undefined"
         self.basic_auth = basic_auth
+        self.http_maxsize = http_maxsize
         self.connection = None
         self._mappings = None
         self.document_object_field = document_object_field
@@ -305,7 +309,9 @@ class ES(object):
                                                                                        ,
                                                                                        basic_auth=self.basic_auth
                                                                                        ,
-                                                                                       max_retries=self.max_retries)
+                                                                                       max_retries=self.max_retries
+                                                                                       ,
+                                                                                       http_maxsize=self.http_maxsize)
             return
         elif server.scheme == "thrift":
             self.connection = thrift_connect(

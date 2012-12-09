@@ -1027,8 +1027,8 @@ class TextQuery(Query):
             query["operator"] = operator
         if boost != 1.0:
             query["boost"] = boost
-	if analyzer:
-	    query["analyzer"] = analyzer
+        if analyzer:
+            query["analyzer"] = analyzer
 
         self.queries[field] = query
 

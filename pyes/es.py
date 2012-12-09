@@ -82,8 +82,8 @@ class ESJsonEncoder(JSONEncoder):
             return float(str(value))
         elif isinstance(value, set):
             return list(value)
-        # use no special encoding and hope for the best
-        return value
+        # raise TypeError
+        return super(ESJsonEncoder, self).default(value)
 
 
 class ESJsonDecoder(JSONDecoder):

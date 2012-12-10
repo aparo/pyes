@@ -572,6 +572,9 @@ class ES(object):
         exists = self.exists_index(index)
         if exists and not mappings and not clear:
             return
+        if exists and clear:
+            self.indices.delete_index(index)
+            exists=False
 
         if exists:
             if not mappings:
@@ -1154,7 +1157,7 @@ class ES(object):
         path = make_path([index, doc_type, urllib.quote_plus(id)])
         return self._send_request('HEAD', path, params=get_params)
 
-    def get(self, index, doc_type, id, fields=None, routing=None, **get_params):
+    def get(self, index, doc_type, id, fields=None, routing=None, model=None,  **get_params):
         """
         Get a typed JSON document from an index based on its id.
         """
@@ -1163,7 +1166,8 @@ class ES(object):
             get_params["fields"] = ",".join(fields)
         if routing:
             get_params["routing"] = routing
-        return self.model(self, self._send_request('GET', path, params=get_params))
+        model=model or self.model
+        return model(self, self._send_request('GET', path, params=get_params))
 
 
     def factory_object(self, index, doc_type, data=None, id=None, vertex=False):
@@ -1229,7 +1233,7 @@ class ES(object):
             return [model(self, item) for item in results['docs']]
         return []
 
-    def search_raw(self, query, indices=None, doc_types=None, **query_params):
+    def search_raw(self, query, indices=None, doc_types=None, routing=None, **query_params):
         """Execute a search against one or more indices to get the search hits.
 
         `query` must be a Search object, a Query object, or a custom
@@ -1252,6 +1256,8 @@ class ES(object):
             body = json.dumps(query, cls=self.encoder)
         else:
             raise InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
+        if "routing" in query_params and not query_params["routing"]:
+            query_params.pop("routing")
 
         return self._query_call("_search", body, indices, doc_types, **query_params)
 

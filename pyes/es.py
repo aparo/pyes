@@ -1405,6 +1405,24 @@ class ES(object):
         """
         return self.indices.update_settings(index=index, newvalues=newvalues)
 
+    def update_mapping_meta(self, doc_type, values, indices=None):
+        """
+        Update mapping meta
+        :param doc_type: a doc type or a list of doctypes
+        :param values: the dict of meta
+        :param indices: a list of indices
+        :return:
+        """
+        indices = self.validate_indices(indices)
+        for index in indices:
+            mapping = self.mappings.get_doctype(index, doc_type)
+            if mapping is None:
+                continue
+            meta = mapping.get_meta()
+            meta.update(values)
+            mapping={doc_type:{"_meta":meta}}
+            self.indices.put_mapping(doc_type=doc_type, mapping=mapping, indices=indices)
+
     def morelikethis(self, index, doc_type, id, fields, **query_params):
         """
         Execute a "more like this" search query against one or more fields and get back search hits.

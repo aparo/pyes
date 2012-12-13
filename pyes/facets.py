@@ -338,7 +338,7 @@ class TermStatsFacet(Facet):
     def serialize(self):
         data = {}
 
-        if self.size:
+        if self.size is not None:
             data['size'] = self.size
 
         if self.order:

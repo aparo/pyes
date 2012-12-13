@@ -100,7 +100,7 @@ class Connection(object):
                 return RestResponse(status=response.status,
                                     body=response.data,
                                     headers=response.headers)
-            except urllib3.exceptions.HTTPError, ex:
+            except (IOError, urllib3.exceptions.HTTPError), ex:
                 self._drop_server(server)
                 self._local.server = server = None
                 if retry >= self._max_retries:

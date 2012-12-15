@@ -363,9 +363,11 @@ class ES(object):
     def _send_request(self, method, path, body=None, params=None, headers=None, raw=False):
         if params is None:
             params = {}
+        elif "routing" in params and params["routing"] is None:
+            del params["routing"]
+
         if headers is None:
             headers = {}
-            # prepare the request
         if not path.startswith("/"):
             path = "/" + path
         if not self.connection:
@@ -373,12 +375,11 @@ class ES(object):
         if body:
             if not isinstance(body, dict) and hasattr(body, "as_dict"):
                 body = body.as_dict()
-
             if isinstance(body, dict):
                body = json.dumps(body, cls=self.encoder)
-
         else:
             body = ""
+
         request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()],
                               uri=path, parameters=params, headers=headers, body=body)
         if self.dump_curl is not None:

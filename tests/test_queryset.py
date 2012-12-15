@@ -87,7 +87,7 @@ class QuerySetTests(ESTestCase):
         self.assertEqual(values, [u'11111', u'22222',u'33333'])
         values = model.objects.dates("date", kind="year")
         self.assertEqual(len(values), 1)
-        self.assertEqual(values, [datetime(2012, 1, 1, 1, 0)])
+        self.assertEqual(values, [datetime(2012, 1, 1, 0, 0)])
 
         facets = model.objects.facet("uuid").size(0).facets
         uuid_facets=facets["uuid"]

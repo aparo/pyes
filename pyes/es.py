@@ -1554,7 +1554,7 @@ class ResultSet(object):
                     for k, v in entry.items():
                         if k in ["count", "max", "min", "total_count", "mean", "total"]:
                             continue
-                        entry[k] = datetime.fromtimestamp(v / 1e3)
+                        entry[k] = datetime.utcfromtimestamp(v / 1e3)
 
     def __len__(self):
         return self.total

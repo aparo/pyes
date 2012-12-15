@@ -422,7 +422,6 @@ class ES(object):
         This can be used for search and count calls.
         These are identical api calls, except for the type of query.
         """
-        querystring_args = query_params
         indices = self._validate_indices(indices)
         if doc_types is None:
             doc_types = self.default_types
@@ -430,7 +429,7 @@ class ES(object):
             doc_types = [doc_types]
         body = query
         path = make_path([','.join(indices), ','.join(doc_types), query_type])
-        return self._send_request('GET', path, body, params=querystring_args)
+        return self._send_request('GET', path, body, params=query_params)
 
     def _validate_indices(self, indices=None):
         """Return a valid list of indices.
@@ -1046,8 +1045,6 @@ class ES(object):
         """
         Store a file in a index
         """
-        querystring_args = {}
-
         if id is None:
             request_method = 'POST'
         else:
@@ -1056,7 +1053,7 @@ class ES(object):
         doc = file_to_attachment(filename)
         if name:
             doc["_name"] = name
-        return self._send_request(request_method, path, doc, querystring_args)
+        return self._send_request(request_method, path, doc)
 
     def get_file(self, index, doc_type, id=None):
         """
@@ -1101,14 +1098,11 @@ class ES(object):
                     raise
                 self.refresh(index)
 
-    def delete(self, index, doc_type, id, bulk=False, routing=None, **querystring_args):
+    def delete(self, index, doc_type, id, bulk=False, **query_params):
         """
         Delete a typed JSON document from a specific index based on its id.
         If bulk is True, the delete operation is put in bulk mode.
         """
-        if routing:
-            querystring_args["routing"]=routing
-
         if bulk:
             cmd = {"delete": {"_index": index, "_type": doc_type,
                               "_id": id}}
@@ -1116,13 +1110,12 @@ class ES(object):
             return self.flush_bulk()
 
         path = make_path([index, doc_type, id])
-        return self._send_request('DELETE', path, params=querystring_args)
+        return self._send_request('DELETE', path, params=query_params)
 
-    def delete_by_query(self, indices, doc_types, query, **request_params):
+    def delete_by_query(self, indices, doc_types, query, **query_params):
         """
         Delete documents from one or more indices and one or more types based on a query.
         """
-        querystring_args = request_params
         indices = self._validate_indices(indices)
         if doc_types is None:
             doc_types = []
@@ -1139,7 +1132,7 @@ class ES(object):
             raise InvalidQuery("delete_by_query() must be supplied with a Query object, or a dict")
 
         path = make_path([','.join(indices), ','.join(doc_types), '_query'])
-        return self._send_request('DELETE', path, body, querystring_args)
+        return self._send_request('DELETE', path, body, query_params)
 
     @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.delete_mapping")
     def delete_mapping(self, index, doc_type):
@@ -1148,27 +1141,24 @@ class ES(object):
         """
         return self.indices.delete_mapping(index=index, doc_type=doc_type)
 
-    def exists(self, index, doc_type, id, **get_params):
+    def exists(self, index, doc_type, id, **query_params):
         """
         Return if a document exists
         """
         if isinstance(id, (int, long, float)):
             id=str(id)
         path = make_path([index, doc_type, urllib.quote_plus(id)])
-        return self._send_request('HEAD', path, params=get_params)
+        return self._send_request('HEAD', path, params=query_params)
 
-    def get(self, index, doc_type, id, fields=None, routing=None, model=None,  **get_params):
+    def get(self, index, doc_type, id, fields=None, model=None, **query_params):
         """
         Get a typed JSON document from an index based on its id.
         """
         path = make_path([index, doc_type, id])
         if fields is not None:
-            get_params["fields"] = ",".join(fields)
-        if routing:
-            get_params["routing"] = routing
-        model=model or self.model
-        return model(self, self._send_request('GET', path, params=get_params))
-
+            query_params["fields"] = ",".join(fields)
+        model = model or self.model
+        return model(self, self._send_request('GET', path, params=query_params))
 
     def factory_object(self, index, doc_type, data=None, id=None, vertex=False):
         """
@@ -1187,7 +1177,7 @@ class ES(object):
             obj.force_vertex()
         return obj
 
-    def mget(self, ids, index=None, doc_type=None, routing=None, **get_params):
+    def mget(self, ids, index=None, doc_type=None, **query_params):
         """
         Get multi JSON documents.
 
@@ -1223,17 +1213,14 @@ class ES(object):
                              "_type": doc_type,
                              "_id": value})
 
-        if routing:
-            get_params["routing"] = routing
-        results = self._send_request('GET', "/_mget",
-                                     body={'docs': body},
-                                     params=get_params)
+        results = self._send_request('GET', "/_mget", body={'docs': body},
+                                     params=query_params)
         if 'docs' in results:
             model = self.model
             return [model(self, item) for item in results['docs']]
         return []
 
-    def search_raw(self, query, indices=None, doc_types=None, routing=None, **query_params):
+    def search_raw(self, query, indices=None, doc_types=None, **query_params):
         """Execute a search against one or more indices to get the search hits.
 
         `query` must be a Search object, a Query object, or a custom
@@ -1256,8 +1243,6 @@ class ES(object):
             body = json.dumps(query, cls=self.encoder)
         else:
             raise InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
-        if "routing" in query_params and not query_params["routing"]:
-            query_params.pop("routing")
 
         return self._query_call("_search", body, indices, doc_types, **query_params)
 
@@ -1347,11 +1332,10 @@ class ES(object):
                 query = json.dumps(query, cls=self.encoder)
             elif hasattr(query, "to_query_json"):
                 query = query.to_query_json(inner=True)
-        querystring_args = query_params
         indices = self._validate_indices(indices)
         body = query
         path = make_path([','.join(indices), ','.join(doc_types), "_reindexbyquery"])
-        return self._send_request('POST', path, body, querystring_args)
+        return self._send_request('POST', path, body, query_params)
 
     def count(self, query=None, indices=None, doc_types=None, **query_params):
         """
@@ -1413,7 +1397,7 @@ class ES(object):
         :param indices: a list of indices
         :return:
         """
-        indices = self.validate_indices(indices)
+        indices = self._validate_indices(indices)
         for index in indices:
             mapping = self.mappings.get_doctype(index, doc_type)
             if mapping is None:

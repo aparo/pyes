@@ -39,7 +39,7 @@ from .mappings import Mapper
 
 from .convert_errors import raise_if_error
 from .exceptions import (ElasticSearchException, InvalidQuery,
-                         ReduceSearchPhaseException, VersionConflictEngineException )
+                         ReduceSearchPhaseException, VersionConflictEngineException)
 from .decorators import deprecated
 from .utils import make_path
 
@@ -197,7 +197,8 @@ class ES(object):
 
         #used in bulk
         self._bulk_size = bulk_size #size of the bulk
-        self.bulker = bulker_class(weakref.proxy(self), bulk_size=bulk_size, raise_on_bulk_item_failure=raise_on_bulk_item_failure)
+        self.bulker = bulker_class(weakref.proxy(self), bulk_size=bulk_size,
+                                   raise_on_bulk_item_failure=raise_on_bulk_item_failure)
         self.bulker_class = bulker_class
         self._raise_on_bulk_item_failure = raise_on_bulk_item_failure
 
@@ -214,8 +215,8 @@ class ES(object):
             self.servers = server
 
         #init managers
-        self.indices=Indices(weakref.proxy(self))
-        self.cluster=Cluster(weakref.proxy(self))
+        self.indices = Indices(weakref.proxy(self))
+        self.cluster = Cluster(weakref.proxy(self))
 
         self.default_types = default_types or []
         #check the servers variable
@@ -301,18 +302,12 @@ class ES(object):
         if server.scheme in ["http", "https"]:
             self.connection = http_connect(
                 filter(lambda server: server.scheme in ["http", "https"], self.servers),
-                                                                                       timeout=self.timeout
-                                                                                       ,
-                                                                                       basic_auth=self.basic_auth
-                                                                                       ,
-                                                                                       max_retries=self.max_retries)
+                timeout=self.timeout, basic_auth=self.basic_auth, max_retries=self.max_retries)
             return
         elif server.scheme == "thrift":
             self.connection = thrift_connect(
                 filter(lambda server: server.scheme == "thrift", self.servers),
-                                                                               timeout=self.timeout
-                                                                               ,
-                                                                               max_retries=self.max_retries)
+                timeout=self.timeout, max_retries=self.max_retries)
 
     def _discovery(self):
         """
@@ -365,7 +360,6 @@ class ES(object):
 
     raise_on_bulk_item_failure = property(_get_raise_on_bulk_item_failure, _set_raise_on_bulk_item_failure)
 
-
     def _send_request(self, method, path, body=None, params=None, headers=None, raw=False):
         if params is None:
             params = {}
@@ -394,9 +388,7 @@ class ES(object):
         response = self.connection.execute(request)
 
         if method == "HEAD":
-            if response.status != 200:
-                return False
-            return True
+            return response.status == 200
 
         # handle the response
         try:
@@ -414,8 +406,7 @@ class ES(object):
             raise_if_error(response.status, decoded)
         if not raw and isinstance(decoded, dict):
             decoded = DotDict(decoded)
-        return  decoded
-
+        return decoded
 
     def _query_call(self, query_type, query, indices=None, doc_types=None, **query_params):
         """
@@ -436,7 +427,6 @@ class ES(object):
 
         `indices` may be a string or a list of strings.
         If `indices` is not supplied, returns the default_indices.
-
         """
         if indices is None:
             indices = self.default_indices
@@ -449,7 +439,6 @@ class ES(object):
 
         `types` may be a string or a list of strings.
         If `types` is not supplied, returns the default_types.
-
         """
         types = types or self.default_types
         if types is None:
@@ -496,7 +485,6 @@ class ES(object):
         return  self.bulker_class(self, bulk_size=self.bulk_size,
                                   raise_on_bulk_item_failure=self.raise_on_bulk_item_failure)
 
-
     #---- Indices commands
     @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.aliases")
     def aliases(self, indices=None):
@@ -506,7 +494,6 @@ class ES(object):
 
         Retrieve the aliases of one or more indices
         """
-
         return self.indices.aliases(indices=indices)
 
     @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.status")
@@ -518,8 +505,6 @@ class ES(object):
         Retrieve the status of one or more indices
         """
         return self.indices.status(indices=indices)
-
-
 
     @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.create_index")
     def create_index(self, index, settings=None):
@@ -539,7 +524,6 @@ class ES(object):
         Creates an index if it doesn't already exist.
 
         If supplied, settings must be a dictionary.
-
         """
         return  self.indices.create_index_if_missing(index=index, settings=settings)
 
@@ -573,7 +557,7 @@ class ES(object):
             return
         if exists and clear:
             self.indices.delete_index(index)
-            exists=False
+            exists = False
 
         if exists:
             if not mappings:
@@ -613,14 +597,12 @@ class ES(object):
         if not exists:
             self.create_index(index, settings)
 
-
     @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.delete_index_if_exists")
     def delete_index_if_exists(self, index):
         """
         Deprecated
 
         Deletes an index if it exists.
-
         """
         return self.indices.delete_index_if_exists(index=index)
 
@@ -640,7 +622,6 @@ class ES(object):
          - num_docs: Number of documents in the index or alias.
          - alias_for: Only present for an alias: holds a list of indices which
            this is an alias for.
-
         """
         return self.indices.get_indices(include_aliases=include_aliases)
 
@@ -651,7 +632,6 @@ class ES(object):
 
         Get all closed indices.
         """
-
         return self.indices.get_closed_indices()
 
     @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.get_alias")
@@ -664,7 +644,6 @@ class ES(object):
         Raises IndexMissingException if the alias does not exist.
 
         Otherwise, returns a list of index names.
-
         """
         return self.indices.get_alias(alias)
 
@@ -678,7 +657,6 @@ class ES(object):
         `commands` is a list of 3-tuples; (command, index, alias), where
         `command` is one of "add" or "remove", and `index` and `alias` are the
         index and alias to add or remove.
-
         """
         return self.indices.change_aliases(commands)
 
@@ -688,7 +666,6 @@ class ES(object):
         Deprecated
 
         Add an alias to point to a set of indices.
-
         """
         return self.indices.add_alias(alias, indices)
 
@@ -702,7 +679,6 @@ class ES(object):
         The specified index or indices are deleted from the alias, if they are
         in it to start with.  This won't report an error even if the indices
         aren't present in the alias.
-
         """
         return self.indices.delete_alias(alias, indices)
 
@@ -719,10 +695,8 @@ class ES(object):
         function - if another client modifies the indices which this alias
         points to during this call, the old value of the alias may not be
         correctly set.
-
         """
         return self.indices.set_alias(alias, indices)
-
 
     @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.close_index")
     def close_index(self, index):
@@ -752,7 +726,6 @@ class ES(object):
 
         :keyword indices: an index or a list of indices
         :keyword refresh: set the refresh parameter
-
         """
         return self.indices.flush(indices=indices, refresh=refresh)
 
@@ -798,7 +771,6 @@ class ES(object):
 
         `flush` (boolean): Should a flush be performed after the optimize.
         Defaults to true.
-
         """
         return self.indices.optimize(indices=indices,
                  wait_for_merge=wait_for_merge,
@@ -928,7 +900,6 @@ class ES(object):
                               part of the response.
         :param filter_indices: when not filtering metadata, a comma separated
                                list of indices to include in the response.
-
         """
         return self.cluster.state(filter_nodes=filter_nodes, filter_routing_table=filter_routing_table,
                       filter_metadata=filter_metadata, filter_blocks=filter_blocks,
@@ -950,22 +921,18 @@ class ES(object):
         """
         return self.cluster.node_stats(nodes=nodes)
 
-
     def index_raw_bulk(self, header, document):
         """
         Function helper for fast inserting
 
         :param header: a string with the bulk header must be ended with a newline
         :param header: a json document string must be ended with a newline
-
         """
         self.bulker.add(u"%s%s" % (header, document))
         return self.flush_bulk()
 
-    def index(self, doc, index, doc_type, id=None, parent=None,
-              force_insert=False,
-              op_type=None,
-              bulk=False, version=None, querystring_args=None):
+    def index(self, doc, index, doc_type, id=None, parent=None, force_insert=False,
+              op_type=None, bulk=False, version=None, querystring_args=None):
         """
         Index a typed JSON document into a specific index and make it searchable.
         """
@@ -1018,14 +985,12 @@ class ES(object):
         path = make_path([index, doc_type, id])
         return self._send_request(request_method, path, doc, querystring_args)
 
-
     @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.stats")
     def index_stats(self, indices=None):
         """
         http://www.elasticsearch.org/guide/reference/api/admin-indices-stats.html
         """
         return self.indices.stats(indices=indices)
-
 
     def flush_bulk(self, forced=False):
         """
@@ -1146,7 +1111,7 @@ class ES(object):
         Return if a document exists
         """
         if isinstance(id, (int, long, float)):
-            id=str(id)
+            id = str(id)
         path = make_path([index, doc_type, urllib.quote_plus(id)])
         return self._send_request('HEAD', path, params=query_params)
 
@@ -1184,7 +1149,6 @@ class ES(object):
         ids can be:
             list of tuple: (index, type, id)
             list of ids: index and doc_type are required
-
         """
         if not ids:
             return []
@@ -1226,7 +1190,6 @@ class ES(object):
         `query` must be a Search object, a Query object, or a custom
         dictionary of search parameters using the query DSL to be passed
         directly.
-
         """
         indices = self._validate_indices(indices)
         if doc_types is None:
@@ -1252,11 +1215,10 @@ class ES(object):
         `query` must be a Search object, a Query object, or a custom
         dictionary of search parameters using the query DSL to be passed
         directly.
-
         """
         indices = self._validate_indices(indices)
-        if indices ==["_all"]:
-            indices=None
+        if indices == ["_all"]:
+            indices = None
         if doc_types is None:
             doc_types = []
         elif isinstance(doc_types, basestring):
@@ -1265,9 +1227,9 @@ class ES(object):
             query = query.search()
         if scan:
             if "search_type" not in query_params:
-                query_params["search_type"]="scan"
+                query_params["search_type"] = "scan"
             if "scroll" not in query_params:
-                query_params["scroll"]="10m"
+                query_params["scroll"] = "10m"
         if hasattr(query, 'to_search_json') or isinstance(query, dict):
             pass
         else:
@@ -1278,15 +1240,15 @@ class ES(object):
         if "start" in query_params:
             start = query_params.pop("start")
             if isinstance(query, dict):
-                query["from"]=start
+                query["from"] = start
             elif isinstance(query, Search):
-                query.start=start
+                query.start = start
         if "size" in query_params:
             size = query_params.pop("size")
             if isinstance(query, dict):
-                query["size"]=size
+                query["size"] = size
             elif isinstance(query, Search):
-                query.size=size
+                query.size = size
 
         return ResultSet(connection=self, query=query, indices=indices, doc_types=doc_types, model=model, query_params=query_params)
 
@@ -1385,7 +1347,6 @@ class ES(object):
     def update_settings(self, index, newvalues):
         """
         Update Settings of an index.
-
         """
         return self.indices.update_settings(index=index, newvalues=newvalues)
 
@@ -1404,7 +1365,7 @@ class ES(object):
                 continue
             meta = mapping.get_meta()
             meta.update(values)
-            mapping={doc_type:{"_meta":meta}}
+            mapping = {doc_type:{"_meta":meta}}
             self.indices.put_mapping(doc_type=doc_type, mapping=mapping, indices=indices)
 
     def morelikethis(self, index, doc_type, id, fields, **query_params):
@@ -1421,7 +1382,6 @@ class ES(object):
         Create a percolator document
 
         Any kwargs will be added to the document as extra properties.
-
         """
         path = make_path(['_percolator', index, name])
 
@@ -1587,13 +1547,13 @@ class ResultSet(object):
         """
         facets = self.facets
         for key in facets.keys():
-            _type=facets[key].get("_type", "unknown")
+            _type = facets[key].get("_type", "unknown")
             if _type == "date_histogram":
                 for entry in facets[key].get("entries", []):
-                    for k,v in entry.items():
+                    for k, v in entry.items():
                         if k in ["count", "max", "min", "total_count", "mean", "total"]:
                             continue
-                        entry[k]=datetime.fromtimestamp(v / 1e3)
+                        entry[k] = datetime.fromtimestamp(v / 1e3)
 
     def __len__(self):
         return self.total
@@ -1662,10 +1622,10 @@ class ResultSet(object):
             return val, val + 1
 
         start, end = get_start_end(val)
-        model= self.model
+        model = self.model
 
         if self._results:
-            if start >= 0 and end < self.start + self.chuck_size and len(self._results['hits']['hits'])>0 and \
+            if start >= 0 and end < self.start + self.chuck_size and len(self._results['hits']['hits']) > 0 and \
                 ("_source" in self._results['hits']['hits'][0] or "_fields" in self._results['hits']['hits'][0]):
                 if not isinstance(val, slice):
                     return model(self.connection, self._results['hits']['hits'][val - self.start])
@@ -1673,7 +1633,7 @@ class ResultSet(object):
                     return [model(self.connection, hit) for hit in self._results['hits']['hits'][start:end]]
 
         query = self.query.serialize()
-        query['from'] = start+self.start
+        query['from'] = start + self.start
         query['size'] = end - start
 
         results = self.connection.search_raw(query, indices=self.indices,

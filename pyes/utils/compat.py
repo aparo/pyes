@@ -15,7 +15,7 @@
 from __future__ import absolute_import
 
 ############## py3k #########################################################
-import sys
+import sys, types
 is_py3k = sys.version_info[0] == 3
 
 try:
@@ -45,6 +45,18 @@ else:
     from StringIO import StringIO           # noqa
     BytesIO = WhateverIO = StringIO         # noqa
 
+if is_py3k:
+    string_types = str,
+    integer_types = int,
+    class_types = type,
+    text_type = str
+    binary_type = bytes
+else:
+    string_types = basestring,
+    integer_types = int, long
+    class_types = type, types.ClassType
+    text_type = unicode
+    binary_type = str
 
 ############## itertools.zip_longest #######################################
 

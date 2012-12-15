@@ -285,7 +285,7 @@ class Indices(object):
             args['refresh'] = refresh
         return self.conn._send_request('POST', path, params=args)
 
-    def refresh(self, indices=None, timesleep=None):
+    def refresh(self, indices=None, timesleep=None, timeout=0):
         """
         Refresh one or more indices
         If a bulk is full, it sends it.
@@ -293,7 +293,8 @@ class Indices(object):
 
         :keyword indices: an index or a list of indices
         :keyword timesleep: seconds to wait
-
+        :keyword timeout: seconds to wait before timing out when waiting for
+            the cluster's health.
         """
         self.conn.force_bulk()
         indices = self.conn._validate_indices(indices)
@@ -304,7 +305,7 @@ class Indices(object):
         result = self.conn._send_request('POST', path)
         if timesleep:
             time.sleep(timesleep)
-        self.conn.cluster.health(wait_for_status='green')
+        self.conn.cluster.health(wait_for_status='green', timeout=timeout)
         return result
 
     def optimize(self, indices=None,
@@ -467,7 +468,7 @@ class Cluster(object):
     #TODO: node shutdown, update settings
 
     def health(self, indices=None, level="cluster", wait_for_status=None,
-                       wait_for_relocating_shards=None, timeout=30):
+               wait_for_relocating_shards=None, timeout=30):
         """
         Check the current :ref:`cluster health <es-guide-reference-api-admin-cluster-health>`.
         Request Parameters
@@ -490,7 +491,10 @@ class Cluster(object):
                         if one of the wait_for_XXX are provided.
                         Defaults to 30s.
         """
-        path = make_path(["_cluster", "health"])
+        if indices:
+            path = make_path(["_cluster", "health", ",".join(indices)])
+        else:
+            path = make_path(["_cluster", "health"])
         mapping = {}
         if level != "cluster":
             if level not in ["cluster", "indices", "shards"]:

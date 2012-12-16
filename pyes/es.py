@@ -414,14 +414,16 @@ class ES(object):
         This can be used for search and count calls.
         These are identical api calls, except for the type of query.
         """
+        path = self._make_path(indices, doc_types, query_type)
+        return self._send_request('GET', path, query, params=query_params)
+
+    def _make_path(self, indices, doc_types, *components):
         indices = self._validate_indices(indices)
         if doc_types is None:
             doc_types = self.default_types
         if isinstance(doc_types, basestring):
             doc_types = [doc_types]
-        body = query
-        path = make_path([','.join(indices), ','.join(doc_types), query_type])
-        return self._send_request('GET', path, body, params=query_params)
+        return make_path(','.join(indices), ','.join(doc_types), *components)
 
     def _validate_indices(self, indices=None):
         """Return a valid list of indices.
@@ -434,19 +436,6 @@ class ES(object):
         if isinstance(indices, basestring):
             indices = [indices]
         return indices
-
-    def _validate_types(self, types=None):
-        """Return a valid list of types.
-
-        `types` may be a string or a list of strings.
-        If `types` is not supplied, returns the default_types.
-        """
-        types = types or self.default_types
-        if types is None:
-            types = []
-        if isinstance(types, basestring):
-            types = [types]
-        return types
 
     def _dump_curl_request(self, request):
         print >> self.dump_curl, "# [%s]" % datetime.now().isoformat()
@@ -809,7 +798,7 @@ class ES(object):
         if field and index is None:
             raise ValueError('field can only be specified with an index')
 
-        path = make_path([index, '_analyze'])
+        path = make_path(index, '_analyze')
         return self._send_request('POST', path, text, args)
 
     @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.gateway_snapshot")
@@ -983,7 +972,7 @@ class ES(object):
         else:
             request_method = 'PUT'
 
-        path = make_path([index, doc_type, id])
+        path = make_path(index, doc_type, id)
         return self._send_request(request_method, path, doc, querystring_args)
 
     @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.stats")
@@ -1015,7 +1004,7 @@ class ES(object):
             request_method = 'POST'
         else:
             request_method = 'PUT'
-        path = make_path([index, doc_type, id])
+        path = make_path(index, doc_type, id)
         doc = file_to_attachment(filename)
         if name:
             doc["_name"] = name
@@ -1075,19 +1064,13 @@ class ES(object):
             self.bulker.add(json.dumps(cmd, cls=self.encoder))
             return self.flush_bulk()
 
-        path = make_path([index, doc_type, id])
+        path = make_path(index, doc_type, id)
         return self._send_request('DELETE', path, params=query_params)
 
     def delete_by_query(self, indices, doc_types, query, **query_params):
         """
         Delete documents from one or more indices and one or more types based on a query.
         """
-        indices = self._validate_indices(indices)
-        if doc_types is None:
-            doc_types = []
-        if isinstance(doc_types, basestring):
-            doc_types = [doc_types]
-
         if hasattr(query, 'to_query_json'):
             # Then is a Query object.
             body = query.to_query_json()
@@ -1097,7 +1080,7 @@ class ES(object):
         else:
             raise InvalidQuery("delete_by_query() must be supplied with a Query object, or a dict")
 
-        path = make_path([','.join(indices), ','.join(doc_types), '_query'])
+        path = self._make_path(indices, doc_types, '_query')
         return self._send_request('DELETE', path, body, query_params)
 
     @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.delete_mapping")
@@ -1113,14 +1096,14 @@ class ES(object):
         """
         if isinstance(id, (int, long, float)):
             id = str(id)
-        path = make_path([index, doc_type, urllib.quote_plus(id)])
+        path = make_path(index, doc_type, urllib.quote_plus(id))
         return self._send_request('HEAD', path, params=query_params)
 
     def get(self, index, doc_type, id, fields=None, model=None, **query_params):
         """
         Get a typed JSON document from an index based on its id.
         """
-        path = make_path([index, doc_type, id])
+        path = make_path(index, doc_type, id)
         if fields is not None:
             query_params["fields"] = ",".join(fields)
         model = model or self.model
@@ -1192,12 +1175,6 @@ class ES(object):
         dictionary of search parameters using the query DSL to be passed
         directly.
         """
-        indices = self._validate_indices(indices)
-        if doc_types is None:
-            doc_types = []
-        elif isinstance(doc_types, basestring):
-            doc_types = [doc_types]
-
         if hasattr(query, 'to_search_json'):
             # Common case - a Search or Query object.
             query.encoder = self.encoder
@@ -1224,15 +1201,6 @@ class ES(object):
             search = Search(query)
         else:
             raise InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
-
-        indices = self._validate_indices(indices)
-        if indices == ["_all"]:
-            indices = None
-
-        if doc_types is None:
-            doc_types = []
-        elif isinstance(doc_types, basestring):
-            doc_types = [doc_types]
 
         if scan:
             query_params.setdefault("search_type", "scan")
@@ -1271,11 +1239,6 @@ class ES(object):
         query must be a dictionary or a Query object that will convert to Query DSL.
         Note: reindex is only available in my ElasticSearch branch on github.
         """
-        indices = self._validate_indices(indices)
-        if doc_types is None:
-            doc_types = []
-        if isinstance(doc_types, basestring):
-            doc_types = [doc_types]
         if not isinstance(query, basestring):
             if isinstance(query, dict):
                 if 'query' in query:
@@ -1283,21 +1246,15 @@ class ES(object):
                 query = json.dumps(query, cls=self.encoder)
             elif hasattr(query, "to_query_json"):
                 query = query.to_query_json(inner=True)
-        indices = self._validate_indices(indices)
-        body = query
-        path = make_path([','.join(indices), ','.join(doc_types), "_reindexbyquery"])
-        return self._send_request('POST', path, body, query_params)
+        path = self._make_path(indices, doc_types, "_reindexbyquery")
+        return self._send_request('POST', path, query, query_params)
 
     def count(self, query=None, indices=None, doc_types=None, **query_params):
         """
         Execute a query against one or more indices and get hits count.
         """
-        indices = self._validate_indices(indices)
-        if doc_types is None:
-            doc_types = []
         if query is None:
             from .query import MatchAllQuery
-
             query = MatchAllQuery()
         if hasattr(query, 'to_query_json'):
             query = query.to_query_json()
@@ -1361,7 +1318,7 @@ class ES(object):
         """
         Execute a "more like this" search query against one or more fields and get back search hits.
         """
-        path = make_path([index, doc_type, id, '_mlt'])
+        path = make_path(index, doc_type, id, '_mlt')
         query_params['fields'] = ','.join(fields)
         body = query_params["body"] if query_params.has_key("body") else None
         return self._send_request('GET', path, body=body, params=query_params)
@@ -1372,7 +1329,7 @@ class ES(object):
 
         Any kwargs will be added to the document as extra properties.
         """
-        path = make_path(['_percolator', index, name])
+        path = make_path('_percolator', index, name)
 
         if hasattr(query, 'serialize'):
             query = {'query': query.serialize()}
@@ -1395,15 +1352,8 @@ class ES(object):
         """
         Match a query with a document
         """
-
         if doc_types is None:
             raise RuntimeError('percolate() must be supplied with at least one doc_type')
-        elif not isinstance(doc_types, list):
-            doc_types = [doc_types]
-
-        path = make_path([index, ','.join(doc_types), '_percolate'])
-
-        body = None
 
         if hasattr(query, 'to_query_json'):
             # Then is a Query object.
@@ -1414,6 +1364,7 @@ class ES(object):
         else:
             raise InvalidQuery("percolate() must be supplied with a Query object, or a dict")
 
+        path = self._make_path(index, doc_types, '_percolate')
         return self._send_request('GET', path, body=body)
 
 

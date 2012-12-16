@@ -5,7 +5,7 @@ from urllib import quote
 
 __all__ = ['clean_string', "ESRange", "ESRangeOp", "string_b64encode", "string_b64decode", "make_path"]
 
-def make_path(path_components):
+def make_path(*path_components):
     """
     Smash together the path components. Empty components will be ignored.
     """

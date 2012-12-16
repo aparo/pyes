@@ -405,12 +405,13 @@ class Indices(object):
 
         """
         indices = self.conn._validate_indices(indices)
-        if mapping is None:
-            mapping = {}
-        if hasattr(mapping, "to_json"):
-            mapping = mapping.to_json()
-        if hasattr(mapping, "as_dict"):
-            mapping = mapping.as_dict()
+        if not isinstance(mapping, dict):
+            if mapping is None:
+                mapping = {}
+            if hasattr(mapping, "to_json"):
+                mapping = mapping.to_json()
+            if hasattr(mapping, "as_dict"):
+                mapping = mapping.as_dict()
 
         if doc_type:
             path = make_path([','.join(indices), doc_type, "_mapping"])

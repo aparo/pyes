@@ -1217,41 +1217,29 @@ class ES(object):
         dictionary of search parameters using the query DSL to be passed
         directly.
         """
+        from .query import Search, Query
+        if isinstance(query, Search):
+            search = query
+        elif isinstance(query, (Query, dict)):
+            search = Search(query)
+        else:
+            raise InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
+
         indices = self._validate_indices(indices)
         if indices == ["_all"]:
             indices = None
+
         if doc_types is None:
             doc_types = []
         elif isinstance(doc_types, basestring):
             doc_types = [doc_types]
-        if hasattr(query, 'search'):
-            query = query.search()
+
         if scan:
-            if "search_type" not in query_params:
-                query_params["search_type"] = "scan"
-            if "scroll" not in query_params:
-                query_params["scroll"] = "10m"
-        if hasattr(query, 'to_search_json') or isinstance(query, dict):
-            pass
-        else:
-            raise InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
+            query_params.setdefault("search_type", "scan")
+            query_params.setdefault("scroll", "10m")
 
-        #propage the start and size in the query object
-        from .query import Search
-        if "start" in query_params:
-            start = query_params.pop("start")
-            if isinstance(query, dict):
-                query["from"] = start
-            elif isinstance(query, Search):
-                query.start = start
-        if "size" in query_params:
-            size = query_params.pop("size")
-            if isinstance(query, dict):
-                query["size"] = size
-            elif isinstance(query, Search):
-                query.size = size
-
-        return ResultSet(connection=self, query=query, indices=indices, doc_types=doc_types, model=model, query_params=query_params)
+        return ResultSet(self, search, indices=indices, doc_types=doc_types,
+                         model=model, query_params=query_params)
 
     #    scan method is no longer working due to change in ES.search behavior.  May no longer warrant its own method.
     #    def scan(self, query, indices=None, doc_types=None, scroll="10m", **query_params):
@@ -1440,14 +1428,20 @@ def encode_json(data):
 
 
 class ResultSet(object):
-    def __init__(self, connection, query, indices=None, doc_types=None, query_params=None,
+
+    def __init__(self, connection, search, indices=None, doc_types=None, query_params=None,
                  auto_fix_keys=False, auto_clean_highlight=False, model=None):
         """
         results: an es query results dict
         fix_keys: remove the "_" from every key, useful for django views
         clean_highlight: removed empty highlight
-        query can be a dict or a Search object.
+        search: a Search object.
         """
+        from .query import Search
+        if not isinstance(search, Search):
+            raise InvalidQuery("ResultSet must be supplied with a Search object")
+
+        self.search = search
         self.connection = connection
         self.indices = indices
         self.doc_types = doc_types
@@ -1462,21 +1456,11 @@ class ResultSet(object):
         self.auto_fix_keys = auto_fix_keys
         self.auto_clean_highlight = auto_clean_highlight
 
-        from .query import Search, Query
-
-        if not isinstance(query, (Query, Search, dict)):
-            raise InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
-
-        if not isinstance(query, Search):
-            self.query = Search(query)
-        else:
-            self.query = query
-
         self.iterpos = 0 #keep track of iterator position
-        self.start = self.query.start or query_params.get("start", 0)
-        self._max_item = self.query.size
+        self.start = query_params.get("start", search.start) or 0
+        self._max_item = query_params.get("size", search.size)
         self._current_item = 0
-        self.chuck_size = self.query.bulk_read or self.query.size or 10
+        self.chuck_size = search.bulk_read or search.size or 10
 
     def _do_search(self, auto_increment=False):
         self.iterpos = 0
@@ -1485,21 +1469,16 @@ class ResultSet(object):
             if auto_increment:
                 self.start += self.chuck_size
 
-            self.query.start = self.start
-            self.query.size = self.chuck_size
+            self._results = self._search_raw(self.start, self.chuck_size)
 
-            self._results = self.connection.search_raw(self.query, indices=self.indices,
-                                                       doc_types=self.doc_types, **self.query_params)
-            if 'search_type' in self.query_params and self.query_params['search_type'] == "scan":
-                self.scroller_parameters['search_type'] = self.query_params['search_type']
-                del self.query_params['search_type']
+            do_scan = self.query_params.pop("search_type", None) == "scan"
+            if do_scan:
+                self.scroller_parameters['search_type'] = "scan"
                 if 'scroll' in self.query_params:
-                    self.scroller_parameters['scroll'] = self.query_params['scroll']
-                    del self.query_params['scroll']
+                    self.scroller_parameters['scroll'] = self.query_params.pop('scroll')
                 if 'size' in self.query_params:
-                    self.scroller_parameters['size'] = self.query_params['size']
-                    del self.query_params['size']
-                    self.chuck_size = self.scroller_parameters['size']
+                    self.chuck_size = self.scroller_parameters['size'] = self.query_params.pop('size')
+
             if '_scroll_id' in self._results:
                 #scan query, let's load the first bulk of data
                 self.scroller_id = self._results['_scroll_id']
@@ -1633,13 +1612,7 @@ class ResultSet(object):
                 else:
                     return [model(self.connection, hit) for hit in self._results['hits']['hits'][start:end]]
 
-        query = self.query.serialize()
-        query['from'] = start + self.start
-        query['size'] = end - start
-
-        results = self.connection.search_raw(query, indices=self.indices,
-                                             doc_types=self.doc_types, **self.query_params)
-
+        results = self._search_raw(start + self.start, end - start)
         hits = results['hits']['hits']
         if not isinstance(val, slice):
             if len(hits) == 1:
@@ -1663,7 +1636,7 @@ class ResultSet(object):
             self._current_item += 1
             return self.model(self.connection, res)
 
-        if (self.start + self.iterpos) == self.total:
+        if self.start + self.iterpos == self.total:
             raise StopIteration
         self._do_search(auto_increment=True)
         self.iterpos = 0
@@ -1681,3 +1654,16 @@ class ResultSet(object):
         self._current_item = 0
 
         return self
+
+    def _search_raw(self, start=None, size=None):
+        if start is None and size is None:
+            query_params = self.query_params
+        else:
+            query_params = dict(self.query_params)
+            if start is not None:
+                query_params["from"] = start
+            if size is not None:
+                query_params["size"] = size
+
+        return self.connection.search_raw(self.search, indices=self.indices,
+                                          doc_types=self.doc_types, **query_params)

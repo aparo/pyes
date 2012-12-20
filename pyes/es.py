@@ -417,8 +417,12 @@ class ES(object):
         path = self._make_path(indices, doc_types, query_type)
         return self._send_request('GET', path, query, params=query_params)
 
-    def _make_path(self, indices, doc_types, *components):
+    def _make_path(self, indices, doc_types, *components, **kwargs):
         indices = self._validate_indices(indices)
+        if 'allow_all_indices' in kwargs:
+            allow_all_indices = kwargs.pop('allow_all_indices')
+            if not allow_all_indices and indices == ['_all']:
+                indices = []
         if doc_types is None:
             doc_types = self.default_types
         if isinstance(doc_types, basestring):

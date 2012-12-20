@@ -119,7 +119,7 @@ class Indices(object):
 
         :keyword indices: an index or a list of indices
         """
-        path = self.conn._make_path(indices, (), '_status')
+        path = self.conn._make_path(indices, (), '_status', allow_all_indices=False)
         return self.conn._send_request('GET', path)
 
     def create_index(self, index, settings=None):
@@ -278,7 +278,7 @@ class Indices(object):
             the cluster's health.
         """
         self.conn.force_bulk()
-        path = self.conn._make_path(indices, (), '_refresh')
+        path = self.conn._make_path(indices, (), '_refresh', allow_all_indices=False)
         result = self.conn._send_request('POST', path)
         if timesleep:
             time.sleep(timesleep)

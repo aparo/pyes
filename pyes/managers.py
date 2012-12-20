@@ -325,6 +325,8 @@ class Indices(object):
             refresh=refresh,
             flush=flush,
             )
+        for k, v in params.iteritems():
+            params[k] = v and "true" or "false"
         if max_num_segments is not None:
             params['max_num_segments'] = max_num_segments
         return self.conn._send_request('POST', path, params=params)

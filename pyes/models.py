@@ -176,6 +176,11 @@ class ListBulker(BaseBulker):
         with self.bulk_lock:
             self.bulk_data = []
 
+    def __nonzero__(self):
+        # This is needed for __del__ in ES to correctly detect if there is
+        # unsaved bulk data left over.
+        return not not self.bulk_data
+
     def add(self, content):
         with self.bulk_lock:
             self.bulk_data.append(content)

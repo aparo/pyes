@@ -463,7 +463,7 @@ class HasParentFilter(Filter):
     def __init__(self, type, query, _scope=None, **kwargs):
         if not isinstance(query, Query):
             raise RuntimeError("HasParentFilter expects a Query")
-        super(HasChildFilter, self).__init__(**kwargs)
+        super(HasParentFilter, self).__init__(**kwargs)
         self.query = query
         self.type = type
         self._scope = _scope

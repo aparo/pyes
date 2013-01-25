@@ -53,7 +53,7 @@ class Facet(EqualityComparableUsingAttributeDictionary):
         if self.is_global:
             data['global'] = self.is_global
         if self.facet_filter:
-            data.update(self.facet_filter.q)
+            data.update({'facet_filter': self.facet_filter.serialize()})
 
         return data
 

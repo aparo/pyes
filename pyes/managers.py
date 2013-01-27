@@ -6,7 +6,7 @@ from .utils import make_path
 
 class Indices(object):
     def __init__(self, conn):
-        self.conn=conn
+        self.conn = conn
 
     #TODO: clearcache segments templates
 
@@ -19,8 +19,7 @@ class Indices(object):
         :keyword indices: an index or a list of indices
 
         """
-        indices = self.conn._validate_indices(indices)
-        path = make_path([','.join(indices), '_aliases'])
+        path = self.conn._make_path(indices, (), '_aliases')
         return self.conn._send_request('GET', path)
 
     def get_alias(self, alias):
@@ -47,12 +46,8 @@ class Indices(object):
                          `alias` are the index and alias to add or remove.
 
         """
-        body = {
-            'actions': [
-                {command: dict(index=index, alias=alias)}
-            for (command, index, alias) in commands
-            ]
-        }
+        body = {'actions': [{command: dict(index=index, alias=alias)}
+                            for (command, index, alias) in commands]}
         return self.conn._send_request('POST', "_aliases", body)
 
     def add_alias(self, alias, indices):
@@ -80,8 +75,7 @@ class Indices(object):
         :param indices: a list of indices
         """
         indices = self.conn._validate_indices(indices)
-        return self.change_aliases(['remove', index, alias]
-        for index in indices)
+        return self.change_aliases(['remove', index, alias] for index in indices)
 
     def set_alias(self, alias, indices):
         """
@@ -115,13 +109,7 @@ class Indices(object):
 
         :keyword indices: an index or a list of indices
         """
-        parts = ["_stats"]
-        if indices:
-            if isinstance(indices, basestring):
-                indices = [indices]
-            parts = [",".join(indices), "_stats"]
-
-        path = make_path(parts)
+        path = self.conn._make_path(indices, (), "_stats")
         return self.conn._send_request('GET', path)
 
     def status(self, indices=None):
@@ -131,11 +119,7 @@ class Indices(object):
 
         :keyword indices: an index or a list of indices
         """
-        indices = self.conn._validate_indices(indices)
-        if indices==["_all"]:
-            indices=[]
-
-        path = make_path([','.join(indices), '_status'])
+        path = self.conn._make_path(indices, (), '_status', allow_all_indices=False)
         return self.conn._send_request('GET', path)
 
     def create_index(self, index, settings=None):
@@ -276,16 +260,13 @@ class Indices(object):
 
         """
         self.conn.force_bulk()
-
-        indices = self.conn._validate_indices(indices)
-
-        path = make_path([','.join(indices), '_flush'])
+        path = self.conn._make_path(indices, '_flush')
         args = {}
         if refresh is not None:
             args['refresh'] = refresh
         return self.conn._send_request('POST', path, params=args)
 
-    def refresh(self, indices=None, timesleep=None):
+    def refresh(self, indices=None, timesleep=None, timeout=0):
         """
         Refresh one or more indices
         If a bulk is full, it sends it.
@@ -293,18 +274,15 @@ class Indices(object):
 
         :keyword indices: an index or a list of indices
         :keyword timesleep: seconds to wait
-
+        :keyword timeout: seconds to wait before timing out when waiting for
+            the cluster's health.
         """
         self.conn.force_bulk()
-        indices = self.conn._validate_indices(indices)
-        if indices==["_all"]:
-            indices=[]
-
-        path = make_path([','.join(indices), '_refresh'])
+        path = self.conn._make_path(indices, (), '_refresh', allow_all_indices=False)
         result = self.conn._send_request('POST', path)
         if timesleep:
             time.sleep(timesleep)
-        self.conn.cluster.health(wait_for_status='green')
+        self.conn.cluster.health(wait_for_status='green', timeout=timeout)
         return result
 
     def optimize(self, indices=None,
@@ -340,14 +318,15 @@ class Indices(object):
         :keyword flush: Should a flush be performed after the optimize. Defaults to true.
 
         """
-        indices = self.conn._validate_indices(indices)
-        path = make_path([','.join(indices), '_optimize'])
+        path = self.conn._make_path(indices, (), '_optimize')
         params = dict(
             wait_for_merge=wait_for_merge,
             only_expunge_deletes=only_expunge_deletes,
             refresh=refresh,
             flush=flush,
             )
+        for k, v in params.iteritems():
+            params[k] = v and "true" or "false"
         if max_num_segments is not None:
             params['max_num_segments'] = max_num_segments
         return self.conn._send_request('POST', path, params=params)
@@ -383,7 +362,7 @@ class Indices(object):
         if field and index is None:
             raise ValueError('field can only be specified with an index')
 
-        path = make_path([index, '_analyze'])
+        path = make_path(index, '_analyze')
         return self.conn._send_request('POST', path, text, args)
 
     def gateway_snapshot(self, indices=None):
@@ -393,8 +372,7 @@ class Indices(object):
 
         :keyword indices: a list of indices or None for default configured.
         """
-        indices = self.conn._validate_indices(indices)
-        path = make_path([','.join(indices), '_gateway', 'snapshot'])
+        path = self.conn._make_path(indices, (), '_gateway', 'snapshot')
         return self.conn._send_request('POST', path)
 
     def put_mapping(self, doc_type=None, mapping=None, indices=None):
@@ -403,20 +381,20 @@ class Indices(object):
         (See :ref:`es-guide-reference-api-admin-indices-put-mapping`)
 
         """
-        indices = self.conn._validate_indices(indices)
-        if mapping is None:
-            mapping = {}
-        if hasattr(mapping, "to_json"):
-            mapping = mapping.to_json()
-        if hasattr(mapping, "as_dict"):
-            mapping = mapping.as_dict()
+        if not isinstance(mapping, dict):
+            if mapping is None:
+                mapping = {}
+            if hasattr(mapping, "to_json"):
+                mapping = mapping.to_json()
+            if hasattr(mapping, "as_dict"):
+                mapping = mapping.as_dict()
 
         if doc_type:
-            path = make_path([','.join(indices), doc_type, "_mapping"])
+            path = self.conn._make_path(indices, doc_type, "_mapping")
             if doc_type not in mapping:
                 mapping = {doc_type: mapping}
         else:
-            path = make_path([','.join(indices), "_mapping"])
+            path = self.conn._make_path(indices, (), "_mapping")
 
         return self.conn._send_request('PUT', path, mapping)
 
@@ -426,11 +404,7 @@ class Indices(object):
         (See :ref:`es-guide-reference-api-admin-indices-get-mapping`)
 
         """
-        indices = self.conn._validate_indices(indices)
-        if doc_type:
-            path = make_path([','.join(indices), doc_type, "_mapping"])
-        else:
-            path = make_path([','.join(indices), "_mapping"])
+        path = self.conn._make_path(indices, doc_type or (), "_mapping")
         return self.conn._send_request('GET', path)
 
     def delete_mapping(self, index, doc_type):
@@ -439,7 +413,7 @@ class Indices(object):
         (See :ref:`es-guide-reference-api-admin-indices-delete-mapping`)
 
         """
-        path = make_path([index, doc_type])
+        path = make_path(index, doc_type)
         return self.conn._send_request('DELETE', path)
 
     def get_settings(self, index=None):
@@ -448,7 +422,7 @@ class Indices(object):
         (See :ref:`es-guide-reference-api-admin-indices-get-settings`)
 
         """
-        path = make_path([index, "_settings"])
+        path = make_path(index, "_settings")
         return self.conn._send_request('GET', path)
 
     def update_settings(self, index, newvalues):
@@ -457,17 +431,17 @@ class Indices(object):
         (See  :ref:`es-guide-reference-api-admin-indices-update-settings`)
 
         """
-        path = make_path([index, "_settings"])
+        path = make_path(index, "_settings")
         return self.conn._send_request('PUT', path, newvalues)
 
 class Cluster(object):
     def __init__(self, conn):
-        self.conn=conn
+        self.conn = conn
 
     #TODO: node shutdown, update settings
 
     def health(self, indices=None, level="cluster", wait_for_status=None,
-                       wait_for_relocating_shards=None, timeout=30):
+               wait_for_relocating_shards=None, timeout=30):
         """
         Check the current :ref:`cluster health <es-guide-reference-api-admin-cluster-health>`.
         Request Parameters
@@ -490,7 +464,10 @@ class Cluster(object):
                         if one of the wait_for_XXX are provided.
                         Defaults to 30s.
         """
-        path = make_path(["_cluster", "health"])
+        if indices:
+            path = make_path("_cluster", "health", ",".join(indices))
+        else:
+            path = make_path("_cluster", "health")
         mapping = {}
         if level != "cluster":
             if level not in ["cluster", "indices", "shards"]:
@@ -522,7 +499,7 @@ class Cluster(object):
                                list of indices to include in the response.
 
         """
-        path = make_path(["_cluster", "state"])
+        path = make_path("_cluster", "state")
         parameters = {}
 
         if filter_nodes is not None:
@@ -553,7 +530,7 @@ class Cluster(object):
         parts = ["_cluster", "nodes"]
         if nodes:
             parts.append(",".join(nodes))
-        path = make_path(parts)
+        path = make_path(*parts)
         return self.conn._send_request('GET', path)
 
     def node_stats(self, nodes=None):
@@ -565,5 +542,5 @@ class Cluster(object):
         if nodes:
             parts = ["_cluster", "nodes", ",".join(nodes), "stats"]
 
-        path = make_path(parts)
+        path = make_path(*parts)
         return self.conn._send_request('GET', path)

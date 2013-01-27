@@ -11,13 +11,13 @@ Taken from django one and from django-elasticsearch.
 import copy
 
 # The maximum number of items to display in a QuerySet.__repr__
-import six
 from .es import ES
 from .filters import ANDFilter, ORFilter, NotFilter, Filter, TermsFilter, TermFilter, RangeFilter, ExistsFilter
 from .facets import Facet, TermFacet
 from .models import ElasticSearchModel
 from .query import MatchAllQuery, BoolQuery, FilteredQuery, Search
 from .utils import ESRange
+from .utils.compat import integer_types
 
 REPR_OUTPUT_SIZE = 20
 
@@ -234,7 +234,7 @@ class QuerySet(object):
         """
         Retrieves an item or slice from the set of results.
         """
-        if not isinstance(k, (slice,) + six.integer_types):
+        if not isinstance(k, (slice,) + integer_types):
             raise TypeError
         assert ((not isinstance(k, slice) and (k >= 0))
                 or (isinstance(k, slice) and (k.start is None or k.start >= 0)

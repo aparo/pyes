@@ -733,7 +733,9 @@ class FuzzyQuery(Query):
     A fuzzy based query that uses similarity based on Levenshtein (edit distance) algorithm.
 
     Note
-        Warning: this query is not very scalable with its default prefix length of 0 - in this case, every term will be enumerated and cause an edit score calculation. Here is a simple example:
+        Warning: this query is not very scalable with its default prefix
+        length of 0 - in this case, every term will be enumerated and cause an
+        edit score calculation. Here is a simple example:
 
     """
     _internal_name = "fuzzy"

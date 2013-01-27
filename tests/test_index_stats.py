@@ -51,5 +51,10 @@ class IndexStatsTestCase(ESTestCase):
         result = self.conn.index_stats(self.index_name)
         self.assertEquals(5, result._all.indices[self.index_name].total.docs.count)
 
+    def test_optimize(self):
+        result = self.conn.indices.optimize(indices=self.index_name, wait_for_merge=True, max_num_segments=1)
+        self.assertEquals(result.ok, True)
+        self.assertEquals(result._shards["failed"], 0)
+
 if __name__ == "__main__":
     unittest.main()

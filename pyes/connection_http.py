@@ -16,6 +16,13 @@ __all__ = ["connect"]
 DEFAULT_SERVER = ("http", "127.0.0.1", 9200)
 POOL_MANAGER = urllib3.PoolManager()
 
+def update_connection_pool(maxsize=1):
+    """Update the global connection pool manager parameters.
+
+    maxsize: Number of connections to save that can be reused (default=1).
+             More than 1 is useful in multithreaded situations.
+    """
+    POOL_MANAGER.connection_pool_kw.update(maxsize=maxsize)
 
 class Connection(object):
     """An ElasticSearch connection to a randomly chosen server of the list.
@@ -93,7 +100,7 @@ class Connection(object):
                 return RestResponse(status=response.status,
                                     body=response.data,
                                     headers=response.headers)
-            except urllib3.exceptions.HTTPError, ex:
+            except (IOError, urllib3.exceptions.HTTPError), ex:
                 self._drop_server(server)
                 self._local.server = server = None
                 if retry >= self._max_retries:

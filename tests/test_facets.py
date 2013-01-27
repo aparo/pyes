@@ -2,9 +2,9 @@
 from __future__ import absolute_import
 import unittest
 from .estestcase import ESTestCase
-from pyes.facets import DateHistogramFacet
-from pyes.filters import TermFilter, RangeFilter
-from pyes.query import FilteredQuery, MatchAllQuery, Search
+from pyes.facets import DateHistogramFacet, TermFacet
+from pyes.filters import TermFilter, RangeFilter, BoolFilter
+from pyes.query import FilteredQuery, MatchAllQuery, Search, TermQuery
 from pyes.utils import ESRange
 import datetime
 
@@ -137,6 +137,13 @@ class FacetSearchTestCase(ESTestCase):
         resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
         self.assertEquals(resultset.total, 2)
         self.assertEquals(resultset.facets['date_facet']['entries'], [{u'count': 2, u'time': 1301616000000}])
+
+    def test_facet_filter_is_serialized_correctly(self):
+        query = MatchAllQuery().search(size=0)
+        query.facet.add(TermFacet(field='topic', facet_filter=BoolFilter(must_not=TermQuery(field='reviewed', value=True))))
+        serialized = query.serialize()
+        self.assertTrue(serialized['facets']['topic']['facet_filter']['bool'])
+
 
 if __name__ == "__main__":
     unittest.main()

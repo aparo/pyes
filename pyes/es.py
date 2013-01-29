@@ -15,6 +15,7 @@ except ImportError:
     import json
     from json import JSONDecoder, JSONEncoder
 
+import codecs
 import random
 from datetime import date, datetime
 from urllib import urlencode
@@ -132,6 +133,7 @@ class ES(object):
                  max_retries=3,
                  default_indices=None,
                  default_types=None,
+                 log_curl=False,
                  dump_curl=False,
                  model=ElasticSearchModel,
                  basic_auth=None,
@@ -184,9 +186,10 @@ class ES(object):
         if model is None:
             model = lambda connection, model: model
         self.model = model
+        self.log_curl = log_curl
         if dump_curl:
             if isinstance(dump_curl, basestring):
-                self.dump_curl = open(dump_curl, "wb")
+                self.dump_curl = codecs.open(dump_curl, "wb", "utf8")
             elif hasattr(dump_curl, 'write'):
                 self.dump_curl = dump_curl
             else:
@@ -383,7 +386,10 @@ class ES(object):
         request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()],
                               uri=path, parameters=params, headers=headers, body=body)
         if self.dump_curl is not None:
-            self._dump_curl_request(request)
+            print >> self.dump_curl, "# [%s]" % datetime.now().isoformat()
+            print >> self.dump_curl, self._get_curl_request(request)
+        if self.log_curl:
+            logger.debug(self._get_curl_request(request))
 
         # execute the request
         response = self.connection.execute(request)
@@ -441,17 +447,19 @@ class ES(object):
             indices = [indices]
         return indices
 
-    def _dump_curl_request(self, request):
-        print >> self.dump_curl, "# [%s]" % datetime.now().isoformat()
+    def _get_curl_request(self, request):
         params = {'pretty': 'true'}
         params.update(request.parameters)
         method = Method._VALUES_TO_NAMES[request.method]
         server = self.servers[0]
         url = urlunsplit((server.scheme, server.netloc, request.uri, urlencode(params), ''))
-        curl_cmd = "curl -X%s '%s'" % (method, url)
-        if request.body:
-            curl_cmd += " -d '%s'" % request.body
-        print >> self.dump_curl, curl_cmd
+        curl_cmd = u"curl -X%s '%s'" % (method, url)
+        body = request.body
+        if body:
+            if not isinstance(body, unicode):
+                body = unicode(body, "utf8")
+            curl_cmd += u" -d '%s'" % body
+        return curl_cmd
 
     def _get_default_indices(self):
         return self._default_indices

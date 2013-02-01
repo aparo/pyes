@@ -151,6 +151,8 @@ class QuerySet(object):
         if self._facets:
             for facet in self._facets:
                 query.facet.add(facet)
+        if self._start is not None:
+            query.start = self._start
         if self._size is not None:
             query.size = self._size
         return query

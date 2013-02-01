@@ -792,6 +792,7 @@ class QuerySet(object):
         c._filters=list(self._filters)
         c._facets=list(self._facets)
         c._fields=list(self._fields)
+        c._ordering=list(self._ordering)
         c._size=self._size
         c._start=self._start
         return c

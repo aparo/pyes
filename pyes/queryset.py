@@ -29,28 +29,27 @@ class MultipleObjectsReturned(Exception):
     pass
 
 
-def get_es_connection(es_url):
+def get_es_connection(es_url, es_kwargs):
     #import pdb;pdb.set_trace()
     if es_url:
-        return ES(es_url)
-    else:
-        return ES()
+        es_kwargs.update(server=es_url)
+    return ES(**es_kwargs)
 
 
 class ESModel(ElasticSearchModel):
 
-    def __init__(self, index, type, es_url=None):
+    def __init__(self, index, type, es_url=None, es_kwargs={}):
         self._index = index
         self._type = type
-        self.objects = QuerySet(self, es_url=es_url)
+        self.objects = QuerySet(self, es_url=es_url, es_kwargs=es_kwargs)
         setattr(self, "DoesNotExist", DoesNotExist)
         setattr(self, "MultipleObjectsReturned", MultipleObjectsReturned)
 
 
-def generate_model(index, doc_type, es_url=None):
+def generate_model(index, doc_type, es_url=None, es_kwargs={}):
     MyModel = type('MyModel', (ElasticSearchModel,), {})
 
-    setattr(MyModel, "objects", QuerySet(MyModel, index=index, type=doc_type, es_url=es_url))
+    setattr(MyModel, "objects", QuerySet(MyModel, index=index, type=doc_type, es_url=es_url, es_kwargs=es_kwargs))
     setattr(MyModel, "DoesNotExist", DoesNotExist)
     setattr(MyModel, "MultipleObjectsReturned", MultipleObjectsReturned)
     return MyModel
@@ -60,12 +59,12 @@ class QuerySet(object):
     """
     Represents a lazy database lookup for a set of objects.
     """
-    def __init__(self, model=None, using=None, index=None, type=None, es_url=None):
+    def __init__(self, model=None, using=None, index=None, type=None, es_url=None, es_kwargs={}):
         self.es_url = es_url
+        self.es_kwargs = es_kwargs
         if model is None and index and type:
-            model = ESModel(index, type, es_url=self.es_url)
+            model = ESModel(index, type, es_url=self.es_url, es_kwargs=self.es_kwargs)
         self.model = model
-        self.es_url = es_url
 
         # EmptyQuerySet instantiates QuerySet with model as None
         self._index = index
@@ -159,7 +158,7 @@ class QuerySet(object):
         return query
 
     def _do_query(self):
-        return get_es_connection(self.es_url).search(self._build_search(), indices=self.index, doc_types=self.type)
+        return get_es_connection(self.es_url, self.es_kwargs).search(self._build_search(), indices=self.index, doc_types=self.type)
 
 
     def __len__(self):
@@ -403,7 +402,7 @@ class QuerySet(object):
             params.update(defaults)
             obj = self.model(**params)
             meta = obj.get_meta()
-            meta.connection = get_es_connection(self.es_url)
+            meta.connection = get_es_connection(self.es_url, self.es_kwargs)
             meta.index=self.index
             meta.type=self.type
             obj.save(force=True)
@@ -444,7 +443,7 @@ class QuerySet(object):
         # and one to delete. Make sure that the discovery of related
         # objects is performed on the same database as the deletion.
         del_query._clear_ordering()
-        get_es_connection(self.es_url).delete_by_query(self._build_query())
+        get_es_connection(self.es_url, self.es_kwargs).delete_by_query(self._build_query())
         # Clear the result cache, in case this QuerySet gets reused.
         self._result_cache = None
 
@@ -454,7 +453,7 @@ class QuerySet(object):
         fields to the appropriate values.
         """
         query = self._build_query()
-        connection = get_es_connection(self.es_url)
+        connection = get_es_connection(self.es_url, self.es_kwargs)
         results = connection.search(query, indices=self.index, doc_types=self.type,
                                              model=self.model, scan=True)
         for item in results:
@@ -479,7 +478,7 @@ class QuerySet(object):
         search = self._build_search()
         search.facet.reset()
         search.fields=fields
-        return get_es_connection(self.es_url).search(search, indices=self.index, doc_types=self.type)
+        return get_es_connection(self.es_url, self.es_kwargs).search(search, indices=self.index, doc_types=self.type)
 
     def values_list(self, *fields, **kwargs):
         flat = kwargs.pop('flat', False)
@@ -493,10 +492,10 @@ class QuerySet(object):
         search.facet.reset()
         search.fields=fields
         if flat:
-            return get_es_connection(self.es_url).search(search, indices=self.index, doc_types=self.type,
+            return get_es_connection(self.es_url, self.es_kwargs).search(search, indices=self.index, doc_types=self.type,
                                               model=lambda x,y: y.get("fields", {}).get(fields[0], None))
 
-        return get_es_connection(self.es_url).search(search, indices=self.index, doc_types=self.type)
+        return get_es_connection(self.es_url, self.es_kwargs).search(search, indices=self.index, doc_types=self.type)
 
     def dates(self, field_name, kind, order='ASC'):
         """
@@ -514,7 +513,7 @@ class QuerySet(object):
         search.facet.add_date_facet(name=field_name.replace("__", "."),
                  field=field_name, interval=kind)
         search.size=0
-        resulset = get_es_connection(self.es_url).search(search, indices=self.index, doc_types=self.type)
+        resulset = get_es_connection(self.es_url, self.es_kwargs).search(search, indices=self.index, doc_types=self.type)
         resulset.fix_facets()
         entries = []
         for val in resulset.facets.get(field_name.replace("__", ".")).get("entries", []):
@@ -786,7 +785,7 @@ class QuerySet(object):
     def _clone(self, klass=None, setup=False, **kwargs):
         if klass is None:
             klass = self.__class__
-        c = klass(model=self.model, using=self.index, index=self.index, type=self.type, es_url=self.es_url)
+        c = klass(model=self.model, using=self.index, index=self.index, type=self.type, es_url=self.es_url, es_kwargs=self.es_kwargs)
         #copy filters/queries/facet????
         c.__dict__.update(kwargs)
         c._queries=list(self._queries)

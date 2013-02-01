@@ -238,6 +238,55 @@ class RangeFacet(Facet):
 class GeoDistanceFacet(RangeFacet):
     _internal_name = "geo_distance"
 
+    def __init__(self, name, field, pin,
+                 ranges=None, value_field=None,
+                 value_script=None, distance_unit=None,
+                 distance_type=None, params=None,
+                 **kwargs):
+        super(RangeFacet, self).__init__(**kwargs)
+        self.name = name
+        self.field = field
+        self.pin = pin
+        self.distance_unit = distance_unit
+        self.distance_type = distance_type
+        if ranges is None:
+            ranges = []
+        self.ranges = ranges
+        self.value_field = value_field
+        self.value_script = value_script
+        self.params = params
+        self.DISTANCE_TYPES = ['arc', 'plane']
+        self.UNITS = ['km', 'mi', 'miles']
+
+    def serialize(self):
+        data = {}
+
+        if not self.ranges:
+            raise RuntimeError("Invalid ranges")
+        data['ranges'] = self.ranges
+
+        data[self.field] = self.pin
+        if self.distance_type:
+            if self.distance_type not in self.DISTANCE_TYPES:
+                raise RuntimeError("Invalid distance_type: must be one of %s" %
+                    self.DISTANCE_TYPES)
+            data['distance_type'] = self.distance_type
+        if self.distance_unit:
+            if self.distance_unit not in self.UNITS:
+                raise RuntimeError("Invalid unit: must be one of %s" %
+                    self.DISTANCE_TYPES)
+            data['unit'] = self.distance_unit
+
+        if self.value_field:
+            data['value_field'] = self.value_field
+        elif self.value_script:
+            data['value_script'] = self.value_script
+            if self.params:
+                data['params'] = self.params
+
+        params = self._base_parameters()
+        params[self._internal_name] = data
+        return {self.name: params}
 
 class StatisticalFacet(Facet):
     _internal_name = "statistical"

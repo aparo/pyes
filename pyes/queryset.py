@@ -148,11 +148,11 @@ class QuerySet(object):
         query=Search(self._build_query())
         if self._ordering:
             query.sort=self._ordering
-        if self._ordering:
-            query.sort=self._ordering
         if self._facets:
             for facet in self._facets:
                 query.facet.add(facet)
+        if self._start is not None:
+            query.start = self._start
         if self._size is not None:
             query.size = self._size
         return query
@@ -792,6 +792,7 @@ class QuerySet(object):
         c._filters=list(self._filters)
         c._facets=list(self._facets)
         c._fields=list(self._fields)
+        c._ordering=list(self._ordering)
         c._size=self._size
         c._start=self._start
         return c

@@ -206,15 +206,6 @@ class Search(EqualityComparableUsingAttributeDictionary):
     def __repr__(self):
         return str(self.q)
 
-    def to_search_json(self):
-        """Convert the search to JSON.
-
-        The output of this is suitable for using as the request body for
-        search.
-
-        """
-        return encode_json(self.q)
-
 
 class Query(EqualityComparableUsingAttributeDictionary):
     """Base class for all queries.
@@ -239,15 +230,6 @@ class Query(EqualityComparableUsingAttributeDictionary):
 
         """
         return Search(query=self, **kwargs)
-
-    def to_search_json(self):
-        """Convert the query to JSON suitable for searching with.
-
-        The output of this is suitable for using as the request body for
-        search.
-
-        """
-        return encode_json({"query": self.serialize()})
 
 
 class BoolQuery(Query):
@@ -1369,10 +1351,6 @@ class PercolatorQuery(Query):
         return data
 
     def search(self, **kwargs):
-        """Disable this as it is not allowed in percolator queries."""
-        raise NotImplementedError()
-
-    def to_search_json(self):
         """Disable this as it is not allowed in percolator queries."""
         raise NotImplementedError()
 

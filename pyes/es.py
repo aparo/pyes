@@ -415,14 +415,6 @@ class ES(object):
             decoded = DotDict(decoded)
         return decoded
 
-    def _query_call(self, query_type, query, indices=None, doc_types=None, **query_params):
-        """
-        This can be used for search and count calls.
-        These are identical api calls, except for the type of query.
-        """
-        path = self._make_path(indices, doc_types, query_type)
-        return self._send_request('GET', path, query, params=query_params)
-
     def _make_path(self, indices, doc_types, *components, **kwargs):
         indices = self._validate_indices(indices)
         if 'allow_all_indices' in kwargs:
@@ -1179,17 +1171,14 @@ class ES(object):
         dictionary of search parameters using the query DSL to be passed
         directly.
         """
-        if hasattr(query, 'to_search_json'):
-            # Common case - a Search or Query object.
-            query.encoder = self.encoder
-            body = query.to_search_json()
-        elif isinstance(query, dict):
-            # A direct set of search parameters.
-            body = json.dumps(query, cls=self.encoder)
-        else:
-            raise InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
-
-        return self._query_call("_search", body, indices, doc_types, **query_params)
+        from .query import Query, Search
+        if isinstance(query, Query):
+            query = query.search()
+        if isinstance(query, Search):
+            query = query.serialize()
+        body = self._encode_query(query)
+        path = self._make_path(indices, doc_types, "_search")
+        return self._send_request('GET', path, body, params=query_params)
 
     def search(self, query, indices=None, doc_types=None, model=None, scan=False, **query_params):
         """Execute a search against one or more indices to get the resultset.
@@ -1259,7 +1248,8 @@ class ES(object):
         elif hasattr(query, 'q'):
             query = query.q
         body = self._encode_query(query)
-        return self._query_call("_count", body, indices, doc_types, **query_params)
+        path = self._make_path(indices, doc_types, "_count")
+        return self._send_request('GET', path, body, params=query_params)
 
     #--- river management
     def create_river(self, river, river_name=None):

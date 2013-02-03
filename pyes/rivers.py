@@ -39,9 +39,6 @@ class River(object):
     def __repr__(self):
         return str(self.q)
 
-    def to_json(self):
-        return json.dumps(self.q, cls=ES.encoder)
-
     def serialize(self):
         raise NotImplementedError
 

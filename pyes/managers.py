@@ -384,8 +384,6 @@ class Indices(object):
         if not isinstance(mapping, dict):
             if mapping is None:
                 mapping = {}
-            if hasattr(mapping, "to_json"):
-                mapping = mapping.to_json()
             if hasattr(mapping, "as_dict"):
                 mapping = mapping.as_dict()
 

@@ -1270,8 +1270,8 @@ class ES(object):
             query = MatchAllQuery()
         if hasattr(query, 'to_query_json'):
             query = query.to_query_json()
-        if hasattr(query, 'to_json'):
-            query = query.to_json()
+        elif hasattr(query, 'q'):
+            query = encode_json(query.q)
         return self._query_call("_count", query, indices, doc_types, **query_params)
 
     #--- river management

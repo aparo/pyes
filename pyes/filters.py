@@ -3,7 +3,7 @@ from __future__ import absolute_import
 
 from .exceptions import QueryParameterError
 from .utils import ESRange, EqualityComparableUsingAttributeDictionary
-from .es import encode_json, json
+from .es import json
 from .query import Query
 
 class Filter(EqualityComparableUsingAttributeDictionary):
@@ -16,9 +16,6 @@ class Filter(EqualityComparableUsingAttributeDictionary):
                               if kwargs.get(key) is not None}
         if kwargs:
             raise ValueError("Unknown properties: %s" % kwargs.keys())
-
-    def to_json(self):
-        return encode_json(self.q)
 
     @property
     def q(self):

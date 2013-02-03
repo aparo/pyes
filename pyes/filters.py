@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
-import copy
 
 from .exceptions import QueryParameterError
 from .utils import ESRange, EqualityComparableUsingAttributeDictionary
@@ -319,7 +318,7 @@ class TermsFilter(Filter):
     def serialize(self):
         if not self._values:
             raise RuntimeError("A least a field/value pair must be added")
-        data = copy.deepcopy(self._values)
+        data = self._values.copy()
         if self.execution:
             data['execution'] = self.execution
         return self._add_parameters({self._internal_name: data})

@@ -10,12 +10,13 @@ from .query import Query
 class Filter(EqualityComparableUsingAttributeDictionary):
     _internal_name = "undefined"
 
-    def __init__(self, _cache=None, _cache_key=None, **kwargs):
+    def __init__(self, _cache=None, _cache_key=None, _name=None, **kwargs):
         """
         Base Object for every Filter Object
         """
-        self._cache=_cache
-        self._cache_key=_cache_key
+        self._cache = _cache
+        self._cache_key = _cache_key
+        self._name = _name
 
     def serialize(self):
         raise NotImplementedError
@@ -25,9 +26,11 @@ class Filter(EqualityComparableUsingAttributeDictionary):
         Extend the serializable dict adding global parameters if they are set
         """
         if self._cache:
-            data["_cache"]=self._cache
+            data["_cache"] = self._cache
         if self._cache_key:
-            data["_cache_key"]=self._cache_key
+            data["_cache_key"] = self._cache_key
+        if self._name:
+            data["_name"] = self._name
         return data
 
     @property
@@ -232,11 +235,9 @@ class ScriptFilter(Filter):
 class TermFilter(Filter):
     _internal_name = "term"
 
-    def __init__(self, field=None, value=None, _name=None, **kwargs):
+    def __init__(self, field=None, value=None, **kwargs):
         super(TermFilter, self).__init__(**kwargs)
         self._values = {}
-        self._name = _name
-
         if field is not None and value is not None:
             self.add(field, value)
 
@@ -246,9 +247,6 @@ class TermFilter(Filter):
     def serialize(self):
         if not self._values:
             raise RuntimeError("A least a field/value pair must be added")
-        result = {self._internal_name: self._values}
-        if self._name:
-            result[self._internal_name]['_name'] = self._name
         return self._add_parameters({self._internal_name: self._values})
 
 
@@ -300,7 +298,7 @@ class LimitFilter(Filter):
 
     def __init__(self, value=100, **kwargs):
         super(LimitFilter, self).__init__(**kwargs)
-        self.value=value
+        self.value = value
 
     def serialize(self):
         return self._add_parameters({self._internal_name: {"value":self.value}})
@@ -308,12 +306,10 @@ class LimitFilter(Filter):
 class TermsFilter(Filter):
     _internal_name = "terms"
 
-    def __init__(self, field=None, values=None, _name=None, execution=None, **kwargs):
+    def __init__(self, field=None, values=None, execution=None, **kwargs):
         super(TermsFilter, self).__init__(**kwargs)
         self._values = {}
-        self._name = _name
         self.execution = execution
-
         if field is not None and values is not None:
             self.add(field, values)
 
@@ -326,8 +322,6 @@ class TermsFilter(Filter):
         data = copy.deepcopy(self._values)
         if self.execution:
             data['execution'] = self.execution
-        if self._name:
-            data['_name'] = self._name
         return self._add_parameters({self._internal_name: data})
 
 

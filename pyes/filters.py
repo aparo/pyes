@@ -252,6 +252,13 @@ class TermFilter(Filter):
         return self._add_parameters({self._internal_name: self._values})
 
 
+class TypeFilter(TermFilter):
+    _internal_name = "type"
+
+    def __init__(self, type, **kwargs):
+        super(TypeFilter, self).__init__("value", type, **kwargs)
+
+
 class ExistsFilter(TermFilter):
     _internal_name = "exists"
 

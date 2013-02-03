@@ -955,7 +955,7 @@ class ES(object):
                 cmd[op_type]['_routing'] = querystring_args['routing']
             if 'percolate' in querystring_args:
                 cmd[op_type]['percolate'] = querystring_args['percolate']
-            if id is not None:#None to support 0 as id
+            if id is not None: #None to support 0 as id
                 cmd[op_type]['_id'] = id
 
             if isinstance(doc, dict):
@@ -1083,16 +1083,8 @@ class ES(object):
         """
         Delete documents from one or more indices and one or more types based on a query.
         """
-        if hasattr(query, 'to_query_json'):
-            # Then is a Query object.
-            body = query.to_query_json()
-        elif isinstance(query, dict):
-            # A direct set of search parameters.
-            body = encode_json(query)
-        else:
-            raise InvalidQuery("delete_by_query() must be supplied with a Query object, or a dict")
-
         path = self._make_path(indices, doc_types, '_query')
+        body = self._encode_query(query)
         return self._send_request('DELETE', path, body, query_params)
 
     @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.delete_mapping")
@@ -1251,15 +1243,11 @@ class ES(object):
         query must be a dictionary or a Query object that will convert to Query DSL.
         Note: reindex is only available in my ElasticSearch branch on github.
         """
-        if not isinstance(query, basestring):
-            if isinstance(query, dict):
-                if 'query' in query:
-                    query = query['query']
-                query = json.dumps(query, cls=self.encoder)
-            elif hasattr(query, "to_query_json"):
-                query = query.to_query_json(inner=True)
         path = self._make_path(indices, doc_types, "_reindexbyquery")
-        return self._send_request('POST', path, query, query_params)
+        if isinstance(query, dict) and "query" in query:
+            query = query["query"]
+        body = self._encode_query(query)
+        return self._send_request('POST', path, body, query_params)
 
     def count(self, query=None, indices=None, doc_types=None, **query_params):
         """
@@ -1268,11 +1256,10 @@ class ES(object):
         if query is None:
             from .query import MatchAllQuery
             query = MatchAllQuery()
-        if hasattr(query, 'to_query_json'):
-            query = query.to_query_json()
         elif hasattr(query, 'q'):
-            query = encode_json(query.q)
-        return self._query_call("_count", query, indices, doc_types, **query_params)
+            query = query.q
+        body = self._encode_query(query)
+        return self._query_call("_count", body, indices, doc_types, **query_params)
 
     #--- river management
     def create_river(self, river, river_name=None):
@@ -1367,17 +1354,20 @@ class ES(object):
         if doc_types is None:
             raise RuntimeError('percolate() must be supplied with at least one doc_type')
 
-        if hasattr(query, 'to_query_json'):
-            # Then is a Query object.
-            body = query.to_query_json()
-        elif isinstance(query, dict):
-            # A direct set of search parameters.
-            body = json.dumps(query, cls=self.encoder)
-        else:
-            raise InvalidQuery("percolate() must be supplied with a Query object, or a dict")
-
         path = self._make_path(index, doc_types, '_percolate')
-        return self._send_request('GET', path, body=body)
+        body = self._encode_query(query)
+        return self._send_request('GET', path, body)
+
+    def _encode_query(self, query):
+        from .query import Query
+
+        if isinstance(query, Query):
+            query = query.serialize()
+        if isinstance(query, dict):
+            return json.dumps(query, cls=self.encoder)
+
+        raise InvalidQuery("`query` must be Query or dict instance, not %s"
+                           % query.__class__)
 
 
 def decode_json(data):

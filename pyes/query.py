@@ -249,15 +249,6 @@ class Query(EqualityComparableUsingAttributeDictionary):
         """
         return encode_json({"query": self.serialize()})
 
-    def to_query_json(self):
-        """Convert the query to JSON using the query DSL.
-
-        The output of this is suitable for using as the request body for count,
-        delete_by_query and reindex.
-
-        """
-        return encode_json(self.serialize())
-
 
 class BoolQuery(Query):
     """A boolean combination of other queries.

@@ -1088,7 +1088,7 @@ class ES(object):
             body = query.to_query_json()
         elif isinstance(query, dict):
             # A direct set of search parameters.
-            body = json.dumps(query, cls=ES.encoder)
+            body = encode_json(query)
         else:
             raise InvalidQuery("delete_by_query() must be supplied with a Query object, or a dict")
 

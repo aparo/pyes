@@ -435,7 +435,24 @@ class MatchAllFilter(Filter):
         return {}
 
 
-class HasChildFilter(Filter):
+class HasFilter(Filter):
+
+    def __init__(self, type, query, _scope=None, **kwargs):
+        if not isinstance(query, Query):
+            raise RuntimeError("%s expects a Query" % self.__class__.__name__)
+        super(HasFilter, self).__init__(**kwargs)
+        self.query = query
+        self.type = type
+        self._scope = _scope
+
+    def _serialize(self):
+        data = {"query": self.query.serialize(), "type": self.type}
+        if self._scope is not None:
+            data["_scope"] = self._scope
+        return data
+
+
+class HasChildFilter(HasFilter):
     """
     The has_child filter accepts a query and the child type to run against,
     and results in parent documents that have child docs matching the query
@@ -443,42 +460,14 @@ class HasChildFilter(Filter):
 
     _internal_name = "has_child"
 
-    def __init__(self, type, query, _scope=None, **kwargs):
-        if not isinstance(query, Query):
-            raise RuntimeError("HasChildFilter expects a Query")
-        super(HasChildFilter, self).__init__(**kwargs)
-        self.query = query
-        self.type = type
-        self._scope = _scope
 
-    def _serialize(self):
-        data = {"query": self.query.serialize(), "type": self.type}
-        if self._scope is not None:
-            data["_scope"] = self._scope
-        return data
-
-
-class HasParentFilter(Filter):
+class HasParentFilter(HasFilter):
     """
     The has_parent filter accepts a query and the parent type to run against,
     and results in child documents that have parent docs matching the query
     """
 
     _internal_name = "has_parent"
-
-    def __init__(self, type, query, _scope=None, **kwargs):
-        if not isinstance(query, Query):
-            raise RuntimeError("HasParentFilter expects a Query")
-        super(HasParentFilter, self).__init__(**kwargs)
-        self.query = query
-        self.type = type
-        self._scope = _scope
-
-    def _serialize(self):
-        data = {"query": self.query.serialize(), "type": self.type}
-        if self._scope is not None:
-            data["_scope"] = self._scope
-        return data
 
 
 class NestedFilter(Filter):

@@ -1,18 +1,11 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
-
-try:
-    # For Python < 2.6 or people using a newer version of simplejson
-    import simplejson as json
-except ImportError:
-    # For Python >= 2.6
-    import json
-
-from .utils import clean_string, ESRange, EqualityComparableUsingAttributeDictionary
+from .exceptions import InvalidQuery, InvalidParameterQuery, QueryError, \
+    ScriptFieldsError
+from .facets import FacetFactory
+from .filters import ANDFilter, Filter
 from .highlight import HighLighter
 from .scriptfields import ScriptFields
-from .exceptions import InvalidQuery, InvalidParameterQuery, QueryError, ScriptFieldsError
-from .es import ES, encode_json
+from .utils import clean_string, ESRange, EqualityComparableUsingAttributeDictionary
+
 
 class FieldParameter(EqualityComparableUsingAttributeDictionary):
     def __init__(self, field,
@@ -88,7 +81,6 @@ class Search(EqualityComparableUsingAttributeDictionary):
         fields: if is [], the _source is not returned
         """
         if not index_boost: index_boost = {}
-        from .facets import FacetFactory
         self.query = query
         self.filter = filter
         self.fields = fields or []
@@ -367,8 +359,6 @@ class ConstantScoreQuery(Query):
         combined with an ANDFilter.
 
         """
-        from .filters import Filter
-
         if isinstance(filter, Filter):
             self.filters.append(filter)
         else:
@@ -392,8 +382,6 @@ class ConstantScoreQuery(Query):
         if len(self.filters) == 1:
             filters.update(self.filters[0].serialize())
         else:
-            from .filters import ANDFilter
-
             filters.update(ANDFilter(self.filters).serialize())
         if not filters:
             raise QueryError("A filter is required")

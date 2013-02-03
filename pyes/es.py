@@ -1,54 +1,39 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
 from __future__ import with_statement
-import urllib
-from .helpers import SettingsBuilder
-from .models import ElasticSearchModel, DotDict, ListBulker
 
-try:
-    # For Python < 2.6 or people using a newer version of simplejson
-    import simplejson as json
-    from simplejson import JSONDecoder, JSONEncoder
-except ImportError:
-    # For Python >= 2.6
-    import json
-    from json import JSONDecoder, JSONEncoder
-
-import codecs
-import random
 from datetime import date, datetime
+from decimal import Decimal
 from urllib import urlencode
 from urlparse import urlunsplit, urlparse
 import base64
+import codecs
+import random
 import time
+import urllib
 import weakref
-from decimal import Decimal
+try:
+    import simplejson as json
+except ImportError:
+    import json
+
+from . import logger
+from .connection_http import connect as http_connect
+from .convert_errors import raise_if_error
+from .decorators import deprecated
+from .exceptions import ElasticSearchException, ReduceSearchPhaseException, \
+    InvalidQuery, VersionConflictEngineException
+from .helpers import SettingsBuilder
 from .managers import Indices, Cluster
+from .mappings import Mapper
+from .models import ElasticSearchModel, DotDict, ListBulker
+from .query import Search, Query, MatchAllQuery
+from .rivers import River
+from .utils import make_path
 try:
     from .connection import connect as thrift_connect
     from .pyesthrift.ttypes import Method, RestRequest
-
 except ImportError:
-    from .fakettypes import Method, RestRequest
-
     thrift_connect = None
-
-from .connection_http import connect as http_connect
-from . import logger
-from .mappings import Mapper
-
-from .convert_errors import raise_if_error
-from .exceptions import (ElasticSearchException, InvalidQuery,
-                         ReduceSearchPhaseException, VersionConflictEngineException)
-from .decorators import deprecated
-from .utils import make_path
-
-__all__ = ['ES', 'file_to_attachment', 'decode_json']
-
-#
-# models
-#
+    from .fakettypes import Method, RestRequest
 
 
 def file_to_attachment(filename, filehandler=None):
@@ -65,7 +50,7 @@ def file_to_attachment(filename, filehandler=None):
         }
 
 
-class ESJsonEncoder(JSONEncoder):
+class ESJsonEncoder(json.JSONEncoder):
     def default(self, value):
         """Convert rogue and mysterious data types.
         Conversion notes:
@@ -87,10 +72,10 @@ class ESJsonEncoder(JSONEncoder):
         return super(ESJsonEncoder, self).default(value)
 
 
-class ESJsonDecoder(JSONDecoder):
+class ESJsonDecoder(json.JSONDecoder):
     def __init__(self, *args, **kwargs):
         kwargs['object_hook'] = self.dict_to_object
-        json.JSONDecoder.__init__(self, *args, **kwargs)
+        super(ESJsonDecoder, self).__init__(*args, **kwargs)
 
     def string_to_datetime(self, obj):
         """
@@ -1171,7 +1156,6 @@ class ES(object):
         dictionary of search parameters using the query DSL to be passed
         directly.
         """
-        from .query import Query, Search
         if isinstance(query, Query):
             query = query.search()
         if isinstance(query, Search):
@@ -1187,7 +1171,6 @@ class ES(object):
         dictionary of search parameters using the query DSL to be passed
         directly.
         """
-        from .query import Search, Query
         if isinstance(query, Search):
             search = query
         elif isinstance(query, (Query, dict)):
@@ -1243,7 +1226,6 @@ class ES(object):
         Execute a query against one or more indices and get hits count.
         """
         if query is None:
-            from .query import MatchAllQuery
             query = MatchAllQuery()
         elif hasattr(query, 'q'):
             query = query.q
@@ -1256,7 +1238,7 @@ class ES(object):
         """
         Create a river
         """
-        if hasattr(river, "q"):
+        if isinstance(river, River):
             river_name = river.name
             river = river.q
         return self._send_request('PUT', '/_river/%s/_meta' % river_name, river)
@@ -1265,7 +1247,7 @@ class ES(object):
         """
         Delete a river
         """
-        if hasattr(river, "q"):
+        if isinstance(river, River):
             river_name = river.name
         return self._send_request('DELETE', '/_river/%s/' % river_name)
 
@@ -1349,8 +1331,6 @@ class ES(object):
         return self._send_request('GET', path, body)
 
     def _encode_query(self, query):
-        from .query import Query
-
         if isinstance(query, Query):
             query = query.serialize()
         if isinstance(query, dict):
@@ -1380,7 +1360,6 @@ class ResultSet(object):
         clean_highlight: removed empty highlight
         search: a Search object.
         """
-        from .query import Search
         if not isinstance(search, Search):
             raise InvalidQuery("ResultSet must be supplied with a Search object")
 

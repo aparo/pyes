@@ -1,10 +1,7 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
-
 from .exceptions import QueryParameterError
 from .utils import ESRange, EqualityComparableUsingAttributeDictionary
 from .es import json
-from .query import Query
+
 
 class Filter(EqualityComparableUsingAttributeDictionary):
 
@@ -33,7 +30,6 @@ class Filter(EqualityComparableUsingAttributeDictionary):
     @property
     def _internal_name(self):
         raise NotImplementedError
-
 
 
 class FilterList(Filter):
@@ -435,8 +431,6 @@ class MatchAllFilter(Filter):
 class HasFilter(Filter):
 
     def __init__(self, type, query, _scope=None, **kwargs):
-        if not isinstance(query, Query):
-            raise RuntimeError("%s expects a Query" % self.__class__.__name__)
         super(HasFilter, self).__init__(**kwargs)
         self.query = query
         self.type = type

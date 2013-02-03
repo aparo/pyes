@@ -1,15 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
-
-try:
-    # For Python >= 2.6
-    import json
-except ImportError:
-    # For Python < 2.6 or people using a newer version of simplejson
-    import simplejson as json
-
-from .es import ES
-
 class River(object):
     def __init__(self, index_name=None, index_type=None, bulk_size=100, bulk_timeout=None):
         self.name = index_name

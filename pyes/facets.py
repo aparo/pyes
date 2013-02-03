@@ -1,10 +1,7 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
 from .utils import EqualityComparableUsingAttributeDictionary
 from .filters import Filter, TermFilter, TermsFilter, ANDFilter, NotFilter
 
 
-#--- Facet
 class FacetFactory(EqualityComparableUsingAttributeDictionary):
     def __init__(self):
         self.facets = []
@@ -27,7 +24,7 @@ class FacetFactory(EqualityComparableUsingAttributeDictionary):
 
     def reset(self):
         """Reset the facets"""
-        self.facets=[]
+        self.facets = []
     @property
     def q(self):
         res = {}
@@ -68,7 +65,7 @@ class QueryFacet(Facet):
 
     def serialize(self):
         data = self._base_parameters()
-        data[self._internal_name]= self.query.serialize()
+        data[self._internal_name] = self.query.serialize()
         return {self.name: data}
 
 
@@ -82,7 +79,7 @@ class FilterFacet(Facet):
 
     def serialize(self):
         data = self._base_parameters()
-        data[self._internal_name]= self.query.serialize()
+        data[self._internal_name] = self.query.serialize()
         return {self.name: data}
 
 
@@ -138,7 +135,7 @@ class HistogramFacet(Facet):
             elif self.time_interval:
                 data['time_interval'] = self.time_interval
         params = self._base_parameters()
-        params[self._internal_name]= data
+        params[self._internal_name] = data
         return {self.name: params}
 
 
@@ -182,7 +179,7 @@ class DateHistogramFacet(Facet):
                 raise RuntimeError("Invalid key_field: value_field or value_script required")
 
         facet = self._base_parameters()
-        facet[self._internal_name]= data
+        facet[self._internal_name] = data
         return {self.name: facet}
 
 
@@ -231,7 +228,7 @@ class RangeFacet(Facet):
                 data['params'] = self.params
 
         params = self._base_parameters()
-        params[self._internal_name]= data
+        params[self._internal_name] = data
         return {self.name: params}
 
 
@@ -309,7 +306,7 @@ class StatisticalFacet(Facet):
                 data['params'] = self.params
 
         params = self._base_parameters()
-        params[self._internal_name]= data
+        params[self._internal_name] = data
         return {self.name: params}
 
 
@@ -361,7 +358,7 @@ class TermFacet(Facet):
         if self.all_terms:
             data['all_terms'] = self.all_terms
         params = self._base_parameters()
-        params[self._internal_name]= data
+        params[self._internal_name] = data
         return {self.name: params}
 
 
@@ -411,7 +408,7 @@ class TermStatsFacet(Facet):
                 data['params'] = self.params
 
         params = self._base_parameters()
-        params[self._internal_name]= data
+        params[self._internal_name] = data
         return {self.name: params}
 
 class FacetFilter(Filter):
@@ -446,6 +443,3 @@ class FacetQueryWrap(EqualityComparableUsingAttributeDictionary):
 
     def serialize(self):
         return {"query": self.wrap_object.serialize()}
-
-
-

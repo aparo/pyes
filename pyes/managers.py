@@ -440,6 +440,28 @@ class Cluster(object):
 
     #TODO: node shutdown, update settings
 
+    def shutdown(self, all_nodes=False, master=False, local=False, nodes=[],
+                 delay=None):
+        if all_nodes:
+            patn = make_path('_shutdown')
+        elif master:
+            path = make_path("_cluster", "nodes", "_master", "_shutdown")
+        elif nodes:
+            path = make_path("_cluster", "nodes", ",".join(nodes), "_shutdown")
+        elif local:
+            path = make_path("_cluster", "nodes", "_local", "_shutdown")
+        if delay:
+            try:
+                int(delay)
+                path += "?%s"%delay
+            except ValueError:
+                raise ValueError("%s is not a valid delay time"%delay)
+            except TypeError:
+                raise TypeError("%s is not of type int or string"%delay)
+        return self.conn._send_request('GET', path)
+
+
+
     def health(self, indices=None, level="cluster", wait_for_status=None,
                wait_for_relocating_shards=None, timeout=30):
         """

@@ -1227,8 +1227,6 @@ class ES(object):
         """
         if query is None:
             query = MatchAllQuery()
-        elif hasattr(query, 'q'):
-            query = query.q
         body = self._encode_query(query)
         path = self._make_path(indices, doc_types, "_count")
         return self._send_request('GET', path, body, params=query_params)
@@ -1239,9 +1237,11 @@ class ES(object):
         Create a river
         """
         if isinstance(river, River):
+            body = river.serialize()
             river_name = river.name
-            river = river.q
-        return self._send_request('PUT', '/_river/%s/_meta' % river_name, river)
+        else:
+            body = river
+        return self._send_request('PUT', '/_river/%s/_meta' % river_name, body)
 
     def delete_river(self, river, river_name=None):
         """

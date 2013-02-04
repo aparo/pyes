@@ -14,10 +14,6 @@ class Filter(EqualityComparableUsingAttributeDictionary):
         if kwargs:
             raise ValueError("Unknown properties: %s" % kwargs.keys())
 
-    @property
-    def q(self):
-        return {"filter": self.serialize()}
-
     def serialize(self):
         data = self._serialize()
         if self._extra_values:

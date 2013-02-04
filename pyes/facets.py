@@ -3,6 +3,7 @@ from .filters import Filter, TermFilter, TermsFilter, ANDFilter, NotFilter
 
 
 class FacetFactory(EqualityComparableUsingAttributeDictionary):
+
     def __init__(self):
         self.facets = []
 
@@ -25,12 +26,12 @@ class FacetFactory(EqualityComparableUsingAttributeDictionary):
     def reset(self):
         """Reset the facets"""
         self.facets = []
-    @property
-    def q(self):
+
+    def serialize(self):
         res = {}
         for facet in self.facets:
             res.update(facet.serialize())
-        return {"facets": res}
+        return res
 
 
 class Facet(EqualityComparableUsingAttributeDictionary):
@@ -50,9 +51,16 @@ class Facet(EqualityComparableUsingAttributeDictionary):
         if self.is_global:
             data['global'] = self.is_global
         if self.facet_filter:
-            data.update({'facet_filter': self.facet_filter.serialize()})
-
+            data['facet_filter'] = self.facet_filter.serialize()
         return data
+
+
+# TODO: remove these
+FacetFilter = Filter
+TermFacetFilter = TermFilter
+TermsFacetFilter = TermsFilter
+ANDFacetFilter = ANDFilter
+NotFacetFilter = NotFilter
 
 
 class QueryFacet(Facet):
@@ -410,28 +418,6 @@ class TermStatsFacet(Facet):
         params = self._base_parameters()
         params[self._internal_name] = data
         return {self.name: params}
-
-class FacetFilter(Filter):
-    @property
-    def q(self):
-        res = {"facet_filter": self.serialize()}
-        return res
-
-
-class TermFacetFilter(TermFilter, FacetFilter):
-    pass
-
-
-class TermsFacetFilter(TermsFilter, FacetFilter):
-    pass
-
-
-class ANDFacetFilter(ANDFilter, FacetFilter):
-    pass
-
-
-class NotFacetFilter(NotFilter, FacetFilter):
-    pass
 
 
 class FacetQueryWrap(EqualityComparableUsingAttributeDictionary):

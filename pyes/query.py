@@ -105,10 +105,6 @@ class Search(EqualityComparableUsingAttributeDictionary):
         """
         return self.facet
 
-    @property
-    def q(self):
-        return self.serialize()
-
     def serialize(self):
         """Serialize the search to a structure as passed for a search body.
 
@@ -123,6 +119,8 @@ class Search(EqualityComparableUsingAttributeDictionary):
                 raise InvalidQuery("Invalid query")
         if self.filter:
             res['filter'] = self.filter.serialize()
+        if self.facet.facets:
+            res['facets'] = self.facet.serialize()
         if self.fields:
             res['fields'] = self.fields
         if self.size is not None:
@@ -150,8 +148,6 @@ class Search(EqualityComparableUsingAttributeDictionary):
             res['indices_boost'] = self.index_boost
         if self.min_score:
             res['min_score'] = self.min_score
-        if self.facet.facets:
-            res.update(self.facet.q)
         if self.stats:
             res['stats'] = self.stats
         if self.partial_fields:
@@ -196,7 +192,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
         return self
 
     def __repr__(self):
-        return str(self.q)
+        return str(self.serialize())
 
 
 class Query(EqualityComparableUsingAttributeDictionary):
@@ -854,9 +850,6 @@ class FilterQuery(Query):
             raise RuntimeError("A least one filter must be declared")
         return {self._internal_name: {"filter": filters}}
 
-#    def __repr__(self):
-#        return str(self.q)
-
 
 class PrefixQuery(Query):
     def __init__(self, field=None, prefix=None, boost=None, **kwargs):
@@ -1287,9 +1280,6 @@ class CustomScoreQuery(Query):
         if self.lang:
             data['lang'] = self.lang
         return {self._internal_name: data}
-
-#    def __repr__(self):
-#        return str(self.q)
 
 
 class IdsQuery(Query):

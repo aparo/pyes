@@ -1,4 +1,5 @@
 class River(object):
+
     def __init__(self, index_name=None, index_type=None, bulk_size=100, bulk_timeout=None):
         self.name = index_name
         self.index_name = index_name
@@ -6,9 +7,8 @@ class River(object):
         self.bulk_size = bulk_size
         self.bulk_timeout = bulk_timeout
 
-    @property
-    def q(self):
-        res = self.serialize()
+    def serialize(self):
+        res = self._serialize()
         index = {}
         if self.name:
             index['name'] = self.name
@@ -25,9 +25,9 @@ class River(object):
         return res
 
     def __repr__(self):
-        return str(self.q)
+        return str(self.serialize())
 
-    def serialize(self):
+    def _serialize(self):
         raise NotImplementedError
 
 
@@ -47,7 +47,7 @@ class RabbitMQRiver(River):
         self.exchange = exchange
         self.routing_key = routing_key
 
-    def serialize(self):
+    def _serialize(self):
         return {
             "type": self.type,
             self.type: {
@@ -64,6 +64,7 @@ class RabbitMQRiver(River):
 
 
 class TwitterRiver(River):
+
     type = "twitter"
 
     def __init__(self, user=None, password=None, **kwargs):
@@ -79,7 +80,7 @@ class TwitterRiver(River):
         self.locations = kwargs.pop('locations', None)
         super(TwitterRiver, self).__init__(**kwargs)
 
-    def serialize(self):
+    def _serialize(self):
         result = {"type": self.type}
         if self.user and self.password:
             result[self.type] = {"user": self.user,
@@ -106,7 +107,9 @@ class TwitterRiver(River):
             result[self.type]['filter'] = filter
         return result
 
+
 class CouchDBRiver(River):
+
     type = "couchdb"
 
     def __init__(self, host="localhost", port=5984, db="mydb", filter=None,

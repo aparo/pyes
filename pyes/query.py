@@ -113,7 +113,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
         if self.query:
             if isinstance(self.query, dict):
                 res["query"] = self.query
-            elif hasattr(self.query, "serialize"):
+            elif isinstance(self.query, Query):
                 res["query"] = self.query.serialize()
             else:
                 raise InvalidQuery("Invalid query")
@@ -1324,7 +1324,7 @@ class PercolatorQuery(Query):
 
         """
         data = {'doc': self.doc}
-        if hasattr(self.query, 'serialize'):
+        if isinstance(self.query, Query):
             data['query'] = self.query.serialize()
         return data
 

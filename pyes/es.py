@@ -361,7 +361,7 @@ class ES(object):
         if not self.connection:
             self._init_connection()
         if body:
-            if not isinstance(body, dict) and hasattr(body, "as_dict"):
+            if isinstance(body, SettingsBuilder):
                 body = body.as_dict()
             if isinstance(body, dict):
                body = json.dumps(body, cls=self.encoder)
@@ -1300,18 +1300,16 @@ class ES(object):
 
         Any kwargs will be added to the document as extra properties.
         """
-        path = make_path('_percolator', index, name)
-
-        if hasattr(query, 'serialize'):
-            query = {'query': query.serialize()}
-
+        if isinstance(query, Query):
+            query = {"query": query.serialize()}
         if not isinstance(query, dict):
             raise InvalidQuery("create_percolator() must be supplied with a Query object or dict")
-            # A direct set of search parameters.
-        query.update(kwargs)
-        body = json.dumps(query, cls=self.encoder)
+        if kwargs:
+            query.update(kwargs)
 
-        return self._send_request('PUT', path, body=body)
+        path = make_path('_percolator', index, name)
+        body = json.dumps(query, cls=self.encoder)
+        return self._send_request('PUT', path, body)
 
     def delete_percolator(self, index, name):
         """

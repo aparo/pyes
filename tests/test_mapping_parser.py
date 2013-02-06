@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
-from .estestcase import ESTestCase
-from pyes import decode_json
+from tests.estestcase import ESTestCase
+from pyes import json, ES
 from pyes.mappings import Mapper
 
 class MapperTestCase(ESTestCase):
     def test_parser(self):
-        self.datamap = decode_json(self.get_datafile("map.json"))
+        self.datamap = json.loads(self.get_datafile("map.json"), cls=ES.decoder)
         _ = Mapper(self.datamap)
 
         #mapping = self.conn.get_mapping()

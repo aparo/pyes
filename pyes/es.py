@@ -184,13 +184,13 @@ class ES(object):
             self.dump_curl = None
 
         #used in bulk
-        self._bulk_size = bulk_size #size of the bulk
+        self._bulk_size = bulk_size  #size of the bulk
         self.bulker = bulker_class(weakref.proxy(self), bulk_size=bulk_size,
                                    raise_on_bulk_item_failure=raise_on_bulk_item_failure)
         self.bulker_class = bulker_class
         self._raise_on_bulk_item_failure = raise_on_bulk_item_failure
 
-        self.info = {} #info about the current server
+        self.info = {}  #info about the current server
         if encoder:
             self.encoder = encoder
         if decoder:
@@ -932,7 +932,7 @@ class ES(object):
                 cmd[op_type]['_routing'] = querystring_args['routing']
             if 'percolate' in querystring_args:
                 cmd[op_type]['percolate'] = querystring_args['percolate']
-            if id is not None: #None to support 0 as id
+            if id is not None:  #None to support 0 as id
                 cmd[op_type]['_id'] = id
 
             if isinstance(doc, dict):
@@ -1338,16 +1338,6 @@ class ES(object):
                            % query.__class__)
 
 
-def decode_json(data):
-    """ Decode some json to dict"""
-    return json.loads(data, cls=ES.decoder)
-
-
-def encode_json(data):
-    """ Encode some json to dict"""
-    return json.dumps(data, cls=ES.encoder)
-
-
 class ResultSet(object):
 
     def __init__(self, connection, search, indices=None, doc_types=None, query_params=None,
@@ -1376,7 +1366,7 @@ class ResultSet(object):
         self.auto_fix_keys = auto_fix_keys
         self.auto_clean_highlight = auto_clean_highlight
 
-        self.iterpos = 0 #keep track of iterator position
+        self.iterpos = 0  #keep track of iterator position
         self.start = query_params.get("start", search.start) or 0
         self._max_item = query_params.get("size", search.size)
         self._current_item = 0
@@ -1384,7 +1374,7 @@ class ResultSet(object):
 
     def _do_search(self, auto_increment=False):
         self.iterpos = 0
-        process_post_query = True #used to skip results in first scan
+        process_post_query = True  #used to skip results in first scan
         if self.scroller_id is None:
             if auto_increment:
                 self.start += self.chuck_size

@@ -1328,6 +1328,12 @@ class ES(object):
         body = self._encode_query(query)
         return self._send_request('GET', path, body)
 
+    def encode_json(self, serializable):
+        """
+        Serialize to json a serializable object (Search, Query, Filter, etc).
+        """
+        return json.dumps(serializable.serialize(), cls=self.encoder)
+
     def _encode_query(self, query):
         if isinstance(query, Query):
             query = query.serialize()

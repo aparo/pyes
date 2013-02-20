@@ -113,7 +113,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
             res['filter'] = self.filter.serialize()
         if self.facet.facets:
             res['facets'] = self.facet.serialize()
-        if self.fields:
+        if self.fields is not None: #Deal properly with self.fields = []
             res['fields'] = self.fields
         if self.size is not None:
             res['size'] = self.size

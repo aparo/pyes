@@ -88,13 +88,14 @@ class BoolFilter(Filter):
     _internal_name = "bool"
 
     def __init__(self, must=None, must_not=None, should=None,
+                 minimum_number_should_match=None,
                  **kwargs):
         super(BoolFilter, self).__init__(**kwargs)
 
         self._must = []
         self._must_not = []
         self._should = []
-
+        self.minimum_number_should_match = minimum_number_should_match
         if must:
             self.add_must(must)
 
@@ -127,6 +128,8 @@ class BoolFilter(Filter):
 
     def _serialize(self):
         filters = {}
+        if self.minimum_number_should_match:
+            filters["minimum_number_should_match"] = self.minimum_number_should_match
         if self._must:
             filters["must"] = [f.serialize() for f in self._must]
         if self._must_not:

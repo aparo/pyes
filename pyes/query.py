@@ -77,7 +77,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
         if not index_boost: index_boost = {}
         self.query = query
         self.filter = filter
-        self.fields = fields or []
+        self.fields = fields
         self.start = start
         self.size = size
         self._highlight = highlight
@@ -930,6 +930,59 @@ class TextQuery(Query):
 
     def _serialize(self):
         return self.queries
+
+
+class MultiMatchQuery(Query):
+    """
+    A family of match queries that accept text/numerics/dates, analyzes it, and constructs a query out of it.
+    Replaces TextQuery.
+
+    Examples:
+
+    q = MatchQuery('book_title', 'elasticsearch')
+    results = conn.search(q)
+
+    q = MatchQuery('book_title', 'elasticsearch python', type='phrase')
+    results = conn.search(q)
+    """
+    _internal_name = "multi_match"
+    _valid_types = ['boolean', "phrase", "phrase_prefix"]
+    _valid_operators = ['or', "and"]
+
+    def __init__(self, fields, text, type="boolean", slop=0, fuzziness=None,
+                 prefix_length=0, max_expansions=2147483647, rewrite=None,
+                 operator="or", analyzer=None, use_dis_max=True,
+                 **kwargs):
+        super(MultiMatchQuery, self).__init__(**kwargs)
+
+        if type not in self._valid_types:
+            raise QueryError("Invalid value '%s' for type: allowed values are %s" % (type, self._valid_types))
+        if operator not in self._valid_operators:
+            raise QueryError(
+                "Invalid value '%s' for operator: allowed values are %s" % (operator, self._valid_operators))
+        if not fields:
+            raise QueryError("At least one field must be defined for multi_match")
+
+        query = {'type': type, 'query': text, 'fields': fields}
+        query['use_dis_max']=use_dis_max
+        if slop:
+            query["slop"] = slop
+        if fuzziness is not None:
+            query["fuzziness"] = fuzziness
+        if prefix_length:
+            query["prefix_length"] = prefix_length
+        if max_expansions != 2147483647:
+            query["max_expansions"] = max_expansions
+        if operator:
+            query["operator"] = operator
+        if analyzer:
+            query["analyzer"] = analyzer
+        if rewrite:
+            query["rewrite"] = rewrite
+        self.query = query
+
+    def _serialize(self):
+        return self.query
 
 
 class RegexTermQuery(TermQuery):

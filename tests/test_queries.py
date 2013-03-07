@@ -2,6 +2,7 @@
 from __future__ import absolute_import
 import unittest
 from .estestcase import ESTestCase
+from pyes.es import json
 from pyes.query import *
 from pyes.filters import TermFilter, ANDFilter, ORFilter, RangeFilter, RawFilter, IdsFilter, MatchAllFilter, NotFilter
 from pyes.utils import ESRangeOp

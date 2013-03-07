@@ -1,53 +1,39 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
 from __future__ import with_statement
-import urllib
-from .helpers import SettingsBuilder
-from .models import ElasticSearchModel, DotDict, ListBulker
 
-try:
-    # For Python < 2.6 or people using a newer version of simplejson
-    import simplejson as json
-    from simplejson import JSONDecoder, JSONEncoder
-except ImportError:
-    # For Python >= 2.6
-    import json
-    from json import JSONDecoder, JSONEncoder
-
-import random
 from datetime import date, datetime
+from decimal import Decimal
 from urllib import urlencode
 from urlparse import urlunsplit, urlparse
 import base64
+import codecs
+import random
 import time
+import urllib
 import weakref
-from decimal import Decimal
+try:
+    import simplejson as json
+except ImportError:
+    import json
+
+from . import logger
+from .connection_http import connect as http_connect
+from .convert_errors import raise_if_error
+from .decorators import deprecated
+from .exceptions import ElasticSearchException, ReduceSearchPhaseException, \
+    InvalidQuery, VersionConflictEngineException
+from .helpers import SettingsBuilder
 from .managers import Indices, Cluster
+from .mappings import Mapper
+from .models import ElasticSearchModel, DotDict, ListBulker
+from .query import Search, Query, MatchAllQuery
+from .rivers import River
+from .utils import make_path
 try:
     from .connection import connect as thrift_connect
     from .pyesthrift.ttypes import Method, RestRequest
-
 except ImportError:
-    from .fakettypes import Method, RestRequest
-
     thrift_connect = None
-
-from .connection_http import connect as http_connect
-from . import logger
-from .mappings import Mapper
-
-from .convert_errors import raise_if_error
-from .exceptions import (ElasticSearchException, InvalidQuery,
-                         ReduceSearchPhaseException, VersionConflictEngineException)
-from .decorators import deprecated
-from .utils import make_path
-
-__all__ = ['ES', 'file_to_attachment', 'decode_json']
-
-#
-# models
-#
+    from .fakettypes import Method, RestRequest
 
 
 def file_to_attachment(filename, filehandler=None):
@@ -64,7 +50,7 @@ def file_to_attachment(filename, filehandler=None):
         }
 
 
-class ESJsonEncoder(JSONEncoder):
+class ESJsonEncoder(json.JSONEncoder):
     def default(self, value):
         """Convert rogue and mysterious data types.
         Conversion notes:
@@ -86,10 +72,10 @@ class ESJsonEncoder(JSONEncoder):
         return super(ESJsonEncoder, self).default(value)
 
 
-class ESJsonDecoder(JSONDecoder):
+class ESJsonDecoder(json.JSONDecoder):
     def __init__(self, *args, **kwargs):
         kwargs['object_hook'] = self.dict_to_object
-        json.JSONDecoder.__init__(self, *args, **kwargs)
+        super(ESJsonDecoder, self).__init__(*args, **kwargs)
 
     def string_to_datetime(self, obj):
         """
@@ -132,6 +118,7 @@ class ES(object):
                  max_retries=3,
                  default_indices=None,
                  default_types=None,
+                 log_curl=False,
                  dump_curl=False,
                  model=ElasticSearchModel,
                  basic_auth=None,
@@ -184,9 +171,10 @@ class ES(object):
         if model is None:
             model = lambda connection, model: model
         self.model = model
+        self.log_curl = log_curl
         if dump_curl:
             if isinstance(dump_curl, basestring):
-                self.dump_curl = open(dump_curl, "wb")
+                self.dump_curl = codecs.open(dump_curl, "wb", "utf8")
             elif hasattr(dump_curl, 'write'):
                 self.dump_curl = dump_curl
             else:
@@ -196,13 +184,13 @@ class ES(object):
             self.dump_curl = None
 
         #used in bulk
-        self._bulk_size = bulk_size #size of the bulk
+        self._bulk_size = bulk_size  #size of the bulk
         self.bulker = bulker_class(weakref.proxy(self), bulk_size=bulk_size,
                                    raise_on_bulk_item_failure=raise_on_bulk_item_failure)
         self.bulker_class = bulker_class
         self._raise_on_bulk_item_failure = raise_on_bulk_item_failure
 
-        self.info = {} #info about the current server
+        self.info = {}  #info about the current server
         if encoder:
             self.encoder = encoder
         if decoder:
@@ -373,7 +361,7 @@ class ES(object):
         if not self.connection:
             self._init_connection()
         if body:
-            if not isinstance(body, dict) and hasattr(body, "as_dict"):
+            if isinstance(body, SettingsBuilder):
                 body = body.as_dict()
             if isinstance(body, dict):
                body = json.dumps(body, cls=self.encoder)
@@ -383,7 +371,10 @@ class ES(object):
         request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()],
                               uri=path, parameters=params, headers=headers, body=body)
         if self.dump_curl is not None:
-            self._dump_curl_request(request)
+            print >> self.dump_curl, "# [%s]" % datetime.now().isoformat()
+            print >> self.dump_curl, self._get_curl_request(request)
+        if self.log_curl:
+            logger.debug(self._get_curl_request(request))
 
         # execute the request
         response = self.connection.execute(request)
@@ -409,14 +400,6 @@ class ES(object):
             decoded = DotDict(decoded)
         return decoded
 
-    def _query_call(self, query_type, query, indices=None, doc_types=None, **query_params):
-        """
-        This can be used for search and count calls.
-        These are identical api calls, except for the type of query.
-        """
-        path = self._make_path(indices, doc_types, query_type)
-        return self._send_request('GET', path, query, params=query_params)
-
     def _make_path(self, indices, doc_types, *components, **kwargs):
         indices = self._validate_indices(indices)
         if 'allow_all_indices' in kwargs:
@@ -441,17 +424,19 @@ class ES(object):
             indices = [indices]
         return indices
 
-    def _dump_curl_request(self, request):
-        print >> self.dump_curl, "# [%s]" % datetime.now().isoformat()
+    def _get_curl_request(self, request):
         params = {'pretty': 'true'}
         params.update(request.parameters)
         method = Method._VALUES_TO_NAMES[request.method]
         server = self.servers[0]
         url = urlunsplit((server.scheme, server.netloc, request.uri, urlencode(params), ''))
-        curl_cmd = "curl -X%s '%s'" % (method, url)
-        if request.body:
-            curl_cmd += " -d '%s'" % request.body
-        print >> self.dump_curl, curl_cmd
+        curl_cmd = u"curl -X%s '%s'" % (method, url)
+        body = request.body
+        if body:
+            if not isinstance(body, unicode):
+                body = unicode(body, "utf8")
+            curl_cmd += u" -d '%s'" % body
+        return curl_cmd
 
     def _get_default_indices(self):
         return self._default_indices
@@ -947,7 +932,7 @@ class ES(object):
                 cmd[op_type]['_routing'] = querystring_args['routing']
             if 'percolate' in querystring_args:
                 cmd[op_type]['percolate'] = querystring_args['percolate']
-            if id is not None:#None to support 0 as id
+            if id is not None:  #None to support 0 as id
                 cmd[op_type]['_id'] = id
 
             if isinstance(doc, dict):
@@ -1075,16 +1060,8 @@ class ES(object):
         """
         Delete documents from one or more indices and one or more types based on a query.
         """
-        if hasattr(query, 'to_query_json'):
-            # Then is a Query object.
-            body = query.to_query_json()
-        elif isinstance(query, dict):
-            # A direct set of search parameters.
-            body = json.dumps(query, cls=ES.encoder)
-        else:
-            raise InvalidQuery("delete_by_query() must be supplied with a Query object, or a dict")
-
         path = self._make_path(indices, doc_types, '_query')
+        body = self._encode_query(query)
         return self._send_request('DELETE', path, body, query_params)
 
     @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.delete_mapping")
@@ -1179,17 +1156,13 @@ class ES(object):
         dictionary of search parameters using the query DSL to be passed
         directly.
         """
-        if hasattr(query, 'to_search_json'):
-            # Common case - a Search or Query object.
-            query.encoder = self.encoder
-            body = query.to_search_json()
-        elif isinstance(query, dict):
-            # A direct set of search parameters.
-            body = json.dumps(query, cls=self.encoder)
-        else:
-            raise InvalidQuery("search() must be supplied with a Search or Query object, or a dict")
-
-        return self._query_call("_search", body, indices, doc_types, **query_params)
+        if isinstance(query, Query):
+            query = query.search()
+        if isinstance(query, Search):
+            query = query.serialize()
+        body = self._encode_query(query)
+        path = self._make_path(indices, doc_types, "_search")
+        return self._send_request('GET', path, body, params=query_params)
 
     def search(self, query, indices=None, doc_types=None, model=None, scan=False, **query_params):
         """Execute a search against one or more indices to get the resultset.
@@ -1198,7 +1171,6 @@ class ES(object):
         dictionary of search parameters using the query DSL to be passed
         directly.
         """
-        from .query import Search, Query
         if isinstance(query, Search):
             search = query
         elif isinstance(query, (Query, dict)):
@@ -1243,44 +1215,39 @@ class ES(object):
         query must be a dictionary or a Query object that will convert to Query DSL.
         Note: reindex is only available in my ElasticSearch branch on github.
         """
-        if not isinstance(query, basestring):
-            if isinstance(query, dict):
-                if 'query' in query:
-                    query = query['query']
-                query = json.dumps(query, cls=self.encoder)
-            elif hasattr(query, "to_query_json"):
-                query = query.to_query_json(inner=True)
         path = self._make_path(indices, doc_types, "_reindexbyquery")
-        return self._send_request('POST', path, query, query_params)
+        if isinstance(query, dict) and "query" in query:
+            query = query["query"]
+        body = self._encode_query(query)
+        return self._send_request('POST', path, body, query_params)
 
     def count(self, query=None, indices=None, doc_types=None, **query_params):
         """
         Execute a query against one or more indices and get hits count.
         """
         if query is None:
-            from .query import MatchAllQuery
             query = MatchAllQuery()
-        if hasattr(query, 'to_query_json'):
-            query = query.to_query_json()
-        if hasattr(query, 'to_json'):
-            query = query.to_json()
-        return self._query_call("_count", query, indices, doc_types, **query_params)
+        body = self._encode_query(query)
+        path = self._make_path(indices, doc_types, "_count")
+        return self._send_request('GET', path, body, params=query_params)
 
     #--- river management
     def create_river(self, river, river_name=None):
         """
         Create a river
         """
-        if hasattr(river, "q"):
+        if isinstance(river, River):
+            body = river.serialize()
             river_name = river.name
-            river = river.q
-        return self._send_request('PUT', '/_river/%s/_meta' % river_name, river)
+        else:
+            body = river
+        return self._send_request('PUT', '/_river/%s/_meta' % river_name, body)
 
     def delete_river(self, river, river_name=None):
         """
         Delete a river
         """
-        if hasattr(river, "q"):
+        if isinstance(river, River):
             river_name = river.name
         return self._send_request('DELETE', '/_river/%s/' % river_name)
 
@@ -1333,18 +1300,16 @@ class ES(object):
 
         Any kwargs will be added to the document as extra properties.
         """
-        path = make_path('_percolator', index, name)
-
-        if hasattr(query, 'serialize'):
-            query = {'query': query.serialize()}
-
+        if isinstance(query, Query):
+            query = {"query": query.serialize()}
         if not isinstance(query, dict):
             raise InvalidQuery("create_percolator() must be supplied with a Query object or dict")
-            # A direct set of search parameters.
-        query.update(kwargs)
-        body = json.dumps(query, cls=self.encoder)
+        if kwargs:
+            query.update(kwargs)
 
-        return self._send_request('PUT', path, body=body)
+        path = make_path('_percolator', index, name)
+        body = json.dumps(query, cls=self.encoder)
+        return self._send_request('PUT', path, body)
 
     def delete_percolator(self, index, name):
         """
@@ -1359,27 +1324,24 @@ class ES(object):
         if doc_types is None:
             raise RuntimeError('percolate() must be supplied with at least one doc_type')
 
-        if hasattr(query, 'to_query_json'):
-            # Then is a Query object.
-            body = query.to_query_json()
-        elif isinstance(query, dict):
-            # A direct set of search parameters.
-            body = json.dumps(query, cls=self.encoder)
-        else:
-            raise InvalidQuery("percolate() must be supplied with a Query object, or a dict")
-
         path = self._make_path(index, doc_types, '_percolate')
-        return self._send_request('GET', path, body=body)
+        body = self._encode_query(query)
+        return self._send_request('GET', path, body)
 
+    def encode_json(self, serializable):
+        """
+        Serialize to json a serializable object (Search, Query, Filter, etc).
+        """
+        return json.dumps(serializable.serialize(), cls=self.encoder)
 
-def decode_json(data):
-    """ Decode some json to dict"""
-    return json.loads(data, cls=ES.decoder)
+    def _encode_query(self, query):
+        if isinstance(query, Query):
+            query = query.serialize()
+        if isinstance(query, dict):
+            return json.dumps(query, cls=self.encoder)
 
-
-def encode_json(data):
-    """ Encode some json to dict"""
-    return json.dumps(data, cls=ES.encoder)
+        raise InvalidQuery("`query` must be Query or dict instance, not %s"
+                           % query.__class__)
 
 
 class ResultSet(object):
@@ -1392,7 +1354,6 @@ class ResultSet(object):
         clean_highlight: removed empty highlight
         search: a Search object.
         """
-        from .query import Search
         if not isinstance(search, Search):
             raise InvalidQuery("ResultSet must be supplied with a Search object")
 
@@ -1411,7 +1372,7 @@ class ResultSet(object):
         self.auto_fix_keys = auto_fix_keys
         self.auto_clean_highlight = auto_clean_highlight
 
-        self.iterpos = 0 #keep track of iterator position
+        self.iterpos = 0  #keep track of iterator position
         self.start = query_params.get("start", search.start) or 0
         self._max_item = query_params.get("size", search.size)
         self._current_item = 0
@@ -1419,7 +1380,7 @@ class ResultSet(object):
 
     def _do_search(self, auto_increment=False):
         self.iterpos = 0
-        process_post_query = True #used to skip results in first scan
+        process_post_query = True  #used to skip results in first scan
         if self.scroller_id is None:
             if auto_increment:
                 self.start += self.chuck_size

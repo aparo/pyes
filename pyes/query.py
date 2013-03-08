@@ -951,7 +951,7 @@ class MultiMatchQuery(Query):
 
     def __init__(self, fields, text, type="boolean", slop=0, fuzziness=None,
                  prefix_length=0, max_expansions=2147483647, rewrite=None,
-                 operator="or", analyzer=None, use_dis_max=True,
+                 operator="or", analyzer=None, use_dis_max=True, minimum_should_match=None,
                  **kwargs):
         super(MultiMatchQuery, self).__init__(**kwargs)
 
@@ -979,6 +979,8 @@ class MultiMatchQuery(Query):
             query["analyzer"] = analyzer
         if rewrite:
             query["rewrite"] = rewrite
+        if minimum_should_match:
+            query['minimum_should_match'] = minimum_should_match
         self.query = query
 
     def _serialize(self):

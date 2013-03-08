@@ -1,1 +1,3 @@
+nose
 nose-cover3
+urllib3

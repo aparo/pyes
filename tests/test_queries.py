@@ -419,5 +419,26 @@ class QuerySearchTestCase(ESTestCase):
                 'lang': 'mvel',
                 'params': {"foo": "bar"}}})
 
+    def test_Search_fields(self):
+        q = MatchAllQuery()
+        all_fields = ["name", "parsedtext", "uuid", "position"]
+        resultset = self.conn.search(query=Search(q), indices=self.index_name, doc_types=[self.document_type])
+        self.assertEquals(resultset.total, 3)
+        for result in resultset:
+            for field in all_fields:
+                self.assertTrue(result.get(field))
+        resultset = self.conn.search(query=Search(q,fields=[]), indices=self.index_name, doc_types=[self.document_type])
+        self.assertEquals(resultset.total, 3)
+        for result in resultset:
+            for field in all_fields:
+                self.assertTrue(not result.get(field))
+        resultset = self.conn.search(query=Search(q,fields=['name','position']), indices=self.index_name, doc_types=[self.document_type])
+        self.assertEquals(resultset.total, 3)
+        for result in resultset:
+            for field in ['parsedtext','uuid']:
+                self.assertTrue(not result.get(field))
+            for field in ['name','position']:
+                self.assertTrue( result.get(field))
+
 if __name__ == "__main__":
     unittest.main()

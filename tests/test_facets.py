@@ -119,9 +119,9 @@ class FacetSearchTestCase(ESTestCase):
         self.assertEquals(resultset.total, 3)
         self.assertEquals(resultset.facets.date_facet.entries, [{u'count': 2, u'time': 1301616000000},
                 {u'count': 1, u'time': 1304208000000}])
-        self.assertEquals(datetime.datetime.fromtimestamp(1301616000000 / 1000.).date(),
+        self.assertEquals(datetime.datetime.utcfromtimestamp(1301616000000 / 1000.).date(),
             datetime.date(2011, 04, 01))
-        self.assertEquals(datetime.datetime.fromtimestamp(1304208000000 / 1000.).date(),
+        self.assertEquals(datetime.datetime.utcfromtimestamp(1304208000000 / 1000.).date(),
             datetime.date(2011, 05, 01))
 
     def test_date_facet_filter(self):

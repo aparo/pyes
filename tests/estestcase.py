@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 import os
+import logging
 
 """
 Unit tests for pyes.  These require an es server with thrift plugin running on the default port (localhost:9500).
@@ -16,7 +17,7 @@ def get_conn(*args, **kwargs):
 
 class ESTestCase(unittest.TestCase):
     def setUp(self):
-        self.conn = get_conn(timeout=300.0)#incremented timeout for debugging
+        self.conn = get_conn(timeout=300.0,log_curl=True)#incremented timeout for debugging
         self.index_name = "test-index"
         self.document_type = "test-type"
         self.conn.delete_index_if_exists(self.index_name)
@@ -133,7 +134,7 @@ def setUp():
             'store': 'yes',
             'type': u'string'}}
 
-    conn = get_conn()
+    conn = get_conn(log_curl=True)
     conn.delete_index_if_exists("test-pindex")
     conn.create_index("test-pindex")
     conn.put_mapping("test-type", {'properties': mapping}, ["test-pindex"])

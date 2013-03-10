@@ -137,6 +137,18 @@ class QuerySearchTestCase(ESTestCase):
         self.assertEquals(q, BoolQuery(should=[StringQuery("joe"), StringQuery("test")]))
         self.assertNotEquals(q, BoolQuery(should=[StringQuery("moe"), StringQuery("test")]))
 
+        q = StringQuery("joe OR Testere OR guy OR pizza", minimum_should_match="100%")
+        resultset = self.conn.search(query=q, indices=self.index_name)
+        self.assertEquals(resultset.total, 0)
+
+        q = StringQuery("joe OR Testere OR guy OR pizza", minimum_should_match="80%")
+        resultset = self.conn.search(query=q, indices=self.index_name)
+        self.assertEquals(resultset.total, 1)
+
+        q = StringQuery("joe OR Testere OR guy OR pizza", minimum_should_match="50%")
+        resultset = self.conn.search(query=q, indices=self.index_name)
+        self.assertEquals(resultset.total, 2)
+
     def test_OR_AND_Filters(self):
         q1 = TermFilter("position", 1)
         q2 = TermFilter("position", 2)

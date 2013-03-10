@@ -1009,7 +1009,8 @@ class StringQuery(Query):
                  lowercase_expanded_terms=True, enable_position_increments=True,
                  fuzzy_prefix_length=0, fuzzy_min_sim=0.5, phrase_slop=0,
                  boost=1.0, analyze_wildcard=False, use_dis_max=True,
-                 tie_breaker=0, clean_text=False, **kwargs):
+                 tie_breaker=0, clean_text=False, minimum_should_match=None,
+                 **kwargs):
         super(StringQuery, self).__init__(**kwargs)
         self.clean_text = clean_text
         self.search_fields = search_fields or []
@@ -1027,6 +1028,7 @@ class StringQuery(Query):
         self.analyze_wildcard = analyze_wildcard
         self.use_dis_max = use_dis_max
         self.tie_breaker = tie_breaker
+        self.minimum_should_match = minimum_should_match
 
     def _serialize(self):
         filters = {}
@@ -1035,7 +1037,7 @@ class StringQuery(Query):
             if not isinstance(self.default_field, (str, unicode)) and isinstance(self.default_field, list):
                 if not self.use_dis_max:
                     filters["use_dis_max"] = self.use_dis_max
-                if self.tie_breaker != 0:
+                if self.tie_breaker:
                     filters["tie_breaker"] = self.tie_breaker
 
         if self.default_operator != "OR":
@@ -1078,6 +1080,8 @@ class StringQuery(Query):
             if not self.query.strip():
                 raise InvalidQuery("The query is empty")
             filters["query"] = self.query
+        if self.minimum_should_match:
+          filters['minimum_should_match']=self.minimum_should_match
         return filters
 
 

@@ -1,3 +1,4 @@
 nose
 nose-cover3
 urllib3
+thrift

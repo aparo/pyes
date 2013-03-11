@@ -895,16 +895,16 @@ class TextQuery(Query):
 
     def __init__(self, field, text, type="boolean", slop=0, fuzziness=None,
                  prefix_length=0, max_expansions=2147483647, operator="or",
-                 analyzer=None, boost=1.0, **kwargs):
+                 analyzer=None, boost=1.0, minimum_should_match=None, **kwargs):
         super(TextQuery, self).__init__(**kwargs)
         self.queries = {}
         self.add_query(field, text, type, slop, fuzziness,
                        prefix_length, max_expansions,
-                       operator, analyzer, boost)
+                       operator, analyzer, boost, minimum_should_match)
 
     def add_query(self, field, text, type="boolean", slop=0, fuzziness=None,
                   prefix_length=0, max_expansions=2147483647,
-                  operator="or", analyzer=None, boost=1.0):
+                  operator="or", analyzer=None, boost=1.0, minimum_should_match=None):
         if type not in self._valid_types:
             raise QueryError("Invalid value '%s' for type: allowed values are %s" % (type, self._valid_types))
         if operator not in self._valid_operators:
@@ -926,11 +926,18 @@ class TextQuery(Query):
             query["boost"] = boost
         if analyzer:
             query["analyzer"] = analyzer
+        if minimum_should_match:
+            query["minimum_should_match"] = minimum_should_match
         self.queries[field] = query
 
     def _serialize(self):
         return self.queries
 
+class MatchQuery(TextQuery):
+    """
+    Replaces TextQuery
+    """
+    _internal_name = "match"
 
 class MultiMatchQuery(Query):
     """

@@ -368,6 +368,10 @@ class ES(object):
         else:
             body = ""
 
+        if params:
+            for k in params:
+                params[k] = str(params[k])
+
         request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()],
                               uri=path, parameters=params, headers=headers, body=body)
         if self.dump_curl is not None:

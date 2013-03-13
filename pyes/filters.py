@@ -380,7 +380,7 @@ class GeoDistanceFilter(Filter):
         if self.distance_unit:
             if self.distance_unit not in ["km", "mi", "miles"]:
                 raise QueryParameterError("Invalid distance_unit")
-            params["distance_unit"] = self.distance_unit
+            params["unit"] = self.distance_unit
 
         return params
 

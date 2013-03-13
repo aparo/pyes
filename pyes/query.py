@@ -77,7 +77,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
         if not index_boost: index_boost = {}
         self.query = query
         self.filter = filter
-        self.fields = fields or []
+        self.fields = fields
         self.start = start
         self.size = size
         self._highlight = highlight
@@ -895,16 +895,16 @@ class TextQuery(Query):
 
     def __init__(self, field, text, type="boolean", slop=0, fuzziness=None,
                  prefix_length=0, max_expansions=2147483647, operator="or",
-                 analyzer=None, boost=1.0, **kwargs):
+                 analyzer=None, boost=1.0, minimum_should_match=None, **kwargs):
         super(TextQuery, self).__init__(**kwargs)
         self.queries = {}
         self.add_query(field, text, type, slop, fuzziness,
                        prefix_length, max_expansions,
-                       operator, analyzer, boost)
+                       operator, analyzer, boost, minimum_should_match)
 
     def add_query(self, field, text, type="boolean", slop=0, fuzziness=None,
                   prefix_length=0, max_expansions=2147483647,
-                  operator="or", analyzer=None, boost=1.0):
+                  operator="or", analyzer=None, boost=1.0, minimum_should_match=None):
         if type not in self._valid_types:
             raise QueryError("Invalid value '%s' for type: allowed values are %s" % (type, self._valid_types))
         if operator not in self._valid_operators:
@@ -926,10 +926,72 @@ class TextQuery(Query):
             query["boost"] = boost
         if analyzer:
             query["analyzer"] = analyzer
+        if minimum_should_match:
+            query["minimum_should_match"] = minimum_should_match
         self.queries[field] = query
 
     def _serialize(self):
         return self.queries
+
+class MatchQuery(TextQuery):
+    """
+    Replaces TextQuery
+    """
+    _internal_name = "match"
+
+class MultiMatchQuery(Query):
+    """
+    A family of match queries that accept text/numerics/dates, analyzes it, and constructs a query out of it.
+    Replaces TextQuery.
+
+    Examples:
+
+    q = MatchQuery('book_title', 'elasticsearch')
+    results = conn.search(q)
+
+    q = MatchQuery('book_title', 'elasticsearch python', type='phrase')
+    results = conn.search(q)
+    """
+    _internal_name = "multi_match"
+    _valid_types = ['boolean', "phrase", "phrase_prefix"]
+    _valid_operators = ['or', "and"]
+
+    def __init__(self, fields, text, type="boolean", slop=0, fuzziness=None,
+                 prefix_length=0, max_expansions=2147483647, rewrite=None,
+                 operator="or", analyzer=None, use_dis_max=True, minimum_should_match=None,
+                 **kwargs):
+        super(MultiMatchQuery, self).__init__(**kwargs)
+
+        if type not in self._valid_types:
+            raise QueryError("Invalid value '%s' for type: allowed values are %s" % (type, self._valid_types))
+        if operator not in self._valid_operators:
+            raise QueryError(
+                "Invalid value '%s' for operator: allowed values are %s" % (operator, self._valid_operators))
+        if not fields:
+            raise QueryError("At least one field must be defined for multi_match")
+
+        query = {'type': type, 'query': text, 'fields': fields}
+        query['use_dis_max']=use_dis_max
+        if slop:
+            query["slop"] = slop
+        if fuzziness is not None:
+            query["fuzziness"] = fuzziness
+        if prefix_length:
+            query["prefix_length"] = prefix_length
+        if max_expansions != 2147483647:
+            query["max_expansions"] = max_expansions
+        if operator:
+            query["operator"] = operator
+        if analyzer:
+            query["analyzer"] = analyzer
+        if rewrite:
+            query["rewrite"] = rewrite
+        if minimum_should_match:
+            query['minimum_should_match'] = minimum_should_match
+        self.query = query
+
+    def _serialize(self):
+        return self.query
 
 
 class RegexTermQuery(TermQuery):
@@ -954,7 +1016,8 @@ class StringQuery(Query):
                  lowercase_expanded_terms=True, enable_position_increments=True,
                  fuzzy_prefix_length=0, fuzzy_min_sim=0.5, phrase_slop=0,
                  boost=1.0, analyze_wildcard=False, use_dis_max=True,
-                 tie_breaker=0, clean_text=False, **kwargs):
+                 tie_breaker=0, clean_text=False, minimum_should_match=None,
+                 **kwargs):
         super(StringQuery, self).__init__(**kwargs)
         self.clean_text = clean_text
         self.search_fields = search_fields or []
@@ -972,6 +1035,7 @@ class StringQuery(Query):
         self.analyze_wildcard = analyze_wildcard
         self.use_dis_max = use_dis_max
         self.tie_breaker = tie_breaker
+        self.minimum_should_match = minimum_should_match
 
     def _serialize(self):
         filters = {}
@@ -980,7 +1044,7 @@ class StringQuery(Query):
             if not isinstance(self.default_field, (str, unicode)) and isinstance(self.default_field, list):
                 if not self.use_dis_max:
                     filters["use_dis_max"] = self.use_dis_max
-                if self.tie_breaker != 0:
+                if self.tie_breaker:
                     filters["tie_breaker"] = self.tie_breaker
 
         if self.default_operator != "OR":
@@ -1023,6 +1087,8 @@ class StringQuery(Query):
             if not self.query.strip():
                 raise InvalidQuery("The query is empty")
             filters["query"] = self.query
+        if self.minimum_should_match:
+          filters['minimum_should_match']=self.minimum_should_match
         return filters
 
 

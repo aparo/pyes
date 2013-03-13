@@ -137,6 +137,18 @@ class QuerySearchTestCase(ESTestCase):
         self.assertEquals(q, BoolQuery(should=[StringQuery("joe"), StringQuery("test")]))
         self.assertNotEquals(q, BoolQuery(should=[StringQuery("moe"), StringQuery("test")]))
 
+        q = StringQuery("joe OR Testere OR guy OR pizza", minimum_should_match="100%")
+        resultset = self.conn.search(query=q, indices=self.index_name)
+        self.assertEquals(resultset.total, 0)
+
+        q = StringQuery("joe OR Testere OR guy OR pizza", minimum_should_match="80%")
+        resultset = self.conn.search(query=q, indices=self.index_name)
+        self.assertEquals(resultset.total, 1)
+
+        q = StringQuery("joe OR Testere OR guy OR pizza", minimum_should_match="50%")
+        resultset = self.conn.search(query=q, indices=self.index_name)
+        self.assertEquals(resultset.total, 2)
+
     def test_OR_AND_Filters(self):
         q1 = TermFilter("position", 1)
         q2 = TermFilter("position", 2)
@@ -418,6 +430,57 @@ class QuerySearchTestCase(ESTestCase):
                 'score_mode': 'max',
                 'lang': 'mvel',
                 'params': {"foo": "bar"}}})
+
+    def test_Search_fields(self):
+        q = MatchAllQuery()
+        all_fields = ["name", "parsedtext", "uuid", "position"]
+        resultset = self.conn.search(query=Search(q), indices=self.index_name, doc_types=[self.document_type])
+        self.assertEquals(resultset.total, 3)
+        for result in resultset:
+            for field in all_fields:
+                self.assertTrue(result.get(field))
+        resultset = self.conn.search(query=Search(q,fields=[]), indices=self.index_name, doc_types=[self.document_type])
+        self.assertEquals(resultset.total, 3)
+        for result in resultset:
+            for field in all_fields:
+                self.assertTrue(not result.get(field))
+        resultset = self.conn.search(query=Search(q,fields=['name','position']), indices=self.index_name, doc_types=[self.document_type])
+        self.assertEquals(resultset.total, 3)
+        for result in resultset:
+            for field in ['parsedtext','uuid']:
+                self.assertTrue(not result.get(field))
+            for field in ['name','position']:
+                self.assertTrue( result.get(field))
+
+    def test_MatchQuery(self):
+        q = MatchQuery("_all", "nice")
+        serialized = q.serialize()
+        self.assertTrue("match" in serialized)
+        self.assertTrue("_all" in serialized["match"])
+        self.assertTrue(serialized["match"]["_all"]["query"], "nice")
+
+        resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
+        self.assertEquals(resultset.total, 3)
+
+        q = MatchQuery("_all", "Baloney Testere pizza", operator="and")
+        resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
+        self.assertEquals(resultset.total, 0)
+
+        q = MatchQuery("_all", "Baloney Testere pizza", operator="or", minimum_should_match="70%")
+        resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
+        self.assertEquals(resultset.total, 1)
+
+        q = MatchQuery("parsedtext", "Bill guy", type="phrase", slop=2)
+        resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
+        self.assertEquals(resultset.total, 1)
+
+        q = MatchQuery("parsedtext", "guy Bill", type="phrase", slop=2)
+        resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
+        self.assertEquals(resultset.total, 0)
+
+        q = MatchQuery("name", "Tester")
+        resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
+        self.assertEquals(resultset.total, 1)
 
 if __name__ == "__main__":
     unittest.main()

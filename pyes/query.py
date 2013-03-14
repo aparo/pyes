@@ -330,21 +330,32 @@ class ConstantScoreQuery(Query):
     def __init__(self, filter=None, boost=1.0, **kwargs):
         super(ConstantScoreQuery, self).__init__(**kwargs)
         self.filters = []
+        self.queries = []
         self.boost = boost
         if filter:
             self.add(filter)
 
-    def add(self, filter):
+    def add(self, filter_or_query):
         """Add a filter, or a list of filters, to the query.
 
         If a sequence of filters is supplied, they are all added, and will be
         combined with an ANDFilter.
 
+        If a sequence of queries is supplied, they are all added, and will be
+        combined with an BooleanQuery(must) .
+
         """
-        if isinstance(filter, Filter):
-            self.filters.append(filter)
+        if isinstance(filter_or_query, Filter):
+            if self.queries:
+                raise QueryError("A Query is required")
+            self.filters.append(filter_or_query)
+        elif isinstance(filter_or_query, Query):
+            if self.filters:
+                raise QueryError("A Filter is required")
+            self.queries.append(filter_or_query)
         else:
-            self.filters.extend(filter)
+            for item in filter_or_query:
+                self.add(item)
         return self
 
     def is_empty(self):
@@ -353,20 +364,32 @@ class ConstantScoreQuery(Query):
         """
         if self.filters:
             return False
+        if self.queries:
+            return False
         return True
 
     def _serialize(self):
         data = {}
         if self.boost != 1.0:
             data["boost"] = self.boost
-        filters = {}
-        if len(self.filters) == 1:
-            filters.update(self.filters[0].serialize())
+
+        if self.filters:
+            filters = {}
+            if len(self.filters) == 1:
+                filters.update(self.filters[0].serialize())
+            else:
+                filters.update(ANDFilter(self.filters).serialize())
+            if not filters:
+                raise QueryError("A filter is required")
+            data['filter'] = filters
         else:
-            filters.update(ANDFilter(self.filters).serialize())
-        if not filters:
-            raise QueryError("A filter is required")
-        data['filter'] = filters
+            queries = {}
+            if len(self.queries) == 1:
+                queries.update(self.queries[0].serialize())
+            else:
+                queries.update(BooleanQuery(must=self.queries).serialize())
+            data['query'] = queries
+
         return data
 
 

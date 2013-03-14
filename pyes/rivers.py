@@ -144,3 +144,45 @@ class CouchDBRiver(River):
         if self.password is not None:
             result[self.type]["password"] = self.password
         return result
+
+
+class JDBCRiver(River):
+
+    type = "jdbc"
+
+    def __init__(self, dbhost="localhost", dbport=5432, dbtype="postgresql",
+                 dbname=None, dbuser=None, dbpassword=None, poll_time="5s",
+                 sql=None, name=None, params={}, **kwargs):
+        super(JDBCRiver, self).__init__(**kwargs)
+        self.dbsettings = {
+                'dbhost': dbhost,
+                'dbport': dbport,
+                'dbtype': dbtype,
+                'dbname': dbname,
+                'dbuser': dbuser,
+                'dbpassword': dbpassword,
+        }
+        self.poll_time = poll_time
+        self.sql = sql
+        self.params = params
+        if name is not None:
+            self.name = name
+
+    def _serialize(self):
+        ret = {
+            "type": self.type,
+            self.type: {
+                "driver": "org.%(dbtype)s.Driver" % self.dbsettings,
+                "url": "jdbc:%(dbtype)s://%(dbhost)s:%(dbport)s/%(dbname)s" \
+                                    % self.dbsettings,
+                "user": "%(dbuser)s" % self.dbsettings,
+                "password": "%(dbpassword)s" % self.dbsettings,
+                "strategy": "simple",
+                "poll": self.poll_time,
+                "sql": self.sql.replace('\n', ' '),
+            }
+        }
+
+        ret.update(self.params)
+
+        return ret

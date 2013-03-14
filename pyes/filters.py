@@ -8,9 +8,9 @@ class Filter(EqualityComparableUsingAttributeDictionary):
     _extra_properties = ("_cache", "cache_key", "_name")
 
     def __init__(self, **kwargs):
-        self._extra_values = {key: kwargs.pop(key)
+        self._extra_values = dict((key, kwargs.pop(key))
                               for key in self._extra_properties
-                              if kwargs.get(key) is not None}
+                              if kwargs.get(key) is not None)
         if kwargs:
             raise ValueError("Unknown properties: %s" % kwargs.keys())
 

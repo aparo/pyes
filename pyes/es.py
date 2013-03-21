@@ -1373,6 +1373,7 @@ class ResultSet(object):
         self._total = None
         self.valid = False
         self._facets = {}
+        self._hits = []
         self.auto_fix_keys = auto_fix_keys
         self.auto_clean_highlight = auto_clean_highlight
 
@@ -1417,9 +1418,9 @@ class ResultSet(object):
             self._facets = self._results.get('facets', {})
             if 'hits' in self._results:
                 self.valid = True
-                self.hits = self._results['hits']['hits']
+                self._hits = self._results['hits']['hits']
             else:
-                self.hits = []
+                self._hits = []
             if self.auto_fix_keys:
                 self._fix_keys()
             if self.auto_clean_highlight:
@@ -1493,6 +1494,8 @@ class ResultSet(object):
             self._do_search()
         if name == "facets":
             return self._facets
+        elif name == "hits":
+            return self._hits
 
         elif name in self._results:
             #we manage took, timed_out, _shards

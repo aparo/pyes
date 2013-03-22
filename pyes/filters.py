@@ -361,7 +361,7 @@ class GeoDistanceFilter(Filter):
 
     _internal_name = "geo_distance"
 
-    def __init__(self, field, location, distance, distance_type="arc", distance_unit=None, **kwargs):
+    def __init__(self, field, location, distance, distance_type="arc", distance_unit=None, optimize_bbox="memory", **kwargs):
         super(GeoDistanceFilter, self).__init__(**kwargs)
         self.field = field
         self.location = location
@@ -381,6 +381,11 @@ class GeoDistanceFilter(Filter):
             if self.distance_unit not in ["km", "mi", "miles"]:
                 raise QueryParameterError("Invalid distance_unit")
             params["unit"] = self.distance_unit
+
+        if self.optimize_bbox:
+            if self.optimize_bbox not in ["memory", "indexed"]:
+                raise QueryParameterError("Invalid optimize_bbox")
+            params['optimize_bbox'] = self.optimize_bbox
 
         return params
 

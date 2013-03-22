@@ -430,7 +430,7 @@ class TopChildrenQuery(ConstantScoreQuery):
         self.incremental_factor = incremental_factor
 
     def _serialize(self):
-        if self.score not in ["max", "min", "avg"]:
+        if self.score not in ["max", "min", "avg", "sum"]:
             raise InvalidParameterQuery("Invalid value '%s' for score" % self.score)
 
         filters = {}

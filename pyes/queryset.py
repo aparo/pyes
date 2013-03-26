@@ -571,12 +571,13 @@ class QuerySet(object):
         return clone
 
     def _build_inner_filter(self, field, value):
-        if "__" in field:
+        modifiers = ('in', 'gt', 'gte', 'lte', 'lt', 'in', 'ne', 'exists', 'exact')
+        if field.endswith(['__{0}'.format(m) for m in modifiers]):
             field, modifier = field.rsplit("__", 1)
-            field=field.replace("__", ".")
         else:
             modifier=""
-        if not modifier:
+        field=field.replace("__", ".")
+        if not modifier or modifier == 'exact':
             if isinstance(value, list):
                 return TermsFilter(field, value)
             return TermFilter(field, value)

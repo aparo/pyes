@@ -1011,6 +1011,23 @@ class ES(object):
         return data['_name'], base64.standard_b64decode(data['content'])
         #return data["_source"]['_name'], base64.standard_b64decode(data["_source"]['content'])
 
+    def partial_update(self, index, doc_type, id, script, params=None,
+                       querystring_args=None):
+        """
+        Partially update a document with a script
+        """
+        if querystring_args is None:
+            querystring_args = {}
+
+        cmd = {"script": script}
+
+        if params:
+            cmd["params"] = params
+
+        path = make_path(index, doc_type, id, "_update")
+
+        return self._send_request('POST', path, cmd, querystring_args)
+
     def update(self, extra_doc, index, doc_type, id, querystring_args=None,
                update_func=None, attempts=2):
         """

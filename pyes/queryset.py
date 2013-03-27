@@ -572,7 +572,7 @@ class QuerySet(object):
 
     def _build_inner_filter(self, field, value):
         modifiers = ('in', 'gt', 'gte', 'lte', 'lt', 'in', 'ne', 'exists', 'exact')
-        if field.endswith(['__{0}'.format(m) for m in modifiers]):
+        if field.endswith(tuple(['__{0}'.format(m) for m in modifiers])):
             field, modifier = field.rsplit("__", 1)
         else:
             modifier=""

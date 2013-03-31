@@ -1012,7 +1012,7 @@ class ES(object):
         #return data["_source"]['_name'], base64.standard_b64decode(data["_source"]['content'])
 
     def partial_update(self, index, doc_type, id, script, params=None,
-                       querystring_args=None):
+                       upsert=None, querystring_args=None):
         """
         Partially update a document with a script
         """
@@ -1023,6 +1023,9 @@ class ES(object):
 
         if params:
             cmd["params"] = params
+
+        if upsert:
+            cmd["upsert"] = upsert
 
         path = make_path(index, doc_type, id, "_update")
 

@@ -125,7 +125,10 @@ class ServerSet(object):
 
     def mark_dead(self, server):
         with self._lock:
-            self._servers.remove(server)
+            try:
+                self._servers.remove(server)
+            except ValueError:
+                pass
             self._dead.insert(0, (time.time() + self._retry_time, server))
 
 

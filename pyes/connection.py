@@ -125,8 +125,12 @@ class ServerSet(object):
 
     def mark_dead(self, server):
         with self._lock:
-            self._servers.remove(server)
-            self._dead.insert(0, (time.time() + self._retry_time, server))
+            try:
+                self._servers.remove(server)
+                self._dead.insert(0, (time.time() + self._retry_time, server))
+            except ValueError:
+                pass
+
 
 
 class ThreadLocalConnection(object):

@@ -127,9 +127,10 @@ class ServerSet(object):
         with self._lock:
             try:
                 self._servers.remove(server)
+                self._dead.insert(0, (time.time() + self._retry_time, server))
             except ValueError:
                 pass
-            self._dead.insert(0, (time.time() + self._retry_time, server))
+
 
 
 class ThreadLocalConnection(object):

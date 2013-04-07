@@ -343,8 +343,9 @@ class TermStatsFacet(Facet):
                  key_script=None, value_script=None, params=None, **kwargs):
         super(TermStatsFacet, self).__init__(name, **kwargs)
         self.size = size
-        self.ORDER_VALUES = ['term', 'reverse_term', 'count', 'reverse_count', 'total',
-                             'reverse_total', 'min', 'reverse_min', 'max', 'reverse_max']
+        self.ORDER_VALUES = ['term', 'reverse_term', 'count', 'reverse_count',
+                             'total', 'reverse_total', 'min', 'reverse_min',
+                             'max', 'reverse_max', 'mean', 'reverse_mean']
         self.order = order if order is not None else self.ORDER_VALUES[0]
         self.key_field = key_field
         self.value_field = value_field

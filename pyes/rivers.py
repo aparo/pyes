@@ -1,14 +1,29 @@
-class River(object):
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import
 
-    def __init__(self, index_name=None, index_type=None, bulk_size=100, bulk_timeout=None):
+try:
+    # For Python < 2.6 or people using a newer version of simplejson
+    import simplejson
+
+    json = simplejson
+except ImportError:
+    # For Python >= 2.6
+    import json
+
+from .es import ES
+
+class River(object):
+    def __init__(self, index_name=None, index_type=None, bulk_size=100,
+                 bulk_timeout=None):
         self.name = index_name
         self.index_name = index_name
         self.index_type = index_type
         self.bulk_size = bulk_size
         self.bulk_timeout = bulk_timeout
 
-    def serialize(self):
-        res = self._serialize()
+    @property
+    def q(self):
+        res = self.serialize()
         index = {}
         if self.name:
             index['name'] = self.name
@@ -25,9 +40,12 @@ class River(object):
         return res
 
     def __repr__(self):
-        return str(self.serialize())
+        return str(self.q)
 
-    def _serialize(self):
+    def to_json(self):
+        return json.dumps(self.q, cls=ES.encoder)
+
+    def serialize(self):
         raise NotImplementedError
 
 
@@ -47,7 +65,7 @@ class RabbitMQRiver(River):
         self.exchange = exchange
         self.routing_key = routing_key
 
-    def _serialize(self):
+    def serialize(self):
         return {
             "type": self.type,
             self.type: {
@@ -64,7 +82,6 @@ class RabbitMQRiver(River):
 
 
 class TwitterRiver(River):
-
     type = "twitter"
 
     def __init__(self, user=None, password=None, **kwargs):
@@ -80,11 +97,11 @@ class TwitterRiver(River):
         self.locations = kwargs.pop('locations', None)
         super(TwitterRiver, self).__init__(**kwargs)
 
-    def _serialize(self):
+    def serialize(self):
         result = {"type": self.type}
         if self.user and self.password:
             result[self.type] = {"user": self.user,
-                       "password": self.password}
+                                 "password": self.password}
         elif (self.consumer_key and self.consumer_secret and self.access_token
               and self.access_token_secret):
             result[self.type] = {"oauth": {
@@ -95,7 +112,8 @@ class TwitterRiver(River):
             }
             }
         else:
-            raise ValueError("Twitter river requires authentication by username/password or OAuth")
+            raise ValueError(
+                "Twitter river requires authentication by username/password or OAuth")
         filter = {}
         if self.tracks:
             filter['tracks'] = self.tracks
@@ -109,7 +127,6 @@ class TwitterRiver(River):
 
 
 class CouchDBRiver(River):
-
     type = "couchdb"
 
     def __init__(self, host="localhost", port=5984, db="mydb", filter=None,
@@ -133,7 +150,7 @@ class CouchDBRiver(River):
                 "port": self.port,
                 "db": self.db,
                 "filter": self.filter,
-                }
+            }
         }
         if self.filter_params is not None:
             result[self.type]["filter_params"] = self.filter_params
@@ -146,43 +163,26 @@ class CouchDBRiver(River):
         return result
 
 
-class JDBCRiver(River):
+class MongoDBRiver(River):
 
-    type = "jdbc"
+    type = "mongodb"
 
-    def __init__(self, dbhost="localhost", dbport=5432, dbtype="postgresql",
-                 dbname=None, dbuser=None, dbpassword=None, poll_time="5s",
-                 sql=None, name=None, params={}, **kwargs):
-        super(JDBCRiver, self).__init__(**kwargs)
-        self.dbsettings = {
-                'dbhost': dbhost,
-                'dbport': dbport,
-                'dbtype': dbtype,
-                'dbname': dbname,
-                'dbuser': dbuser,
-                'dbpassword': dbpassword,
-        }
-        self.poll_time = poll_time
-        self.sql = sql
-        self.params = params
-        if name is not None:
-            self.name = name
-
-    def _serialize(self):
-        ret = {
-            "type": self.type,
-            self.type: {
-                "driver": "org.%(dbtype)s.Driver" % self.dbsettings,
-                "url": "jdbc:%(dbtype)s://%(dbhost)s:%(dbport)s/%(dbname)s" \
-                                    % self.dbsettings,
-                "user": "%(dbuser)s" % self.dbsettings,
-                "password": "%(dbpassword)s" % self.dbsettings,
-                "strategy": "simple",
-                "poll": self.poll_time,
-                "sql": self.sql.replace('\n', ' '),
-            }
+    def __init__(self,servers, db, collection, index_name, mapping_type, gridfs=False, options={},bulk_size=1000, **kwargs):
+        super(MongoDBRiver, self).__init__(**kwargs)
+        self.name=index_name
+        self.index_type=mapping_type
+        self.bulk_size=bulk_size
+        self.mongodb = {
+            "servers":servers,
+            "db":db,
+            "collection":collection,
+            "options":options,
+            "gridfs":gridfs
         }
 
-        ret.update(self.params)
-
-        return ret
+    def serialize(self):
+        result = {
+            'type':self.type,
+            'mongodb':self.mongodb
+        }
+        return result

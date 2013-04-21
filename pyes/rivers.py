@@ -186,3 +186,27 @@ class JDBCRiver(River):
         ret.update(self.params)
 
         return ret
+
+class MongoDBRiver(River):
+
+    type = "mongodb"
+
+    def __init__(self,servers, db, collection, index_name, mapping_type, gridfs=False, options={},bulk_size=1000, **kwargs):
+        super(MongoDBRiver, self).__init__(**kwargs)
+        self.name=index_name
+        self.index_type=mapping_type
+        self.bulk_size=bulk_size
+        self.mongodb = {
+            "servers":servers,
+            "db":db,
+            "collection":collection,
+            "options":options,
+            "gridfs":gridfs
+        }
+
+    def serialize(self):
+        result = {
+            'type':self.type,
+            'mongodb':self.mongodb
+        }
+        return result

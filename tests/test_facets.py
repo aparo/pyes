@@ -144,6 +144,11 @@ class FacetSearchTestCase(ESTestCase):
         serialized = query.serialize()
         self.assertTrue(serialized['facets']['topic']['facet_filter']['bool'])
 
+    def test_term_facet_zero_size(self):
+        facet = TermFacet(field='topic', size=0)
+        serialized = facet.serialize()
+        self.assertEqual(0, serialized['topic']['terms']['size'])
+
 
 if __name__ == "__main__":
     unittest.main()

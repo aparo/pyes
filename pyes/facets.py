@@ -316,7 +316,7 @@ class TermFacet(Facet):
                 data = {'field': self.field}
             else:
                 raise RuntimeError("Field or Fields is required:%s" % self.order)
-        if self.size:
+        if self.size is not None:
             data['size'] = self.size
         if self.order:
             if self.order not in ['count', 'term', 'reverse_count', 'reverse_term']:

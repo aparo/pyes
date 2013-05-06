@@ -1380,7 +1380,12 @@ class ResultSet(object):
         self.start = query_params.get("start", search.start) or 0
         self._max_item = query_params.get("size", search.size)
         self._current_item = 0
-        self.chuck_size = search.bulk_read or search.size or 10
+        if search.bulk_read is not None:
+            self.chuck_size = search.bulk_read 
+        elif search.size is not None:
+            self.chuck_size = search.size 
+        else:
+            self.chuck_size = 10
 
     def _do_search(self, auto_increment=False):
         self.iterpos = 0

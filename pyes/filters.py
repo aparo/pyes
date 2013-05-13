@@ -368,6 +368,7 @@ class GeoDistanceFilter(Filter):
         self.distance = distance
         self.distance_type = distance_type
         self.distance_unit = distance_unit
+        self.optimize_bbox = optimize_bbox
 
     def _serialize(self):
         if self.distance_type not in ["arc", "plane"]:

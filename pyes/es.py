@@ -644,13 +644,13 @@ class ES(object):
         return self.indices.change_aliases(commands)
 
     @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.add_alias")
-    def add_alias(self, alias, indices=None):
+    def add_alias(self, alias, indices=None, **kwargs):
         """
         Deprecated
 
         Add an alias to point to a set of indices.
         """
-        return self.indices.add_alias(alias, indices)
+        return self.indices.add_alias(alias, indices, **kwargs)
 
     @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.delete_alias")
     def delete_alias(self, alias, indices=None):
@@ -666,7 +666,7 @@ class ES(object):
         return self.indices.delete_alias(alias, indices)
 
     @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.set_alias")
-    def set_alias(self, alias, indices=None):
+    def set_alias(self, alias, indices=None, **kwargs):
         """
         Deprecated
 
@@ -679,7 +679,7 @@ class ES(object):
         points to during this call, the old value of the alias may not be
         correctly set.
         """
-        return self.indices.set_alias(alias, indices)
+        return self.indices.set_alias(alias, indices, **kwargs)
 
     @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.close_index")
     def close_index(self, index):
@@ -1401,7 +1401,12 @@ class ResultSet(object):
         self.start = query_params.get("start", search.start) or 0
         self._max_item = query_params.get("size", search.size)
         self._current_item = 0
-        self.chuck_size = search.bulk_read or search.size or 10
+        if search.bulk_read is not None:
+            self.chuck_size = search.bulk_read
+        elif search.size is not None:
+            self.chuck_size = search.size
+        else:
+            self.chuck_size = 10
 
     def _do_search(self, auto_increment=False):
         self.iterpos = 0

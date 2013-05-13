@@ -144,12 +144,6 @@ class FacetSearchTestCase(ESTestCase):
         serialized = query.serialize()
         self.assertTrue(serialized['facets']['topic']['facet_filter']['bool'])
 
-    def test_facet_filter_is_serialized_correctly(self):
-        query = MatchAllQuery().search(size=0)
-        query.facet.add(TermFacet(field='topic', facet_filter=BoolFilter(must_not=TermQuery(field='reviewed', value=True))))
-        serialized = query.serialize()
-        self.assertTrue(serialized['facets']['topic']['facet_filter']['bool'])
-
     def test_term_facet_zero_size(self):
         facet = TermFacet(field='topic', size=0)
         serialized = facet.serialize()

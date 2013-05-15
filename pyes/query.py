@@ -60,6 +60,8 @@ class Search(EqualityComparableUsingAttributeDictionary):
     This contains a query, and has additional parameters which are used to
     control how the search works, what it should return, etc.
 
+    The rescore parameter takes a Search object created from a RescoreQuery.
+
     Example:
 
     q = StringQuery('elasticsearch')
@@ -69,7 +71,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
 
     def __init__(self, query=None, filter=None, fields=None, start=None,
                  size=None, highlight=None, sort=None, explain=False, facet=None, rescore=None,
-                 version=None, track_scores=None, script_fields=None, index_boost=None,
+                 window_size=None, version=None, track_scores=None, script_fields=None, index_boost=None,
                  min_score=None, stats=None, bulk_read=None, partial_fields=None):
         """
         fields: if is [], the _source is not returned
@@ -85,6 +87,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
         self.explain = explain
         self.facet = facet or FacetFactory()
         self.rescore = rescore
+        self.window_size = window_size
         self.version = version
         self.track_scores = track_scores
         self._script_fields = script_fields
@@ -116,6 +119,8 @@ class Search(EqualityComparableUsingAttributeDictionary):
             res['facets'] = self.facet.serialize()
         if self.rescore:
             res['rescore'] = self.rescore.serialize()
+        if self.window_size:
+            res['window_size'] = self.window_size
         if self.fields is not None: #Deal properly with self.fields = []
             res['fields'] = self.fields
         if self.size is not None:
@@ -1343,10 +1348,10 @@ class PercolatorQuery(Query):
 
 class RescoreQuery(Query):
     """
-    A rescore query is used to rescore top results from another query
+    A rescore query is used to rescore top results from another query.
     """
 
-    _internal_name = "rescore"
+    _internal_name = "rescore_query"
 
     def __init__(self, query, window_size=None, query_weight=None, rescore_query_weight=None, **kwargs):
         """
@@ -1361,10 +1366,7 @@ class RescoreQuery(Query):
     def serialize(self):
         """Serialize the query to a structure using the query DSL."""
         
-        data = {'query': {'rescore_query': self.query.serialize()}}
-
-        if self.window_size:
-            data['window_size'] = self.window_size
+        data = {self._internal_name: self.query.serialize()}
         if self.query_weight:
             data['query_weight'] = self.query_weight
         if self.rescore_query_weight:
@@ -1372,9 +1374,6 @@ class RescoreQuery(Query):
 
         return data
 
-    def search(self, **kwargs):
-        """Disable this as rescore queries cannot form standalone Search objects."""
-        raise NotImplementedError()
 
 class CustomFiltersScoreQuery(Query):
 

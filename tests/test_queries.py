@@ -48,14 +48,18 @@ class QuerySearchTestCase(ESTestCase):
         self.conn.refresh()
 
     def test_RescoreQuery(self):
-        q = MatchQuery("parsedtext", "guy")
-        resultset = self.conn.search(query=q, indices=self.index_name)
+        q = CustomScoreQuery(query=MatchAllQuery(),
+            lang="mvel",
+            script="doc.position.value")
+        resultset = self.conn.search(query=q, indices=self.index_name, doc_types=self.document_type)
         original_results = [x for x in resultset]
 
-        rescore_search = Search(query=q, rescore=RescoreQuery(q, rescore_query_weight=-10))
-        rescore_results = [x for x in self.conn.search(query=rescore_search, indices=self.index_name)]
+        rescore_search = Search(query=q, rescore=RescoreQuery(q, query_weight=1, rescore_query_weight=-10).search(window_size=3))
+        rescore_resultset = self.conn.search(query=rescore_search, indices=self.index_name, doc_types=self.document_type)
+        rescore_results = [x for x in rescore_resultset]
 
         rescore_results.reverse()
+        self.assertEqual(rescore_search.serialize()['rescore']['window_size'], 3)
         self.assertEqual(original_results, rescore_results)
 
     def test_TermQuery(self):

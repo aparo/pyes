@@ -47,6 +47,17 @@ class QuerySearchTestCase(ESTestCase):
 
         self.conn.refresh()
 
+    def test_RescoreQuery(self):
+        q = MatchQuery("parsedtext", "guy")
+        resultset = self.conn.search(query=q, indices=self.index_name)
+        original_results = [x for x in resultset]
+
+        rescore_search = Search(query=q, rescore=RescoreQuery(q, rescore_query_weight=-10))
+        rescore_results = [x for x in self.conn.search(query=rescore_search, indices=self.index_name)]
+
+        rescore_results.reverse()
+        self.assertEqual(original_results, rescore_results)
+
     def test_TermQuery(self):
         q = TermQuery("name", "joe")
         resultset = self.conn.search(query=q, indices=self.index_name)

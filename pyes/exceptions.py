@@ -29,7 +29,8 @@ __all__ = [
     'DocumentAlreadyExistsEngineException',
     "DocumentAlreadyExistsException",
     "TypeMissingException",
-    "BulkOperationException"
+    "BulkOperationException",
+    "DocumentMissingException"
 ]
 
 class ESPendingDeprecationWarning(PendingDeprecationWarning):
@@ -146,3 +147,6 @@ class BulkOperationException(ElasticSearchException, EqualityComparableUsingAttr
             u"At least one operation in the bulk request has failed: %s" % errors)
         self.errors = errors
         self.bulk_result = bulk_result
+
+class DocumentMissingException(ElasticSearchException):
+    pass

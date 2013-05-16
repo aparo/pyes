@@ -45,11 +45,11 @@ class IndexStatsTestCase(ESTestCase):
 
     def test_all_indices(self):
         result = self.conn.index_stats()
-        self.assertEquals(5, result._all.indices[self.index_name].total.docs.count)
+        self.assertEquals(5, result._all.total.docs.count)
 
     def test_select_indices(self):
         result = self.conn.index_stats(self.index_name)
-        self.assertEquals(5, result._all.indices[self.index_name].total.docs.count)
+        self.assertEquals(5, result._all.total.docs.count)
 
     def test_optimize(self):
         result = self.conn.indices.optimize(indices=self.index_name, wait_for_merge=True, max_num_segments=1)

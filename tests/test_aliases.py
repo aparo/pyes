@@ -36,13 +36,13 @@ class ErrorReportingTestCase(ESTestCase):
         self.conn.delete_alias("test-alias", self.index_name)
 
         # Add an alias from test-alias to test-index
-        self.conn.change_aliases([['add', 'test-index', 'test-alias']])
+        self.conn.change_aliases([['add', 'test-index', 'test-alias', {}]])
         self.assertEqual(self.conn.get_alias("test-alias"), ['test-index'])
 
         # Adding an alias to a missing index fails
         err = self.checkRaises(exceptions.IndexMissingException,
             self.conn.change_aliases,
-            [['add', 'test-missing-index', 'test-alias']])
+            [['add', 'test-missing-index', 'test-alias', {}]])
         self.assertEqual(str(err), '[test-missing-index] missing')
         self.assertEqual(self.conn.get_alias("test-alias"), ['test-index'])
 
@@ -65,7 +65,7 @@ class ErrorReportingTestCase(ESTestCase):
 
         # Add an alias to test-index2.
         self.assertTrue('ok' in self.conn.create_index("test-index2"))
-        self.conn.change_aliases([['add', 'test-index2', 'test-alias']])
+        self.conn.change_aliases([['add', 'test-index2', 'test-alias', {}]])
         self.assertEqual(sorted(self.conn.get_alias("test-alias")),
             ['test-index', 'test-index2'])
 

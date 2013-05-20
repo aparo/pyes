@@ -870,7 +870,7 @@ class TermQuery(Query):
         super(TermQuery, self).__init__(**kwargs)
         self._values = {}
         if field is not None and value is not None:
-            self.add(field, value, boost)
+            self.add(field, value, boost=boost)
 
     def add(self, field, value, boost=None):
         match = {'value': value}
@@ -894,9 +894,14 @@ class TermsQuery(TermQuery):
     _internal_name = "terms"
 
     def __init__(self, *args, **kwargs):
+        minimum_match = kwargs.pop('minimum_match', 1)
+
         super(TermsQuery, self).__init__(*args, **kwargs)
 
-    def add(self, field, value, minimum_match=1):
+        if minimum_match is not None:
+            self._values['minimum_match'] = int(minimum_match)
+
+    def add(self, field, value, minimum_match=1, boost=None):
         if not isinstance(value, list):
             raise InvalidParameterQuery("value %r must be valid list" % value)
         self._values[field] = value

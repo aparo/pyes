@@ -497,5 +497,22 @@ class QuerySearchTestCase(ESTestCase):
         resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
         self.assertEquals(resultset.total, 1)
 
+    def test_CustomBoostFactorQuery(self):
+        q = CustomBoostFactorQuery(query=TermQuery("name", "joe"),
+            boost_factor=1.0)
+
+        resultset = self.conn.search(query=q, indices=self.index_name)
+
+        self.assertEquals(resultset.total, 1)
+        score = resultset.hits[0]['_score']
+
+        q = CustomBoostFactorQuery(query=TermQuery("name", "joe"),
+            boost_factor=2.0)
+        resultset = self.conn.search(query=q, indices=self.index_name)
+
+        score_boosted = resultset.hits[0]['_score']
+        self.assertEqual(score*2, score_boosted)
+
+
 if __name__ == "__main__":
     unittest.main()

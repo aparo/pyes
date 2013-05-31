@@ -1428,3 +1428,22 @@ class CustomFiltersScoreQuery(Query):
         if self.lang is not None:
             data['lang'] = self.lang
         return data
+
+
+class CustomBoostFactorQuery(Query):
+    _internal_name = "custom_boost_factor"
+
+    def __init__(self, query, boost_factor, **kwargs):
+        super(CustomBoostFactorQuery, self).__init__(**kwargs)
+        self.boost_factor = boost_factor
+        self.query = query
+
+    def _serialize(self):
+        data = {'query': self.query.serialize()}
+
+        if isinstance(self.boost_factor, (float, int)):
+            data['boost_factor'] = self.boost_factor
+        else:
+            data['boost_factor'] = float(self.boost_factor)
+
+        return data

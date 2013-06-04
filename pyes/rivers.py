@@ -38,7 +38,7 @@ class RabbitMQRiver(River):
                  password="guest", vhost="/", queue="es", exchange="es",
                  routing_key="es", exchange_declare=True, exchange_type="direct",
                  exchange_durable=True, queue_declare=True, queue_durable=True,
-                 queue_auto_delete=False, **kwargs):
+                 queue_auto_delete=False,queue_bind=True, **kwargs):
         super(RabbitMQRiver, self).__init__(**kwargs)
         self.host = host
         self.port = port
@@ -54,6 +54,7 @@ class RabbitMQRiver(River):
         self.queue_declare = queue_declare
         self.queue_durable = queue_durable
         self.queue_auto_delete = queue_auto_delete
+        self.queue_bind = queue_bind
 
     def _serialize(self):
         return {
@@ -72,7 +73,8 @@ class RabbitMQRiver(River):
                 "exchange_durable": self.exchange_durable,
                 "queue_declare": self.queue_declare,
                 "queue_durable": self.queue_durable,
-                "queue_auto_delete": self.queue_auto_delete
+                "queue_auto_delete": self.queue_auto_delete,
+                "queue_bind": self.queue_bind
             }
         }
 

@@ -60,6 +60,8 @@ class Search(EqualityComparableUsingAttributeDictionary):
     This contains a query, and has additional parameters which are used to
     control how the search works, what it should return, etc.
 
+    The rescore parameter takes a Search object created from a RescoreQuery.
+
     Example:
 
     q = StringQuery('elasticsearch')
@@ -68,8 +70,8 @@ class Search(EqualityComparableUsingAttributeDictionary):
     """
 
     def __init__(self, query=None, filter=None, fields=None, start=None,
-                 size=None, highlight=None, sort=None, explain=False, facet=None,
-                 version=None, track_scores=None, script_fields=None, index_boost=None,
+                 size=None, highlight=None, sort=None, explain=False, facet=None, rescore=None,
+                 window_size=None, version=None, track_scores=None, script_fields=None, index_boost=None,
                  min_score=None, stats=None, bulk_read=None, partial_fields=None):
         """
         fields: if is [], the _source is not returned
@@ -84,6 +86,8 @@ class Search(EqualityComparableUsingAttributeDictionary):
         self.sort = sort
         self.explain = explain
         self.facet = facet or FacetFactory()
+        self.rescore = rescore
+        self.window_size = window_size
         self.version = version
         self.track_scores = track_scores
         self._script_fields = script_fields
@@ -113,6 +117,10 @@ class Search(EqualityComparableUsingAttributeDictionary):
             res['filter'] = self.filter.serialize()
         if self.facet.facets:
             res['facets'] = self.facet.serialize()
+        if self.rescore:
+            res['rescore'] = self.rescore.serialize()
+        if self.window_size:
+            res['window_size'] = self.window_size
         if self.fields is not None: #Deal properly with self.fields = []
             res['fields'] = self.fields
         if self.size is not None:
@@ -862,7 +870,7 @@ class TermQuery(Query):
         super(TermQuery, self).__init__(**kwargs)
         self._values = {}
         if field is not None and value is not None:
-            self.add(field, value, boost)
+            self.add(field, value, boost=boost)
 
     def add(self, field, value, boost=None):
         match = {'value': value}
@@ -886,9 +894,14 @@ class TermsQuery(TermQuery):
     _internal_name = "terms"
 
     def __init__(self, *args, **kwargs):
+        minimum_match = kwargs.pop('minimum_match', 1)
+
         super(TermsQuery, self).__init__(*args, **kwargs)
 
-    def add(self, field, value, minimum_match=1):
+        if minimum_match is not None:
+            self._values['minimum_match'] = int(minimum_match)
+
+    def add(self, field, value, minimum_match=1, boost=None):
         if not isinstance(value, list):
             raise InvalidParameterQuery("value %r must be valid list" % value)
         self._values[field] = value
@@ -1338,6 +1351,34 @@ class PercolatorQuery(Query):
         """Disable this as it is not allowed in percolator queries."""
         raise NotImplementedError()
 
+class RescoreQuery(Query):
+    """
+    A rescore query is used to rescore top results from another query.
+    """
+
+    _internal_name = "rescore_query"
+
+    def __init__(self, query, window_size=None, query_weight=None, rescore_query_weight=None, **kwargs):
+        """
+        Constructor
+        """
+        super(RescoreQuery, self).__init__(**kwargs)
+        self.query = query
+        self.window_size = window_size
+        self.query_weight = query_weight
+        self.rescore_query_weight = rescore_query_weight
+
+    def serialize(self):
+        """Serialize the query to a structure using the query DSL."""
+        
+        data = {self._internal_name: self.query.serialize()}
+        if self.query_weight:
+            data['query_weight'] = self.query_weight
+        if self.rescore_query_weight:
+            data['rescore_query_weight'] = self.rescore_query_weight
+
+        return data
+
 
 class CustomFiltersScoreQuery(Query):
 
@@ -1386,4 +1427,23 @@ class CustomFiltersScoreQuery(Query):
             data['params'] = self.params
         if self.lang is not None:
             data['lang'] = self.lang
+        return data
+
+
+class CustomBoostFactorQuery(Query):
+    _internal_name = "custom_boost_factor"
+
+    def __init__(self, query, boost_factor, **kwargs):
+        super(CustomBoostFactorQuery, self).__init__(**kwargs)
+        self.boost_factor = boost_factor
+        self.query = query
+
+    def _serialize(self):
+        data = {'query': self.query.serialize()}
+
+        if isinstance(self.boost_factor, (float, int)):
+            data['boost_factor'] = self.boost_factor
+        else:
+            data['boost_factor'] = float(self.boost_factor)
+
         return data

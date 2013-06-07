@@ -168,7 +168,7 @@ class JDBCRiver(River):
 
     def __init__(self, dbhost="localhost", dbport=5432, dbtype="postgresql",
                  dbname=None, dbuser=None, dbpassword=None, poll_time="5s",
-                 sql=None, name=None, params={}, **kwargs):
+                 sql="", name=None, params={}, **kwargs):
         super(JDBCRiver, self).__init__(**kwargs)
         self.dbsettings = {
                 'dbhost': dbhost,

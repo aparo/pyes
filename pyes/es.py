@@ -1099,9 +1099,7 @@ class ES(object):
         """
         Return if a document exists
         """
-        if isinstance(id, (int, long, float)):
-            id = str(id)
-        path = make_path(index, doc_type, urllib.quote_plus(id))
+        path = make_path(index, doc_type, id)
         return self._send_request('HEAD', path, params=query_params)
 
     def get(self, index, doc_type, id, fields=None, model=None, **query_params):

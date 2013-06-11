@@ -962,6 +962,11 @@ class ES(object):
                 version = str(version)
             querystring_args['version'] = version
 
+        if ttl is not None:
+            if not isinstance(ttl, basestring):
+                ttl = str(ttl)
+            querystring_args['ttl'] = ttl
+            
         if id is None:
             request_method = 'POST'
         else:

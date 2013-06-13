@@ -309,7 +309,7 @@ class TermFacet(Facet):
         self.all_terms = all_terms
 
     def _serialize(self):
-        if not self.fields or not self.field or not self.script:
+        if not self.fields and not self.field and not self.script:
             raise RuntimeError("Field, Fields or Script is required:%s" % self.order)
 
         data = {}

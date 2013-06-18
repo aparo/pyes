@@ -1186,6 +1186,38 @@ class ES(object):
         path = self._make_path(indices, doc_types, "_search")
         return self._send_request('GET', path, body, params=query_params)
 
+    def search_raw_multi(self, queries, indices_list=None, doc_types_list=None):
+        if indices_list is None:
+            indices_list = [None] * len(queries)
+
+        if doc_types_list is None:
+            doc_types_list = [None] * len(queries)
+
+        queries = [query.search() if isinstance(query, Query)
+                   else query.serialize() for query in queries]
+        queries = map(self._encode_query, queries)
+        headers = []
+        for index_name, doc_type in zip(indices_list,
+                                        doc_types_list):
+            d = {}
+            if index_name is not None:
+                d['index'] = index_name
+            if doc_type is not None:
+                d['type'] = doc_type
+
+            if d:
+                headers.append(d)
+            else:
+                headers.append('')
+
+        headers = [json.dumps(header) for header in headers]
+
+        body = '\n'.join(map(lambda (h, q): '%s\n%s' % (h, q),
+                             zip(headers, queries)))
+        path = self._make_path(None, None, '_msearch')
+
+        return body, self._send_request('GET', path, body)
+
     def search(self, query, indices=None, doc_types=None, model=None, scan=False, **query_params):
         """Execute a search against one or more indices to get the resultset.
 
@@ -1206,6 +1238,13 @@ class ES(object):
 
         return ResultSet(self, search, indices=indices, doc_types=doc_types,
                          model=model, query_params=query_params)
+
+    def search_multi(self, queries, indices_list=None, doc_types_list=None, models=None, scans=None):
+        searches = [query if isinstance(query, Search) else Search(query) for query in queries]
+
+        return ResultSetMulti(self, searches, indices_list=indices_list, doc_types_list=doc_types_list,
+                              models=models)
+
 
     #    scan method is no longer working due to change in ES.search behavior.  May no longer warrant its own method.
     #    def scan(self, query, indices=None, doc_types=None, scroll="10m", **query_params):
@@ -1438,6 +1477,9 @@ class ResultSet(object):
                 self._results['hits']['hits'] = []
 
         if process_post_query:
+            self._post_process_query()
+
+    def _post_process_query(self):
             self._facets = self._results.get('facets', {})
             if 'hits' in self._results:
                 self.valid = True
@@ -1613,3 +1655,113 @@ class ResultSet(object):
 
         return self.connection.search_raw(self.search, indices=self.indices,
                                           doc_types=self.doc_types, **query_params)
+
+class ResultSetMulti(object):
+    def __init__(self, connection, searches, indices_list=None,
+                 doc_types_list=None, models=None):
+        """
+        results: an es query results dict
+        fix_keys: remove the "_" from every key, useful for django views
+        clean_highlight: removed empty highlight
+        search: a Search object.
+        """
+        for search in searches:
+            if not isinstance(search, Search):
+                raise InvalidQuery("ResultSet must be supplied with a Search object")
+
+        self.searches = searches
+        num_searches = len(self.searches)
+        self.connection = connection
+
+        if indices_list is None:
+            self.indices_list = [None] * num_searches
+        else:
+            self.indices_list = indices_list
+
+        if doc_types_list is None:
+            self.doc_types_list = [None] * num_searches
+        else:
+            self.doc_types_list = doc_types_list
+        self._results_list = None
+        self.models = models or self.connection.model
+        self._total = None
+        self.valid = False
+        self.error = None
+
+        self.multi_search_query = None
+
+        self.iterpos = 0
+        self._max_item = None
+
+    def _do_search(self):
+        self.iterpos = 0
+
+        response = self._search_raw_multi()
+
+        if 'responses' in response:
+            responses = response['responses']
+            self._results_list = [ResultSet(self.connection, search,
+                                            indices=indices, query_params={})
+                for search, indices in
+                    zip(self.searches, self.indices_list)]
+
+            for rs, rsp in zip(self._results_list, responses):
+                if 'error' in rsp:
+                    rs.error = rsp['error']
+                else:
+                    rs._results = rsp
+                    rs._post_process_query()
+
+            self.valid = True
+
+            self._max_item = len(self._results_list or [])
+        else:
+            self.error = response
+
+    def _search_raw_multi(self):
+        self.multi_search_query, result = self.connection.search_raw_multi(
+            self.searches, indices_list=self.indices_list,
+            doc_types_list=self.doc_types_list)
+
+        return result
+
+    def __len__(self):
+        if self._results_list is None:
+            self._do_search()
+
+        return len(self._results_list or [])
+
+    def __getitem__(self, val):
+        if not isinstance(val, (int, long, slice)):
+            raise TypeError('%s indices must be integers, not %s' % (
+                self.__class__.__name__, val.__class__.__name__))
+
+        if self._results_list is None:
+            self._do_search()
+
+        if isinstance(val, slice):
+            return self._results_list[val.start:val.stop]
+
+        return self._results_list[val]
+
+    def __iter__(self):
+        self.iterpos = 0
+
+        return self
+
+    def next(self):
+        if self._results_list is None:
+            self._do_search()
+
+        if self._max_item is not None and self.iterpos == self._max_item:
+            raise StopIteration
+
+        if self._max_item == 0:
+            raise StopIteration
+
+        if self.iterpos < self._max_item:
+            res = self._results_list[self.iterpos]
+            self.iterpos += 1
+            return res
+
+        raise StopIteration

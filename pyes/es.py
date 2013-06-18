@@ -1214,6 +1214,7 @@ class ES(object):
 
         body = '\n'.join(map(lambda (h, q): '%s\n%s' % (h, q),
                              zip(headers, queries)))
+        body = '%s\n' % body
         path = self._make_path(None, None, '_msearch')
 
         return body, self._send_request('GET', path, body)

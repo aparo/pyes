@@ -817,6 +817,65 @@ class ES(object):
         """
         return self.indices.get_mapping(doc_type=doc_type, indices=indices)
 
+    def put_warmer(self, doc_types=None, indices=None, name=None, warmer=None, querystring_args=None):
+        """
+        Put new warmer into index (or type)
+
+        :param doc_types: list of document types
+        :param warmer: anything with ``serialize`` method or a dictionary
+        :param name: warmer name
+        :param querystring_args: additional arguments passed as GET params to ES
+        """
+        if not querystring_args:
+            querystring_args = {}
+        doc_types_str=''
+        if doc_types:
+            doc_types_str = '/' + ','.join(doc_types)
+        path = '/{0}{1}/_warmer/{2}'.format(','.join(indices), doc_types_str, name)
+        if hasattr(warmer, 'serialize'):
+            body=warmer.serialize()
+        else:
+            body=warmer
+        return self._send_request(method='PUT', path=path, body=body, params=querystring_args)
+
+    def get_warmer(self, doc_types=None, indices=None, name=None, querystring_args=None):
+        """
+        Retrieve warmer
+
+        :param doc_types: list of document types
+        :param warmer: anything with ``serialize`` method or a dictionary
+        :param name: warmer name. If not provided, all warmers will be returned
+        :param querystring_args: additional arguments passed as GET params to ES
+        """
+        name = name or ''
+        if not querystring_args:
+            querystring_args = {}
+        doc_types_str=''
+        if doc_types:
+            doc_types_str = '/' + ','.join(doc_types)
+        path = '/{0}{1}/_warmer/{2}'.format(','.join(indices), doc_types_str, name)
+
+        return self._send_request(method='GET', path=path, params=querystring_args)
+
+    def delete_warmer(self, doc_types=None, indices=None, name=None, querystring_args=None):
+        """
+        Retrieve warmer
+
+        :param doc_types: list of document types
+        :param warmer: anything with ``serialize`` method or a dictionary
+        :param name: warmer name. If not provided, all warmers for given indices will be deleted
+        :param querystring_args: additional arguments passed as GET params to ES
+        """
+        name = name or ''
+        if not querystring_args:
+            querystring_args = {}
+        doc_types_str=''
+        if doc_types:
+            doc_types_str = '/' + ','.join(doc_types)
+        path = '/{0}{1}/_warmer/{2}'.format(','.join(indices), doc_types_str, name)
+
+        return self._send_request(method='DELETE', path=path, params=querystring_args)
+
     def collect_info(self):
         """
         Collect info about the connection and fill the info dictionary.
@@ -915,7 +974,7 @@ class ES(object):
         return self.flush_bulk()
 
     def index(self, doc, index, doc_type, id=None, parent=None, force_insert=False,
-              op_type=None, bulk=False, version=None, querystring_args=None):
+              op_type=None, bulk=False, version=None, querystring_args=None, ttl=None):
         """
         Index a typed JSON document into a specific index and make it searchable.
         """
@@ -938,6 +997,8 @@ class ES(object):
                 cmd[op_type]['percolate'] = querystring_args['percolate']
             if id is not None:  #None to support 0 as id
                 cmd[op_type]['_id'] = id
+            if ttl is not None:
+                cmd[op_type]['_ttl'] = ttl
 
             if isinstance(doc, dict):
                 doc = json.dumps(doc, cls=self.encoder)
@@ -960,6 +1021,11 @@ class ES(object):
                 version = str(version)
             querystring_args['version'] = version
 
+        if ttl is not None:
+            if not isinstance(ttl, basestring):
+                ttl = str(ttl)
+            querystring_args['ttl'] = ttl
+            
         if id is None:
             request_method = 'POST'
         else:

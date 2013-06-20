@@ -974,7 +974,7 @@ class ES(object):
         return self.flush_bulk()
 
     def index(self, doc, index, doc_type, id=None, parent=None, force_insert=False,
-              op_type=None, bulk=False, version=None, querystring_args=None):
+              op_type=None, bulk=False, version=None, querystring_args=None, ttl=None):
         """
         Index a typed JSON document into a specific index and make it searchable.
         """
@@ -997,6 +997,8 @@ class ES(object):
                 cmd[op_type]['percolate'] = querystring_args['percolate']
             if id is not None:  #None to support 0 as id
                 cmd[op_type]['_id'] = id
+            if ttl is not None:
+                cmd[op_type]['_ttl'] = ttl
 
             if isinstance(doc, dict):
                 doc = json.dumps(doc, cls=self.encoder)
@@ -1019,6 +1021,11 @@ class ES(object):
                 version = str(version)
             querystring_args['version'] = version
 
+        if ttl is not None:
+            if not isinstance(ttl, basestring):
+                ttl = str(ttl)
+            querystring_args['ttl'] = ttl
+            
         if id is None:
             request_method = 'POST'
         else:

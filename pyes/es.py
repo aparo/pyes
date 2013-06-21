@@ -579,6 +579,7 @@ class ES(object):
                 settings = SettingsBuilder(mappings=mappings)
         if not exists:
             self.create_index(index, settings)
+            self.indices.refresh(index, timesleep=1)
 
     @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.delete_index_if_exists")
     def delete_index_if_exists(self, index):

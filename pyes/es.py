@@ -398,7 +398,7 @@ class ES(object):
                 # In this case, the body is actually a good message to return
                 # in the exception.
                 raise ElasticSearchException(response.body, response.status, response.body)
-        if response.status != 200:
+        if response.status not in [200, 201]:
             raise_if_error(response.status, decoded)
         if not raw and isinstance(decoded, dict):
             decoded = DotDict(decoded)

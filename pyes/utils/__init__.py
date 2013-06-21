@@ -2,8 +2,23 @@
 from __future__ import absolute_import
 import base64
 from urllib import quote
+import array
+import uuid
 
-__all__ = ['clean_string', "ESRange", "ESRangeOp", "string_b64encode", "string_b64decode", "make_path"]
+__all__ = ['clean_string', "ESRange", "ESRangeOp", "string_b64encode", "string_b64decode", "make_path", "make_id"]
+
+def make_id(value):
+    """
+    Build a string id from a value
+    :param value: a text value
+    :return: a string
+    """
+    if isinstance(value, unicode):
+        value=value.encode("utf8", errors="ignore")
+    from hashlib import md5
+    val = uuid.UUID(bytes=md5(value).digest(), version=4)
+
+    return base64.urlsafe_b64encode(val.get_bytes())[:-2]
 
 def make_path(*path_components):
     """

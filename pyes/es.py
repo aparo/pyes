@@ -1335,17 +1335,6 @@ class ES(object):
         """
         return self._send_request('GET', "_search/scroll", scroll_id, {"scroll": scroll})
 
-    def reindex(self, query, indices=None, doc_types=None, **query_params):
-        """
-        Execute a search query against one or more indices and and reindex the hits.
-        query must be a dictionary or a Query object that will convert to Query DSL.
-        Note: reindex is only available in my ElasticSearch branch on github.
-        """
-        path = self._make_path(indices, doc_types, "_reindexbyquery")
-        if isinstance(query, dict) and "query" in query:
-            query = query["query"]
-        body = self._encode_query(query)
-        return self._send_request('POST', path, body, query_params)
 
     def count(self, query=None, indices=None, doc_types=None, **query_params):
         """

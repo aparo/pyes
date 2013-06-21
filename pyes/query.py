@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import
 from .exceptions import InvalidQuery, InvalidParameterQuery, QueryError, \
     ScriptFieldsError
 from .facets import FacetFactory
@@ -167,7 +169,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
         return self._script_fields
 
     def add_highlight(self, field, fragment_size=None,
-                      number_of_fragments=None, fragment_offset=None):
+                      number_of_fragments=None, fragment_offset=None, type=None):
         """Add a highlight field.
 
         The Search object will be returned, so calls to this can be chained.
@@ -175,7 +177,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
         """
         if self._highlight is None:
             self._highlight = HighLighter("<b>", "</b>")
-        self._highlight.add_field(field, fragment_size, number_of_fragments, fragment_offset)
+        self._highlight.add_field(field, fragment_size, number_of_fragments, fragment_offset, type=type)
         return self
 
     def add_index_boost(self, index, boost):

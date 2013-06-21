@@ -253,6 +253,16 @@ class BooleanField(AbstractField):
             result['include_in_all'] = self.include_in_all
         return result
 
+class BinaryField(AbstractField):
+    def __init__(self, *args, **kwargs):
+        kwargs["tokenize"] = False
+        super(BinaryField, self).__init__(*args, **kwargs)
+        self.type = "binary"
+
+
+    def as_dict(self):
+        result = super(BinaryField, self).as_dict()
+        return result
 
 class MultiField(object):
     def __init__(self, name, type=None, path=None, fields=None):
@@ -403,13 +413,16 @@ class ObjectField(object):
         result = []
         for k, v in self.properties.items():
             if isinstance(v, DateField):
-                result.append((k, "date"))
+                if not v.tokenize:
+                    result.append((k, "date"))
             elif isinstance(v, NumericFieldAbstract):
                 result.append((k, "numeric"))
             elif isinstance(v, StringField):
-                result.append((k, "term"))
+                if not v.tokenize:
+                    result.append((k, "term"))
             elif isinstance(v, GeoPointField):
-                result.append((k, "geo"))
+                if not v.tokenize:
+                    result.append((k, "geo"))
             elif isinstance(v, ObjectField):
                 for n, t in self.get_available_facets():
                     result.append((self.name + "." + k, t))
@@ -550,6 +563,8 @@ def get_field(name, data, default="object", document_object_field=None, is_docum
     _type = data.get('type', default)
     if _type == "string":
         return StringField(name=name, **data)
+    elif _type == "binary":
+        return BinaryField(name=name, **data)
     elif _type == "boolean":
         return BooleanField(name=name, **data)
     elif _type == "short":
@@ -668,6 +683,7 @@ MAPPING_NAME_TYPE = {
     "multifield": MultiField,
     "nested": NestedObject,
     "short": ShortField,
-    "string": StringField
+    "string": StringField,
+    "binary":BinaryField
 }
 

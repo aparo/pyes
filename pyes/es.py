@@ -1178,12 +1178,12 @@ class ES(object):
         model = model or self.model
         return model(self, self._send_request('GET', path, params=query_params))
 
-    def factory_object(self, index, doc_type, data=None, id=None, vertex=False):
+    def factory_object(self, index, doc_type, data=None, id=None):
         """
         Create a stub object to be manipulated
         """
         data = data or {}
-        obj = ElasticSearchModel()
+        obj = self.model()
         obj._meta.index = index
         obj._meta.type = doc_type
         obj._meta.connection = self
@@ -1191,8 +1191,6 @@ class ES(object):
             obj._meta.id = id
         if data:
             obj.update(data)
-        if vertex:
-            obj.force_vertex()
         return obj
 
     def mget(self, ids, index=None, doc_type=None, **query_params):

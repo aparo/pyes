@@ -1076,7 +1076,6 @@ class ES(object):
         """
         data = self.get(index, doc_type, id)
         return data['_name'], base64.standard_b64decode(data['content'])
-        #return data["_source"]['_name'], base64.standard_b64decode(data["_source"]['content'])
 
     def partial_update(self, index, doc_type, id, script, params=None,
                        upsert=None, querystring_args=None):

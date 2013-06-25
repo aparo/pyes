@@ -1164,7 +1164,7 @@ class SpanFirstQuery(TermQuery):
     def _serialize(self):
         if not self._values:
             raise RuntimeError("A least a field/value pair must be added")
-        return {"match": {"span_first": self._values}, "end": self.end}
+        return {"match": {"span_term": self._values}, "end": self.end}
 
 
 class SpanNearQuery(Query):

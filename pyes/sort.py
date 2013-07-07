@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from .exceptions import InvalidSortOrder
 from .utils import EqualityComparableUsingAttributeDictionary
 
@@ -106,7 +107,7 @@ class SortFactory(EqualityComparableUsingAttributeDictionary):
         res = []
         for _sort in self.sort_orders:
             res.append(_sort.serialize())
-        return res
+        return res or None
 
     def __repr__(self):
         return str(self.serialize())

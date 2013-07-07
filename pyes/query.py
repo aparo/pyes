@@ -1,5 +1,6 @@
 from .exceptions import InvalidQuery, InvalidParameterQuery, QueryError, \
     ScriptFieldsError
+from .sort import SearchFactory
 from .facets import FacetFactory
 from .filters import ANDFilter, Filter
 from .highlight import HighLighter
@@ -83,7 +84,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
         self.start = start
         self.size = size
         self._highlight = highlight
-        self.sort = sort
+        self.sort = sort or SortFactory()
         self.explain = explain
         self.facet = facet or FacetFactory()
         self.rescore = rescore

@@ -10,11 +10,18 @@ import random
 import threading
 import urllib3
 import heapq
+from multiprocessing import current_process
 
 __all__ = ["connect"]
 
 DEFAULT_SERVER = ("http", "127.0.0.1", 9200)
-POOL_MANAGER = urllib3.PoolManager()
+
+POOLS = {}
+
+def get_pool():
+    if not current_process() in POOLS:
+        POOLS[current_process()] = urllib3.PoolManager()
+    return POOLS[current_process()]
 
 def update_connection_pool(maxsize=1):
     """Update the global connection pool manager parameters.
@@ -22,7 +29,7 @@ def update_connection_pool(maxsize=1):
     maxsize: Number of connections to save that can be reused (default=1).
              More than 1 is useful in multithreaded situations.
     """
-    POOL_MANAGER.connection_pool_kw.update(maxsize=maxsize)
+    get_pool().connection_pool_kw.update(maxsize=maxsize)
 
 class Connection(object):
     """An ElasticSearch connection to a randomly chosen server of the list.
@@ -93,7 +100,7 @@ class Connection(object):
                 self._local.server = server = self._get_server()
             try:
                 parse_result = urlparse(server)
-                conn = POOL_MANAGER.connection_from_host(parse_result.hostname,
+                conn = get_pool().connection_from_host(parse_result.hostname,
                                                          parse_result.port,
                                                          parse_result.scheme)
                 response = conn.urlopen(**kwargs)

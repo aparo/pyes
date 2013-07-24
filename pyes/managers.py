@@ -475,6 +475,9 @@ class Cluster(object):
                 raise ValueError("%s is not a valid delay time"%delay)
             except TypeError:
                 raise TypeError("%s is not of type int or string"%delay)
+        if not path:
+            # default action
+            path = make_path('_shutdown')
         return self.conn._send_request('GET', path)
 
 

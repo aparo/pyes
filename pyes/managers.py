@@ -460,7 +460,7 @@ class Cluster(object):
     def shutdown(self, all_nodes=False, master=False, local=False, nodes=[],
                  delay=None):
         if all_nodes:
-            patn = make_path('_shutdown')
+            path = make_path('_shutdown')
         elif master:
             path = make_path("_cluster", "nodes", "_master", "_shutdown")
         elif nodes:

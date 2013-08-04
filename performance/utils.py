@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#Brainaetic: http://www.thenetplanet.com
-#Copyright 2009-2010 - The Net Planet Europe S.R.L.  All Rights Reserved. 
 
 import random
 import os

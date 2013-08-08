@@ -1532,6 +1532,8 @@ class ResultSet(object):
         clean_highlight: removed empty highlight
         search: a Search object.
         """
+        from .query import Search
+
         if not isinstance(search, Search):
             raise InvalidQuery("ResultSet must be supplied with a Search object")
 
@@ -1545,6 +1547,7 @@ class ResultSet(object):
         self._results = None
         self.model = model or self.connection.model
         self._total = None
+        self._max_score = None
         self.valid = False
         self._facets = {}
         self._hits = []
@@ -1619,9 +1622,20 @@ class ResultSet(object):
         return self._total
 
     @property
+    def max_score(self):
+        if self._results is None:
+            self._do_search()
+        if self._max_score is None:
+            self._max_score = 1.0
+            if self.valid:
+                self._max_score = self._results.get("hits", {}).get('max_score', 1.0)
+        return self._max_score
+
+    @property
     def facets(self):
         if self._results is None:
             self._do_search()
+            self.fix_keys()
         return self._facets
 
     def fix_facets(self):
@@ -1636,7 +1650,8 @@ class ResultSet(object):
                     for k, v in entry.items():
                         if k in ["count", "max", "min", "total_count", "mean", "total"]:
                             continue
-                        entry[k] = datetime.utcfromtimestamp(v / 1e3)
+                        if not isinstance(entry[k], datetime):
+                            entry[k] = datetime.utcfromtimestamp(v / 1e3)
 
     def __len__(self):
         return self.total

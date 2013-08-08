@@ -1788,6 +1788,35 @@ class ResultSet(object):
         return self.connection.search_raw(self.search, indices=self.indices,
                                           doc_types=self.doc_types, **query_params)
 
+class EmptyResultSet(object):
+    def __init__(self, *args, **kwargs):
+        """
+        """
+
+
+    @property
+    def total(self):
+        return 0
+
+    @property
+    def facets(self):
+        return {}
+
+    def __len__(self):
+        return self.total
+
+    def count(self):
+        return self.total
+
+    def __getitem__(self, val):
+        raise IndexError
+
+    def next(self):
+        raise StopIteration
+
+    def __iter__(self):
+        return self
+
 class ResultSetMulti(object):
     def __init__(self, connection, searches, indices_list=None,
                  doc_types_list=None, routing_list=None, models=None):

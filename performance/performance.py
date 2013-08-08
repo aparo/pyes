@@ -6,8 +6,8 @@ import sys
 from brainaetic.echidnasearch.es import ES
 from datetime import datetime
 import shelve
-#conn = ES('127.0.0.1:9200')
-conn = ES('192.168.2.50:9200')
+conn = ES('127.0.0.1:9500')
+#conn = ES('192.168.2.50:9200')
 try:
     conn.delete_index("test-index")
 except:

@@ -1026,7 +1026,7 @@ class ES(object):
             if not isinstance(ttl, basestring):
                 ttl = str(ttl)
             querystring_args['ttl'] = ttl
-            
+
         if id is None:
             request_method = 'POST'
         else:
@@ -1250,24 +1250,31 @@ class ES(object):
         path = self._make_path(indices, doc_types, "_search")
         return self._send_request('GET', path, body, params=query_params)
 
-    def search_raw_multi(self, queries, indices_list=None, doc_types_list=None):
+    def search_raw_multi(self, queries, indices_list=None, doc_types_list=None,
+                         routing_list=None):
         if indices_list is None:
             indices_list = [None] * len(queries)
 
         if doc_types_list is None:
             doc_types_list = [None] * len(queries)
 
+        if routing_list is None:
+            routing_list = [None] * len(queries)
+
         queries = [query.search() if isinstance(query, Query)
                    else query.serialize() for query in queries]
         queries = map(self._encode_query, queries)
         headers = []
-        for index_name, doc_type in zip(indices_list,
-                                        doc_types_list):
+        for index_name, doc_type, routing in zip(indices_list,
+                                                 doc_types_list,
+                                                 routing_list):
             d = {}
             if index_name is not None:
                 d['index'] = index_name
             if doc_type is not None:
                 d['type'] = doc_type
+            if routing is not None:
+                d['routing'] = routing
 
             if d:
                 headers.append(d)
@@ -1304,11 +1311,13 @@ class ES(object):
         return ResultSet(self, search, indices=indices, doc_types=doc_types,
                          model=model, query_params=query_params)
 
-    def search_multi(self, queries, indices_list=None, doc_types_list=None, models=None, scans=None):
+    def search_multi(self, queries, indices_list=None, doc_types_list=None,
+                     routing_list=None, models=None, scans=None):
         searches = [query if isinstance(query, Search) else Search(query) for query in queries]
 
-        return ResultSetMulti(self, searches, indices_list=indices_list, doc_types_list=doc_types_list,
-                              models=models)
+        return ResultSetMulti(self, searches, indices_list=indices_list,
+                              doc_types_list=doc_types_list,
+                              routing_list=routing_list, models=models)
 
 
     #    scan method is no longer working due to change in ES.search behavior.  May no longer warrant its own method.
@@ -1712,7 +1721,7 @@ class ResultSet(object):
 
 class ResultSetMulti(object):
     def __init__(self, connection, searches, indices_list=None,
-                 doc_types_list=None, models=None):
+                 doc_types_list=None, routing_list=None, models=None):
         """
         results: an es query results dict
         fix_keys: remove the "_" from every key, useful for django views
@@ -1736,6 +1745,10 @@ class ResultSetMulti(object):
             self.doc_types_list = [None] * num_searches
         else:
             self.doc_types_list = doc_types_list
+        if routing_list is None:
+            self.routing_list = [None] * num_searches
+        else:
+            self.routing_list = routing_list
         self._results_list = None
         self.models = models or self.connection.model
         self._total = None
@@ -1755,9 +1768,11 @@ class ResultSetMulti(object):
         if 'responses' in response:
             responses = response['responses']
             self._results_list = [ResultSet(self.connection, search,
-                                            indices=indices, query_params={})
-                for search, indices in
-                    zip(self.searches, self.indices_list)]
+                                            indices=indices, query_params={},
+                                            doc_types=doc_types)
+                for search, indices, doc_types in
+                    zip(self.searches, self.indices_list,
+                        self.doc_types_list)]
 
             for rs, rsp in zip(self._results_list, responses):
                 if 'error' in rsp:
@@ -1775,7 +1790,7 @@ class ResultSetMulti(object):
     def _search_raw_multi(self):
         self.multi_search_query, result = self.connection.search_raw_multi(
             self.searches, indices_list=self.indices_list,
-            doc_types_list=self.doc_types_list)
+            doc_types_list=self.doc_types_list, routing_list=self.routing_list)
 
         return result
 

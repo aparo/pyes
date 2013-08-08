@@ -3,8 +3,11 @@
 import time
 from .exceptions import IndexAlreadyExistsException, IndexMissingException
 from .utils import make_path
+from .filters import Filter
 
 class Indices(object):
+    alias_params = ['filter', 'routing', 'search_routing', 'index_routing']
+
     def __init__(self, conn):
         self.conn = conn
 
@@ -46,11 +49,22 @@ class Indices(object):
                          `alias` are the index and alias to add or remove.
 
         """
-        body = {'actions': [{command: dict(index=index, alias=alias)}
-                            for (command, index, alias) in commands]}
+        body = {'actions': [{command: dict(index=index, alias=alias, **params)}
+                            for (command, index, alias, params) in commands]}
         return self.conn._send_request('POST', "_aliases", body)
 
-    def add_alias(self, alias, indices):
+    def _get_alias_params(self, **kwargs):
+        ret = {}
+        for name, value in kwargs.items():
+            if name in self.alias_params and value:
+                if isinstance(value, Filter):
+                    ret[name] = value.serialize()
+                else:
+                    ret[name] = value
+
+        return ret
+
+    def add_alias(self, alias, indices, **kwargs):
         """
         Add an alias to point to a set of indices.
         (See :ref:`es-guide-reference-api-admin-indices-aliases`)
@@ -60,7 +74,10 @@ class Indices(object):
 
         """
         indices = self.conn._validate_indices(indices)
-        return self.change_aliases(['add', index, alias] for index in indices)
+
+        return self.change_aliases(['add', index, alias,
+                                    self._get_alias_params(**kwargs)]
+                                    for index in indices)
 
     def delete_alias(self, alias, indices):
         """
@@ -75,9 +92,10 @@ class Indices(object):
         :param indices: a list of indices
         """
         indices = self.conn._validate_indices(indices)
-        return self.change_aliases(['remove', index, alias] for index in indices)
 
-    def set_alias(self, alias, indices):
+        return self.change_aliases(['remove', index, alias, {}] for index in indices)
+
+    def set_alias(self, alias, indices, **kwargs):
         """
         Set an alias.
         (See :ref:`es-guide-reference-api-admin-indices-aliases`)
@@ -97,8 +115,9 @@ class Indices(object):
             old_indices = self.get_alias(alias)
         except IndexMissingException:
             old_indices = []
-        commands = [['remove', index, alias] for index in old_indices]
-        commands.extend([['add', index, alias] for index in indices])
+        commands = [['remove', index, alias, {}] for index in old_indices]
+        commands.extend([['add', index, alias,
+                          self._get_alias_params(**kwargs)] for index in indices])
         if len(commands) > 0:
             return self.change_aliases(commands)
 
@@ -396,14 +415,31 @@ class Indices(object):
 
         return self.conn._send_request('PUT', path, mapping)
 
-    def get_mapping(self, doc_type=None, indices=None):
+    def get_mapping(self, doc_type=None, indices=None, raw=False):
         """
         Register specific mapping definition for a specific type against one or more indices.
         (See :ref:`es-guide-reference-api-admin-indices-get-mapping`)
 
         """
-        path = self.conn._make_path(indices, doc_type or (), "_mapping")
-        return self.conn._send_request('GET', path)
+        if doc_type is None and indices is None:
+            path = make_path("_mapping")
+            is_mapping = False
+        else:
+            indices = self.conn._validate_indices(indices)
+            if doc_type:
+                path = make_path(','.join(indices), doc_type, "_mapping")
+                is_mapping = True
+            else:
+                path = make_path(','.join(indices), "_mapping")
+                is_mapping = False
+        result = self.conn._send_request('GET', path)
+        if raw:
+            return result
+        mapper = Mapper(result, is_mapping=is_mapping, connection=self.conn,
+                        document_object_field=self.conn.document_object_field)
+        if doc_type:
+            return mapper.mappings[doc_type]
+        return mapper
 
     def delete_mapping(self, index, doc_type):
         """
@@ -441,7 +477,7 @@ class Cluster(object):
     def shutdown(self, all_nodes=False, master=False, local=False, nodes=[],
                  delay=None):
         if all_nodes:
-            patn = make_path('_shutdown')
+            path = make_path('_shutdown')
         elif master:
             path = make_path("_cluster", "nodes", "_master", "_shutdown")
         elif nodes:
@@ -456,6 +492,9 @@ class Cluster(object):
                 raise ValueError("%s is not a valid delay time"%delay)
             except TypeError:
                 raise TypeError("%s is not of type int or string"%delay)
+        if not path:
+            # default action
+            path = make_path('_shutdown')
         return self.conn._send_request('GET', path)
 
 

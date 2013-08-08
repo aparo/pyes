@@ -2,7 +2,7 @@
 from __future__ import absolute_import
 import unittest
 from .estestcase import ESTestCase
-from pyes.utils import clean_string
+from pyes.utils import clean_string, make_id
 from pyes.es import ES
 
 class UtilsTestCase(ESTestCase):
@@ -33,6 +33,8 @@ class UtilsTestCase(ESTestCase):
                            "thrift://127.0.0.1:9000",
                            "thrift://127.0.0.1:9500"])
 
+    def test_make_id(self):
+        self.assertEquals(make_id("prova"), "GJu7sAxfT7e7qa2ShfGT0Q")
 
 if __name__ == "__main__":
     unittest.main()

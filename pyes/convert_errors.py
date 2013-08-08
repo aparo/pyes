@@ -26,6 +26,7 @@ for name in (
     'ReduceSearchPhaseException',
     'ReplicationShardOperationFailedException',
     'SearchPhaseExecutionException',
+    'DocumentMissingException',
     )
 )
 

@@ -309,14 +309,18 @@ class TermFacet(Facet):
         self.all_terms = all_terms
 
     def _serialize(self):
+        if not self.fields and not self.field and not self.script:
+            raise RuntimeError("Field, Fields or Script is required:%s" % self.order)
+
+        data = {}
         if self.fields:
-            data = {'fields': self.fields}
-        else:
-            if self.field:
-                data = {'field': self.field}
-            else:
-                raise RuntimeError("Field or Fields is required:%s" % self.order)
-        if self.size:
+            data['fields'] = self.fields
+        elif self.field:
+            data['field'] = self.field
+
+        if self.script:
+            data['script'] = self.script
+        if self.size is not None:
             data['size'] = self.size
         if self.order:
             if self.order not in ['count', 'term', 'reverse_count', 'reverse_term']:
@@ -324,12 +328,10 @@ class TermFacet(Facet):
             data['order'] = self.order
         if self.exclude:
             data['exclude'] = self.exclude
-        if self.regex:
+        if (self.fields or self.field) and self.regex:
             data['regex'] = self.regex
             if self.regex_flags:
                 data['regex_flags'] = self.regex_flags
-        elif self.script:
-            data['script'] = self.script
         if self.all_terms:
             data['all_terms'] = self.all_terms
         return data

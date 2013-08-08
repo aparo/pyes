@@ -273,12 +273,21 @@ class MissingFilter(Filter):
 
     _internal_name = "missing"
 
-    def __init__(self, field, **kwargs):
+    def __init__(self, field, existence=None, null_value=None, **kwargs):
         super(MissingFilter, self).__init__(**kwargs)
         self.field = field
+        self.existence = existence
+        self.null_value = null_value
 
     def _serialize(self):
-        return {"field": self.field}
+        ret = {"field": self.field}
+
+        if self.existence is not None:
+            ret['existence'] = self.existence
+        if self.null_value is not None:
+            ret['null_value'] = self.null_value
+
+        return ret
 
 
 class RegexTermFilter(Filter):
@@ -368,6 +377,7 @@ class GeoDistanceFilter(Filter):
         self.distance = distance
         self.distance_type = distance_type
         self.distance_unit = distance_unit
+        self.optimize_bbox = optimize_bbox
 
     def _serialize(self):
         if self.distance_type not in ["arc", "plane"]:

@@ -31,7 +31,7 @@ class HighLighter(object):
         self.fragment_offset = fragment_offset
         self.encoder = encoder
 
-    def add_field(self, name, fragment_size=150, number_of_fragments=3, fragment_offset=None, order="score"):
+    def add_field(self, name, fragment_size=150, number_of_fragments=3, fragment_offset=None, order="score", type=None):
         """
         Add a field to Highlinghter
         """
@@ -42,6 +42,8 @@ class HighLighter(object):
             data['number_of_fragments'] = number_of_fragments
         if fragment_offset is not None:
             data['fragment_offset'] = fragment_offset
+        if type is not None:
+            data['type'] = type
         data['order'] = order
         self.fields[name] = data
 

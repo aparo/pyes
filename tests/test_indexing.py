@@ -163,6 +163,12 @@ class IndexingTestCase(ESTestCase):
         self.assertResultContains(result, {"name": "Joe Tester"})
         self.assertResultContains(result._meta, {"index": "test-index",
                                                  "type": "test-type", "id": "1"})
+    def testExists(self):
+        self.conn.index({"name": "Joe Tester"}, self.index_name, self.document_type, 1)
+        self.conn.index({"name": "Bill Baloney"}, self.index_name, self.document_type, "http://example.com")
+        self.conn.refresh(self.index_name)
+        self.assertTrue(self.conn.exists(self.index_name, self.document_type, 1))
+        self.assertTrue(self.conn.exists(self.index_name, self.document_type, "http://example.com"))
 
     def testMultiGet(self):
         self.conn.index({"name": "Joe Tester"}, self.index_name, self.document_type, 1)

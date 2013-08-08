@@ -1269,6 +1269,8 @@ class ES(object):
         dictionary of search parameters using the query DSL to be passed
         directly.
         """
+        from .query import Search, Query
+
         if isinstance(query, Query):
             query = query.search()
         if isinstance(query, Search):
@@ -1371,11 +1373,36 @@ class ES(object):
         """
         return self._send_request('GET', "_search/scroll", scroll_id, {"scroll": scroll})
 
+    def suggest_from_object(self, suggest, indices=None, preference=None, routing=None, raw=False, **kwargs):
+        indices = self.validate_indices(indices)
+
+        path = make_path(','.join(indices), "_suggest")
+        querystring_args = {}
+        if routing:
+            querystring_args["routing"] = routing
+        if preference:
+            querystring_args["preference"] = preference
+
+        result = self._send_request('POST', path, suggest.serialize(), querystring_args)
+        if raw:
+            return result
+        return expand_suggest_text(result)
+
+
+    def suggest(self, name, text, field, size=None, **kwargs):
+        from query import Suggest
+
+        suggest = Suggest()
+        suggest.add_field(text, name=name, field=field, size=size)
+        return self.suggest_from_object(suggest, **kwargs)
+
 
     def count(self, query=None, indices=None, doc_types=None, **query_params):
         """
         Execute a query against one or more indices and get hits count.
         """
+        from .query import MatchAllQuery
+
         if query is None:
             query = MatchAllQuery()
         body = self._encode_query(query)

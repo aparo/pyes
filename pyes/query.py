@@ -8,6 +8,67 @@ from .highlight import HighLighter
 from .scriptfields import ScriptFields
 from .utils import clean_string, ESRange, EqualityComparableUsingAttributeDictionary
 
+class Suggest(EqualityComparableUsingAttributeDictionary):
+    def __init__(self, fields=None):
+        self.fields = fields or {}
+
+    def add(self, text, name, field, size=None):
+        """
+        Set the suggester with autodetect
+        :param text: text
+        :param name: name of suggest
+        :param field: field to be used
+        :param size: number of phrases
+        :return: None
+        """
+        num_tokens = text.count(u' ') + 1
+        if num_tokens > 1:
+            self.add_phrase(text=text, name=name, field=field, size=size)
+        else:
+            self.add_term(text=text, name=name, field=field, size=size)
+
+    def add_term(self, text, name, field, size=None):
+        data = {"field": field}
+
+        if size:
+            data["size"] = size
+        self.fields[name] = {"text": text, "term": data}
+
+    def add_phrase(self, text, name, field, size=10):
+        tokens = text.split()
+        gram = field + ".bigram"
+        # if len(tokens) > 3:
+        #     gram = field + ".trigram"
+
+        data = {
+            "analyzer": "tnp_standard_lower",
+            "field": gram,
+            "size": 4,
+            "real_word_error_likelihood": 0.95,
+            "confidence": 2.0,
+            "gram_size": 2,
+            "direct_generator": [{
+                                     "field": field + ".tkl",
+                                     "suggest_mode": "always",
+                                     "min_word_len": 1
+                                 }, {
+                                     "field": field + ".reverse",
+                                     "suggest_mode": "always",
+                                     "min_word_len": 1,
+                                     "pre_filter": "reverse",
+                                     "post_filter": "reverse"
+                                 }]
+        }
+
+        if size:
+            data["size"] = size
+        self.fields[name] = {"text": text, "phrase": data}
+
+    def is_valid(self):
+        return len(self.fields) > 0
+
+    def serialize(self):
+        return self.fields
 
 class FieldParameter(EqualityComparableUsingAttributeDictionary):
 

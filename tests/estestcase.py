@@ -11,19 +11,23 @@ from pprint import pprint
 from pyes.es import ES
 from pyes.helpers import SettingsBuilder
 
+
 def get_conn(*args, **kwargs):
     return ES(("http", "127.0.0.1", 9200), *args, **kwargs)
 
 
 class ESTestCase(unittest.TestCase):
     def setUp(self):
-        self.conn = get_conn(timeout=300.0,log_curl=True)#incremented timeout for debugging
+        self.log = open("/tmp/%s.sh"%self._testMethodName, "wb")
+        self.conn = get_conn(timeout=300.0, log_curl=True, dump_curl=self.log)#incremented timeout for debugging
         self.index_name = "test-index"
         self.document_type = "test-type"
         self.conn.delete_index_if_exists(self.index_name)
 
     def tearDown(self):
         self.conn.delete_index_if_exists(self.index_name)
+        if self.log:
+            self.log.close()
 
     def assertResultContains(self, result, expected):
         for (key, value) in expected.items():
@@ -47,8 +51,8 @@ class ESTestCase(unittest.TestCase):
         except excClass, e:
             return e
         else:
-            raise self.failureException,\
-            "Expected exception %s not raised" % excClass
+            raise self.failureException, \
+                "Expected exception %s not raised" % excClass
 
     def get_datafile(self, filename):
         """

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 import unittest
-from .estestcase import ESTestCase
+from estestcase import ESTestCase
 from pyes.facets import DateHistogramFacet, TermFacet
 from pyes.filters import TermFilter, RangeFilter, BoolFilter
 from pyes.query import FilteredQuery, MatchAllQuery, Search, TermQuery
@@ -143,6 +143,11 @@ class FacetSearchTestCase(ESTestCase):
         query.facet.add(TermFacet(field='topic', facet_filter=BoolFilter(must_not=TermQuery(field='reviewed', value=True))))
         serialized = query.serialize()
         self.assertTrue(serialized['facets']['topic']['facet_filter']['bool'])
+
+    def test_term_facet_zero_size(self):
+        facet = TermFacet(field='topic', size=0)
+        serialized = facet.serialize()
+        self.assertEqual(0, serialized['topic']['terms']['size'])
 
 
 if __name__ == "__main__":

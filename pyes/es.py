@@ -1139,6 +1139,26 @@ class ES(object):
                     raise
                 self.refresh(index)
 
+    def partial_update(self, index, doc_type, id, script, params=None,
+                       upsert=None, querystring_args=None):
+        """
+        Partially update a document with a script
+        """
+        if querystring_args is None:
+            querystring_args = {}
+
+        cmd = {"script": script}
+
+        if params:
+            cmd["params"] = params
+
+        if upsert:
+            cmd["upsert"] = upsert
+
+        path = make_path(index, doc_type, id, "_update")
+
+        return self._send_request('POST', path, cmd, querystring_args)
+
     def delete(self, index, doc_type, id, bulk=False, **query_params):
         """
         Delete a typed JSON document from a specific index based on its id.

@@ -1082,28 +1082,30 @@ class ES(object):
         data = self.get(index, doc_type, id)
         return data['_name'], base64.standard_b64decode(data['content'])
 
-    def partial_update(self, index, doc_type, id, script, params=None,
-                       upsert=None, querystring_args=None):
-        """
-        Partially update a document with a script
-        """
-        if querystring_args is None:
-            querystring_args = {}
-
-        cmd = {"script": script}
-
+    def update(self, index, doc_type, id, script=None, lang="mvel", params=None, document=None, upsert=None,
+               model=None, bulk=False):
+        body = {}
+        if script:
+            body.update({"script": script, "lang": lang})
         if params:
-            cmd["params"] = params
-
+            body["params"] = params
         if upsert:
-            cmd["upsert"] = upsert
+            body["upsert"] = upsert
+        if document:
+            body["doc"] = document
 
-        path = make_path(index, doc_type, id, "_update")
+        if bulk:
+            cmd = {"update": {"_index": index, "_type": doc_type, "_id": id}}
+            command = "%s\n%s" % (json.dumps(cmd, cls=self.encoder), json.dumps(body, cls=self.encoder))
+            self.bulker.add(command)
+            return self.flush_bulk()
 
-        return self._send_request('POST', path, cmd, querystring_args)
+        path = make_path(index, doc_type, id)
+        model = model or self.model
+        return model(self, self._send_request('POST', path + "/_update", body))
 
-    def update(self, extra_doc, index, doc_type, id, querystring_args=None,
-               update_func=None, attempts=2):
+    def update_by_function(self, extra_doc, index, doc_type, id, querystring_args=None,
+                           update_func=None, attempts=2):
         """
         Update an already indexed typed JSON document.
 

@@ -86,6 +86,11 @@ class ESJsonDecoder(json.JSONDecoder):
                 return datetime(*time.strptime(obj, "%Y-%m-%dT%H:%M:%S")[:6])
             except ValueError:
                 pass
+        if isinstance(obj, basestring) and len(obj) == 10:
+            try:
+                return datetime(*time.strptime(obj, "%Y-%m-%d")[:3])
+            except ValueError:
+                pass
         return obj
 
 

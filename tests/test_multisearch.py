@@ -27,8 +27,8 @@ class MultiSearchTestCase(ESTestCase):
                               'store': 'yes',
                               'type': u'string',
                               "term_vector": "with_positions_offsets"}}
-        self.conn.create_index(self.index_name)
-        self.conn.put_mapping(self.document_type, {'properties': mapping}, self.index_name)
+        self.conn.indices.create_index(self.index_name)
+        self.conn.indices.put_mapping(self.document_type, {'properties': mapping}, self.index_name)
         self.conn.index({"name": "Joe Tester", "title": "Joe Testere nice guy"},
             self.index_name, self.document_type, 1)
         self.conn.index({"name": "Bill Baloney", "title": "Bill Testere nice guy"},
@@ -41,10 +41,10 @@ class MultiSearchTestCase(ESTestCase):
         self.curl_writer = UnicodeWriter()
         self.conn.dump_curl = self.curl_writer
 
-        self.conn.refresh()
+        self.conn.indices.refresh()
 
     def _compute_num_requests(self):
-        self.curl_writer.flush()
+        self.curl_writer.indices.flush()
         self.curl_writer.seek(0)
 
         return len(self.curl_writer.read().split('\n'))

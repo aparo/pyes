@@ -15,15 +15,15 @@ class TestFileSaveTestCase(ESTestCase):
                                   "title": {'store': "yes"}, }
             }
         }
-        self.conn.create_index(self.index_name)
-        self.conn.put_mapping(self.document_type, {self.document_type: {'properties': mapping}}, self.index_name)
-        self.conn.refresh(self.index_name)
-        self.conn.get_mapping(self.document_type, self.index_name)
+        self.conn.indices.create_index(self.index_name)
+        self.conn.indices.put_mapping(self.document_type, {self.document_type: {'properties': mapping}}, self.index_name)
+        self.conn.indices.refresh(self.index_name)
+        self.conn.indices.get_mapping(self.document_type, self.index_name)
         name = "map.json"
         content = self.get_datafile(name)
         self.conn.put_file(self.get_datafile_path(name), self.index_name, self.document_type, 1, name=name)
-        self.conn.refresh(self.index_name)
-        _ = self.conn.get_mapping(self.document_type, self.index_name)
+        self.conn.indices.refresh(self.index_name)
+        _ = self.conn.indices.get_mapping(self.document_type, self.index_name)
         nname, ncontent = self.conn.get_file(self.index_name, self.document_type, 1)
         self.assertEquals(name, nname)
         self.assertEquals(content, ncontent)
@@ -67,13 +67,13 @@ class QueryAttachmentTestCase(ESTestCase):
         #            }
         #        }
         self.conn.debug_dump = True
-        self.conn.create_index(self.index_name)
-        self.conn.put_mapping(self.document_type, {self.document_type: {'properties': mapping}}, self.index_name)
-        self.conn.refresh(self.index_name)
-        self.conn.get_mapping(self.document_type, self.index_name)
+        self.conn.indices.create_index(self.index_name)
+        self.conn.indices.put_mapping(self.document_type, {self.document_type: {'properties': mapping}}, self.index_name)
+        self.conn.indices.refresh(self.index_name)
+        self.conn.indices.get_mapping(self.document_type, self.index_name)
         self.conn.index({"attachment": file_to_attachment(self.get_datafile_path("testXHTML.html")), "uuid": "1"}
             , self.index_name, self.document_type, 1)
-        self.conn.refresh(self.index_name)
+        self.conn.indices.refresh(self.index_name)
 
     def test_TermQuery(self):
         q = TermQuery("uuid", "1").search(

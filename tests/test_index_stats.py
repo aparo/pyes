@@ -27,9 +27,9 @@ class IndexStatsTestCase(ESTestCase):
                              'index': 'not_analyzed',
                              'store': 'yes',
                              'type': u'string'}}
-        self.conn.create_index(self.index_name)
-        self.conn.put_mapping(self.document_type, {'properties': mapping}, self.index_name)
-        self.conn.put_mapping("test-type2", {"_parent": {"type": self.document_type}}, self.index_name)
+        self.conn.indices.create_index(self.index_name)
+        self.conn.indices.put_mapping(self.document_type, {'properties': mapping}, self.index_name)
+        self.conn.indices.put_mapping("test-type2", {"_parent": {"type": self.document_type}}, self.index_name)
         self.conn.index({"name": "Joe Tester", "parsedtext": "Joe Testere nice guy", "uuid": "11111", "position": 1},
             self.index_name, self.document_type, 1)
         self.conn.index({"name": "data1", "value": "value1"}, self.index_name, "test-type2", 1, parent=1)
@@ -41,7 +41,7 @@ class IndexStatsTestCase(ESTestCase):
 
         self.conn.default_indices = self.index_name
 
-        self.conn.refresh()
+        self.conn.indices.refresh()
 
     def test_all_indices(self):
         result = self.conn.index_stats()
@@ -51,8 +51,8 @@ class IndexStatsTestCase(ESTestCase):
         result = self.conn.index_stats(self.index_name)
         self.assertEquals(5, result._all.total.docs.count)
 
-    def test_optimize(self):
-        result = self.conn.indices.optimize(indices=self.index_name, wait_for_merge=True, max_num_segments=1)
+    def test_indices.optimize(self):
+        result = self.conn.indices.indices.optimize(indices=self.index_name, wait_for_merge=True, max_num_segments=1)
         self.assertEquals(result.ok, True)
         self.assertEquals(result._shards["failed"], 0)
 

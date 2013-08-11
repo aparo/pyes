@@ -36,8 +36,8 @@ class FacetSearchTestCase(ESTestCase):
                              'index': 'not_analyzed',
                              'store': 'yes',
                              'type': u'string'}}
-        self.conn.create_index(self.index_name)
-        self.conn.put_mapping(self.document_type, {'properties': mapping}, self.index_name)
+        self.conn.indices.create_index(self.index_name)
+        self.conn.indices.put_mapping(self.document_type, {'properties': mapping}, self.index_name)
         self.conn.index({"name": "Joe Tester",
                          "parsedtext": "Joe Testere nice guy",
                          "uuid": "11111",
@@ -59,7 +59,7 @@ class FacetSearchTestCase(ESTestCase):
                          "tag": "bar",
                          "date": datetime.date(2011, 4, 28)},
             self.index_name, self.document_type, 3)
-        self.conn.refresh(self.index_name)
+        self.conn.indices.refresh(self.index_name)
 
     def test_terms_facet(self):
         q = MatchAllQuery()

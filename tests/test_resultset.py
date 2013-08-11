@@ -11,7 +11,7 @@ class ResultsetTestCase(ESTestCase):
             self.conn.index(
                     {"name": "Joe Tester%d" % i, "parsedtext": "Joe Testere nice guy", "uuid": "11111", "position": i},
                 self.index_name, self.document_type, i, bulk=True)
-        self.conn.refresh(self.index_name)
+        self.conn.indices.refresh(self.index_name)
 
     def test_iterator(self):
         resultset = self.conn.search(Search(MatchAllQuery(), size=20), self.index_name, self.document_type)

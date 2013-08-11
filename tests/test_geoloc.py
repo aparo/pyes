@@ -19,9 +19,9 @@ class GeoQuerySearchTestCase(ESTestCase):
                 }
             }
         }
-        self.conn.delete_index_if_exists("test-mindex")
-        self.conn.create_index("test-mindex")
-        self.conn.put_mapping(self.document_type, {'properties':mapping}, ["test-mindex"])
+        self.conn.indices.delete_index_if_exists("test-mindex")
+        self.conn.indices.create_index("test-mindex")
+        self.conn.indices.put_mapping(self.document_type, {'properties':mapping}, ["test-mindex"])
         self.conn.index({
             "pin" : {
                 "location" : {
@@ -39,10 +39,10 @@ class GeoQuerySearchTestCase(ESTestCase):
             }
         }, "test-mindex", self.document_type, 2)
 
-        self.conn.refresh(["test-mindex"])
+        self.conn.indices.refresh(["test-mindex"])
 
     def tearDown(self):
-        self.conn.delete_index_if_exists("test-mindex")
+        self.conn.indices.delete_index_if_exists("test-mindex")
 
     def test_GeoDistanceFilter(self):
         gq = GeoDistanceFilter("pin.location", {"lat" : 40, "lon" :70}, "200km")

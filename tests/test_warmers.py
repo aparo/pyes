@@ -7,14 +7,14 @@ class WarmerTestCase(ESTestCase):
 
     def setUp(self):
         super(WarmerTestCase, self).setUp()
-        self.conn.create_index(self.index_name)
-        self.conn.refresh(self.index_name)
+        self.conn.indices.create_index(self.index_name)
+        self.conn.indices.refresh(self.index_name)
 
     def test_put_get_warmer(self):
         warmer1 = pyes.Search(pyes.MatchAllQuery())
         #ES fails if the index is empty
         self.conn.index({'a':1}, self.index_name, self.document_type)
-        self.conn.refresh(self.index_name)
+        self.conn.indices.refresh(self.index_name)
         self.conn.put_warmer(indices=[self.index_name], name='w1', warmer=warmer1)
         result = self.conn.get_warmer(indices=[self.index_name], name='w1')
         expected = {

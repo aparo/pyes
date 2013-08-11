@@ -7,32 +7,32 @@ from pyes import exceptions
 class ErrorReportingTestCase(ESTestCase):
     def setUp(self):
         super(ErrorReportingTestCase, self).setUp()
-        self.conn.delete_index_if_exists(self.index_name)
+        self.conn.indices.delete_index_if_exists(self.index_name)
 
     def tearDown(self):
-        self.conn.delete_index_if_exists(self.index_name)
+        self.conn.indices.delete_index_if_exists(self.index_name)
 
     def testCreateDelete(self):
         """Test errors thrown when creating or deleting indices.
 
         """
-        result = self.conn.create_index(self.index_name)
+        result = self.conn.indices.create_index(self.index_name)
         self.assertTrue('ok' in result)
         self.assertTrue('error' not in result)
 
         err = self.checkRaises(exceptions.IndexAlreadyExistsException,
-            self.conn.create_index, self.index_name)
+            self.conn.indices.create_index, self.index_name)
         self.assertEqual(str(err), "[test-index] Already exists")
         self.assertEqual(err.status, 400)
         self.assertTrue('error' in err.result)
         self.assertTrue('ok' not in err.result)
 
-        result = self.conn.delete_index(self.index_name)
+        result = self.conn.indices.delete_index(self.index_name)
         self.assertTrue('ok' in result)
         self.assertTrue('error' not in result)
 
         err = self.checkRaises(exceptions.IndexMissingException,
-            self.conn.delete_index, self.index_name)
+            self.conn.indices.delete_index, self.index_name)
         self.assertEqual(str(err), "[test-index] missing")
         self.assertEqual(err.status, 404)
         self.assertTrue('error' in err.result)

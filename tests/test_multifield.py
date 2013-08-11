@@ -45,8 +45,8 @@ class MultifieldTestCase(ESTestCase):
                              'index': 'not_analyzed',
                              'store': 'yes',
                              'type': u'string'}}
-        self.conn.create_index(self.index_name)
-        self.conn.put_mapping(self.document_type, {'properties': mapping}, self.index_name)
+        self.conn.indices.create_index(self.index_name)
+        self.conn.indices.put_mapping(self.document_type, {'properties': mapping}, self.index_name)
         self.conn.index({"name": "Joe Tester", "parsedtext": "Joe Testere nice guy", "uuid": "11111", "position": 1},
             self.index_name, self.document_type, 1)
         self.conn.index({"name": "Bill Baloney", "parsedtext": "Joe Testere nice guy", "uuid": "22222", "position": 2},
@@ -56,7 +56,7 @@ class MultifieldTestCase(ESTestCase):
         self.conn.index({"value": True}, self.index_name, self.document_type)
         self.conn.index({"value": 43.32}, self.index_name, self.document_type)
         #self.conn.index({"value": datetime.now()}, self.index_name, self.document_type)
-        self.conn.refresh(self.index_name)
+        self.conn.indices.refresh(self.index_name)
 
     def test_TermQuery(self):
         q = TermQuery("name", "joe")

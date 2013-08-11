@@ -10,7 +10,7 @@ class QuerySetTests(ESTestCase):
         super(QuerySetTests, self).setUp()
         self.init_default_index()
         self.init_default_data()
-        self.conn.refresh(self.index_name)
+        self.conn.indices.refresh(self.index_name)
 
     def init_default_data(self):
         """

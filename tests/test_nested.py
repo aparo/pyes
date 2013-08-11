@@ -14,8 +14,8 @@ class NestedSearchTestCase(ESTestCase):
                 'type': 'nested'
             }
         }
-        self.conn.create_index(self.index_name)
-        self.conn.put_mapping(self.document_type, {'properties': mapping}, self.index_name)
+        self.conn.indices.create_index(self.index_name)
+        self.conn.indices.put_mapping(self.document_type, {'properties': mapping}, self.index_name)
         self.conn.index({"field1": "value1",
                          "nested1": [{"n_field1": "n_value1_1",
                                       "n_field2": "n_value2_1"},
@@ -28,7 +28,7 @@ class NestedSearchTestCase(ESTestCase):
                                  {"n_field1": "n_value1_2",
                                   "n_field2": "n_value2_1"}]},
             self.index_name, self.document_type, 2)
-        self.conn.refresh(self.index_name)
+        self.conn.indices.refresh(self.index_name)
 
     def test_nested_filter(self):
         q = FilteredQuery(MatchAllQuery(),

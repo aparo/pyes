@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from estestcase import ESTestCase
+from .estestcase import ESTestCase
 from pyes.queryset import DoesNotExist, generate_model
 from datetime import datetime
 

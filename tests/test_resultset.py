@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from estestcase import ESTestCase
+from .estestcase import ESTestCase
 from pyes.query import MatchAllQuery, Search
 
 class ResultsetTestCase(ESTestCase):

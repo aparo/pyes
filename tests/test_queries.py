@@ -47,6 +47,21 @@ class QuerySearchTestCase(ESTestCase):
 
         self.conn.refresh()
 
+    def test_RescoreQuery(self):
+        q = CustomScoreQuery(query=MatchAllQuery(),
+            lang="mvel",
+            script="doc.position.value")
+        resultset = self.conn.search(query=q, indices=self.index_name, doc_types=self.document_type)
+        original_results = [x for x in resultset]
+
+        rescore_search = Search(query=q, rescore=RescoreQuery(q, query_weight=1, rescore_query_weight=-10).search(window_size=3))
+        rescore_resultset = self.conn.search(query=rescore_search, indices=self.index_name, doc_types=self.document_type)
+        rescore_results = [x for x in rescore_resultset]
+
+        rescore_results.reverse()
+        self.assertEqual(rescore_search.serialize()['rescore']['window_size'], 3)
+        self.assertEqual(original_results, rescore_results)
+
     def test_TermQuery(self):
         q = TermQuery("name", "joe")
         resultset = self.conn.search(query=q, indices=self.index_name)
@@ -481,6 +496,23 @@ class QuerySearchTestCase(ESTestCase):
         q = MatchQuery("name", "Tester")
         resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
         self.assertEquals(resultset.total, 1)
+
+    def test_CustomBoostFactorQuery(self):
+        q = CustomBoostFactorQuery(query=TermQuery("name", "joe"),
+            boost_factor=1.0)
+
+        resultset = self.conn.search(query=q, indices=self.index_name)
+
+        self.assertEquals(resultset.total, 1)
+        score = resultset.hits[0]['_score']
+
+        q = CustomBoostFactorQuery(query=TermQuery("name", "joe"),
+            boost_factor=2.0)
+        resultset = self.conn.search(query=q, indices=self.index_name)
+
+        score_boosted = resultset.hits[0]['_score']
+        self.assertEqual(score*2, score_boosted)
+
 
 if __name__ == "__main__":
     unittest.main()

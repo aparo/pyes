@@ -4,7 +4,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-VERSION = (0, 19, 2, "dev")
+VERSION = (0, 20, 1)
 
 __version__ = ".".join(map(str, VERSION[0:3])) + "".join(VERSION[3:])
 __author__ = "Alberto Paro"
@@ -33,11 +33,5 @@ from .utils import *
 try:
     #useful for additional query extra features
     from .query_extra import *
-except ImportError:
-    pass
-
-try:
-    #useful for additional features for django users
-    from .djangoutils import *
 except ImportError:
     pass

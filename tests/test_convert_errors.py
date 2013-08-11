@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 import unittest
-from .estestcase import ESTestCase
+from pyes.tests import ESTestCase
 from pyes.exceptions import (NotFoundException, IndexAlreadyExistsException)
 from pyes import convert_errors
 

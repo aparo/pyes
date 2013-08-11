@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 import unittest
-from .estestcase import ESTestCase
+from pyes.tests import ESTestCase
 from pyes.facets import DateHistogramFacet, TermFacet
 from pyes.filters import TermFilter, RangeFilter, BoolFilter
 from pyes.query import FilteredQuery, MatchAllQuery, Search, TermQuery

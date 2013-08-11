@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
-from .estestcase import ESTestCase
+from pyes.tests import ESTestCase
 from pyes import exceptions
 
 class ErrorReportingTestCase(ESTestCase):

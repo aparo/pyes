@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
-from .estestcase import ESTestCase
+from pyes.tests import ESTestCase
 from pyes.query import TermQuery
 from pyes.es import file_to_attachment
 

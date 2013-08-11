@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from .estestcase import ESTestCase
+from pyes.tests import ESTestCase
 
 class UpdateTestCase(ESTestCase):
     def setUp(self):

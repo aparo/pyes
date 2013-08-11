@@ -455,10 +455,6 @@ class DocumentObjectField(ObjectField):
         super(DocumentObjectField, self).__init__(*args, **kwargs)
         self._timestamp = _timestamp
         self._all = _all
-        if self._all is None:
-            #tnp defaults
-            self._all = {"enabled": False}
-
         self._boost = _boost
         self._id = _id
         self._index = _index

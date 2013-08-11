@@ -41,7 +41,7 @@ class Suggest(EqualityComparableUsingAttributeDictionary):
         #     gram = field + ".trigram"
 
         data = {
-            "analyzer": "tnp_standard_lower",
+            "analyzer": "standard_lower",
             "field": gram,
             "size": 4,
             "real_word_error_likelihood": 0.95,

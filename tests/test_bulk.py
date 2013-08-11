@@ -47,7 +47,7 @@ class BulkTestCase(ESTestCase):
         resultset = self.conn.search(query=q, indices=self.index_name)
         self.assertEquals(resultset.total, 2)
 
-    def test_automatic_indices.flush(self):
+    def test_automatic_flush(self):
         self.conn.force_bulk()
         self.conn.bulk_size = 3
         self.conn.raise_on_bulk_item_failure = False

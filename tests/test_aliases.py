@@ -52,13 +52,13 @@ class ErrorReportingTestCase(ESTestCase):
         #        self.assertEqual(str(err), '[test-alias] missing')
 
         # Check return value from indices.get_indices now.
-        result = self.conn.indices.get_indices(include_indices.aliases=True)
+        result = self.conn.indices.get_indices(include_aliases=True)
         self.assertTrue('test-index' in result)
         self.assertEqual(result['test-index'], {'num_docs': 0})
         self.assertTrue('test-alias' in result)
         self.assertEqual(result['test-alias'], {'alias_for': ['test-index'], 'num_docs': 0})
 
-        result = self.conn.indices.get_indices(include_indices.aliases=False)
+        result = self.conn.indices.get_indices(include_aliases=False)
         self.assertTrue('test-index' in result)
         self.assertEqual(result['test-index'], {'num_docs': 0})
         self.assertTrue('test-alias' not in result)
@@ -97,7 +97,7 @@ class ErrorReportingTestCase(ESTestCase):
 
         self.conn.indices.refresh() # ensure that the documents have been indexed.
         # Check the document counts for each index or alias.
-        result = self.conn.indices.get_indices(include_indices.aliases=True)
+        result = self.conn.indices.get_indices(include_aliases=True)
         self.assertEqual(result['test-index'], {'num_docs': 2})
         self.assertEqual(result['test-index2'], {'num_docs': 1})
         self.assertEqual(result['test-alias'], {'alias_for': ['test-index'], 'num_docs': 2})

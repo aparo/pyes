@@ -36,19 +36,19 @@ class ClusterTestCase(ESTestCase):
         self.conn.indices.refresh(self.index_name)
 
     def test_ClusterState(self):
-        result = self.conn.cluster.cluster_state()
+        result = self.conn.cluster.state()
         self.assertTrue('blocks' in result)
         self.assertTrue('routing_table' in result)
 
     def test_ClusterNodes(self):
-        result = self.conn.cluster.cluster_nodes()
+        result = self.conn.cluster.nodes()
         self.assertTrue('cluster_name' in result)
         self.assertTrue('nodes' in result)
 
     def test_ClusterHealth(self):
         # Make sure that when we get the cluster health, that we get the
         # default keys that we'd expect...
-        result = self.conn.cluster.cluster_health()
+        result = self.conn.cluster.health()
         for key in ['cluster_name', 'status', 'timed_out', 'number_of_nodes',
                     'number_of_data_nodes', 'active_primary_shards',
                     'active_shards', 'relocating_shards', 'initializing_shards',
@@ -62,7 +62,7 @@ class ClusterTestCase(ESTestCase):
         #self.assertEqual(result['active_shards'], 24)
 
         # Now let's test that the indices bit actually works
-        result = self.conn.cluster.cluster_health(indices=['non-existent-index'],
+        result = self.conn.cluster.health(indices=['non-existent-index'],
                                           timeout=0, wait_for_status='green')
         # There shouldn't be any active shards on this index
         self.assertEqual(result['active_shards'], 0)

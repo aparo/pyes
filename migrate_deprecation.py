@@ -36,10 +36,10 @@ MIGRATIONS = [
     # ("get_warmer", "indices.get_warmer"),
     # ("delete_warmer", "indices.delete_warmer"),
     # update_mapping_meta
-    ("cluster_health", "cluster.cluster_health"),
-    ("cluster_state", "cluster.cluster_state"),
-    ("cluster_nodes", "cluster.cluster_nodes"),
-    ("cluster_stats", "cluster.cluster_stats"),
+    ("cluster_health", "cluster.health"),
+    ("cluster_state", "cluster.state"),
+    ("cluster_nodes", "cluster.nodes"),
+    ("cluster_stats", "cluster.stats"),
 ]
 
 filenames = [filename for filename in os.listdir("tests") if filename.endswith(".py")]
@@ -48,7 +48,10 @@ for filename in filenames:
     path = os.path.join("tests", filename)
     ndata = data = open(path).read()
     for old_name, new_name in MIGRATIONS:
-        pos = ndata.find(old_name+"(")
+        pos = ndata.find(old_name + "(")
+        if ndata[pos - 1] != '.':
+            pos = ndata.find(old_name, pos + 1)
+            continue
         prefix = new_name.split(".")[0]
         while pos != -1:
             #check if already fixed

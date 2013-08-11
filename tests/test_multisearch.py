@@ -44,7 +44,7 @@ class MultiSearchTestCase(ESTestCase):
         self.conn.indices.refresh()
 
     def _compute_num_requests(self):
-        self.curl_writer.indices.flush()
+        self.curl_writer.flush()
         self.curl_writer.seek(0)
 
         return len(self.curl_writer.read().split('\n'))

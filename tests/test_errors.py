@@ -43,7 +43,7 @@ class ErrorReportingTestCase(ESTestCase):
 
         """
         err = self.checkRaises(exceptions.IndexMissingException,
-            self.conn.flush, self.index_name)
+            self.conn.indices.flush, self.index_name)
         self.assertEqual(str(err), "[test-index] missing")
         self.assertEqual(err.status, 404)
         self.assertTrue('error' in err.result)

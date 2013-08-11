@@ -480,37 +480,37 @@ class ES(object):
         mappings = mappings or []
         if isinstance(mappings, dict):
             mappings = [mappings]
-        exists = self.exists_index(index)
+        exists = self.indices.exists_index(index)
         if exists and not mappings and not clear:
             return
         if exists and clear:
-            self.indices.delete_index(index)
+            self.indices.indices.delete_index(index)
             exists = False
 
         if exists:
             if not mappings:
-                self.delete_index(index)
-                self.refresh()
-                self.create_index(index, settings)
+                self.indices.delete_index(index)
+                self.indices.refresh()
+                self.indices.create_index(index, settings)
                 return
 
             if clear:
                 for maps in mappings:
                     for key in maps.keys():
-                        self.delete_mapping(index, doc_type=key)
-                self.refresh()
+                        self.indices.delete_mapping(index, doc_type=key)
+                self.indices.refresh()
             if isinstance(mappings, SettingsBuilder):
                 for name, data in mappings.mappings.items():
-                    self.put_mapping(doc_type=name, mapping=data, indices=index)
+                    self.indices.put_mapping(doc_type=name, mapping=data, indices=index)
 
             else:
                 for maps in mappings:
                     if isinstance(maps, tuple):
                         name, mapping = maps
-                        self.put_mapping(doc_type=name, mapping=mapping, indices=index)
+                        self.indices.put_mapping(doc_type=name, mapping=mapping, indices=index)
                     elif isinstance(maps, dict):
                         for name, data in maps.items():
-                            self.put_mapping(doc_type=name, mapping=maps, indices=index)
+                            self.indices.put_mapping(doc_type=name, mapping=maps, indices=index)
 
                 return
 
@@ -523,7 +523,7 @@ class ES(object):
             else:
                 settings = SettingsBuilder(mappings=mappings)
         if not exists:
-            self.create_index(index, settings)
+            self.indices.create_index(index, settings)
             self.indices.refresh(index, timesleep=1)
 
     def put_warmer(self, doc_types=None, indices=None, name=None, warmer=None, querystring_args=None):

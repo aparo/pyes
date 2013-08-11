@@ -1,5 +1,4 @@
 class River(object):
-
     def __init__(self, index_name=None, index_type=None, bulk_size=100, bulk_timeout=None):
         self.name = index_name
         self.index_name = index_name
@@ -38,7 +37,7 @@ class RabbitMQRiver(River):
                  password="guest", vhost="/", queue="es", exchange="es",
                  routing_key="es", exchange_declare=True, exchange_type="direct",
                  exchange_durable=True, queue_declare=True, queue_durable=True,
-                 queue_auto_delete=False,queue_bind=True, **kwargs):
+                 queue_auto_delete=False, queue_bind=True, **kwargs):
         super(RabbitMQRiver, self).__init__(**kwargs)
         self.host = host
         self.port = port
@@ -80,7 +79,6 @@ class RabbitMQRiver(River):
 
 
 class TwitterRiver(River):
-
     type = "twitter"
 
     def __init__(self, user=None, password=None, **kwargs):
@@ -100,7 +98,7 @@ class TwitterRiver(River):
         result = {"type": self.type}
         if self.user and self.password:
             result[self.type] = {"user": self.user,
-                       "password": self.password}
+                                 "password": self.password}
         elif (self.consumer_key and self.consumer_secret and self.access_token
               and self.access_token_secret):
             result[self.type] = {"oauth": {
@@ -125,7 +123,6 @@ class TwitterRiver(River):
 
 
 class CouchDBRiver(River):
-
     type = "couchdb"
 
     def __init__(self, host="localhost", port=5984, db="mydb", filter=None,
@@ -149,7 +146,7 @@ class CouchDBRiver(River):
                 "port": self.port,
                 "db": self.db,
                 "filter": self.filter,
-                }
+            }
         }
         if self.filter_params is not None:
             result[self.type]["filter_params"] = self.filter_params
@@ -163,24 +160,23 @@ class CouchDBRiver(River):
 
 
 class JDBCRiver(River):
-
     type = "jdbc"
 
     def __init__(self, dbhost="localhost", dbport=5432, dbtype="postgresql",
                  dbname=None, dbuser=None, dbpassword=None, poll_time="5s",
-                 sql="", name=None, params={}, **kwargs):
+                 sql="", name=None, params=None, **kwargs):
         super(JDBCRiver, self).__init__(**kwargs)
         self.dbsettings = {
-                'dbhost': dbhost,
-                'dbport': dbport,
-                'dbtype': dbtype,
-                'dbname': dbname,
-                'dbuser': dbuser,
-                'dbpassword': dbpassword,
+            'dbhost': dbhost,
+            'dbport': dbport,
+            'dbtype': dbtype,
+            'dbname': dbname,
+            'dbuser': dbuser,
+            'dbpassword': dbpassword,
         }
         self.poll_time = poll_time
         self.sql = sql
-        self.params = params
+        self.params = params or {}
         if name is not None:
             self.name = name
 
@@ -190,7 +186,7 @@ class JDBCRiver(River):
             self.type: {
                 "driver": "org.%(dbtype)s.Driver" % self.dbsettings,
                 "url": "jdbc:%(dbtype)s://%(dbhost)s:%(dbport)s/%(dbname)s" \
-                                    % self.dbsettings,
+                       % self.dbsettings,
                 "user": "%(dbuser)s" % self.dbsettings,
                 "password": "%(dbpassword)s" % self.dbsettings,
                 "strategy": "simple",
@@ -203,26 +199,28 @@ class JDBCRiver(River):
 
         return ret
 
-class MongoDBRiver(River):
 
+class MongoDBRiver(River):
     type = "mongodb"
 
-    def __init__(self,servers, db, collection, index_name, mapping_type, gridfs=False, options={},bulk_size=1000, **kwargs):
+    def __init__(self, servers, db, collection, index_name, mapping_type, gridfs=False, options=None, bulk_size=1000,
+                 filter=None, **kwargs):
         super(MongoDBRiver, self).__init__(**kwargs)
-        self.name=index_name
-        self.index_type=mapping_type
-        self.bulk_size=bulk_size
+        self.name = index_name
+        self.index_type = mapping_type
+        self.bulk_size = bulk_size
         self.mongodb = {
-            "servers":servers,
-            "db":db,
-            "collection":collection,
-            "options":options,
-            "gridfs":gridfs
+            "servers": servers,
+            "db": db,
+            "collection": collection,
+            "options": options or {},
+            "gridfs": gridfs,
+            "filter": filter
         }
 
     def serialize(self):
         result = {
-            'type':self.type,
-            'mongodb':self.mongodb
+            'type': self.type,
+            'mongodb': self.mongodb
         }
         return result

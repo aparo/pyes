@@ -143,7 +143,7 @@ class EmbeddedModel(models.Model):
             self.pk = "TODO"
             self.id = self.pk
         result = {'_app': self._meta.app_label,
-                  '_model': self._meta.module_name,
+                  '_model': self._meta.model_name,
                   '_id': self.pk}
         for field in self._meta.fields:
             result[field.attname] = getattr(self, field.attname)

@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import
 from .exceptions import InvalidQuery, InvalidParameterQuery, QueryError, \
     ScriptFieldsError
 from .sort import SearchFactory
@@ -7,6 +9,67 @@ from .highlight import HighLighter
 from .scriptfields import ScriptFields
 from .utils import clean_string, ESRange, EqualityComparableUsingAttributeDictionary
 
+class Suggest(EqualityComparableUsingAttributeDictionary):
+    def __init__(self, fields=None):
+        self.fields = fields or {}
+
+    def add(self, text, name, field, size=None):
+        """
+        Set the suggester with autodetect
+        :param text: text
+        :param name: name of suggest
+        :param field: field to be used
+        :param size: number of phrases
+        :return: None
+        """
+        num_tokens = text.count(u' ') + 1
+        if num_tokens > 1:
+            self.add_phrase(text=text, name=name, field=field, size=size)
+        else:
+            self.add_term(text=text, name=name, field=field, size=size)
+
+    def add_term(self, text, name, field, size=None):
+        data = {"field": field}
+
+        if size:
+            data["size"] = size
+        self.fields[name] = {"text": text, "term": data}
+
+    def add_phrase(self, text, name, field, size=10):
+        tokens = text.split()
+        gram = field + ".bigram"
+        # if len(tokens) > 3:
+        #     gram = field + ".trigram"
+
+        data = {
+            "analyzer": "standard_lower",
+            "field": gram,
+            "size": 4,
+            "real_word_error_likelihood": 0.95,
+            "confidence": 2.0,
+            "gram_size": 2,
+            "direct_generator": [{
+                                     "field": field + ".tkl",
+                                     "suggest_mode": "always",
+                                     "min_word_len": 1
+                                 }, {
+                                     "field": field + ".reverse",
+                                     "suggest_mode": "always",
+                                     "min_word_len": 1,
+                                     "pre_filter": "reverse",
+                                     "post_filter": "reverse"
+                                 }]
+        }
+
+        if size:
+            data["size"] = size
+        self.fields[name] = {"text": text, "phrase": data}
+
+    def is_valid(self):
+        return len(self.fields) > 0
+
+    def serialize(self):
+        return self.fields
 
 class FieldParameter(EqualityComparableUsingAttributeDictionary):
 
@@ -168,7 +231,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
         return self._script_fields
 
     def add_highlight(self, field, fragment_size=None,
-                      number_of_fragments=None, fragment_offset=None):
+                      number_of_fragments=None, fragment_offset=None, type=None):
         """Add a highlight field.
 
         The Search object will be returned, so calls to this can be chained.
@@ -176,7 +239,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
         """
         if self._highlight is None:
             self._highlight = HighLighter("<b>", "</b>")
-        self._highlight.add_field(field, fragment_size, number_of_fragments, fragment_offset)
+        self._highlight.add_field(field, fragment_size, number_of_fragments, fragment_offset, type=type)
         return self
 
     def add_index_boost(self, index, boost):
@@ -932,16 +995,18 @@ class TextQuery(Query):
 
     def __init__(self, field, text, type="boolean", slop=0, fuzziness=None,
                  prefix_length=0, max_expansions=2147483647, operator="or",
-                 analyzer=None, boost=1.0, minimum_should_match=None, **kwargs):
+                 analyzer=None, boost=1.0, minimum_should_match=None, cutoff_frequency=None, **kwargs):
         super(TextQuery, self).__init__(**kwargs)
         self.queries = {}
         self.add_query(field, text, type, slop, fuzziness,
                        prefix_length, max_expansions,
-                       operator, analyzer, boost, minimum_should_match)
+                       operator, analyzer, boost, minimum_should_match,
+                       cutoff_frequency=cutoff_frequency)
 
     def add_query(self, field, text, type="boolean", slop=0, fuzziness=None,
                   prefix_length=0, max_expansions=2147483647,
-                  operator="or", analyzer=None, boost=1.0, minimum_should_match=None):
+                  operator="or", analyzer=None, boost=1.0, minimum_should_match=None,
+                  cutoff_frequency=None):
         if type not in self._valid_types:
             raise QueryError("Invalid value '%s' for type: allowed values are %s" % (type, self._valid_types))
         if operator not in self._valid_operators:
@@ -963,6 +1028,8 @@ class TextQuery(Query):
             query["boost"] = boost
         if analyzer:
             query["analyzer"] = analyzer
+        if cutoff_frequency is not None:
+            query["cutoff_frequency"] = cutoff_frequency
         if minimum_should_match:
             query["minimum_should_match"] = minimum_should_match
         self.queries[field] = query
@@ -1007,8 +1074,7 @@ class MultiMatchQuery(Query):
         if not fields:
             raise QueryError("At least one field must be defined for multi_match")
 
-        query = {'type': type, 'query': text, 'fields': fields}
-        query['use_dis_max']=use_dis_max
+        query = {'type': type, 'query': text, 'fields': fields, 'use_dis_max': use_dis_max}
         if slop:
             query["slop"] = slop
         if fuzziness is not None:

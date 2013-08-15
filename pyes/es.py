@@ -86,6 +86,11 @@ class ESJsonDecoder(json.JSONDecoder):
                 return datetime(*time.strptime(obj, "%Y-%m-%dT%H:%M:%S")[:6])
             except ValueError:
                 pass
+        if isinstance(obj, basestring) and len(obj) == 10:
+            try:
+                return datetime(*time.strptime(obj, "%Y-%m-%d")[:3])
+            except ValueError:
+                pass
         return obj
 
 
@@ -398,7 +403,7 @@ class ES(object):
                 # In this case, the body is actually a good message to return
                 # in the exception.
                 raise ElasticSearchException(response.body, response.status, response.body)
-        if response.status != 200:
+        if response.status not in [200, 201]:
             raise_if_error(response.status, decoded)
         if not raw and isinstance(decoded, dict):
             decoded = DotDict(decoded)
@@ -579,6 +584,7 @@ class ES(object):
                 settings = SettingsBuilder(mappings=mappings)
         if not exists:
             self.create_index(index, settings)
+            self.indices.refresh(index, timesleep=1)
 
     @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.delete_index_if_exists")
     def delete_index_if_exists(self, index):
@@ -1025,7 +1031,7 @@ class ES(object):
             if not isinstance(ttl, basestring):
                 ttl = str(ttl)
             querystring_args['ttl'] = ttl
-            
+
         if id is None:
             request_method = 'POST'
         else:
@@ -1075,30 +1081,31 @@ class ES(object):
         """
         data = self.get(index, doc_type, id)
         return data['_name'], base64.standard_b64decode(data['content'])
-        #return data["_source"]['_name'], base64.standard_b64decode(data["_source"]['content'])
 
-    def partial_update(self, index, doc_type, id, script, params=None,
-                       upsert=None, querystring_args=None):
-        """
-        Partially update a document with a script
-        """
-        if querystring_args is None:
-            querystring_args = {}
-
-        cmd = {"script": script}
-
+    def update(self, index, doc_type, id, script=None, lang="mvel", params=None, document=None, upsert=None,
+               model=None, bulk=False):
+        body = {}
+        if script:
+            body.update({"script": script, "lang": lang})
         if params:
-            cmd["params"] = params
-
+            body["params"] = params
         if upsert:
-            cmd["upsert"] = upsert
+            body["upsert"] = upsert
+        if document:
+            body["doc"] = document
 
-        path = make_path(index, doc_type, id, "_update")
+        if bulk:
+            cmd = {"update": {"_index": index, "_type": doc_type, "_id": id}}
+            command = "%s\n%s" % (json.dumps(cmd, cls=self.encoder), json.dumps(body, cls=self.encoder))
+            self.bulker.add(command)
+            return self.flush_bulk()
 
-        return self._send_request('POST', path, cmd, querystring_args)
+        path = make_path(index, doc_type, id)
+        model = model or self.model
+        return model(self, self._send_request('POST', path + "/_update", body))
 
-    def update(self, extra_doc, index, doc_type, id, querystring_args=None,
-               update_func=None, attempts=2):
+    def update_by_function(self, extra_doc, index, doc_type, id, querystring_args=None,
+                           update_func=None, attempts=2):
         """
         Update an already indexed typed JSON document.
 
@@ -1131,6 +1138,26 @@ class ES(object):
                 if attempt <= 0:
                     raise
                 self.refresh(index)
+
+    def partial_update(self, index, doc_type, id, script, params=None,
+                       upsert=None, querystring_args=None):
+        """
+        Partially update a document with a script
+        """
+        if querystring_args is None:
+            querystring_args = {}
+
+        cmd = {"script": script}
+
+        if params:
+            cmd["params"] = params
+
+        if upsert:
+            cmd["upsert"] = upsert
+
+        path = make_path(index, doc_type, id, "_update")
+
+        return self._send_request('POST', path, cmd, querystring_args)
 
     def delete(self, index, doc_type, id, bulk=False, **query_params):
         """
@@ -1178,12 +1205,12 @@ class ES(object):
         model = model or self.model
         return model(self, self._send_request('GET', path, params=query_params))
 
-    def factory_object(self, index, doc_type, data=None, id=None, vertex=False):
+    def factory_object(self, index, doc_type, data=None, id=None):
         """
         Create a stub object to be manipulated
         """
         data = data or {}
-        obj = ElasticSearchModel()
+        obj = self.model()
         obj._meta.index = index
         obj._meta.type = doc_type
         obj._meta.connection = self
@@ -1191,8 +1218,6 @@ class ES(object):
             obj._meta.id = id
         if data:
             obj.update(data)
-        if vertex:
-            obj.force_vertex()
         return obj
 
     def mget(self, ids, index=None, doc_type=None, **query_params):
@@ -1244,6 +1269,8 @@ class ES(object):
         dictionary of search parameters using the query DSL to be passed
         directly.
         """
+        from .query import Search, Query
+
         if isinstance(query, Query):
             query = query.search()
         if isinstance(query, Search):
@@ -1252,24 +1279,31 @@ class ES(object):
         path = self._make_path(indices, doc_types, "_search")
         return self._send_request('GET', path, body, params=query_params)
 
-    def search_raw_multi(self, queries, indices_list=None, doc_types_list=None):
+    def search_raw_multi(self, queries, indices_list=None, doc_types_list=None,
+                         routing_list=None):
         if indices_list is None:
             indices_list = [None] * len(queries)
 
         if doc_types_list is None:
             doc_types_list = [None] * len(queries)
 
+        if routing_list is None:
+            routing_list = [None] * len(queries)
+
         queries = [query.search() if isinstance(query, Query)
                    else query.serialize() for query in queries]
         queries = map(self._encode_query, queries)
         headers = []
-        for index_name, doc_type in zip(indices_list,
-                                        doc_types_list):
+        for index_name, doc_type, routing in zip(indices_list,
+                                                 doc_types_list,
+                                                 routing_list):
             d = {}
             if index_name is not None:
                 d['index'] = index_name
             if doc_type is not None:
                 d['type'] = doc_type
+            if routing is not None:
+                d['routing'] = routing
 
             if d:
                 headers.append(d)
@@ -1306,11 +1340,13 @@ class ES(object):
         return ResultSet(self, search, indices=indices, doc_types=doc_types,
                          model=model, query_params=query_params)
 
-    def search_multi(self, queries, indices_list=None, doc_types_list=None, models=None, scans=None):
+    def search_multi(self, queries, indices_list=None, doc_types_list=None,
+                     routing_list=None, models=None, scans=None):
         searches = [query if isinstance(query, Search) else Search(query) for query in queries]
 
-        return ResultSetMulti(self, searches, indices_list=indices_list, doc_types_list=doc_types_list,
-                              models=models)
+        return ResultSetMulti(self, searches, indices_list=indices_list,
+                              doc_types_list=doc_types_list,
+                              routing_list=routing_list, models=models)
 
 
     #    scan method is no longer working due to change in ES.search behavior.  May no longer warrant its own method.
@@ -1337,22 +1373,36 @@ class ES(object):
         """
         return self._send_request('GET', "_search/scroll", scroll_id, {"scroll": scroll})
 
-    def reindex(self, query, indices=None, doc_types=None, **query_params):
-        """
-        Execute a search query against one or more indices and and reindex the hits.
-        query must be a dictionary or a Query object that will convert to Query DSL.
-        Note: reindex is only available in my ElasticSearch branch on github.
-        """
-        path = self._make_path(indices, doc_types, "_reindexbyquery")
-        if isinstance(query, dict) and "query" in query:
-            query = query["query"]
-        body = self._encode_query(query)
-        return self._send_request('POST', path, body, query_params)
+    def suggest_from_object(self, suggest, indices=None, preference=None, routing=None, raw=False, **kwargs):
+        indices = self.validate_indices(indices)
+
+        path = make_path(','.join(indices), "_suggest")
+        querystring_args = {}
+        if routing:
+            querystring_args["routing"] = routing
+        if preference:
+            querystring_args["preference"] = preference
+
+        result = self._send_request('POST', path, suggest.serialize(), querystring_args)
+        if raw:
+            return result
+        return expand_suggest_text(result)
+
+
+    def suggest(self, name, text, field, size=None, **kwargs):
+        from query import Suggest
+
+        suggest = Suggest()
+        suggest.add_field(text, name=name, field=field, size=size)
+        return self.suggest_from_object(suggest, **kwargs)
+
 
     def count(self, query=None, indices=None, doc_types=None, **query_params):
         """
         Execute a query against one or more indices and get hits count.
         """
+        from .query import MatchAllQuery
+
         if query is None:
             query = MatchAllQuery()
         body = self._encode_query(query)
@@ -1482,6 +1532,8 @@ class ResultSet(object):
         clean_highlight: removed empty highlight
         search: a Search object.
         """
+        from .query import Search
+
         if not isinstance(search, Search):
             raise InvalidQuery("ResultSet must be supplied with a Search object")
 
@@ -1495,6 +1547,7 @@ class ResultSet(object):
         self._results = None
         self.model = model or self.connection.model
         self._total = None
+        self._max_score = None
         self.valid = False
         self._facets = {}
         self._hits = []
@@ -1569,9 +1622,20 @@ class ResultSet(object):
         return self._total
 
     @property
+    def max_score(self):
+        if self._results is None:
+            self._do_search()
+        if self._max_score is None:
+            self._max_score = 1.0
+            if self.valid:
+                self._max_score = self._results.get("hits", {}).get('max_score', 1.0)
+        return self._max_score
+
+    @property
     def facets(self):
         if self._results is None:
             self._do_search()
+            self.fix_keys()
         return self._facets
 
     def fix_facets(self):
@@ -1586,7 +1650,8 @@ class ResultSet(object):
                     for k, v in entry.items():
                         if k in ["count", "max", "min", "total_count", "mean", "total"]:
                             continue
-                        entry[k] = datetime.utcfromtimestamp(v / 1e3)
+                        if not isinstance(entry[k], datetime):
+                            entry[k] = datetime.utcfromtimestamp(v / 1e3)
 
     def __len__(self):
         return self.total
@@ -1723,9 +1788,39 @@ class ResultSet(object):
         return self.connection.search_raw(self.search, indices=self.indices,
                                           doc_types=self.doc_types, **query_params)
 
+class EmptyResultSet(object):
+    def __init__(self, *args, **kwargs):
+        """
+        An empty resultset
+        """
+
+
+    @property
+    def total(self):
+        return 0
+
+    @property
+    def facets(self):
+        return {}
+
+    def __len__(self):
+        return self.total
+
+    def count(self):
+        return self.total
+
+    def __getitem__(self, val):
+        raise IndexError
+
+    def next(self):
+        raise StopIteration
+
+    def __iter__(self):
+        return self
+
 class ResultSetMulti(object):
     def __init__(self, connection, searches, indices_list=None,
-                 doc_types_list=None, models=None):
+                 doc_types_list=None, routing_list=None, models=None):
         """
         results: an es query results dict
         fix_keys: remove the "_" from every key, useful for django views
@@ -1749,6 +1844,10 @@ class ResultSetMulti(object):
             self.doc_types_list = [None] * num_searches
         else:
             self.doc_types_list = doc_types_list
+        if routing_list is None:
+            self.routing_list = [None] * num_searches
+        else:
+            self.routing_list = routing_list
         self._results_list = None
         self.models = models or self.connection.model
         self._total = None
@@ -1768,9 +1867,11 @@ class ResultSetMulti(object):
         if 'responses' in response:
             responses = response['responses']
             self._results_list = [ResultSet(self.connection, search,
-                                            indices=indices, query_params={})
-                for search, indices in
-                    zip(self.searches, self.indices_list)]
+                                            indices=indices, query_params={},
+                                            doc_types=doc_types)
+                for search, indices, doc_types in
+                    zip(self.searches, self.indices_list,
+                        self.doc_types_list)]
 
             for rs, rsp in zip(self._results_list, responses):
                 if 'error' in rsp:
@@ -1788,7 +1889,7 @@ class ResultSetMulti(object):
     def _search_raw_multi(self):
         self.multi_search_query, result = self.connection.search_raw_multi(
             self.searches, indices_list=self.indices_list,
-            doc_types_list=self.doc_types_list)
+            doc_types_list=self.doc_types_list, routing_list=self.routing_list)
 
         return result
 

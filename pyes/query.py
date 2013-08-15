@@ -2,6 +2,7 @@
 from __future__ import absolute_import
 from .exceptions import InvalidQuery, InvalidParameterQuery, QueryError, \
     ScriptFieldsError
+from .sort import SortFactory
 from .facets import FacetFactory
 from .filters import ANDFilter, Filter
 from .highlight import HighLighter
@@ -146,7 +147,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
         self.start = start
         self.size = size
         self._highlight = highlight
-        self.sort = sort
+        self.sort = sort or SortFactory()
         self.explain = explain
         self.facet = facet or FacetFactory()
         self.rescore = rescore
@@ -193,7 +194,10 @@ class Search(EqualityComparableUsingAttributeDictionary):
         if self._highlight:
             res['highlight'] = self._highlight.serialize()
         if self.sort:
-            res['sort'] = self.sort
+            if isinstance(self.sort, SortFactory):
+                res['sort'] = self.sort.serialize()
+            else:
+                res['sort'] = self.sort
         if self.explain:
             res['explain'] = self.explain
         if self.version:

@@ -69,8 +69,10 @@ class ScriptFieldsError(Exception):
 class InvalidParameter(Exception):
     pass
 
+
 class InvalidSortOrder(Exception):
     pass
+
 
 class ElasticSearchException(Exception):
     """Base class of exceptions raised as a result of parsing an error return

@@ -85,13 +85,24 @@ class GeoSortOrder(SortOrder):
 class ScriptSortOrder(SortOrder):
 
     def __init__(self, script, type=None, params=None, **kwargs):
-        super(GeoSortOrder, self).__init__(**kwargs)
+        super(ScriptSortOrder, self).__init__(**kwargs)
         self.script = script
         self.type = type
         self.params = params
 
     def serialize(self):
-        pass
+        res = {
+            'script': self.script
+        }
+        if self.type:
+            res['type'] = self.type
+        if self.params:
+            res['params'] = self.params
+        if self.order:
+            res['order'] = self.order
+
+        res = {'_script': res}
+        return res
 
 
 class SortFactory(EqualityComparableUsingAttributeDictionary):
@@ -101,6 +112,9 @@ class SortFactory(EqualityComparableUsingAttributeDictionary):
 
     def __init__(self):
         self.sort_orders = []
+
+    def __bool__(self):
+            return bool(self.sort_orders)
 
     def serialize(self):
         """Serialize the search to a structure as passed for a search body."""

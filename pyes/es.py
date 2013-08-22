@@ -228,7 +228,7 @@ class ES(object):
             # the Python documentation explicitly states "It is not guaranteed
             # that __del__() methods are called for objects that still exist "
             # when the interpreter exits."
-            logger.error("pyes object %s is being destroyed, but bulk "
+            logger.debug("pyes object %s is being destroyed, but bulk "
                          "operations have not been flushed. Call force_bulk()!",
                          self)
             # Do our best to save the client anyway...

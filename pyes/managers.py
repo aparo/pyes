@@ -4,6 +4,7 @@ import time
 from .exceptions import IndexAlreadyExistsException, IndexMissingException
 from .utils import make_path
 from .filters import Filter
+from .mappings import Mapper
 
 class Indices(object):
     alias_params = ['filter', 'routing', 'search_routing', 'index_routing']

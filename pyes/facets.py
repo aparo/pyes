@@ -152,12 +152,18 @@ class DateHistogramFacet(Facet):
 
     _internal_name = "date_histogram"
 
-    def __init__(self, name, field=None, interval=None, zone=None, key_field=None,
-                 value_field=None, value_script=None, params=None, **kwargs):
+    def __init__(self, name, field=None, interval=None, time_zone=None, pre_zone=None,
+                 post_zone=None, factor=None, pre_offset=None, post_offset=None,
+                 key_field=None, value_field=None, value_script=None, params=None, **kwargs):
         super(DateHistogramFacet, self).__init__(name, **kwargs)
         self.field = field
         self.interval = interval
-        self.zone = zone
+        self.time_zone = time_zone
+        self.pre_zone = pre_zone
+        self.post_zone = post_zone
+        self.factor = factor
+        self.pre_offset = pre_offset
+        self.post_offset = post_offset
         self.key_field = key_field
         self.value_field = value_field
         self.value_script = value_script
@@ -167,10 +173,20 @@ class DateHistogramFacet(Facet):
         data = {}
         if self.interval:
             data['interval'] = self.interval
-            if self.zone:
-                data['zone'] = self.zone
         else:
             raise RuntimeError("interval required")
+        if self.time_zone:
+            data['time_zone'] = self.time_zone
+        if self.pre_zone:
+            data['pre_zone'] = self.pre_zone
+        if self.post_zone:
+            data['post_zone'] = self.post_zone
+        if self.factor:
+            data['factor'] = self.factor
+        if self.pre_offset:
+            data['pre_offset'] = self.pre_offset
+        if self.post_offset:
+            data['post_offset'] = self.post_offset
         if self.field:
             data['field'] = self.field
         elif self.key_field:

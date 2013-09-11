@@ -1262,7 +1262,7 @@ class ES(object):
             return [model(self, item) for item in results['docs']]
         return []
 
-    def search_raw(self, query, indices=None, doc_types=None, **query_params):
+    def search_raw(self, query, indices=None, doc_types=None, headers=None, **query_params):
         """Execute a search against one or more indices to get the search hits.
 
         `query` must be a Search object, a Query object, or a custom
@@ -1277,7 +1277,7 @@ class ES(object):
             query = query.serialize()
         body = self._encode_query(query)
         path = self._make_path(indices, doc_types, "_search")
-        return self._send_request('GET', path, body, params=query_params)
+        return self._send_request('GET', path, body, params=query_params, headers=headers)
 
     def search_raw_multi(self, queries, indices_list=None, doc_types_list=None,
                          routing_list=None):
@@ -1319,7 +1319,7 @@ class ES(object):
 
         return body, self._send_request('GET', path, body)
 
-    def search(self, query, indices=None, doc_types=None, model=None, scan=False, **query_params):
+    def search(self, query, indices=None, doc_types=None, model=None, scan=False, headers=None, **query_params):
         """Execute a search against one or more indices to get the resultset.
 
         `query` must be a Search object, a Query object, or a custom
@@ -1338,7 +1338,7 @@ class ES(object):
             query_params.setdefault("scroll", "10m")
 
         return ResultSet(self, search, indices=indices, doc_types=doc_types,
-                         model=model, query_params=query_params)
+                         model=model, query_params=query_params, headers=headers)
 
     def search_multi(self, queries, indices_list=None, doc_types_list=None,
                      routing_list=None, models=None, scans=None):
@@ -1525,7 +1525,7 @@ class ES(object):
 class ResultSet(object):
 
     def __init__(self, connection, search, indices=None, doc_types=None, query_params=None,
-                 auto_fix_keys=False, auto_clean_highlight=False, model=None):
+                 headers=None, auto_fix_keys=False, auto_clean_highlight=False, model=None):
         """
         results: an es query results dict
         fix_keys: remove the "_" from every key, useful for django views
@@ -1542,6 +1542,7 @@ class ResultSet(object):
         self.indices = indices
         self.doc_types = doc_types
         self.query_params = query_params or {}
+        self.headers = headers
         self.scroller_parameters = {}
         self.scroller_id = None
         self._results = None
@@ -1786,7 +1787,7 @@ class ResultSet(object):
                 query_params["size"] = size
 
         return self.connection.search_raw(self.search, indices=self.indices,
-                                          doc_types=self.doc_types, **query_params)
+                                          doc_types=self.doc_types, headers=self.headers, **query_params)
 
 class EmptyResultSet(object):
     def __init__(self, *args, **kwargs):

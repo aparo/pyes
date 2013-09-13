@@ -22,6 +22,7 @@ for name in (
     'ElasticSearchIllegalArgumentException',
     'IndexAlreadyExistsException',
     'IndexMissingException',
+    'InvalidIndexNameException',
     'MapperParsingException',
     'ReduceSearchPhaseException',
     'ReplicationShardOperationFailedException',

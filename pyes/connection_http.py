@@ -78,14 +78,7 @@ class Connection(object):
         else:
             headers = self._headers
 
-        kwargs = dict(
-            method=Method._VALUES_TO_NAMES[request.method],
-            url=url,
-            body=request.body,
-            headers=headers,
-            timeout=self._timeout,
-        )
-
+        
         retry = 0
         server = getattr(self._local, "server", None)
         while True:
@@ -96,6 +89,14 @@ class Connection(object):
                 conn = POOL_MANAGER.connection_from_host(parse_result.hostname,
                                                          parse_result.port,
                                                          parse_result.scheme)
+                kwargs = dict(
+                    method=Method._VALUES_TO_NAMES[request.method],
+                    url=parse_result.path + url,
+                    body=request.body,
+                    headers=headers,
+                    timeout=self._timeout,
+                )
+
                 response = conn.urlopen(**kwargs)
                 return RestResponse(status=response.status,
                                     body=response.data,

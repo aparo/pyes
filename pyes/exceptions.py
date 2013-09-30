@@ -15,6 +15,7 @@ __all__ = [
     "IndexAlreadyExistsException",
     "IndexMissingException",
     "SearchPhaseExecutionException",
+    "InvalidIndexNameException",
     "InvalidQuery",
     "InvalidParameterQuery",
     "InvalidParameter",
@@ -102,6 +103,10 @@ class AlreadyExistsException(ElasticSearchException):
 
 
 class IndexAlreadyExistsException(AlreadyExistsException):
+    pass
+
+
+class InvalidIndexNameException(ElasticSearchException):
     pass
 
 

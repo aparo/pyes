@@ -62,7 +62,7 @@ Index some data:
    >>> conn.index({"name":"Bill Clinton", "parsedtext":"""Bill is not
                 nice guy""", "uuid":"33333", "position":3}, "test-index", "test-type", 3)
 
-TIP: you can define deafult search indices setting the default_indices variable.
+TIP: you can define default search indices setting the default_indices variable.
 
 .. code-block:: python
 

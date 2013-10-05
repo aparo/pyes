@@ -474,7 +474,6 @@ class QuerySet(object):
     ##################################################
 
     def values(self, *fields):
-        assert fields, "A least a field is required"
         search = self._build_search()
         search.facet.reset()
         search.fields=fields

@@ -1383,10 +1383,10 @@ class IdsQuery(Query):
         data = {}
         if self.type is not None:
             data['type'] = self.type
-        if isinstance(self.values, basestring):
-            data['values'] = [self.values]
-        else:
+        if isinstance(self.values, list):
             data['values'] = self.values
+        else:
+            data['values'] = [self.values]
         return data
 
 
@@ -1436,7 +1436,7 @@ class RescoreQuery(Query):
 
     def serialize(self):
         """Serialize the query to a structure using the query DSL."""
-        
+
         data = {self._internal_name: self.query.serialize()}
         if self.query_weight:
             data['query_weight'] = self.query_weight

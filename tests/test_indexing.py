@@ -127,8 +127,7 @@ class IndexingTestCase(ESTestCase):
         self.conn.index({"name": "Joe Tester", "sex": "male"},
             self.index_name, self.document_type, 1)
         self.conn.refresh(self.index_name)
-        self.conn.update({"name": "Joe The Tester", "age": 23},
-            self.index_name, self.document_type, 1)
+        self.conn.update(self.index_name, self.document_type, 1, document={"name": "Joe The Tester", "age": 23})
         self.conn.refresh(self.index_name)
         result = self.conn.get(self.index_name, self.document_type, 1)
         self.assertResultContains(result, {"name": "Joe The Tester", "sex": "male", "age": 23})

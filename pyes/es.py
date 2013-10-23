@@ -1083,7 +1083,10 @@ class ES(object):
         return data['_name'], base64.standard_b64decode(data['content'])
 
     def update(self, index, doc_type, id, script=None, lang="mvel", params=None, document=None, upsert=None,
-               model=None, bulk=False):
+               model=None, bulk=False, querystring_args=None):
+        if querystring_args is None:
+            querystring_args = {}
+
         body = {}
         if script:
             body.update({"script": script, "lang": lang})
@@ -1096,13 +1099,18 @@ class ES(object):
 
         if bulk:
             cmd = {"update": {"_index": index, "_type": doc_type, "_id": id}}
+            if 'routing' in querystring_args:
+                cmd['_routing'] = querystring_args['routing']
+            if 'percolate' in querystring_args:
+                cmd['percolate'] = querystring_args['percolate']
+
             command = "%s\n%s" % (json.dumps(cmd, cls=self.encoder), json.dumps(body, cls=self.encoder))
             self.bulker.add(command)
             return self.flush_bulk()
 
-        path = make_path(index, doc_type, id)
+        path = make_path(index, doc_type, id, "_update")
         model = model or self.model
-        return model(self, self._send_request('POST', path + "/_update", body))
+        return model(self, self._send_request('POST', path, body, querystring_args))
 
     def update_by_function(self, extra_doc, index, doc_type, id, querystring_args=None,
                            update_func=None, attempts=2):

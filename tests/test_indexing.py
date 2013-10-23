@@ -134,6 +134,14 @@ class IndexingTestCase(ESTestCase):
         self.assertResultContains(result._meta,
                 {"index": "test-index", "type": "test-type", "id": "1"})
 
+        # Test bulk update
+        self.conn.update(self.index_name, self.document_type, 1, document={"name": "Christian The Hacker", "age": 24}, bulk=True)
+        self.conn.refresh(self.index_name)
+        result = self.conn.get(self.index_name, self.document_type, 1)
+        self.assertResultContains(result, {"name": "Christian The Hacker", "sex": "male", "age": 24})
+        self.assertResultContains(result._meta,
+                {"index": "test-index", "type": "test-type", "id": "1"})
+
     def testUpdateUsingFunc(self):
         def update_list_values(current, extra):
             for k, v in extra.iteritems():

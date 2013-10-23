@@ -124,20 +124,24 @@ class IndexingTestCase(ESTestCase):
         self.assertResultContains(result, {'ok': True})
 
     def testUpdate(self):
+        # Use these query strings for all, so we test that it works on all the calls
+        querystring_args = {"routing": 1}
+
         self.conn.index({"name": "Joe Tester", "sex": "male"},
-            self.index_name, self.document_type, 1)
+            self.index_name, self.document_type, 1, querystring_args=querystring_args)
         self.conn.refresh(self.index_name)
-        self.conn.update(self.index_name, self.document_type, 1, document={"name": "Joe The Tester", "age": 23})
+        self.conn.update(self.index_name, self.document_type, 1, document={"name": "Joe The Tester", "age": 23}, querystring_args=querystring_args)
         self.conn.refresh(self.index_name)
-        result = self.conn.get(self.index_name, self.document_type, 1)
+        result = self.conn.get(self.index_name, self.document_type, 1, **querystring_args)
         self.assertResultContains(result, {"name": "Joe The Tester", "sex": "male", "age": 23})
         self.assertResultContains(result._meta,
                 {"index": "test-index", "type": "test-type", "id": "1"})
 
         # Test bulk update
-        self.conn.update(self.index_name, self.document_type, 1, document={"name": "Christian The Hacker", "age": 24}, bulk=True)
+        self.conn.update(self.index_name, self.document_type, 1, document={"name": "Christian The Hacker", "age": 24},
+                         querystring_args=querystring_args, bulk=True)
         self.conn.refresh(self.index_name)
-        result = self.conn.get(self.index_name, self.document_type, 1)
+        result = self.conn.get(self.index_name, self.document_type, 1, **querystring_args)
         self.assertResultContains(result, {"name": "Christian The Hacker", "sex": "male", "age": 24})
         self.assertResultContains(result._meta,
                 {"index": "test-index", "type": "test-type", "id": "1"})

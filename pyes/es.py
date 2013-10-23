@@ -1101,7 +1101,7 @@ class ES(object):
             cmd = {"update": {"_index": index, "_type": doc_type, "_id": id}}
             for arg in ("routing", "percolate", "retry_on_conflict"):
                 if arg in querystring_args:
-                    cmd['_%s' % arg] = querystring_args[arg]
+                    cmd["update"]['_%s' % arg] = querystring_args[arg]
 
             command = "%s\n%s" % (json.dumps(cmd, cls=self.encoder), json.dumps(body, cls=self.encoder))
             self.bulker.add(command)

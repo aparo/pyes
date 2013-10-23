@@ -1100,9 +1100,9 @@ class ES(object):
             self.bulker.add(command)
             return self.flush_bulk()
 
-        path = make_path(index, doc_type, id)
+        path = make_path(index, doc_type, id, "_update")
         model = model or self.model
-        return model(self, self._send_request('POST', path + "/_update", body))
+        return model(self, self._send_request('POST', path, body))
 
     def update_by_function(self, extra_doc, index, doc_type, id, querystring_args=None,
                            update_func=None, attempts=2):

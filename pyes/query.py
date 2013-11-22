@@ -1233,6 +1233,29 @@ class SpanFirstQuery(TermQuery):
         return {"match": {"span_first": self._values}, "end": self.end}
 
 
+class SpanMultiQuery(Query):
+    """
+    This query allows you to wrap multi term queries (fuzzy, prefix, wildcard, range).
+    
+    The query element is either of type WildcardQuery, FuzzyQuery, PrefixQuery or RangeQuery.
+    A boost can also be associated with the element query
+    """
+    
+    _internal_name = "span_multi"
+    
+    def __init__(self, query, **kwargs):
+        super(SpanMultiQuery, self).__init__(**kwargs)
+        self.query = query
+
+    def _validate(self):
+        if not isinstance(self.query, (WildcardQuery, FuzzyQuery, PrefixQuery, RangeQuery)):
+            raise RuntimeError("Invalid query:%r" % self.query)
+
+    def _serialize(self):
+        self._validate()
+        return {'match': self.query.serialize()}
+
+
 class SpanNearQuery(Query):
     """
     Matches spans which are near one another. One can specify _slop_,
@@ -1303,7 +1326,7 @@ def is_a_spanquery(obj):
     """
     Returns if the object is a span query
     """
-    return isinstance(obj, (SpanTermQuery, SpanFirstQuery, SpanOrQuery))
+    return isinstance(obj, (SpanTermQuery, SpanFirstQuery, SpanOrQuery, SpanMultiQuery))
 
 
 class SpanOrQuery(Query):

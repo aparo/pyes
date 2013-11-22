@@ -711,7 +711,7 @@ class ES(object):
         return data['_name'], base64.standard_b64decode(data['content'])
 
     def update(self, index, doc_type, id, script=None, lang="mvel", params=None, document=None, upsert=None,
-               model=None, bulk=False, querystring_args=None):
+               model=None, bulk=False, querystring_args=None, retry_on_conflict=None, routing=None, doc_as_upsert=None):
         if querystring_args is None:
             querystring_args = {}
 
@@ -724,9 +724,15 @@ class ES(object):
             body["upsert"] = upsert
         if document:
             body["doc"] = document
+        if doc_as_upsert is not None:
+            body["doc_as_upsert"] = doc_as_upsert
 
         if bulk:
             cmd = {"update": {"_index": index, "_type": doc_type, "_id": id}}
+            if retry_on_conflict:
+                cmd["update"]['_retry_on_conflict'] = retry_on_conflict
+            if routing:
+                cmd["update"]['routing'] = routing
             for arg in ("routing", "percolate", "retry_on_conflict"):
                 if arg in querystring_args:
                     cmd["update"]['_%s' % arg] = querystring_args[arg]
@@ -734,6 +740,11 @@ class ES(object):
             command = "%s\n%s" % (json.dumps(cmd, cls=self.encoder), json.dumps(body, cls=self.encoder))
             self.bulker.add(command)
             return self.flush_bulk()
+        else:
+            if routing is not None:
+                querystring_args['routing'] = routing
+            if retry_on_conflict is not None:
+                body["retry_on_conflict"] = retry_on_conflict
 
         path = make_path(index, doc_type, id, "_update")
         model = model or self.model

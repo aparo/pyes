@@ -119,6 +119,34 @@ class QuerySearchTestCase(ESTestCase):
         self.assertEquals(q, PrefixQuery("name", "jo", "3"))
         self.assertNotEquals(q, PrefixQuery("name", "jo", "4"))
 
+    def test_SpanMultiQuery(self):
+        clause1 = SpanMultiQuery(PrefixQuery("parsedtext", "bi"))
+        clause2 = SpanMultiQuery(PrefixQuery("parsedtext", "ni"))
+        clauses = [clause1, clause2];
+        q = SpanNearQuery(clauses, 1)
+        resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
+        self.assertEquals(resultset.total, 1)
+        self.assertEquals(clause1, SpanMultiQuery(PrefixQuery("parsedtext", "bi")))
+        self.assertNotEquals(clause1, clause2)
+
+        clause1 = SpanMultiQuery(WildcardQuery("parsedtext", "bi*"))
+        clause2 = SpanMultiQuery(WildcardQuery("parsedtext", "ni*"))
+        clauses = [clause1, clause2];
+        q = SpanNearQuery(clauses, 1)
+        resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
+        self.assertEquals(resultset.total, 1)
+        self.assertEquals(clause1, SpanMultiQuery(WildcardQuery("parsedtext", "bi*")))
+        self.assertNotEquals(clause1, clause2)
+
+        clause1 = SpanMultiQuery(PrefixQuery("parsedtext", "bi"))
+        clause2 = SpanMultiQuery(WildcardQuery("parsedtext", "ni*"))
+        clauses = [clause1, clause2];
+        q = SpanNearQuery(clauses, 1)
+        resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
+        self.assertEquals(resultset.total, 1)
+        self.assertEquals(clause1, SpanMultiQuery(PrefixQuery("parsedtext", "bi")))
+        self.assertNotEquals(clause1, clause2)
+
     def test_MatchAllQuery(self):
         q = MatchAllQuery()
         resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])

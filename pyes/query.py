@@ -195,7 +195,9 @@ class Search(EqualityComparableUsingAttributeDictionary):
             res['highlight'] = self._highlight.serialize()
         if self.sort:
             if isinstance(self.sort, SortFactory):
-                res['sort'] = self.sort.serialize()
+                sort = self.sort.serialize()
+                if sort:
+                    res['sort'] = sort
             else:
                 res['sort'] = self.sort
         if self.explain:

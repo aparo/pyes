@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 import unittest
-from .estestcase import ESTestCase
+from pyes.tests import ESTestCase
 from pyes.sort import SortFactory, SortOrder, GeoSortOrder, ScriptSortOrder
 from pyes.query import Search, MatchAllQuery
 
@@ -92,7 +92,7 @@ class SortOrderESTestCase(ESTestCase):
 
     def setUp(self):
         super(SortOrderESTestCase, self).setUp()
-        self.conn.create_index(self.index_name)
+        self.conn.indices.create_index(self.index_name)
         #my es config has disabled automatic mapping creation
         mapping = {
             self.document_type: {
@@ -103,7 +103,7 @@ class SortOrderESTestCase(ESTestCase):
                 }
             }
         }
-        self.conn.put_mapping(self.document_type, mapping)
+        self.conn.indices.put_mapping(self.document_type, mapping)
         self.conn.index(
             {'foo': 1, 'location': {'lat': 1, 'lon': 1}},
             self.index_name,
@@ -123,7 +123,7 @@ class SortOrderESTestCase(ESTestCase):
             3
         )
 
-        self.conn.refresh(self.index_name)
+        self.conn.indices.refresh(self.index_name)
 
     def test_sorting_by_foo(self):
         search = Search(MatchAllQuery())

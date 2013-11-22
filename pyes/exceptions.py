@@ -16,6 +16,7 @@ __all__ = [
     "IndexMissingException",
     "SearchPhaseExecutionException",
     "InvalidIndexNameException",
+    "InvalidSortOrder",
     "InvalidQuery",
     "InvalidParameterQuery",
     "InvalidParameter",
@@ -67,6 +68,10 @@ class ScriptFieldsError(Exception):
 
 
 class InvalidParameter(Exception):
+    pass
+
+
+class InvalidSortOrder(Exception):
     pass
 
 

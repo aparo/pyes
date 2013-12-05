@@ -45,7 +45,8 @@ class AbstractField(object):
                  analyzer=None,
                  index_analyzer=None,
                  search_analyzer=None,
-                 name=None):
+                 name=None,
+                 **kwargs):
         self.store = to_bool(store)
         self.boost = boost
         self.term_vector = term_vector

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 import unittest
-from .estestcase import ESTestCase
+from pyes.tests import ESTestCase
 
 from pyes.query import TermQuery
 from pyes.exceptions import (IndexAlreadyExistsException,
@@ -11,20 +11,20 @@ from time import sleep
 class IndexingTestCase(ESTestCase):
     def setUp(self):
         super(IndexingTestCase, self).setUp()
-        self.conn.delete_index_if_exists(self.index_name)
-        self.conn.delete_index_if_exists("test-index2")
-        self.conn.delete_index_if_exists("another-index")
-        self.conn.create_index(self.index_name)
-        self.conn.create_index("test-index2")
+        self.conn.indices.delete_index_if_exists(self.index_name)
+        self.conn.indices.delete_index_if_exists("test-index2")
+        self.conn.indices.delete_index_if_exists("another-index")
+        self.conn.indices.create_index(self.index_name)
+        self.conn.indices.create_index("test-index2")
 
     def tearDown(self):
-        self.conn.delete_index_if_exists(self.index_name)
-        self.conn.delete_index_if_exists("test-index2")
-        self.conn.delete_index_if_exists("another-index")
+        self.conn.indices.delete_index_if_exists(self.index_name)
+        self.conn.indices.delete_index_if_exists("test-index2")
+        self.conn.indices.delete_index_if_exists("another-index")
 
     def testExists(self):
-        self.assertTrue(self.conn.exists_index(self.index_name))
-        self.assertFalse(self.conn.exists_index("test-index5"))
+        self.assertTrue(self.conn.indices.exists_index(self.index_name))
+        self.assertFalse(self.conn.indices.exists_index("test-index5"))
 
     def testCollectInfo(self):
         """
@@ -59,13 +59,13 @@ class IndexingTestCase(ESTestCase):
 
     def testExplicitIndexCreate(self):
         """Creazione indice"""
-        self.conn.delete_index("test-index2")
-        result = self.conn.create_index("test-index2")
+        self.conn.indices.delete_index("test-index2")
+        result = self.conn.indices.create_index("test-index2")
         self.assertResultContains(result, {'acknowledged': True, 'ok': True})
 
     def testDeleteByID(self):
         self.conn.index({"name": "Joe Tester"}, self.index_name, self.document_type, 1)
-        self.conn.refresh(self.index_name)
+        self.conn.indices.refresh(self.index_name)
         result = self.conn.delete(self.index_name, self.document_type, 1)
         self.assertResultContains(result, {
             '_type': 'test-type',
@@ -74,7 +74,7 @@ class IndexingTestCase(ESTestCase):
 
     def testDeleteByIDWithEncoding(self):
         self.conn.index({"name": "Joe Tester"}, self.index_name, self.document_type, "http://hello/?#'there")
-        self.conn.refresh(self.index_name)
+        self.conn.indices.refresh(self.index_name)
         result = self.conn.delete(self.index_name, self.document_type, "http://hello/?#'there")
         self.assertResultContains(result, {
             '_type': 'test-type',
@@ -83,55 +83,66 @@ class IndexingTestCase(ESTestCase):
             '_index': 'test-index'})
 
     def testDeleteIndex(self):
-        self.conn.create_index("another-index")
-        result = self.conn.delete_index("another-index")
+        self.conn.indices.create_index("another-index")
+        result = self.conn.indices.delete_index("another-index")
         self.assertResultContains(result, {'acknowledged': True, 'ok': True})
 
     def testCannotCreateExistingIndex(self):
-        self.conn.create_index("another-index")
-        self.assertRaises(IndexAlreadyExistsException, self.conn.create_index, "another-index")
-        self.conn.delete_index("another-index")
+        self.conn.indices.create_index("another-index")
+        self.assertRaises(IndexAlreadyExistsException, self.conn.indices.create_index, "another-index")
+        self.conn.indices.delete_index("another-index")
 
     def testPutMapping(self):
-        result = self.conn.put_mapping(self.document_type,
+        result = self.conn.indices.put_mapping(self.document_type,
                 {self.document_type: {"properties": {"name": {"type": "string", "store": "yes"}}}},
             indices=self.index_name)
         self.assertResultContains(result, {'acknowledged': True, 'ok': True})
 
     def testIndexStatus(self):
-        self.conn.create_index("another-index")
-        result = self.conn.status(["another-index"])
-        self.conn.delete_index("another-index")
+        self.conn.indices.create_index("another-index")
+        result = self.conn.indices.status(["another-index"])
+        self.conn.indices.delete_index("another-index")
         self.assertTrue(result.has_key('indices'))
         self.assertResultContains(result, {'ok': True})
 
     def testIndexFlush(self):
-        self.conn.create_index("another-index")
-        result = self.conn.flush(["another-index"])
-        self.conn.delete_index("another-index")
+        self.conn.indices.create_index("another-index")
+        result = self.conn.indices.flush(["another-index"])
+        self.conn.indices.delete_index("another-index")
         self.assertResultContains(result, {'ok': True})
 
     def testIndexRefresh(self):
-        self.conn.create_index("another-index")
-        result = self.conn.refresh(["another-index"])
-        self.conn.delete_index("another-index")
+        self.conn.indices.create_index("another-index")
+        result = self.conn.indices.refresh(["another-index"])
+        self.conn.indices.delete_index("another-index")
         self.assertResultContains(result, {'ok': True})
 
     def testIndexOptimize(self):
-        self.conn.create_index("another-index")
-        result = self.conn.optimize(["another-index"])
-        self.conn.delete_index("another-index")
+        self.conn.indices.create_index("another-index")
+        result = self.conn.indices.optimize(["another-index"])
+        self.conn.indices.delete_index("another-index")
         self.assertResultContains(result, {'ok': True})
 
     def testUpdate(self):
+        # Use these query strings for all, so we test that it works on all the calls
+        querystring_args = {"routing": 1}
+
         self.conn.index({"name": "Joe Tester", "sex": "male"},
-            self.index_name, self.document_type, 1)
+            self.index_name, self.document_type, 1, querystring_args=querystring_args)
         self.conn.refresh(self.index_name)
-        self.conn.update({"name": "Joe The Tester", "age": 23},
-            self.index_name, self.document_type, 1)
+        self.conn.update(self.index_name, self.document_type, 1, document={"name": "Joe The Tester", "age": 23}, querystring_args=querystring_args)
         self.conn.refresh(self.index_name)
-        result = self.conn.get(self.index_name, self.document_type, 1)
+        result = self.conn.get(self.index_name, self.document_type, 1, **querystring_args)
         self.assertResultContains(result, {"name": "Joe The Tester", "sex": "male", "age": 23})
+        self.assertResultContains(result._meta,
+                {"index": "test-index", "type": "test-type", "id": "1"})
+
+        # Test bulk update
+        self.conn.update(self.index_name, self.document_type, 1, document={"name": "Christian The Hacker", "age": 24},
+                         querystring_args=querystring_args, bulk=True)
+        self.conn.indices.refresh(self.index_name)
+        result = self.conn.indices.get(self.index_name, self.document_type, 1, **querystring_args)
+        self.assertResultContains(result, {"name": "Christian The Hacker", "sex": "male", "age": 24})
         self.assertResultContains(result._meta,
                 {"index": "test-index", "type": "test-type", "id": "1"})
 
@@ -145,10 +156,10 @@ class IndexingTestCase(ESTestCase):
 
         self.conn.index({"name": "Joe Tester", "age": 23, "skills": ["QA"]},
             self.index_name, self.document_type, 1)
-        self.conn.refresh(self.index_name)
+        self.conn.indices.refresh(self.index_name)
         self.conn.update({"age": 24, "skills": ["cooking"]}, self.index_name,
             self.document_type, 1, update_func=update_list_values)
-        self.conn.refresh(self.index_name)
+        self.conn.indices.refresh(self.index_name)
         result = self.conn.get(self.index_name, self.document_type, 1)
         self.assertResultContains(result, {"name": "Joe Tester", "age": 24,
                                            "skills": ["QA", "cooking"]})
@@ -158,7 +169,7 @@ class IndexingTestCase(ESTestCase):
     def testGetByID(self):
         self.conn.index({"name": "Joe Tester"}, self.index_name, self.document_type, 1)
         self.conn.index({"name": "Bill Baloney"}, self.index_name, self.document_type, 2)
-        self.conn.refresh(self.index_name)
+        self.conn.indices.refresh(self.index_name)
         result = self.conn.get(self.index_name, self.document_type, 1)
         self.assertResultContains(result, {"name": "Joe Tester"})
         self.assertResultContains(result._meta, {"index": "test-index",
@@ -166,21 +177,21 @@ class IndexingTestCase(ESTestCase):
     def testExists(self):
         self.conn.index({"name": "Joe Tester"}, self.index_name, self.document_type, 1)
         self.conn.index({"name": "Bill Baloney"}, self.index_name, self.document_type, "http://example.com")
-        self.conn.refresh(self.index_name)
+        self.conn.indices.refresh(self.index_name)
         self.assertTrue(self.conn.exists(self.index_name, self.document_type, 1))
         self.assertTrue(self.conn.exists(self.index_name, self.document_type, "http://example.com"))
 
     def testMultiGet(self):
         self.conn.index({"name": "Joe Tester"}, self.index_name, self.document_type, 1)
         self.conn.index({"name": "Bill Baloney"}, self.index_name, self.document_type, 2)
-        self.conn.refresh(self.index_name)
+        self.conn.indices.refresh(self.index_name)
         results = self.conn.mget(["1", "2"], self.index_name, self.document_type)
         self.assertEqual(len(results), 2)
 
     def testGetCountBySearch(self):
         self.conn.index({"name": "Joe Tester"}, self.index_name, self.document_type, 1)
         self.conn.index({"name": "Bill Baloney"}, self.index_name, self.document_type, 2)
-        self.conn.refresh(self.index_name)
+        self.conn.indices.refresh(self.index_name)
         q = TermQuery("name", "joe")
         result = self.conn.count(q, indices=self.index_name)
         self.assertResultContains(result, {'count': 1})
@@ -206,7 +217,7 @@ class IndexingTestCase(ESTestCase):
         self.conn.index({"name": "Joe Test"}, self.index_name, self.document_type, 1)
         self.conn.index({"name": "Joe Tester"}, self.index_name, self.document_type, 2)
         self.conn.index({"name": "Joe did the test"}, self.index_name, self.document_type, 3)
-        self.conn.refresh(self.index_name)
+        self.conn.indices.refresh(self.index_name)
         sleep(0.5)
         result = self.conn.morelikethis(self.index_name, self.document_type, 1, ['name'], min_term_freq=1,
             min_doc_freq=1)

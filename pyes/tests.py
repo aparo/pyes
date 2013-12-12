@@ -2,15 +2,14 @@
 from __future__ import absolute_import
 import os
 import logging
-
-"""
-Unit tests for pyes.  These require an es server with thrift plugin running on the default port (localhost:9500).
-"""
 import unittest
 from pprint import pprint
 from pyes.es import ES
 from pyes.helpers import SettingsBuilder
 
+"""
+Unit tests for pyes.  These require an es server with thrift plugin running on the default port (localhost:9500).
+"""
 
 def get_conn(*args, **kwargs):
     return ES(("http", "127.0.0.1", 9200), *args, **kwargs)
@@ -22,10 +21,10 @@ class ESTestCase(unittest.TestCase):
         self.conn = get_conn(timeout=300.0, log_curl=True, dump_curl=self.log)#incremented timeout for debugging
         self.index_name = "test-index"
         self.document_type = "test-type"
-        self.conn.delete_index_if_exists(self.index_name)
+        self.conn.indices.delete_index_if_exists(self.index_name)
 
     def tearDown(self):
-        self.conn.delete_index_if_exists(self.index_name)
+        self.conn.indices.delete_index_if_exists(self.index_name)
         if self.log:
             self.log.close()
 
@@ -38,8 +37,6 @@ class ESTestCase(unittest.TestCase):
                 if result.has_key('meta'):
                     found = value == result['meta'][key]
             self.assertEquals(True, found)
-
-            #self.assertEquals(value, result[key])
 
     def checkRaises(self, excClass, callableObj, *args, **kwargs):
         """Assert that calling callableObj with *args and **kwargs raises an
@@ -139,14 +136,14 @@ def setUp():
             'type': u'string'}}
 
     conn = get_conn(log_curl=True)
-    conn.delete_index_if_exists("test-pindex")
-    conn.create_index("test-pindex")
-    conn.put_mapping("test-type", {'properties': mapping}, ["test-pindex"])
+    conn.indices.delete_index_if_exists("test-pindex")
+    conn.indices.create_index("test-pindex")
+    conn.indices.put_mapping("test-type", {'properties': mapping}, ["test-pindex"])
     conn.index({"name": "Joe Tester", "parsedtext": "Joe Testere nice guy", "uuid": "11111", "position": 1,
                 "doubles": [1.0, 2.0, 3.0]}, "test-pindex", "test-type", 1)
     conn.index({"name": "Bill Baloney", "parsedtext": "Joe Testere nice guy", "uuid": "22222", "position": 2,
                 "doubles": [0.1, 0.2, 0.3]}, "test-pindex", "test-type", 2)
-    conn.refresh(["test-pindex"])
+    conn.indices.refresh(["test-pindex"])
 
 
 def tearDown():
@@ -154,4 +151,4 @@ def tearDown():
 
     """
     conn = get_conn()
-    conn.delete_index_if_exists("test-pindex")
+    conn.indices.delete_index_if_exists("test-pindex")

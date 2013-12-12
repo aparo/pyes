@@ -15,6 +15,8 @@ __all__ = [
     "IndexAlreadyExistsException",
     "IndexMissingException",
     "SearchPhaseExecutionException",
+    "InvalidIndexNameException",
+    "InvalidSortOrder",
     "InvalidQuery",
     "InvalidParameterQuery",
     "InvalidParameter",
@@ -69,6 +71,10 @@ class InvalidParameter(Exception):
     pass
 
 
+class InvalidSortOrder(Exception):
+    pass
+
+
 class ElasticSearchException(Exception):
     """Base class of exceptions raised as a result of parsing an error return
     from ElasticSearch.
@@ -102,6 +108,10 @@ class AlreadyExistsException(ElasticSearchException):
 
 
 class IndexAlreadyExistsException(AlreadyExistsException):
+    pass
+
+
+class InvalidIndexNameException(ElasticSearchException):
     pass
 
 

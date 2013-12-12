@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-from .estestcase import ESTestCase
+from pyes.tests import ESTestCase
 
 class UpdateTestCase(ESTestCase):
     def setUp(self):
         super(UpdateTestCase, self).setUp()
-        self.conn.create_index(self.index_name)
+        self.conn.indices.create_index(self.index_name)
         self.conn.index({"counter": 0}, self.index_name, self.document_type, 1)
 
     def testPartialUpdateWithoutParams(self):

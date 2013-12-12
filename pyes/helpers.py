@@ -10,11 +10,14 @@ class SettingsBuilder(object):
         """
         Add a new mapping
         """
+        from .mappings import DocumentObjectField
         if name:
             self.mappings[name] = data
         else:
             if isinstance(data, dict):
                 self.mappings.update(data)
+            elif isinstance(data, DocumentObjectField):
+                self.mappings[data.name]=data.as_dict()
             elif isinstance(data, list):
                 for d in data:
                     self.mappings.update(d)

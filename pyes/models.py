@@ -211,6 +211,8 @@ class ListBulker(BaseBulker):
 
 
 def _is_bulk_item_ok(item):
+    if "create" in item:
+        return "ok" in item["create"]
     if "index" in item:
         return "ok" in item["index"]
     elif "delete" in item:

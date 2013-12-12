@@ -2,6 +2,7 @@
 from __future__ import absolute_import
 from .exceptions import InvalidQuery, InvalidParameterQuery, QueryError, \
     ScriptFieldsError
+from .sort import SortFactory
 from .facets import FacetFactory
 from .filters import ANDFilter, Filter
 from .highlight import HighLighter
@@ -146,7 +147,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
         self.start = start
         self.size = size
         self._highlight = highlight
-        self.sort = sort
+        self.sort = sort or SortFactory()
         self.explain = explain
         self.facet = facet or FacetFactory()
         self.rescore = rescore
@@ -193,7 +194,12 @@ class Search(EqualityComparableUsingAttributeDictionary):
         if self._highlight:
             res['highlight'] = self._highlight.serialize()
         if self.sort:
-            res['sort'] = self.sort
+            if isinstance(self.sort, SortFactory):
+                sort = self.sort.serialize()
+                if sort:
+                    res['sort'] = sort
+            else:
+                res['sort'] = self.sort
         if self.explain:
             res['explain'] = self.explain
         if self.version:
@@ -1233,6 +1239,29 @@ class SpanFirstQuery(TermQuery):
         return {"match": {"span_first": self._values}, "end": self.end}
 
 
+class SpanMultiQuery(Query):
+    """
+    This query allows you to wrap multi term queries (fuzzy, prefix, wildcard, range).
+    
+    The query element is either of type WildcardQuery, FuzzyQuery, PrefixQuery or RangeQuery.
+    A boost can also be associated with the element query
+    """
+    
+    _internal_name = "span_multi"
+    
+    def __init__(self, query, **kwargs):
+        super(SpanMultiQuery, self).__init__(**kwargs)
+        self.query = query
+
+    def _validate(self):
+        if not isinstance(self.query, (WildcardQuery, FuzzyQuery, PrefixQuery, RangeQuery)):
+            raise RuntimeError("Invalid query:%r" % self.query)
+
+    def _serialize(self):
+        self._validate()
+        return {'match': self.query.serialize()}
+
+
 class SpanNearQuery(Query):
     """
     Matches spans which are near one another. One can specify _slop_,
@@ -1303,7 +1332,7 @@ def is_a_spanquery(obj):
     """
     Returns if the object is a span query
     """
-    return isinstance(obj, (SpanTermQuery, SpanFirstQuery, SpanOrQuery))
+    return isinstance(obj, (SpanTermQuery, SpanFirstQuery, SpanOrQuery, SpanMultiQuery))
 
 
 class SpanOrQuery(Query):
@@ -1383,10 +1412,10 @@ class IdsQuery(Query):
         data = {}
         if self.type is not None:
             data['type'] = self.type
-        if isinstance(self.values, basestring):
-            data['values'] = [self.values]
-        else:
+        if isinstance(self.values, list):
             data['values'] = self.values
+        else:
+            data['values'] = [self.values]
         return data
 
 
@@ -1436,7 +1465,7 @@ class RescoreQuery(Query):
 
     def serialize(self):
         """Serialize the query to a structure using the query DSL."""
-        
+
         data = {self._internal_name: self.query.serialize()}
         if self.query_weight:
             data['query_weight'] = self.query_weight

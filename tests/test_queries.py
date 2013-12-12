@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 import unittest
-from .estestcase import ESTestCase
+from pyes.tests import ESTestCase
 from pyes.es import json
 from pyes.query import *
 from pyes.filters import TermFilter, ANDFilter, ORFilter, RangeFilter, RawFilter, IdsFilter, MatchAllFilter, NotFilter
@@ -31,9 +31,9 @@ class QuerySearchTestCase(ESTestCase):
                              'index': 'not_analyzed',
                              'store': 'yes',
                              'type': u'string'}}
-        self.conn.create_index(self.index_name)
-        self.conn.put_mapping(self.document_type, {'properties': mapping}, self.index_name)
-        self.conn.put_mapping("test-type2", {"_parent": {"type": self.document_type}}, self.index_name)
+        self.conn.indices.create_index(self.index_name)
+        self.conn.indices.put_mapping(self.document_type, {'properties': mapping}, self.index_name)
+        self.conn.indices.put_mapping("test-type2", {"_parent": {"type": self.document_type}}, self.index_name)
         self.conn.index({"name": "Joe Tester", "parsedtext": "Joe Testere nice guy", "uuid": "11111", "position": 1},
             self.index_name, self.document_type, 1)
         self.conn.index({"name": "data1", "value": "value1"}, self.index_name, "test-type2", 1, parent=1)
@@ -45,7 +45,7 @@ class QuerySearchTestCase(ESTestCase):
 
         self.conn.default_indices = self.index_name
 
-        self.conn.refresh()
+        self.conn.indices.refresh()
 
     def test_RescoreQuery(self):
         q = CustomScoreQuery(query=MatchAllQuery(),
@@ -118,6 +118,34 @@ class QuerySearchTestCase(ESTestCase):
         self.assertEquals(resultset.total, 1)
         self.assertEquals(q, PrefixQuery("name", "jo", "3"))
         self.assertNotEquals(q, PrefixQuery("name", "jo", "4"))
+
+    def test_SpanMultiQuery(self):
+        clause1 = SpanMultiQuery(PrefixQuery("parsedtext", "bi"))
+        clause2 = SpanMultiQuery(PrefixQuery("parsedtext", "ni"))
+        clauses = [clause1, clause2];
+        q = SpanNearQuery(clauses, 1)
+        resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
+        self.assertEquals(resultset.total, 1)
+        self.assertEquals(clause1, SpanMultiQuery(PrefixQuery("parsedtext", "bi")))
+        self.assertNotEquals(clause1, clause2)
+
+        clause1 = SpanMultiQuery(WildcardQuery("parsedtext", "bi*"))
+        clause2 = SpanMultiQuery(WildcardQuery("parsedtext", "ni*"))
+        clauses = [clause1, clause2];
+        q = SpanNearQuery(clauses, 1)
+        resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
+        self.assertEquals(resultset.total, 1)
+        self.assertEquals(clause1, SpanMultiQuery(WildcardQuery("parsedtext", "bi*")))
+        self.assertNotEquals(clause1, clause2)
+
+        clause1 = SpanMultiQuery(PrefixQuery("parsedtext", "bi"))
+        clause2 = SpanMultiQuery(WildcardQuery("parsedtext", "ni*"))
+        clauses = [clause1, clause2];
+        q = SpanNearQuery(clauses, 1)
+        resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
+        self.assertEquals(resultset.total, 1)
+        self.assertEquals(clause1, SpanMultiQuery(PrefixQuery("parsedtext", "bi")))
+        self.assertNotEquals(clause1, clause2)
 
     def test_MatchAllQuery(self):
         q = MatchAllQuery()

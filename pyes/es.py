@@ -18,14 +18,14 @@ except ImportError:
 from . import logger
 from .connection_http import connect as http_connect
 from .convert_errors import raise_if_error
-from .decorators import deprecated
+#from .decorators import deprecated
 from .exceptions import ElasticSearchException, ReduceSearchPhaseException, \
     InvalidQuery, VersionConflictEngineException
 from .helpers import SettingsBuilder
 from .managers import Indices, Cluster
 from .mappings import Mapper
 from .models import ElasticSearchModel, DotDict, ListBulker
-from .query import Search, Query, MatchAllQuery
+from .query import Search, Query
 from .rivers import River
 from .utils import make_path
 try:
@@ -376,7 +376,6 @@ class ES(object):
         if params:
             for k in params:
                 params[k] = str(params[k])
-
         request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()],
                               uri=path, parameters=params, headers=headers, body=body)
         if self.dump_curl is not None:
@@ -387,6 +386,10 @@ class ES(object):
 
         # execute the request
         response = self.connection.execute(request)
+
+        if self.dump_curl is not None:
+            print >> self.dump_curl, "# response status: %s"%response.status
+            print >> self.dump_curl, "# response body: %s"%response.body
 
         if method == "HEAD":
             return response.status == 200
@@ -473,66 +476,6 @@ class ES(object):
         return  self.bulker_class(self, bulk_size=self.bulk_size,
                                   raise_on_bulk_item_failure=self.raise_on_bulk_item_failure)
 
-    #---- Indices commands
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.aliases")
-    def aliases(self, indices=None):
-        """
-        Deprecated:
-            use: indices.aliases(indices=indices)
-
-        Retrieve the aliases of one or more indices
-        """
-        return self.indices.aliases(indices=indices)
-
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.status")
-    def status(self, indices=None):
-        """
-        Deprecated:
-            use: indices.aliases(indices=indices)
-
-        Retrieve the status of one or more indices
-        """
-        return self.indices.status(indices=indices)
-
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.create_index")
-    def create_index(self, index, settings=None):
-        """
-        Deprecated:
-            use: indices.create_index(self, index, settings=None)
-
-        Creates an index with optional settings.
-        """
-        return self.indices.create_index(index=index, settings=settings)
-
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.create_index_if_missing")
-    def create_index_if_missing(self, index, settings=None):
-        """
-        Deprecated
-
-        Creates an index if it doesn't already exist.
-
-        If supplied, settings must be a dictionary.
-        """
-        return  self.indices.create_index_if_missing(index=index, settings=settings)
-
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.delete_index")
-    def delete_index(self, index):
-        """
-        Deprecated
-
-        Deletes an index.
-        """
-        return self.indices.delete_index(index=index)
-
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.exists_index")
-    def exists_index(self, index):
-        """
-        Deprecated
-
-        Check if an index exists.
-        """
-        return self.indices.exists_index(index=index)
-
     def ensure_index(self, index, mappings=None, settings=None, clear=False):
         """
         Ensure if an index with mapping exists
@@ -540,37 +483,37 @@ class ES(object):
         mappings = mappings or []
         if isinstance(mappings, dict):
             mappings = [mappings]
-        exists = self.exists_index(index)
+        exists = self.indices.exists_index(index)
         if exists and not mappings and not clear:
             return
         if exists and clear:
-            self.indices.delete_index(index)
+            self.indices.indices.delete_index(index)
             exists = False
 
         if exists:
             if not mappings:
-                self.delete_index(index)
-                self.refresh()
-                self.create_index(index, settings)
+                self.indices.delete_index(index)
+                self.indices.refresh()
+                self.indices.create_index(index, settings)
                 return
 
             if clear:
                 for maps in mappings:
                     for key in maps.keys():
-                        self.delete_mapping(index, doc_type=key)
-                self.refresh()
+                        self.indices.delete_mapping(index, doc_type=key)
+                self.indices.refresh()
             if isinstance(mappings, SettingsBuilder):
                 for name, data in mappings.mappings.items():
-                    self.put_mapping(doc_type=name, mapping=data, indices=index)
+                    self.indices.put_mapping(doc_type=name, mapping=data, indices=index)
 
             else:
                 for maps in mappings:
                     if isinstance(maps, tuple):
                         name, mapping = maps
-                        self.put_mapping(doc_type=name, mapping=mapping, indices=index)
+                        self.indices.put_mapping(doc_type=name, mapping=mapping, indices=index)
                     elif isinstance(maps, dict):
                         for name, data in maps.items():
-                            self.put_mapping(doc_type=name, mapping=maps, indices=index)
+                            self.indices.put_mapping(doc_type=name, mapping=maps, indices=index)
 
                 return
 
@@ -583,245 +526,8 @@ class ES(object):
             else:
                 settings = SettingsBuilder(mappings=mappings)
         if not exists:
-            self.create_index(index, settings)
+            self.indices.create_index(index, settings)
             self.indices.refresh(index, timesleep=1)
-
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.delete_index_if_exists")
-    def delete_index_if_exists(self, index):
-        """
-        Deprecated
-
-        Deletes an index if it exists.
-        """
-        return self.indices.delete_index_if_exists(index=index)
-
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.get_indices")
-    def get_indices(self, include_aliases=False):
-        """
-        Deprecated
-
-        Get a dict holding an entry for each index which exists.
-
-        If include_alises is True, the dict will also contain entries for
-        aliases.
-
-        The key for each entry in the dict is the index or alias name.  The
-        value is a dict holding the following properties:
-
-         - num_docs: Number of documents in the index or alias.
-         - alias_for: Only present for an alias: holds a list of indices which
-           this is an alias for.
-        """
-        return self.indices.get_indices(include_aliases=include_aliases)
-
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.get_closed_indices")
-    def get_closed_indices(self):
-        """
-        Deprecated
-
-        Get all closed indices.
-        """
-        return self.indices.get_closed_indices()
-
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.get_alias")
-    def get_alias(self, alias):
-        """
-        Deprecated
-
-        Get the index or indices pointed to by a given alias.
-
-        Raises IndexMissingException if the alias does not exist.
-
-        Otherwise, returns a list of index names.
-        """
-        return self.indices.get_alias(alias)
-
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.change_aliases")
-    def change_aliases(self, commands):
-        """
-        Deprecated
-
-        Change the aliases stored.
-
-        `commands` is a list of 3-tuples; (command, index, alias), where
-        `command` is one of "add" or "remove", and `index` and `alias` are the
-        index and alias to add or remove.
-        """
-        return self.indices.change_aliases(commands)
-
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.add_alias")
-    def add_alias(self, alias, indices=None, **kwargs):
-        """
-        Deprecated
-
-        Add an alias to point to a set of indices.
-        """
-        return self.indices.add_alias(alias, indices, **kwargs)
-
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.delete_alias")
-    def delete_alias(self, alias, indices=None):
-        """
-        Deprecated
-
-        Delete an alias.
-
-        The specified index or indices are deleted from the alias, if they are
-        in it to start with.  This won't report an error even if the indices
-        aren't present in the alias.
-        """
-        return self.indices.delete_alias(alias, indices)
-
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.set_alias")
-    def set_alias(self, alias, indices=None, **kwargs):
-        """
-        Deprecated
-
-        Set an alias.
-
-        This handles removing the old list of indices pointed to by the alias.
-
-        Warning: there is a race condition in the implementation of this
-        function - if another client modifies the indices which this alias
-        points to during this call, the old value of the alias may not be
-        correctly set.
-        """
-        return self.indices.set_alias(alias, indices, **kwargs)
-
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.close_index")
-    def close_index(self, index):
-        """
-        Deprecated
-
-        Close an index.
-        """
-        return self.indices.close_index(index)
-
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.open_index")
-    def open_index(self, index):
-        """
-        Deprecated
-
-        Open an index.
-        """
-        return self.indices.open_index(index)
-
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.flush")
-    def flush(self, indices=None, refresh=None):
-        """
-        Deprecated
-
-        Flushes one or more indices (clear memory)
-        If a bulk is full, it sends it.
-
-        :keyword indices: an index or a list of indices
-        :keyword refresh: set the refresh parameter
-        """
-        return self.indices.flush(indices=indices, refresh=refresh)
-
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.refresh")
-    def refresh(self, indices=None, timesleep=None):
-        """
-        Deprecated
-
-        Refresh one or more indices
-
-        timesleep: seconds to wait
-        """
-        return self.indices.refresh(indices=indices, timesleep=timesleep)
-
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.optimize")
-    def optimize(self, indices=None,
-                 wait_for_merge=False,
-                 max_num_segments=None,
-                 only_expunge_deletes=False,
-                 refresh=True,
-                 flush=True):
-        """Optimize one or more indices.
-
-        `indices` is the list of indices to optimise.  If not supplied, all
-        default_indices are optimised.
-
-        `wait_for_merge` (boolean): If True, the operation will not return
-        until the merge has been completed.  Defaults to False.
-
-        `max_num_segments` (integer): The number of segments to optimize to. To
-        fully optimize the index, set it to 1. Defaults to half the number
-        configured by the merge policy (which in turn defaults to 10).
-
-        `only_expunge_deletes` (boolean): Should the optimize process only
-        expunge segments with deletes in it. In Lucene, a document is not
-        deleted from a segment, just marked as deleted. During a merge process
-        of segments, a new segment is created that does have those deletes.
-        This flag allow to only merge segments that have deletes. Defaults to
-        false.
-
-        `refresh` (boolean): Should a refresh be performed after the optimize.
-        Defaults to true.
-
-        `flush` (boolean): Should a flush be performed after the optimize.
-        Defaults to true.
-        """
-        return self.indices.optimize(indices=indices,
-                 wait_for_merge=wait_for_merge,
-                 max_num_segments=max_num_segments,
-                 only_expunge_deletes=only_expunge_deletes,
-                 refresh=refresh,
-                 flush=flush)
-
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.analyze")
-    def analyze(self, text, index=None, analyzer=None, tokenizer=None, filters=None, field=None):
-        """
-        Performs the analysis process on a text and return the tokens breakdown of the text
-        """
-        if filters is None:
-            filters = []
-        argsets = 0
-        args = {}
-
-        if analyzer:
-            args['analyzer'] = analyzer
-            argsets += 1
-        if tokenizer or filters:
-            if tokenizer:
-                args['tokenizer'] = tokenizer
-            if filters:
-                args['filters'] = ','.join(filters)
-            argsets += 1
-        if field:
-            args['field'] = field
-            argsets += 1
-
-        if argsets > 1:
-            raise ValueError('Argument conflict: Speficy either analyzer, tokenizer/filters or field')
-
-        if field and index is None:
-            raise ValueError('field can only be specified with an index')
-
-        path = make_path(index, '_analyze')
-        return self._send_request('POST', path, text, args)
-
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.gateway_snapshot")
-    def gateway_snapshot(self, indices=None):
-        """
-        Gateway snapshot one or more indices
-
-        :param indices: a list of indices or None for default configured.
-        """
-        return self.indices.gateway_snapshot(indices=indices)
-
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.put_mapping")
-    def put_mapping(self, doc_type=None, mapping=None, indices=None):
-        """
-        Register specific mapping definition for a specific type against one or more indices.
-        """
-        return self.indices.put_mapping(doc_type=doc_type, mapping=mapping, indices=indices)
-
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.get_mapping")
-    def get_mapping(self, doc_type=None, indices=None):
-        """
-        Register specific mapping definition for a specific type against one or more indices.
-        """
-        return self.indices.get_mapping(doc_type=doc_type, indices=indices)
 
     def put_warmer(self, doc_types=None, indices=None, name=None, warmer=None, querystring_args=None):
         """
@@ -901,74 +607,6 @@ class ES(object):
             self.info = {}
             return False
 
-    #--- cluster
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].cluster.cluster_health")
-    def cluster_health(self, indices=None, level="cluster", wait_for_status=None,
-                       wait_for_relocating_shards=None, timeout=30):
-        """
-        Check the current :ref:`cluster health <es-guide-reference-api-admin-cluster-health>`.
-        Request Parameters
-
-        The cluster health API accepts the following request parameters:
-
-        :param level: Can be one of cluster, indices or shards. Controls the
-                        details level of the health information returned.
-                        Defaults to *cluster*.
-        :param wait_for_status: One of green, yellow or red. Will wait (until
-                                the timeout provided) until the status of the
-                                cluster changes to the one provided.
-                                By default, will not wait for any status.
-        :param wait_for_relocating_shards: A number controlling to how many
-                                           relocating shards to wait for.
-                                           Usually will be 0 to indicate to
-                                           wait till all relocation have
-                                           happened. Defaults to not to wait.
-        :param timeout: A time based parameter controlling how long to wait
-                        if one of the wait_for_XXX are provided.
-                        Defaults to 30s.
-        """
-        return self.cluster.health(indices=indices, level=level, wait_for_status=wait_for_status,
-                                   wait_for_relocating_shards=wait_for_relocating_shards,
-                                   timeout=timeout)
-
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].cluster.state")
-    def cluster_state(self, filter_nodes=None, filter_routing_table=None,
-                      filter_metadata=None, filter_blocks=None,
-                      filter_indices=None):
-        """
-        Retrieve the :ref:`cluster state <es-guide-reference-api-admin-cluster-state>`.
-
-        :param filter_nodes: set to **true** to filter out the **nodes** part
-                             of the response.
-        :param filter_routing_table: set to **true** to filter out the
-                                     **routing_table** part of the response.
-        :param filter_metadata: set to **true** to filter out the **metadata**
-                                part of the response.
-        :param filter_blocks: set to **true** to filter out the **blocks**
-                              part of the response.
-        :param filter_indices: when not filtering metadata, a comma separated
-                               list of indices to include in the response.
-        """
-        return self.cluster.state(filter_nodes=filter_nodes, filter_routing_table=filter_routing_table,
-                      filter_metadata=filter_metadata, filter_blocks=filter_blocks,
-                      filter_indices=filter_indices)
-
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].cluster.nodes_info")
-    def cluster_nodes(self, nodes=None):
-        """
-        The cluster :ref:`nodes info <es-guide-reference-api-admin-cluster-state>` API allows to retrieve one or more (or all) of
-        the cluster nodes information.
-        """
-        return self.cluster.nodes_info(nodes=nodes)
-
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].cluster.node_stats")
-    def cluster_stats(self, nodes=None):
-        """
-        The cluster :ref:`nodes info <es-guide-reference-api-admin-cluster-nodes-stats>` API allows to retrieve one or more (or all) of
-        the cluster nodes information.
-        """
-        return self.cluster.node_stats(nodes=nodes)
-
     def index_raw_bulk(self, header, document):
         """
         Function helper for fast inserting
@@ -1040,13 +678,6 @@ class ES(object):
         path = make_path(index, doc_type, id)
         return self._send_request(request_method, path, doc, querystring_args)
 
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.stats")
-    def index_stats(self, indices=None):
-        """
-        http://www.elasticsearch.org/guide/reference/api/admin-indices-stats.html
-        """
-        return self.indices.stats(indices=indices)
-
     def flush_bulk(self, forced=False):
         """
         Send pending operations if forced or if the bulk threshold is exceeded.
@@ -1083,7 +714,10 @@ class ES(object):
         return data['_name'], base64.standard_b64decode(data['content'])
 
     def update(self, index, doc_type, id, script=None, lang="mvel", params=None, document=None, upsert=None,
-               model=None, bulk=False):
+               model=None, bulk=False, querystring_args=None, retry_on_conflict=None, routing=None, doc_as_upsert=None):
+        if querystring_args is None:
+            querystring_args = {}
+
         body = {}
         if script:
             body.update({"script": script, "lang": lang})
@@ -1093,16 +727,31 @@ class ES(object):
             body["upsert"] = upsert
         if document:
             body["doc"] = document
+        if doc_as_upsert is not None:
+            body["doc_as_upsert"] = doc_as_upsert
 
         if bulk:
             cmd = {"update": {"_index": index, "_type": doc_type, "_id": id}}
+            if retry_on_conflict:
+                cmd["update"]['_retry_on_conflict'] = retry_on_conflict
+            if routing:
+                cmd["update"]['routing'] = routing
+            for arg in ("routing", "percolate", "retry_on_conflict"):
+                if arg in querystring_args:
+                    cmd["update"]['_%s' % arg] = querystring_args[arg]
+
             command = "%s\n%s" % (json.dumps(cmd, cls=self.encoder), json.dumps(body, cls=self.encoder))
             self.bulker.add(command)
             return self.flush_bulk()
+        else:
+            if routing is not None:
+                querystring_args['routing'] = routing
+            if retry_on_conflict is not None:
+                body["retry_on_conflict"] = retry_on_conflict
 
-        path = make_path(index, doc_type, id)
+        path = make_path(index, doc_type, id, "_update")
         model = model or self.model
-        return model(self, self._send_request('POST', path + "/_update", body))
+        return model(self, self._send_request('POST', path, body, querystring_args))
 
     def update_by_function(self, extra_doc, index, doc_type, id, querystring_args=None,
                            update_func=None, attempts=2):
@@ -1181,13 +830,6 @@ class ES(object):
         body = self._encode_query(query)
         return self._send_request('DELETE', path, body, query_params)
 
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.delete_mapping")
-    def delete_mapping(self, index, doc_type):
-        """
-        Delete a typed JSON document type from a specific index.
-        """
-        return self.indices.delete_mapping(index=index, doc_type=doc_type)
-
     def exists(self, index, doc_type, id, **query_params):
         """
         Return if a document exists
@@ -1262,7 +904,7 @@ class ES(object):
             return [model(self, item) for item in results['docs']]
         return []
 
-    def search_raw(self, query, indices=None, doc_types=None, **query_params):
+    def search_raw(self, query, indices=None, doc_types=None, headers=None, **query_params):
         """Execute a search against one or more indices to get the search hits.
 
         `query` must be a Search object, a Query object, or a custom
@@ -1277,7 +919,7 @@ class ES(object):
             query = query.serialize()
         body = self._encode_query(query)
         path = self._make_path(indices, doc_types, "_search")
-        return self._send_request('GET', path, body, params=query_params)
+        return self._send_request('GET', path, body, params=query_params, headers=headers)
 
     def search_raw_multi(self, queries, indices_list=None, doc_types_list=None,
                          routing_list=None):
@@ -1319,7 +961,7 @@ class ES(object):
 
         return body, self._send_request('GET', path, body)
 
-    def search(self, query, indices=None, doc_types=None, model=None, scan=False, **query_params):
+    def search(self, query, indices=None, doc_types=None, model=None, scan=False, headers=None, **query_params):
         """Execute a search against one or more indices to get the resultset.
 
         `query` must be a Search object, a Query object, or a custom
@@ -1338,7 +980,7 @@ class ES(object):
             query_params.setdefault("scroll", "10m")
 
         return ResultSet(self, search, indices=indices, doc_types=doc_types,
-                         model=model, query_params=query_params)
+                         model=model, query_params=query_params, headers=headers)
 
     def search_multi(self, queries, indices_list=None, doc_types_list=None,
                      routing_list=None, models=None, scans=None):
@@ -1431,20 +1073,6 @@ class ES(object):
 
     #--- settings management
 
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.get_settings")
-    def get_settings(self, index=None):
-        """
-        Returns the current settings for an index.
-        """
-        return self.indices.get_settings(index=index)
-
-    @deprecated(deprecation="0.19.1", removal="0.20", alternative="[self].indices.update_settings")
-    def update_settings(self, index, newvalues):
-        """
-        Update Settings of an index.
-        """
-        return self.indices.update_settings(index=index, newvalues=newvalues)
-
     def update_mapping_meta(self, doc_type, values, indices=None):
         """
         Update mapping meta
@@ -1525,7 +1153,7 @@ class ES(object):
 class ResultSet(object):
 
     def __init__(self, connection, search, indices=None, doc_types=None, query_params=None,
-                 auto_fix_keys=False, auto_clean_highlight=False, model=None):
+                 headers=None, auto_fix_keys=False, auto_clean_highlight=False, model=None):
         """
         results: an es query results dict
         fix_keys: remove the "_" from every key, useful for django views
@@ -1542,6 +1170,7 @@ class ResultSet(object):
         self.indices = indices
         self.doc_types = doc_types
         self.query_params = query_params or {}
+        self.headers = headers
         self.scroller_parameters = {}
         self.scroller_id = None
         self._results = None
@@ -1786,7 +1415,7 @@ class ResultSet(object):
                 query_params["size"] = size
 
         return self.connection.search_raw(self.search, indices=self.indices,
-                                          doc_types=self.doc_types, **query_params)
+                                          doc_types=self.doc_types, headers=self.headers, **query_params)
 
 class EmptyResultSet(object):
     def __init__(self, *args, **kwargs):

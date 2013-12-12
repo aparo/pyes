@@ -4,6 +4,7 @@ import time
 from .exceptions import IndexAlreadyExistsException, IndexMissingException
 from .utils import make_path
 from .filters import Filter
+from .mappings import Mapper
 
 class Indices(object):
     alias_params = ['filter', 'routing', 'search_routing', 'index_routing']
@@ -435,6 +436,7 @@ class Indices(object):
         result = self.conn._send_request('GET', path)
         if raw:
             return result
+        from pyes.mappings import Mapper
         mapper = Mapper(result, is_mapping=is_mapping, connection=self.conn,
                         document_object_field=self.conn.document_object_field)
         if doc_type:

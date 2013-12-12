@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 import unittest
-from .estestcase import ESTestCase
+from pyes.tests import ESTestCase
 from pyes.query import Search, StringQuery, HighLighter
 
 class QuerySearchTestCase(ESTestCase):
@@ -28,15 +28,15 @@ class QuerySearchTestCase(ESTestCase):
                              'index': 'not_analyzed',
                              'store': 'yes',
                              'type': u'string'}}
-        self.conn.create_index(self.index_name)
-        self.conn.put_mapping(self.document_type, {'properties': mapping}, self.index_name)
+        self.conn.indices.create_index(self.index_name)
+        self.conn.indices.put_mapping(self.document_type, {'properties': mapping}, self.index_name)
         self.conn.index({"name": "Joe Tester", "parsedtext": "Joe Testere nice guy", "uuid": "11111", "position": 1},
             self.index_name, self.document_type, 1)
         self.conn.index({"name": "Bill Baloney", "parsedtext": "Joe Testere nice guy", "uuid": "22222", "position": 2},
             self.index_name, self.document_type, 2)
         self.conn.index({"parsedtext": "Joe Testere nice guy", "uuid": "22222", "position": 2}, self.index_name,
             self.document_type, 2)
-        self.conn.refresh(self.index_name)
+        self.conn.indices.refresh(self.index_name)
 
     def test_QueryHighlight(self):
         q = Search(StringQuery("joe"))

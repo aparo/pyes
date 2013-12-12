@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 import base64
-from urllib import quote
+from urllib import quote as _quote
 import array
 import uuid
 
 __all__ = ['clean_string', "ESRange", "ESRangeOp", "string_b64encode", "string_b64decode", "make_path", "make_id"]
+
+def quote(value):
+    value = value.encode('utf8', errors='ignore') if isinstance(value, unicode) else str(value)
+    return _quote(value, safe='')
 
 def make_id(value):
     """
@@ -24,7 +28,7 @@ def make_path(*path_components):
     """
     Smash together the path components. Empty components will be ignored.
     """
-    path_components = [quote(str(component), "") for component in path_components if component]
+    path_components = [quote(component) for component in path_components if component]
     path = '/'.join(path_components)
     if not path.startswith('/'):
         path = '/' + path

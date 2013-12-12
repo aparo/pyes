@@ -18,6 +18,7 @@ import imp as _imp
 import importlib
 import os
 import sys
+import six
 
 from contextlib import contextmanager
 

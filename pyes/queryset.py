@@ -9,6 +9,7 @@ Taken from django one and from django-elasticsearch.
 
 
 import copy
+import six
 
 # The maximum number of items to display in a QuerySet.__repr__
 from .es import ES

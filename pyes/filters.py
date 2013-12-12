@@ -1,7 +1,7 @@
 from .exceptions import QueryParameterError
 from .utils import ESRange, EqualityComparableUsingAttributeDictionary
 from .es import json
-
+import six
 
 class Filter(EqualityComparableUsingAttributeDictionary):
 

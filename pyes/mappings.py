@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
+
 
 import threading
 from .models import SortedDict, DotDict
@@ -20,7 +20,7 @@ def to_bool(value):
         return None
     if isinstance(value, bool):
         return value
-    elif isinstance(value, basestring):
+    elif isinstance(value, str):
         if value=="no":
             return False
         elif value=="yes":
@@ -98,7 +98,7 @@ class AbstractField(object):
         if "store" in data:
             data["store"]=to_bool(data["store"])
         var_name = "prop_"+self.name
-        return var_name, var_name+" = "+self.__class__.__name__+"(name=%r, "%self.name+", ".join(["%s=%r"%(k,v) for k,v in data.items()])+")"
+        return var_name, var_name+" = "+self.__class__.__name__+"(name=%r, "%self.name+", ".join(["%s=%r"%(k,v) for k,v in list(data.items())])+")"
 
 class StringField(AbstractField):
     def __init__(self, null_value=None, include_in_all=None, *args, **kwargs):
@@ -273,7 +273,7 @@ class MultiField(object):
         self.fields = {}
         if fields:
             if isinstance(fields, dict):
-                self.fields = dict([(name, get_field(name, data)) for name, data in fields.items()])
+                self.fields = dict([(name, get_field(name, data)) for name, data in list(fields.items())])
             elif isinstance(fields, list):
                 for field in fields:
                     self.fields[field.name] = field.as_dict()
@@ -282,7 +282,7 @@ class MultiField(object):
         result = {"type": self.type,
                   "fields": {}}
         if self.fields:
-            for name, value in self.fields.items():
+            for name, value in list(self.fields.items()):
                 if isinstance(value, dict):
                     result['fields'][name] = value
                 else:
@@ -303,11 +303,11 @@ class AttachmentField(object):
         self.name = name
         self.type = "attachment"
         self.path = path
-        self.fields = dict([(name, get_field(name, data)) for name, data in fields.items()])
+        self.fields = dict([(name, get_field(name, data)) for name, data in list(fields.items())])
 
     def as_dict(self):
         result_fields = dict((name, value.as_dict())
-        for (name, value) in self.fields.items())
+        for (name, value) in list(self.fields.items()))
         result = dict(type=self.type, fields=result_fields)
         if self.path:
             result['path'] = self.path
@@ -333,7 +333,7 @@ class ObjectField(object):
         self.connection = connection
         self.index_name = index_name
         if properties:
-            self.properties = dict([(name, get_field(name, data)) for name, data in properties.items()])
+            self.properties = dict([(name, get_field(name, data)) for name, data in list(properties.items())])
         else:
             self.properties = {}
 
@@ -361,7 +361,7 @@ class ObjectField(object):
             result['path'] = self.path
 
         if self.properties:
-            for name, value in self.properties.items():
+            for name, value in list(self.properties.items()):
                 result['properties'][name] = value.as_dict()
         return result
 
@@ -386,13 +386,13 @@ class ObjectField(object):
         if parent_path:
             parent_path += "."
 
-        if isinstance(type, basestring):
+        if isinstance(type, str):
             if type == "*":
                 type = set(MAPPING_NAME_TYPE.keys()) - set(["nested", "multi_field", "multifield"])
             else:
                 type = [type]
         properties = []
-        for prop in self.properties.values():
+        for prop in list(self.properties.values()):
             if prop.type in type:
                 properties.append((parent_path + prop.name, prop))
                 continue
@@ -412,7 +412,7 @@ class ObjectField(object):
         Returns Available facets for the document
         """
         result = []
-        for k, v in self.properties.items():
+        for k, v in list(self.properties.items()):
             if isinstance(v, DateField):
                 if not v.tokenize:
                     result.append((k, "date"))
@@ -433,14 +433,14 @@ class ObjectField(object):
         data = SortedDict(self.as_dict())
         data.pop("properties", [])
         var_name ="obj_%s"%self.name
-        code= [var_name+" = "+self.__class__.__name__+"(name=%r, "%self.name+", ".join(["%s=%r"%(k,v) for k,v in data.items()])+")"]
-        for name, field in self.properties.items():
+        code= [var_name+" = "+self.__class__.__name__+"(name=%r, "%self.name+", ".join(["%s=%r"%(k,v) for k,v in list(data.items())])+")"]
+        for name, field in list(self.properties.items()):
             num+=1
             vname, vcode = field.get_code(num)
             code.append(vcode)
             code.append("%s.add_property(%s)"%(var_name, vname))
 
-        return var_name, u'\n'.join(code)
+        return var_name, '\n'.join(code)
 
 class NestedObject(ObjectField):
     def __init__(self, *args, **kwargs):
@@ -529,7 +529,7 @@ class DocumentObjectField(ObjectField):
         self.properties[prop.name] = prop
 
     def __repr__(self):
-        return u"<DocumentObjectField:%s>" % self.name
+        return "<DocumentObjectField:%s>" % self.name
 
 
     def save(self):
@@ -541,14 +541,14 @@ class DocumentObjectField(ObjectField):
         data = SortedDict(self.as_dict())
         data.pop("properties", [])
         var_name ="doc_%s"%self.name
-        code= [var_name+" = "+self.__class__.__name__+"(name=%r, "%self.name+", ".join(["%s=%r"%(k,v) for k,v in data.items()])+")"]
-        for name, field in self.properties.items():
+        code= [var_name+" = "+self.__class__.__name__+"(name=%r, "%self.name+", ".join(["%s=%r"%(k,v) for k,v in list(data.items())])+")"]
+        for name, field in list(self.properties.items()):
             num+=1
             vname, vcode = field.get_code(num)
             code.append(vcode)
             code.append("%s.add_property(%s)"%(var_name, vname))
 
-        return u'\n'.join(code)
+        return '\n'.join(code)
 
 def get_field(name, data, default="object", document_object_field=None, is_document=False):
     """
@@ -626,14 +626,14 @@ class Mapper(object):
         Process indexer data
         """
         if self.is_mapping:
-            for docname, docdata in data.items():
+            for docname, docdata in list(data.items()):
                 self.mappings[docname] = get_field(docname, docdata, "document",
                                                    document_object_field=self.document_object_field, is_document=True)
         else:
             indices = []
-            for indexname, indexdata in data.items():
+            for indexname, indexdata in list(data.items()):
                 idata = []
-                for docname, docdata in indexdata.items():
+                for docname, docdata in list(indexdata.items()):
                     o = get_field(docname, docdata, document_object_field=self.document_object_field, is_document=True)
                     o.connection = self.connection
                     o.index_name = indexname

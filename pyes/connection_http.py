@@ -1,11 +1,18 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
+
 from . import logger
 from .exceptions import NoServerAvailable
 from .fakettypes import Method, RestResponse
 from time import time
-from urllib import urlencode
-from urlparse import urlparse
+try:
+    #python 2.6/2.7
+    from urllib import urlencode
+    from urlparse import urlparse
+except ImportError:
+    #python 3
+    from urllib.parse import urlencode
+    from urllib.parse import urlparse
+
 import random
 import threading
 import urllib3
@@ -107,7 +114,7 @@ class Connection(object):
                 return RestResponse(status=response.status,
                                     body=response.data,
                                     headers=response.headers)
-            except (IOError, urllib3.exceptions.HTTPError), ex:
+            except (IOError, urllib3.exceptions.HTTPError) as ex:
                 self._drop_server(server)
                 self._local.server = server = None
                 if retry >= self._max_retries:

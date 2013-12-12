@@ -1,14 +1,14 @@
-from __future__ import with_statement
+
 
 from datetime import date, datetime
 from decimal import Decimal
-from urllib import urlencode
-from urlparse import urlunsplit, urlparse
+from urllib.parse import urlencode
+from urllib.parse import urlunsplit, urlparse
 import base64
 import codecs
 import random
 import time
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import weakref
 try:
     import simplejson as json
@@ -81,12 +81,12 @@ class ESJsonDecoder(json.JSONDecoder):
         """
         Decode a datetime string to a datetime object
         """
-        if isinstance(obj, basestring) and len(obj) == 19:
+        if isinstance(obj, str) and len(obj) == 19:
             try:
                 return datetime(*time.strptime(obj, "%Y-%m-%dT%H:%M:%S")[:6])
             except ValueError:
                 pass
-        if isinstance(obj, basestring) and len(obj) == 10:
+        if isinstance(obj, str) and len(obj) == 10:
             try:
                 return datetime(*time.strptime(obj, "%Y-%m-%d")[:3])
             except ValueError:
@@ -98,8 +98,8 @@ class ESJsonDecoder(json.JSONDecoder):
         """
         Decode datetime value from string to datetime
         """
-        for k, v in d.items():
-            if isinstance(v, basestring) and len(v) == 19:
+        for k, v in list(d.items()):
+            if isinstance(v, str) and len(v) == 19:
                 # Decode a datetime string to a datetime object
                 try:
                     d[k] = datetime(*time.strptime(v, "%Y-%m-%dT%H:%M:%S")[:6])
@@ -178,7 +178,7 @@ class ES(object):
         self.model = model
         self.log_curl = log_curl
         if dump_curl:
-            if isinstance(dump_curl, basestring):
+            if isinstance(dump_curl, str):
                 self.dump_curl = codecs.open(dump_curl, "wb", "utf8")
             elif hasattr(dump_curl, 'write'):
                 self.dump_curl = dump_curl
@@ -200,7 +200,7 @@ class ES(object):
             self.encoder = encoder
         if decoder:
             self.decoder = decoder
-        if isinstance(server, (str, unicode)):
+        if isinstance(server, str):
             self.servers = [server]
         elif isinstance(server, tuple):
             self.servers = [server]
@@ -257,7 +257,7 @@ class ES(object):
                 _type, host, port = server
                 server = urlparse('%s://%s:%s' % (_type, host, port))
                 check_format(server)
-            elif isinstance(server, basestring):
+            elif isinstance(server, str):
                 if server.startswith(("thrift:", "http:", "https:")):
                     server = urlparse(server)
                     check_format(server)
@@ -294,12 +294,12 @@ class ES(object):
         server = random.choice(self.servers)
         if server.scheme in ["http", "https"]:
             self.connection = http_connect(
-                filter(lambda server: server.scheme in ["http", "https"], self.servers),
+                [server for server in self.servers if server.scheme in ["http", "https"]],
                 timeout=self.timeout, basic_auth=self.basic_auth, max_retries=self.max_retries)
             return
         elif server.scheme == "thrift":
             self.connection = thrift_connect(
-                filter(lambda server: server.scheme == "thrift", self.servers),
+                [server for server in self.servers if server.scheme == "thrift"],
                 timeout=self.timeout, max_retries=self.max_retries)
 
     def _discovery(self):
@@ -308,7 +308,7 @@ class ES(object):
         """
         data = self.cluster_nodes()
         self.cluster_name = data["cluster_name"]
-        for _, nodedata in data["nodes"].items():
+        for _, nodedata in list(data["nodes"].items()):
             server = nodedata['http_address'].replace("]", "").replace("inet[", "http:/")
             if server not in self.servers:
                 self.servers.append(server)
@@ -379,8 +379,8 @@ class ES(object):
         request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()],
                               uri=path, parameters=params, headers=headers, body=body)
         if self.dump_curl is not None:
-            print >> self.dump_curl, "# [%s]" % datetime.now().isoformat()
-            print >> self.dump_curl, self._get_curl_request(request)
+            print("# [%s]" % datetime.now().isoformat(), file=self.dump_curl)
+            print(self._get_curl_request(request), file=self.dump_curl)
         if self.log_curl:
             logger.debug(self._get_curl_request(request))
 
@@ -388,8 +388,8 @@ class ES(object):
         response = self.connection.execute(request)
 
         if self.dump_curl is not None:
-            print >> self.dump_curl, "# response status: %s"%response.status
-            print >> self.dump_curl, "# response body: %s"%response.body
+            print("# response status: %s"%response.status, file=self.dump_curl)
+            print("# response body: %s"%response.body, file=self.dump_curl)
 
         if method == "HEAD":
             return response.status == 200
@@ -420,7 +420,7 @@ class ES(object):
                 indices = []
         if doc_types is None:
             doc_types = self.default_types
-        if isinstance(doc_types, basestring):
+        if isinstance(doc_types, str):
             doc_types = [doc_types]
         return make_path(','.join(indices), ','.join(doc_types), *components)
 
@@ -432,7 +432,7 @@ class ES(object):
         """
         if indices is None:
             indices = self.default_indices
-        if isinstance(indices, basestring):
+        if isinstance(indices, str):
             indices = [indices]
         return indices
 
@@ -442,12 +442,12 @@ class ES(object):
         method = Method._VALUES_TO_NAMES[request.method]
         server = self.servers[0]
         url = urlunsplit((server.scheme, server.netloc, request.uri, urlencode(params), ''))
-        curl_cmd = u"curl -X%s '%s'" % (method, url)
+        curl_cmd = "curl -X%s '%s'" % (method, url)
         body = request.body
         if body:
-            if not isinstance(body, unicode):
-                body = unicode(body, "utf8")
-            curl_cmd += u" -d '%s'" % body
+            if not isinstance(body, str):
+                body = str(body, "utf8")
+            curl_cmd += " -d '%s'" % body
         return curl_cmd
 
     def _get_default_indices(self):
@@ -499,11 +499,11 @@ class ES(object):
 
             if clear:
                 for maps in mappings:
-                    for key in maps.keys():
+                    for key in list(maps.keys()):
                         self.indices.delete_mapping(index, doc_type=key)
                 self.indices.refresh()
             if isinstance(mappings, SettingsBuilder):
-                for name, data in mappings.mappings.items():
+                for name, data in list(mappings.mappings.items()):
                     self.indices.put_mapping(doc_type=name, mapping=data, indices=index)
 
             else:
@@ -512,7 +512,7 @@ class ES(object):
                         name, mapping = maps
                         self.indices.put_mapping(doc_type=name, mapping=mapping, indices=index)
                     elif isinstance(maps, dict):
-                        for name, data in maps.items():
+                        for name, data in list(maps.items()):
                             self.indices.put_mapping(doc_type=name, mapping=maps, indices=index)
 
                 return
@@ -614,7 +614,7 @@ class ES(object):
         :param header: a string with the bulk header must be ended with a newline
         :param header: a json document string must be ended with a newline
         """
-        self.bulker.add(u"%s%s" % (header, document))
+        self.bulker.add("%s%s" % (header, document))
         return self.flush_bulk()
 
     def index(self, doc, index, doc_type, id=None, parent=None, force_insert=False,
@@ -656,17 +656,17 @@ class ES(object):
             querystring_args['op_type'] = op_type
 
         if parent:
-            if not isinstance(parent, basestring):
+            if not isinstance(parent, str):
                 parent = str(parent)
             querystring_args['parent'] = parent
 
         if version:
-            if not isinstance(version, basestring):
+            if not isinstance(version, str):
                 version = str(version)
             querystring_args['version'] = version
 
         if ttl is not None:
-            if not isinstance(ttl, basestring):
+            if not isinstance(ttl, str):
                 ttl = str(ttl)
             querystring_args['ttl'] = ttl
 
@@ -775,7 +775,7 @@ class ES(object):
         if update_func is None:
             update_func = dict.update
 
-        for attempt in xrange(attempts - 1, -1, -1):
+        for attempt in range(attempts - 1, -1, -1):
             current_doc = self.get(index, doc_type, id, **querystring_args)
             new_doc = update_func(current_doc, extra_doc)
             if new_doc is None:
@@ -934,7 +934,7 @@ class ES(object):
 
         queries = [query.search() if isinstance(query, Query)
                    else query.serialize() for query in queries]
-        queries = map(self._encode_query, queries)
+        queries = list(map(self._encode_query, queries))
         headers = []
         for index_name, doc_type, routing in zip(indices_list,
                                                  doc_types_list,
@@ -954,8 +954,7 @@ class ES(object):
 
         headers = [json.dumps(header) for header in headers]
 
-        body = '\n'.join(map(lambda (h, q): '%s\n%s' % (h, q),
-                             zip(headers, queries)))
+        body = '\n'.join(['%s\n%s' % (h_q[0], h_q[1]) for h_q in zip(headers, queries)])
         body = '%s\n' % body
         path = self._make_path(None, None, '_msearch')
 
@@ -1032,7 +1031,7 @@ class ES(object):
 
 
     def suggest(self, name, text, field, size=None, **kwargs):
-        from query import Suggest
+        from .query import Suggest
 
         suggest = Suggest()
         suggest.add_field(text, name=name, field=field, size=size)
@@ -1097,7 +1096,7 @@ class ES(object):
         """
         path = make_path(index, doc_type, id, '_mlt')
         query_params['fields'] = ','.join(fields)
-        body = query_params["body"] if query_params.has_key("body") else None
+        body = query_params["body"] if "body" in query_params else None
         return self._send_request('GET', path, body=body, params=query_params)
 
     def create_percolator(self, index, name, query, **kwargs):
@@ -1272,11 +1271,11 @@ class ResultSet(object):
         This function convert date_histogram facets to datetime
         """
         facets = self.facets
-        for key in facets.keys():
+        for key in list(facets.keys()):
             _type = facets[key].get("_type", "unknown")
             if _type == "date_histogram":
                 for entry in facets[key].get("entries", []):
-                    for k, v in entry.items():
+                    for k, v in list(entry.items()):
                         if k in ["count", "max", "min", "total_count", "mean", "total"]:
                             continue
                         if not isinstance(entry[k], datetime):
@@ -1296,7 +1295,7 @@ class ResultSet(object):
             return
 
         for hit in self._results['hits']['hits']:
-            for key, item in hit.items():
+            for key, item in list(hit.items()):
                 if key.startswith("_"):
                     hit[key[1:]] = item
                     del hit[key]
@@ -1311,7 +1310,7 @@ class ResultSet(object):
         for hit in self._results['hits']['hits']:
             if 'highlight' in hit:
                 hl = hit['highlight']
-                for key, item in hl.items():
+                for key, item in list(hl.items()):
                     if not item:
                         del hl[key]
 
@@ -1333,7 +1332,7 @@ class ResultSet(object):
         return self._results['hits'][name]
 
     def __getitem__(self, val):
-        if not isinstance(val, (int, long, slice)):
+        if not isinstance(val, (int, slice)):
             raise TypeError('%s indices must be integers, not %s' % (
                 self.__class__.__name__, val.__class__.__name__))
 
@@ -1369,7 +1368,7 @@ class ResultSet(object):
             raise IndexError
         return [model(self.connection, hit) for hit in hits]
 
-    def next(self):
+    def __next__(self):
         if self._max_item is not None and self._current_item == self._max_item:
             raise StopIteration
         if self._results is None:
@@ -1441,7 +1440,7 @@ class EmptyResultSet(object):
     def __getitem__(self, val):
         raise IndexError
 
-    def next(self):
+    def __next__(self):
         raise StopIteration
 
     def __iter__(self):
@@ -1529,7 +1528,7 @@ class ResultSetMulti(object):
         return len(self._results_list or [])
 
     def __getitem__(self, val):
-        if not isinstance(val, (int, long, slice)):
+        if not isinstance(val, (int, slice)):
             raise TypeError('%s indices must be integers, not %s' % (
                 self.__class__.__name__, val.__class__.__name__))
 
@@ -1546,7 +1545,7 @@ class ResultSetMulti(object):
 
         return self
 
-    def next(self):
+    def __next__(self):
         if self._results_list is None:
             self._do_search()
 

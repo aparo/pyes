@@ -80,7 +80,7 @@ def symbol_by_name(name, aliases={}, imp=None, package=None,
     if imp is None:
         imp = importlib.import_module
 
-    if not isinstance(name, basestring):
+    if not isinstance(name, six.string_types):
         return name                                 # already a class
 
     name = aliases.get(name) or name

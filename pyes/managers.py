@@ -576,7 +576,7 @@ class Cluster(object):
             parameters['filter_blocks'] = filter_blocks
 
         if filter_blocks is not None:
-            if isinstance(filter_indices, basestring):
+            if isinstance(filter_indices, six.string_types):
                 parameters['filter_indices'] = filter_indices
             else:
                 parameters['filter_indices'] = ",".join(filter_indices)

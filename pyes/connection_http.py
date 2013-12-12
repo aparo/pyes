@@ -132,7 +132,7 @@ class Connection(object):
 
             try:
                 return random.choice(self._active_servers)
-            except IndexError, ex:
+            except IndexError as ex:
                 raise NoServerAvailable(ex)
 
     def _drop_server(self, server):

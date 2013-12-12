@@ -163,7 +163,7 @@ class Indices(object):
         """
         try:
             return self.create_index(index, settings)
-        except IndexAlreadyExistsException, e:
+        except IndexAlreadyExistsException as e:
             return e.result
 
     def delete_index(self, index):

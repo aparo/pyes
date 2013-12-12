@@ -45,7 +45,7 @@ class ESTestCase(unittest.TestCase):
         """
         try:
             callableObj(*args, **kwargs)
-        except excClass, e:
+        except excClass as e:
             return e
         else:
             raise self.failureException, \

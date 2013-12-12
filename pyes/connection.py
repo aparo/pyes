@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
 import random
 import socket
 import threading
@@ -145,11 +144,11 @@ class ThreadLocalConnection(object):
 
     def __getattr__(self, attr):
         def _client_call(*args, **kwargs):
-            for retry in xrange(self._max_retries + 1):
+            for retry in range(self._max_retries + 1):
                 try:
                     conn = self._ensure_connection()
                     return getattr(conn.client, attr)(*args, **kwargs)
-                except (Thrift.TException, socket.timeout, socket.error), exc:
+                except (Thrift.TException, socket.timeout, socket.error) as exc:
                     logger.exception('Client error: %s', exc)
                     self.close()
 

@@ -376,7 +376,6 @@ class ES(object):
         if params:
             for k in params:
                 params[k] = str(params[k])
-        print body, params
         request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()],
                               uri=path, parameters=params, headers=headers, body=body)
         if self.dump_curl is not None:
@@ -387,6 +386,10 @@ class ES(object):
 
         # execute the request
         response = self.connection.execute(request)
+
+        if self.dump_curl is not None:
+            print >> self.dump_curl, "# response status: %s"%response.status
+            print >> self.dump_curl, "# response body: %s"%response.body
 
         if method == "HEAD":
             return response.status == 200

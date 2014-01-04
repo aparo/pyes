@@ -4,7 +4,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-VERSION = (0, 20, 1)
+VERSION = (0, 90, 0)
 
 __version__ = ".".join(map(str, VERSION[0:3])) + "".join(VERSION[3:])
 __author__ = "Alberto Paro"

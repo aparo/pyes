@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
+
+import six
 from .exceptions import InvalidQuery, InvalidParameterQuery, QueryError, \
     ScriptFieldsError
 from .sort import SortFactory
@@ -22,7 +23,7 @@ class Suggest(EqualityComparableUsingAttributeDictionary):
         :param size: number of phrases
         :return: None
         """
-        num_tokens = text.count(u' ') + 1
+        num_tokens = text.count(' ') + 1
         if num_tokens > 1:
             self.add_phrase(text=text, name=name, field=field, size=size)
         else:
@@ -254,7 +255,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
 
         """
         if boost is None:
-            if self.index_boost.has_key(index):
+            if index in self.index_boost:
                 del(self.index_boost[index])
         else:
             self.index_boost[index] = boost
@@ -1149,7 +1150,7 @@ class StringQuery(Query):
         filters = {}
         if self.default_field:
             filters["default_field"] = self.default_field
-            if not isinstance(self.default_field, (str, unicode)) and isinstance(self.default_field, list):
+            if not isinstance(self.default_field, six.string_types) and isinstance(self.default_field, list):
                 if not self.use_dis_max:
                     filters["use_dis_max"] = self.use_dis_max
                 if self.tie_breaker:
@@ -1172,7 +1173,7 @@ class StringQuery(Query):
         if self.phrase_slop:
             filters["phrase_slop"] = self.phrase_slop
         if self.search_fields:
-            if isinstance(self.search_fields, (str, unicode)):
+            if isinstance(self.search_fields, six.string_types):
                 filters["fields"] = [self.search_fields]
             else:
                 filters["fields"] = self.search_fields

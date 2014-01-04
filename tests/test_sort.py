@@ -157,3 +157,7 @@ class SortOrderESTestCase(ESTestCase):
         )
         ids = [doc['_id'] for doc in resultset.hits]
         self.assertEqual(ids, ['1', '2', '3'])
+
+if __name__ == "__main__":
+    import unittest
+    unittest.main()

@@ -43,10 +43,10 @@ class QuerySearchTestCase(ESTestCase):
         q.add_highlight("parsedtext")
         q.add_highlight("name")
         resultset = self.conn.search(q, indices=self.index_name)
-        self.assertEquals(resultset.total, 2)
+        self.assertEqual(resultset.total, 2)
         self.assertNotEqual(resultset[0]._meta.highlight, None)
 
-        self.assertEquals(resultset[0]._meta.highlight[u"parsedtext"][0].strip(),
+        self.assertEqual(resultset[0]._meta.highlight[u"parsedtext"][0].strip(),
             u'<em>Joe</em> Testere nice guy')
 
     def test_QueryHighlightWithHighLighter(self):
@@ -55,10 +55,10 @@ class QuerySearchTestCase(ESTestCase):
         q.add_highlight("parsedtext")
         q.add_highlight("name")
         resultset = self.conn.search(q, indices=self.index_name)
-        self.assertEquals(resultset.total, 2)
+        self.assertEqual(resultset.total, 2)
         self.assertNotEqual(resultset[0]._meta.highlight, None)
 
-        self.assertEquals(resultset[0]._meta.highlight[u"parsedtext"][0].strip(),
+        self.assertEqual(resultset[0]._meta.highlight[u"parsedtext"][0].strip(),
             u'<b>Joe</b> Testere nice guy')
 
 if __name__ == "__main__":

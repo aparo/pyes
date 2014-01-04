@@ -94,3 +94,6 @@ class QuerySetTests(ESTestCase):
         self.assertEqual(uuid_facets["total"], 3)
         self.assertEqual(uuid_facets["terms"][0]["count"], 1)
 
+if __name__ == "__main__":
+    import unittest
+    unittest.main()

@@ -24,7 +24,7 @@ def generate_dataset(number_items=1000):
     random.seed()
     #calculate items
 #    names = random.sample(names, number_items)
-    for i in xrange(number_items):
+    for i in range(number_items):
         data.append({"name":names[random.randint(0,totalnames-1)],
                      "age":random.randint(1,100),
                      "description":li_words(50, False)})
@@ -43,7 +43,7 @@ def generate_dataset_shelve(filename, number_items=1000):
     random.seed()
     #calculate items
 #    names = random.sample(names, number_items)
-    for i in xrange(number_items):
+    for i in range(number_items):
         data[str(i+1)] = {"name":names[random.randint(0,totalnames-1)],
                      "age":random.randint(1,100),
                      "description":li_words(50, False)}

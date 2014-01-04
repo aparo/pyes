@@ -9,6 +9,7 @@ Taken from django one and from django-elasticsearch.
 
 
 import copy
+import six
 
 # The maximum number of items to display in a QuerySet.__repr__
 from .es import ES
@@ -648,7 +649,7 @@ class QuerySet(object):
         for arg in args:
             if isinstance(arg, Facet):
                 obj._facets.append(arg)
-            elif isinstance(arg, basestring):
+            elif isinstance(arg, six.string_types):
                 obj._facets.append(TermFacet(arg.replace("__", ".")))
             else:
                 raise NotImplementedError("invalid type")

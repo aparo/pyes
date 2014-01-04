@@ -14,7 +14,6 @@ class RiversTestCase(ESTestCase):
         """
         test_river = CouchDBRiver(index_name='text_index', index_type='test_type')
         result = self.conn.create_river(test_river, river_name='test_index')
-        print result
         self.assertResultContains(result, {'ok': True})
 
     def testDeleteCouchDBRiver(self):
@@ -23,7 +22,6 @@ class RiversTestCase(ESTestCase):
         """
         test_river = CouchDBRiver(index_name='text_index', index_type='test_type')
         result = self.conn.delete_river(test_river, river_name='test_index')
-        print result
         self.assertResultContains(result, {'ok': True})
 
     def testCreateRabbitMQRiver(self):
@@ -32,7 +30,6 @@ class RiversTestCase(ESTestCase):
         """
         test_river = RabbitMQRiver(index_name='text_index', index_type='test_type')
         result = self.conn.create_river(test_river, river_name='test_index')
-        print result
         self.assertResultContains(result, {'ok': True})
 
     def testDeleteRabbitMQRiver(self):
@@ -42,7 +39,6 @@ class RiversTestCase(ESTestCase):
         test_river = RabbitMQRiver(index_name='text_index', index_type='test_type')
         result = self.conn.create_river(test_river, river_name='test_index')
         result = self.conn.delete_river(test_river, river_name='test_index')
-        print result
         self.assertResultContains(result, {'ok': True})
 
     def testCreateTwitterRiver(self):
@@ -51,7 +47,6 @@ class RiversTestCase(ESTestCase):
         """
         test_river = TwitterRiver('test', 'test', index_name='text_index', index_type='status')
         result = self.conn.create_river(test_river, river_name='test_index')
-        print result
         self.assertResultContains(result, {'ok': True})
 
     def testDeleteTwitterRiver(self):
@@ -61,7 +56,6 @@ class RiversTestCase(ESTestCase):
         test_river = TwitterRiver('test', 'test', index_name='text_index', index_type='status')
         result = self.conn.create_river(test_river, river_name='test_index')
         result = self.conn.delete_river(test_river, river_name='test_index')
-        print result
         self.assertResultContains(result, {'ok': True})
 
     def testCreateTwitterRiverOAuth(self):
@@ -72,7 +66,6 @@ class RiversTestCase(ESTestCase):
                                  access_token_secret="aaa",
                                  )
         result = self.conn.create_river(test_river, river_name='test_index')
-        print result
         self.assertResultContains(result, {'ok': True})
 
 

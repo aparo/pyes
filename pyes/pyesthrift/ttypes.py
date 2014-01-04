@@ -230,7 +230,7 @@ class RestRequest(object):
         if ftype == TType.MAP:
           self.parameters = {}
           (_ktype1, _vtype2, _size0 ) = iprot.readMapBegin() 
-          for _i4 in xrange(_size0):
+          for _i4 in range(_size0):
             _key5 = iprot.readString();
             _val6 = iprot.readString();
             self.parameters[_key5] = _val6
@@ -241,7 +241,7 @@ class RestRequest(object):
         if ftype == TType.MAP:
           self.headers = {}
           (_ktype8, _vtype9, _size7 ) = iprot.readMapBegin() 
-          for _i11 in xrange(_size7):
+          for _i11 in range(_size7):
             _key12 = iprot.readString();
             _val13 = iprot.readString();
             self.headers[_key12] = _val13
@@ -303,7 +303,7 @@ class RestRequest(object):
 
   def __repr__(self):
     L = ['%s=%r' % (key, value)
-      for key, value in self.__dict__.iteritems()]
+      for key, value in self.__dict__.items()]
     return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
 
   def __eq__(self, other):
@@ -350,7 +350,7 @@ class RestResponse(object):
         if ftype == TType.MAP:
           self.headers = {}
           (_ktype19, _vtype20, _size18 ) = iprot.readMapBegin() 
-          for _i22 in xrange(_size18):
+          for _i22 in range(_size18):
             _key23 = iprot.readString();
             _val24 = iprot.readString();
             self.headers[_key23] = _val24
@@ -398,7 +398,7 @@ class RestResponse(object):
 
   def __repr__(self):
     L = ['%s=%r' % (key, value)
-      for key, value in self.__dict__.iteritems()]
+      for key, value in self.__dict__.items()]
     return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
 
   def __eq__(self, other):

@@ -18,6 +18,7 @@ import imp as _imp
 import importlib
 import os
 import sys
+import six
 
 from contextlib import contextmanager
 
@@ -80,7 +81,7 @@ def symbol_by_name(name, aliases={}, imp=None, package=None,
     if imp is None:
         imp = importlib.import_module
 
-    if not isinstance(name, basestring):
+    if not isinstance(name, six.string_types):
         return name                                 # already a class
 
     name = aliases.get(name) or name
@@ -91,7 +92,7 @@ def symbol_by_name(name, aliases={}, imp=None, package=None,
     try:
         try:
             module = imp(module_name, package=package, **kwargs)
-        except ValueError, exc:
+        except ValueError as exc:
             raise ValueError, ValueError(
                     "Couldn't import %r: %s" % (name, exc)), sys.exc_info()[2]
         return getattr(module, cls_name) if cls_name else module

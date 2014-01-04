@@ -22,7 +22,7 @@ class ErrorReportingTestCase(ESTestCase):
 
         err = self.checkRaises(exceptions.IndexAlreadyExistsException,
             self.conn.indices.create_index, self.index_name)
-        self.assertEqual(str(err), "[test-index] Already exists")
+        self.assertEqual(str(err), "[test-index] already exists")
         self.assertEqual(err.status, 400)
         self.assertTrue('error' in err.result)
         self.assertTrue('ok' not in err.result)

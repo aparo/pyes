@@ -1,14 +1,20 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 import base64
-from urllib import quote as _quote
+try:
+    #python3
+    from urllib.parse import quote as _quote
+except ImportError:
+    #Python 2
+    from urllib import quote as _quote
 import array
 import uuid
+import six
 
 __all__ = ['clean_string', "ESRange", "ESRangeOp", "string_b64encode", "string_b64decode", "make_path", "make_id"]
 
 def quote(value):
-    value = value.encode('utf8', errors='ignore') if isinstance(value, unicode) else str(value)
+    value = value.encode('utf8', errors='ignore') if isinstance(value,  six.string_types) else str(value)
     return _quote(value, safe='')
 
 def make_id(value):
@@ -17,7 +23,7 @@ def make_id(value):
     :param value: a text value
     :return: a string
     """
-    if isinstance(value, unicode):
+    if isinstance(value, six.string_types):
         value=value.encode("utf8", errors="ignore")
     from hashlib import md5
     val = uuid.UUID(bytes=md5(value).digest(), version=4)
@@ -121,7 +127,7 @@ def clean_string(text):
     """
     Remove Lucene reserved characters from query string
     """
-    if isinstance(text, unicode):
+    if isinstance(text,  six.string_types):
         return text.translate(UNI_SPECIAL_CHARS).strip()
     return text.translate(None, STR_SPECIAL_CHARS).strip()
 
@@ -132,7 +138,7 @@ def keys_to_string(data):
     """
     if isinstance(data, dict):
         for key in list(data.keys()):
-            if isinstance(key, unicode):
+            if isinstance(key,  six.string_types):
                 value = data[key]
                 val = keys_to_string(value)
                 del data[key]

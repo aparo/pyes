@@ -21,3 +21,7 @@ class UpdateTestCase(ESTestCase):
         self.conn.partial_update(self.index_name, self.document_type, 2, "ctx._source.counter += 1", upsert={"counter": 5})
         doc = self.conn.get(self.index_name, self.document_type, 2)
         self.assertEqual(doc["counter"], 5)
+
+if __name__ == "__main__":
+    import unittest
+    unittest.main()

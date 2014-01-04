@@ -5,6 +5,7 @@ from .exceptions import IndexAlreadyExistsException, IndexMissingException
 from .utils import make_path
 from .filters import Filter
 from .mappings import Mapper
+import six
 
 class Indices(object):
     alias_params = ['filter', 'routing', 'search_routing', 'index_routing']
@@ -163,7 +164,7 @@ class Indices(object):
         """
         try:
             return self.create_index(index, settings)
-        except IndexAlreadyExistsException, e:
+        except IndexAlreadyExistsException as e:
             return e.result
 
     def delete_index(self, index):
@@ -345,7 +346,7 @@ class Indices(object):
             refresh=refresh,
             flush=flush,
             )
-        for k, v in params.iteritems():
+        for k, v in params.items():
             params[k] = v and "true" or "false"
         if max_num_segments is not None:
             params['max_num_segments'] = max_num_segments
@@ -576,7 +577,7 @@ class Cluster(object):
             parameters['filter_blocks'] = filter_blocks
 
         if filter_blocks is not None:
-            if isinstance(filter_indices, basestring):
+            if isinstance(filter_indices, six.string_types):
                 parameters['filter_indices'] = filter_indices
             else:
                 parameters['filter_indices'] = ",".join(filter_indices)

@@ -66,8 +66,8 @@ class FacetSearchTestCase(ESTestCase):
         q = q.search()
         q.facet.add_term_facet('tag')
         resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
-        self.assertEquals(resultset.total, 3)
-        self.assertEquals(resultset.facets.tag.terms, [{u'count': 2, u'term': u'foo'},
+        self.assertEqual(resultset.total, 3)
+        self.assertEqual(resultset.facets.tag.terms, [{u'count': 2, u'term': u'foo'},
                 {u'count': 1, u'term': u'bar'}])
 
         q2 = MatchAllQuery()
@@ -76,12 +76,12 @@ class FacetSearchTestCase(ESTestCase):
         q3 = MatchAllQuery()
         q3 = q3.search()
         q3.facet.add_term_facet('tag')
-        self.assertEquals(q2, q3)
+        self.assertEqual(q2, q3)
 
         q4 = MatchAllQuery()
         q4 = q4.search()
         q4.facet.add_term_facet('bag')
-        self.assertNotEquals(q2, q4)
+        self.assertNotEqual(q2, q4)
 
     def test_terms_facet_filter(self):
         q = MatchAllQuery()
@@ -89,9 +89,9 @@ class FacetSearchTestCase(ESTestCase):
         q = q.search()
         q.facet.add_term_facet('tag')
         resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
-        self.assertEquals(resultset.total, 2)
-        self.assertEquals(resultset.facets['tag']['terms'], [{u'count': 2, u'term': u'foo'}])
-        self.assertEquals(resultset.facets.tag.terms, [{u'count': 2, u'term': u'foo'}])
+        self.assertEqual(resultset.total, 2)
+        self.assertEqual(resultset.facets['tag']['terms'], [{u'count': 2, u'term': u'foo'}])
+        self.assertEqual(resultset.facets.tag.terms, [{u'count': 2, u'term': u'foo'}])
 
         q2 = MatchAllQuery()
         q2 = FilteredQuery(q2, TermFilter('tag', 'foo'))
@@ -101,13 +101,13 @@ class FacetSearchTestCase(ESTestCase):
         q3 = FilteredQuery(q3, TermFilter('tag', 'foo'))
         q3 = q3.search()
         q3.facet.add_term_facet('tag')
-        self.assertEquals(q2, q3)
+        self.assertEqual(q2, q3)
 
         q4 = MatchAllQuery()
         q4 = FilteredQuery(q4, TermFilter('tag', 'foo'))
         q4 = q4.search()
         q4.facet.add_term_facet('bag')
-        self.assertNotEquals(q3, q4)
+        self.assertNotEqual(q3, q4)
 
     def test_date_facet(self):
         q = MatchAllQuery()
@@ -116,13 +116,13 @@ class FacetSearchTestCase(ESTestCase):
             field='date',
             interval='month'))
         resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
-        self.assertEquals(resultset.total, 3)
-        self.assertEquals(resultset.facets.date_facet.entries, [{u'count': 2, u'time': 1301616000000},
+        self.assertEqual(resultset.total, 3)
+        self.assertEqual(resultset.facets.date_facet.entries, [{u'count': 2, u'time': 1301616000000},
                 {u'count': 1, u'time': 1304208000000}])
-        self.assertEquals(datetime.datetime.utcfromtimestamp(1301616000000 / 1000.).date(),
-            datetime.date(2011, 04, 01))
-        self.assertEquals(datetime.datetime.utcfromtimestamp(1304208000000 / 1000.).date(),
-            datetime.date(2011, 05, 01))
+        self.assertEqual(datetime.datetime.utcfromtimestamp(1301616000000 / 1000.).date(),
+            datetime.date(2011, 4, 1))
+        self.assertEqual(datetime.datetime.utcfromtimestamp(1304208000000 / 1000.).date(),
+            datetime.date(2011, 5, 1))
 
     def test_date_facet_filter(self):
         q = MatchAllQuery()
@@ -135,8 +135,8 @@ class FacetSearchTestCase(ESTestCase):
             field='date',
             interval='month'))
         resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
-        self.assertEquals(resultset.total, 2)
-        self.assertEquals(resultset.facets['date_facet']['entries'], [{u'count': 2, u'time': 1301616000000}])
+        self.assertEqual(resultset.total, 2)
+        self.assertEqual(resultset.facets['date_facet']['entries'], [{u'count': 2, u'time': 1301616000000}])
 
     def test_facet_filter_is_serialized_correctly(self):
         query = MatchAllQuery().search(size=0)

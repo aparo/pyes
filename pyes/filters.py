@@ -1,7 +1,7 @@
 from .exceptions import QueryParameterError
 from .utils import ESRange, EqualityComparableUsingAttributeDictionary
 from .es import json
-
+import six
 
 class Filter(EqualityComparableUsingAttributeDictionary):
 
@@ -12,7 +12,7 @@ class Filter(EqualityComparableUsingAttributeDictionary):
                               for key in self._extra_properties
                               if kwargs.get(key) is not None)
         if kwargs:
-            raise ValueError("Unknown properties: %s" % kwargs.keys())
+            raise ValueError("Unknown properties: %s" % list(kwargs.keys()))
 
     def serialize(self):
         data = self._serialize()
@@ -507,7 +507,7 @@ class IdsFilter(Filter):
         data = {}
         if self.type:
             data["type"] = self.type
-        if isinstance(self.values, basestring):
+        if isinstance(self.values, six.string_types):
             data["values"] = [self.values]
         else:
             data["values"] = self.values
@@ -519,7 +519,7 @@ class RawFilter(Filter):
 
     def __init__(self, filter_text_or_dict, **kwargs):
         super(RawFilter, self).__init__(**kwargs)
-        if isinstance(filter_text_or_dict, basestring):
+        if isinstance(filter_text_or_dict, six.string_types):
             self._filter = json.loads(filter_text_or_dict)
         else:
             self._filter = filter_text_or_dict

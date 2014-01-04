@@ -41,7 +41,7 @@ class ClusterTestCase(ESTestCase):
         self.assertTrue('routing_table' in result)
 
     def test_ClusterNodes(self):
-        result = self.conn.cluster.nodes()
+        result = self.conn.cluster.nodes_info()
         self.assertTrue('cluster_name' in result)
         self.assertTrue('nodes' in result)
 
@@ -66,3 +66,7 @@ class ClusterTestCase(ESTestCase):
                                           timeout=0, wait_for_status='green')
         # There shouldn't be any active shards on this index
         self.assertEqual(result['active_shards'], 0)
+
+if __name__ == "__main__":
+    import unittest
+    unittest.main()

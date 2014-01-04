@@ -12,11 +12,12 @@
 
 pyes is a connector to use elasticsearch from python.
 
-This version requires elasticsearch 0.15 or above.
+This version requires elasticsearch 0.90 or above.
 
 Features
 ========
 
+- Python3 support (only HTTP, thrift lib is not available on python3)
 - Thrift/HTTP protocols
 - Bulk insert/delete
 - Index management
@@ -83,7 +84,6 @@ v. 0.19.1:
 TODO
 ----
 
-- add ORM to manage objects
 - much more documentation
 - add coverage
 - add jython native client protocol

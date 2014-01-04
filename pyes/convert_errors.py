@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
+
 
 """
 Routines for converting error responses to appropriate exceptions.
@@ -63,7 +63,7 @@ def raise_if_error(status, result, request=None):
         raise exceptions.NotFoundException("Item not found", status, result, request)
 
     if not isinstance(result, dict) or 'error' not in result:
-        raise exceptions.ElasticSearchException(u"Unknown exception type: %d, %s" % (status, result), status,
+        raise exceptions.ElasticSearchException("Unknown exception type: %d, %s" % (status, result), status,
             result, request)
 
     error = result['error']
@@ -84,7 +84,7 @@ def raise_if_error(status, result, request=None):
             '''
             raise excClass(msg, status, result, request)
 
-    for pattern, excClass in exception_patterns_trailing.iteritems():
+    for pattern, excClass in list(exception_patterns_trailing.items()):
         if not error.endswith(pattern):
             continue
             # For these exceptions, the returned value is the whole descriptive

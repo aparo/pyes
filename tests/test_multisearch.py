@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
+import six
 import io
 import unittest
 from pyes.tests import ESTestCase
@@ -8,10 +9,14 @@ from pyes.query import *
 from pyes.filters import TermFilter, ANDFilter, ORFilter, RangeFilter, RawFilter, IdsFilter, MatchAllFilter, NotFilter
 from pyes.utils import ESRangeOp
 
-
-class UnicodeWriter(io.StringIO):
-    def write(self, ss, *args, **kwargs):
-        super(UnicodeWriter, self).write(unicode(ss), *args, **kwargs)
+if six.PY2:
+    class UnicodeWriter(io.StringIO):
+        def write(self, ss, *args, **kwargs):
+            super(UnicodeWriter, self).write(unicode(ss), *args, **kwargs)
+else:
+    class UnicodeWriter(io.BytesIO):
+        def write(self, ss, *args, **kwargs):
+            super(UnicodeWriter, self).write(ss, *args, **kwargs)
 
 
 class MultiSearchTestCase(ESTestCase):
@@ -47,14 +52,14 @@ class MultiSearchTestCase(ESTestCase):
         self.curl_writer.flush()
         self.curl_writer.seek(0)
 
-        return len(self.curl_writer.read().split('\n'))
+        return len(self.curl_writer.read().decode("utf8").split('\n'))
 
     def test_TermQuery_simple_multi(self):
         """Compare multi search with simple single query."""
         # make sure single search returns something
         q = TermQuery("name", "joe")
         resultset_single = self.conn.search(query=q, indices=self.index_name)
-        self.assertEquals(resultset_single.total, 1)
+        self.assertEqual(resultset_single.total, 1)
 
         # now check that multi query returns the same results
         resultset_multi = self.conn.search_multi([q], indices_list=[self.index_name])
@@ -62,7 +67,7 @@ class MultiSearchTestCase(ESTestCase):
         resultset_multi._do_search()
 
         self.assertTrue(resultset_multi.valid)
-        self.assertEquals(resultset_multi[0].total, 1)
+        self.assertEqual(resultset_multi[0].total, 1)
         self.assertDictEqual(resultset_multi[0][0], resultset_single[0])
 
     def test_TermQuery_double_multi(self):
@@ -72,8 +77,8 @@ class MultiSearchTestCase(ESTestCase):
 
         resultset_single1 = self.conn.search(query=q1, indices=self.index_name)
         resultset_single2 = self.conn.search(query=q2, indices=self.index_name)
-        self.assertEquals(resultset_single1.total, 1)
-        self.assertEquals(resultset_single2.total, 1)
+        self.assertEqual(resultset_single1.total, 1)
+        self.assertEqual(resultset_single2.total, 1)
 
         # now check that multi query returns the same results
         resultset_multi = self.conn.search_multi([q1, q2],
@@ -81,8 +86,8 @@ class MultiSearchTestCase(ESTestCase):
         resultset_multi._do_search()
 
         self.assertTrue(resultset_multi.valid)
-        self.assertEquals(resultset_multi[0].total, 1)
-        self.assertEquals(resultset_multi[1].total, 1)
+        self.assertEqual(resultset_multi[0].total, 1)
+        self.assertEqual(resultset_multi[1].total, 1)
         self.assertDictEqual(resultset_multi[0][0], resultset_single1[0])
         self.assertDictEqual(resultset_multi[1][0], resultset_single2[0])
 
@@ -90,7 +95,7 @@ class MultiSearchTestCase(ESTestCase):
         """Make sure that 'size' parameter works correctly."""
         q = TermQuery("name", "bill")
         resultset_single = self.conn.search(query=q, indices=self.index_name)
-        self.assertEquals(resultset_single.total, 2)
+        self.assertEqual(resultset_single.total, 2)
 
         s = Search(query=q, size=1)
         resultset_multi = self.conn.search_multi([s], indices_list=[self.index_name])
@@ -99,7 +104,7 @@ class MultiSearchTestCase(ESTestCase):
         num_curl_requests = self._compute_num_requests()
 
         self.assertTrue(resultset_multi.valid)
-        self.assertEquals(len(resultset_multi[0].hits), 1)
+        self.assertEqual(len(resultset_multi[0].hits), 1)
         self.assertIn(resultset_multi[0][0], resultset_single)
 
         # no curl requests should have been triggered when doing
@@ -110,21 +115,21 @@ class MultiSearchTestCase(ESTestCase):
         # make sure that getting more than 'size' elements triggers
         # an ES request
         self.assertIn(resultset_multi[0][1], resultset_single)
-        self.assertLess(num_curl_requests,
+        self.assertLess(num_curl_requests-1,
                         self._compute_num_requests())
 
     def test_start_multi(self):
         """Make sure that 'start' parameter works correctly."""
         q = TermQuery("name", "bill")
         resultset_single = self.conn.search(query=q, indices=self.index_name)
-        self.assertEquals(resultset_single.total, 2)
+        self.assertEqual(resultset_single.total, 2)
 
         s = Search(query=q, start=1)
         resultset_multi = self.conn.search_multi([s], indices_list=[self.index_name])
         resultset_multi._do_search()
 
         self.assertTrue(resultset_multi.valid)
-        self.assertEquals(len(resultset_multi[0].hits), 1)
+        self.assertEqual(len(resultset_multi[0].hits), 1)
         self.assertIn(resultset_multi[0][0], resultset_single)
 
 

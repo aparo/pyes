@@ -36,7 +36,7 @@ class ESTestCase(unittest.TestCase):
             except KeyError:
                 if result.has_key('meta'):
                     found = value == result['meta'][key]
-            self.assertEquals(True, found)
+            self.assertEqual(True, found)
 
     def checkRaises(self, excClass, callableObj, *args, **kwargs):
         """Assert that calling callableObj with *args and **kwargs raises an
@@ -45,11 +45,10 @@ class ESTestCase(unittest.TestCase):
         """
         try:
             callableObj(*args, **kwargs)
-        except excClass, e:
+        except excClass as e:
             return e
         else:
-            raise self.failureException, \
-                "Expected exception %s not raised" % excClass
+            raise self.failureException("Expected exception %s not raised" % excClass)
 
     def get_datafile(self, filename):
         """

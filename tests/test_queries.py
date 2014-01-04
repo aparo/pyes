@@ -65,58 +65,58 @@ class QuerySearchTestCase(ESTestCase):
     def test_TermQuery(self):
         q = TermQuery("name", "joe")
         resultset = self.conn.search(query=q, indices=self.index_name)
-        self.assertEquals(resultset.total, 1)
-        self.assertEquals(q, TermQuery("name", "joe"))
+        self.assertEqual(resultset.total, 1)
+        self.assertEqual(q, TermQuery("name", "joe"))
         self.assertNotEquals(q, TermQuery("name", "job"))
 
         q = TermQuery("name", "joe", 3)
         resultset = self.conn.search(query=q, indices=self.index_name)
-        self.assertEquals(resultset.total, 1)
-        self.assertEquals(q, TermQuery("name", "joe", 3))
+        self.assertEqual(resultset.total, 1)
+        self.assertEqual(q, TermQuery("name", "joe", 3))
         self.assertNotEquals(q, TermQuery("name", "joe", 4))
 
         q = TermQuery("name", "joe", "3")
         resultset = self.conn.search(query=q, indices=self.index_name)
-        self.assertEquals(resultset.total, 1)
-        self.assertEquals(q, TermQuery("name", "joe", "3"))
+        self.assertEqual(resultset.total, 1)
+        self.assertEqual(q, TermQuery("name", "joe", "3"))
         self.assertNotEquals(q, TermQuery("name", "joe", "4"))
 
     def test_WildcardQuery(self):
         q = WildcardQuery("name", "jo*")
         resultset = self.conn.search(query=q, indices=self.index_name)
-        self.assertEquals(resultset.total, 1)
-        self.assertEquals(q, WildcardQuery("name", "jo*"))
+        self.assertEqual(resultset.total, 1)
+        self.assertEqual(q, WildcardQuery("name", "jo*"))
         self.assertNotEquals(q, WildcardQuery("name", "bo*"))
 
         q = WildcardQuery("name", "jo*", 3)
         resultset = self.conn.search(query=q, indices=self.index_name)
-        self.assertEquals(resultset.total, 1)
-        self.assertEquals(q, WildcardQuery("name", "jo*", 3))
+        self.assertEqual(resultset.total, 1)
+        self.assertEqual(q, WildcardQuery("name", "jo*", 3))
         self.assertNotEquals(q, WildcardQuery("name", "jo*", 4))
 
         q = WildcardQuery("name", "jo*", "3")
         resultset = self.conn.search(query=q, indices=self.index_name)
-        self.assertEquals(resultset.total, 1)
-        self.assertEquals(q, WildcardQuery("name", "jo*", "3"))
+        self.assertEqual(resultset.total, 1)
+        self.assertEqual(q, WildcardQuery("name", "jo*", "3"))
         self.assertNotEquals(q, WildcardQuery("name", "jo*", "4"))
 
     def test_PrefixQuery(self):
         q = PrefixQuery("name", "jo")
         resultset = self.conn.search(query=q, indices=self.index_name)
-        self.assertEquals(resultset.total, 1)
-        self.assertEquals(q, PrefixQuery("name", "jo"))
+        self.assertEqual(resultset.total, 1)
+        self.assertEqual(q, PrefixQuery("name", "jo"))
         self.assertNotEquals(q, PrefixQuery("name", "bo"))
 
         q = PrefixQuery("name", "jo", 3)
         resultset = self.conn.search(query=q, indices=self.index_name)
-        self.assertEquals(resultset.total, 1)
-        self.assertEquals(q, PrefixQuery("name", "jo", 3))
+        self.assertEqual(resultset.total, 1)
+        self.assertEqual(q, PrefixQuery("name", "jo", 3))
         self.assertNotEquals(q, PrefixQuery("name", "jo", 4))
 
         q = PrefixQuery("name", "jo", "3")
         resultset = self.conn.search(query=q, indices=self.index_name)
-        self.assertEquals(resultset.total, 1)
-        self.assertEquals(q, PrefixQuery("name", "jo", "3"))
+        self.assertEqual(resultset.total, 1)
+        self.assertEqual(q, PrefixQuery("name", "jo", "3"))
         self.assertNotEquals(q, PrefixQuery("name", "jo", "4"))
 
     def test_SpanMultiQuery(self):
@@ -125,8 +125,8 @@ class QuerySearchTestCase(ESTestCase):
         clauses = [clause1, clause2];
         q = SpanNearQuery(clauses, 1)
         resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
-        self.assertEquals(resultset.total, 1)
-        self.assertEquals(clause1, SpanMultiQuery(PrefixQuery("parsedtext", "bi")))
+        self.assertEqual(resultset.total, 1)
+        self.assertEqual(clause1, SpanMultiQuery(PrefixQuery("parsedtext", "bi")))
         self.assertNotEquals(clause1, clause2)
 
         clause1 = SpanMultiQuery(WildcardQuery("parsedtext", "bi*"))
@@ -134,8 +134,8 @@ class QuerySearchTestCase(ESTestCase):
         clauses = [clause1, clause2];
         q = SpanNearQuery(clauses, 1)
         resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
-        self.assertEquals(resultset.total, 1)
-        self.assertEquals(clause1, SpanMultiQuery(WildcardQuery("parsedtext", "bi*")))
+        self.assertEqual(resultset.total, 1)
+        self.assertEqual(clause1, SpanMultiQuery(WildcardQuery("parsedtext", "bi*")))
         self.assertNotEquals(clause1, clause2)
 
         clause1 = SpanMultiQuery(PrefixQuery("parsedtext", "bi"))
@@ -143,54 +143,54 @@ class QuerySearchTestCase(ESTestCase):
         clauses = [clause1, clause2];
         q = SpanNearQuery(clauses, 1)
         resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
-        self.assertEquals(resultset.total, 1)
-        self.assertEquals(clause1, SpanMultiQuery(PrefixQuery("parsedtext", "bi")))
+        self.assertEqual(resultset.total, 1)
+        self.assertEqual(clause1, SpanMultiQuery(PrefixQuery("parsedtext", "bi")))
         self.assertNotEquals(clause1, clause2)
 
     def test_MatchAllQuery(self):
         q = MatchAllQuery()
         resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
-        self.assertEquals(resultset.total, 3)
-        self.assertEquals(q, MatchAllQuery())
+        self.assertEqual(resultset.total, 3)
+        self.assertEqual(q, MatchAllQuery())
 
     def test_StringQuery(self):
         q = StringQuery("joe AND test")
         resultset = self.conn.search(query=q, indices=self.index_name)
-        self.assertEquals(resultset.total, 0)
-        self.assertEquals(q, StringQuery("joe AND test"))
+        self.assertEqual(resultset.total, 0)
+        self.assertEqual(q, StringQuery("joe AND test"))
         self.assertNotEquals(q, StringQuery("moe AND test"))
 
         q = StringQuery("joe OR test")
         resultset = self.conn.search(query=q, indices=self.index_name)
-        self.assertEquals(resultset.total, 1)
-        self.assertEquals(q, StringQuery("joe OR test"))
+        self.assertEqual(resultset.total, 1)
+        self.assertEqual(q, StringQuery("joe OR test"))
         self.assertNotEquals(q, StringQuery("moe OR test"))
 
         q1 = StringQuery("joe")
         q2 = StringQuery("test")
         q = BoolQuery(must=[q1, q2])
         resultset = self.conn.search(query=q, indices=self.index_name)
-        self.assertEquals(resultset.total, 0)
-        self.assertEquals(q, BoolQuery(must=[StringQuery("joe"), StringQuery("test")]))
+        self.assertEqual(resultset.total, 0)
+        self.assertEqual(q, BoolQuery(must=[StringQuery("joe"), StringQuery("test")]))
         self.assertNotEquals(q, BoolQuery(must=[StringQuery("moe"), StringQuery("test")]))
 
         q = BoolQuery(should=[q1, q2])
         resultset = self.conn.search(query=q, indices=self.index_name)
-        self.assertEquals(resultset.total, 1)
-        self.assertEquals(q, BoolQuery(should=[StringQuery("joe"), StringQuery("test")]))
+        self.assertEqual(resultset.total, 1)
+        self.assertEqual(q, BoolQuery(should=[StringQuery("joe"), StringQuery("test")]))
         self.assertNotEquals(q, BoolQuery(should=[StringQuery("moe"), StringQuery("test")]))
 
         q = StringQuery("joe OR Testere OR guy OR pizza", minimum_should_match="100%")
         resultset = self.conn.search(query=q, indices=self.index_name)
-        self.assertEquals(resultset.total, 0)
+        self.assertEqual(resultset.total, 0)
 
         q = StringQuery("joe OR Testere OR guy OR pizza", minimum_should_match="80%")
         resultset = self.conn.search(query=q, indices=self.index_name)
-        self.assertEquals(resultset.total, 1)
+        self.assertEqual(resultset.total, 1)
 
         q = StringQuery("joe OR Testere OR guy OR pizza", minimum_should_match="50%")
         resultset = self.conn.search(query=q, indices=self.index_name)
-        self.assertEquals(resultset.total, 2)
+        self.assertEqual(resultset.total, 2)
 
     def test_OR_AND_Filters(self):
         q1 = TermFilter("position", 1)
@@ -199,8 +199,8 @@ class QuerySearchTestCase(ESTestCase):
 
         q = FilteredQuery(MatchAllQuery(), andq)
         resultset = self.conn.search(query=q, indices=self.index_name)
-        self.assertEquals(resultset.total, 0)
-        self.assertEquals(q, FilteredQuery(MatchAllQuery(),
+        self.assertEqual(resultset.total, 0)
+        self.assertEqual(q, FilteredQuery(MatchAllQuery(),
             ANDFilter([TermFilter("position", 1), TermFilter("position", 2)])))
         self.assertNotEquals(q, FilteredQuery(MatchAllQuery(),
             ANDFilter([TermFilter("position", 1), TermFilter("position", 3)])))
@@ -208,8 +208,8 @@ class QuerySearchTestCase(ESTestCase):
         orq = ORFilter([q1, q2])
         q = FilteredQuery(MatchAllQuery(), orq)
         resultset = self.conn.search(query=q, indices=self.index_name)
-        self.assertEquals(resultset.total, 2)
-        self.assertEquals(q, FilteredQuery(MatchAllQuery(),
+        self.assertEqual(resultset.total, 2)
+        self.assertEqual(q, FilteredQuery(MatchAllQuery(),
             ORFilter([TermFilter("position", 1), TermFilter("position", 2)])))
         self.assertNotEquals(q, FilteredQuery(MatchAllQuery(),
             ORFilter([TermFilter("position", 1), TermFilter("position", 3)])))
@@ -217,30 +217,30 @@ class QuerySearchTestCase(ESTestCase):
     def test_FieldQuery(self):
         q = FieldQuery(FieldParameter("name", "+joe"))
         resultset = self.conn.search(query=q, indices=self.index_name)
-        self.assertEquals(resultset.total, 1)
-        self.assertEquals(q, FieldQuery(FieldParameter("name", "+joe")))
+        self.assertEqual(resultset.total, 1)
+        self.assertEqual(q, FieldQuery(FieldParameter("name", "+joe")))
         self.assertNotEquals(q, FieldQuery(FieldParameter("name", "+job")))
 
     def test_DisMaxQuery(self):
         q = DisMaxQuery(FieldQuery(FieldParameter("name", "+joe")))
         resultset = self.conn.search(query=q, indices=self.index_name)
-        self.assertEquals(resultset.total, 1)
-        self.assertEquals(q, DisMaxQuery(FieldQuery(FieldParameter("name", "+joe"))))
+        self.assertEqual(resultset.total, 1)
+        self.assertEqual(q, DisMaxQuery(FieldQuery(FieldParameter("name", "+joe"))))
         self.assertNotEquals(q, DisMaxQuery(FieldQuery(FieldParameter("name", "+job"))))
 
     def test_FuzzyQuery(self):
         q = FuzzyQuery('name', 'data')
         resultset = self.conn.search(query=q, indices=self.index_name)
 
-        self.assertEquals(resultset.total, 2)
-        self.assertEquals(q, FuzzyQuery('name', 'data'))
+        self.assertEqual(resultset.total, 2)
+        self.assertEqual(q, FuzzyQuery('name', 'data'))
         self.assertNotEquals(q, FuzzyQuery('name', 'data2'))
 
     def test_HasChildQuery(self):
         q = HasChildQuery(type="test-type2", query=TermQuery("name", "data1"))
         resultset = self.conn.search(query=q, indices=self.index_name)
-        self.assertEquals(resultset.total, 1)
-        self.assertEquals(q, HasChildQuery(type="test-type2", query=TermQuery("name", "data1")))
+        self.assertEqual(resultset.total, 1)
+        self.assertEqual(q, HasChildQuery(type="test-type2", query=TermQuery("name", "data1")))
         self.assertNotEquals(q, HasChildQuery(type="test-type2", query=TermQuery("name", "data2")))
 
     def test_RegexTermQuery(self):
@@ -250,7 +250,7 @@ class QuerySearchTestCase(ESTestCase):
 
     #        q = RegexTermQuery("name", "jo.")
     #        resultset = self.conn.search(query=q, indices=self.index_name)
-    #        self.assertEquals(resultset.total, 1)
+    #        self.assertEqual(resultset.total, 1)
     #        # When this test is re-enabled, be sure to add equality and inequality tests (issue 128)
 
     def test_CustomScoreQueryMvel(self):
@@ -258,21 +258,21 @@ class QuerySearchTestCase(ESTestCase):
             lang="mvel",
             script="_score*(5+doc.position.value)"
         )
-        self.assertEquals(q,
+        self.assertEqual(q,
             CustomScoreQuery(query=MatchAllQuery(),
                 lang="mvel",
                 script="_score*(5+doc.position.value)"
             ))
-        self.assertNotEquals(q,
+        self.assertNotEqual(q,
             CustomScoreQuery(query=MatchAllQuery(),
                 lang="mvel",
                 script="_score*(6+doc.position.value)"
             ))
         resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
-        self.assertEquals(resultset.total, 3)
-        self.assertEquals(resultset[0]._meta.score, 8.0)
-        self.assertEquals(resultset[1]._meta.score, 7.0)
-        self.assertEquals(resultset.max_score, 8.0)
+        self.assertEqual(resultset.total, 3)
+        self.assertEqual(resultset[0]._meta.score, 8.0)
+        self.assertEqual(resultset[1]._meta.score, 7.0)
+        self.assertEqual(resultset.max_score, 8.0)
 
     def test_CustomScoreQueryJS(self):
         q = CustomScoreQuery(query=MatchAllQuery(),
@@ -280,10 +280,10 @@ class QuerySearchTestCase(ESTestCase):
             script="parseFloat(_score*(5+doc.position.value))"
         )
         resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
-        self.assertEquals(resultset.total, 3)
-        self.assertEquals(resultset[0]._meta.score, 8.0)
-        self.assertEquals(resultset[1]._meta.score, 7.0)
-        self.assertEquals(resultset.max_score, 8.0)
+        self.assertEqual(resultset.total, 3)
+        self.assertEqual(resultset[0]._meta.score, 8.0)
+        self.assertEqual(resultset[1]._meta.score, 7.0)
+        self.assertEqual(resultset.max_score, 8.0)
 
     def test_CustomScoreQueryPython(self):
         q = CustomScoreQuery(query=MatchAllQuery(),
@@ -291,77 +291,77 @@ class QuerySearchTestCase(ESTestCase):
             script="_score*(5+doc['position'].value)"
         )
         resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
-        self.assertEquals(resultset.total, 3)
-        self.assertEquals(resultset[0]._meta.score, 8.0)
-        self.assertEquals(resultset[1]._meta.score, 7.0)
-        self.assertEquals(resultset.max_score, 8.0)
+        self.assertEqual(resultset.total, 3)
+        self.assertEqual(resultset[0]._meta.score, 8.0)
+        self.assertEqual(resultset[1]._meta.score, 7.0)
+        self.assertEqual(resultset.max_score, 8.0)
 
     def test_Search_stats(self):
         no_stats_group = Search(TermQuery("foo", "bar"))
         one_stats_group = Search(TermQuery("foo", "bar"), stats="hello")
         many_stats_groups = Search(TermQuery("foo", "bar"), stats=["hello", "there", "test"])
 
-        self.assertEquals(no_stats_group.stats, None)
-        self.assertEquals(one_stats_group.stats, "hello")
-        self.assertEquals(many_stats_groups.stats, ["hello", "there", "test"])
+        self.assertEqual(no_stats_group.stats, None)
+        self.assertEqual(one_stats_group.stats, "hello")
+        self.assertEqual(many_stats_groups.stats, ["hello", "there", "test"])
 
-        self.assertEquals(no_stats_group.serialize(),
+        self.assertEqual(no_stats_group.serialize(),
                 {"query": {"term": {"foo": "bar"}}})
-        self.assertEquals(one_stats_group.serialize(),
+        self.assertEqual(one_stats_group.serialize(),
                 {"query": {"term": {"foo": "bar"}}, "stats": "hello"})
-        self.assertEquals(many_stats_groups.serialize(),
+        self.assertEqual(many_stats_groups.serialize(),
                 {"query": {"term": {"foo": "bar"}}, "stats": ["hello", "there", "test"]})
 
     def test_Search_equality(self):
-        self.assertEquals(Search(),
+        self.assertEqual(Search(),
             Search())
         self.assertNotEquals(Search(),
             Search(query=TermQuery("h", "ello")))
-        self.assertEquals(Search(query=TermQuery("h", "ello")),
+        self.assertEqual(Search(query=TermQuery("h", "ello")),
             Search(query=TermQuery("h", "ello")))
         self.assertNotEquals(Search(query=TermQuery("h", "ello")),
             Search(query=TermQuery("j", "ello")))
-        self.assertEquals(Search(filter=TermFilter("h", "ello")),
+        self.assertEqual(Search(filter=TermFilter("h", "ello")),
             Search(filter=TermFilter("h", "ello")))
         self.assertNotEquals(Search(filter=TermFilter("h", "ello")),
             Search(filter=TermFilter("j", "ello")))
-        self.assertEquals(Search(query=TermQuery("h", "ello"), filter=TermFilter("h", "ello")),
+        self.assertEqual(Search(query=TermQuery("h", "ello"), filter=TermFilter("h", "ello")),
             Search(query=TermQuery("h", "ello"), filter=TermFilter("h", "ello")))
         self.assertNotEquals(Search(query=TermQuery("h", "ello"), filter=TermFilter("h", "ello")),
             Search(query=TermQuery("j", "ello"), filter=TermFilter("j", "ello")))
 
     def test_ESRange_equality(self):
-        self.assertEquals(RangeQuery(),
+        self.assertEqual(RangeQuery(),
             RangeQuery())
-        self.assertEquals(RangeQuery(ESRange("foo", 1, 2)),
+        self.assertEqual(RangeQuery(ESRange("foo", 1, 2)),
             RangeQuery(ESRange("foo", 1, 2)))
         self.assertNotEquals(RangeQuery(ESRange("foo", 1, 2)),
             RangeQuery(ESRange("bar", 1, 2)))
-        self.assertEquals(RangeFilter(),
+        self.assertEqual(RangeFilter(),
             RangeFilter())
-        self.assertEquals(RangeFilter(ESRange("foo", 1, 2)),
+        self.assertEqual(RangeFilter(ESRange("foo", 1, 2)),
             RangeFilter(ESRange("foo", 1, 2)))
         self.assertNotEquals(RangeFilter(ESRange("foo", 1, 2)),
             RangeFilter(ESRange("bar", 1, 2)))
-        self.assertEquals(ESRange("foo"),
+        self.assertEqual(ESRange("foo"),
             ESRange("foo"))
         self.assertNotEquals(ESRange("foo"),
             ESRange("bar"))
-        self.assertEquals(ESRange("foo", 1),
+        self.assertEqual(ESRange("foo", 1),
             ESRange("foo", 1))
         self.assertNotEquals(ESRange("foo", 1),
             ESRange("foo", 2))
-        self.assertEquals(ESRange("foo", 1, 2),
+        self.assertEqual(ESRange("foo", 1, 2),
             ESRange("foo", 1, 2))
         self.assertNotEquals(ESRange("foo", 1, 2),
             ESRange("foo", 1, 3))
-        self.assertEquals(ESRange("foo", 1, 2, True, False),
+        self.assertEqual(ESRange("foo", 1, 2, True, False),
             ESRange("foo", 1, 2, True, False))
         self.assertNotEquals(ESRange("foo", 1, 2, True, False),
             ESRange("foo", 1, 2, False, True))
-        self.assertEquals(ESRangeOp("foo", "gt", 5),
+        self.assertEqual(ESRangeOp("foo", "gt", 5),
             ESRangeOp("foo", "gt", 5))
-        self.assertEquals(ESRangeOp("bar", "lt", 6),
+        self.assertEqual(ESRangeOp("bar", "lt", 6),
             ESRangeOp("bar", "lt", 6))
 
     def test_RawFilter_dict(self):
@@ -390,35 +390,35 @@ class QuerySearchTestCase(ESTestCase):
             dict(filter=filter_))
 
     def test_CustomFiltersScoreQuery_ScoreMode(self):
-        self.assertEquals(CustomFiltersScoreQuery.ScoreMode.FIRST, "first")
-        self.assertEquals(CustomFiltersScoreQuery.ScoreMode.MIN, "min")
-        self.assertEquals(CustomFiltersScoreQuery.ScoreMode.MAX, "max")
-        self.assertEquals(CustomFiltersScoreQuery.ScoreMode.TOTAL, "total")
-        self.assertEquals(CustomFiltersScoreQuery.ScoreMode.AVG, "avg")
-        self.assertEquals(CustomFiltersScoreQuery.ScoreMode.MULTIPLY, "multiply")
+        self.assertEqual(CustomFiltersScoreQuery.ScoreMode.FIRST, "first")
+        self.assertEqual(CustomFiltersScoreQuery.ScoreMode.MIN, "min")
+        self.assertEqual(CustomFiltersScoreQuery.ScoreMode.MAX, "max")
+        self.assertEqual(CustomFiltersScoreQuery.ScoreMode.TOTAL, "total")
+        self.assertEqual(CustomFiltersScoreQuery.ScoreMode.AVG, "avg")
+        self.assertEqual(CustomFiltersScoreQuery.ScoreMode.MULTIPLY, "multiply")
 
     def test_CustomFiltersScoreQuery_Filter(self):
         with self.assertRaises(ValueError) as cm:
             CustomFiltersScoreQuery.Filter(MatchAllFilter())
-        self.assertEquals(cm.exception.message, "Exactly one of boost and script must be specified")
+        self.assertEqual(cm.exception.message, "Exactly one of boost and script must be specified")
 
         with self.assertRaises(ValueError) as cm:
             CustomFiltersScoreQuery.Filter(MatchAllFilter(), 5.0, "someScript")
-        self.assertEquals(cm.exception.message, "Exactly one of boost and script must be specified")
+        self.assertEqual(cm.exception.message, "Exactly one of boost and script must be specified")
 
         filter1 = CustomFiltersScoreQuery.Filter(MatchAllFilter(), 5.0)
-        self.assertEquals(filter1, CustomFiltersScoreQuery.Filter(MatchAllFilter(), 5.0))
-        self.assertEquals(filter1.filter_, MatchAllFilter())
-        self.assertEquals(filter1.boost, 5.0)
+        self.assertEqual(filter1, CustomFiltersScoreQuery.Filter(MatchAllFilter(), 5.0))
+        self.assertEqual(filter1.filter_, MatchAllFilter())
+        self.assertEqual(filter1.boost, 5.0)
         self.assertIsNone(filter1.script)
-        self.assertEquals(filter1.serialize(), {'filter': {'match_all': {}}, 'boost': 5.0})
+        self.assertEqual(filter1.serialize(), {'filter': {'match_all': {}}, 'boost': 5.0})
 
         filter2 = CustomFiltersScoreQuery.Filter(NotFilter(MatchAllFilter()), script="hello")
-        self.assertEquals(filter2, CustomFiltersScoreQuery.Filter(NotFilter(MatchAllFilter()), script="hello"))
-        self.assertEquals(filter2.filter_, NotFilter(MatchAllFilter()))
-        self.assertEquals(filter2.script, "hello")
+        self.assertEqual(filter2, CustomFiltersScoreQuery.Filter(NotFilter(MatchAllFilter()), script="hello"))
+        self.assertEqual(filter2.filter_, NotFilter(MatchAllFilter()))
+        self.assertEqual(filter2.script, "hello")
         self.assertIsNone(filter2.boost)
-        self.assertEquals(filter2.serialize(), {'filter': {'not': {'filter': {'match_all': {}}}}, 'script': 'hello'})
+        self.assertEqual(filter2.serialize(), {'filter': {'not': {'filter': {'match_all': {}}}}, 'script': 'hello'})
 
     def test_CustomFiltersScoreQuery(self):
         script1 = "max(1,2)"
@@ -434,13 +434,13 @@ class QuerySearchTestCase(ESTestCase):
         q2 = TermQuery("foo", "bar")
 
         cfsq1 = CustomFiltersScoreQuery(q1, [filter1, filter2])
-        self.assertEquals(cfsq1, CustomFiltersScoreQuery(q1, [filter1, filter2]))
-        self.assertEquals(cfsq1.query, q1)
-        self.assertEquals(cfsq1.filters, [filter1, filter2])
+        self.assertEqual(cfsq1, CustomFiltersScoreQuery(q1, [filter1, filter2]))
+        self.assertEqual(cfsq1.query, q1)
+        self.assertEqual(cfsq1.filters, [filter1, filter2])
         self.assertIsNone(cfsq1.score_mode)
         self.assertIsNone(cfsq1.params)
         self.assertIsNone(cfsq1.lang)
-        self.assertEquals(cfsq1.serialize(),
+        self.assertEqual(cfsq1.serialize(),
                 {'custom_filters_score': {
                 'query': {'match_all': {}},
                 'filters': [
@@ -453,16 +453,16 @@ class QuerySearchTestCase(ESTestCase):
         cfsq2 = CustomFiltersScoreQuery(q2, [filter1, filter2, filter3],
             CustomFiltersScoreQuery.ScoreMode.MAX,
             params1, lang1)
-        self.assertEquals(cfsq2,
+        self.assertEqual(cfsq2,
             CustomFiltersScoreQuery(q2, [filter1, filter2, filter3],
                 CustomFiltersScoreQuery.ScoreMode.MAX,
                 params1, lang1))
-        self.assertEquals(cfsq2.query, q2)
-        self.assertEquals(cfsq2.filters, [filter1, filter2, filter3])
-        self.assertEquals(cfsq2.score_mode, CustomFiltersScoreQuery.ScoreMode.MAX)
-        self.assertEquals(cfsq2.params, params1)
-        self.assertEquals(cfsq2.lang, lang1)
-        self.assertEquals(cfsq2.serialize(),
+        self.assertEqual(cfsq2.query, q2)
+        self.assertEqual(cfsq2.filters, [filter1, filter2, filter3])
+        self.assertEqual(cfsq2.score_mode, CustomFiltersScoreQuery.ScoreMode.MAX)
+        self.assertEqual(cfsq2.params, params1)
+        self.assertEqual(cfsq2.lang, lang1)
+        self.assertEqual(cfsq2.serialize(),
                 {'custom_filters_score': {
                 'query': {'term': {'foo': 'bar'}},
                 'filters': [
@@ -478,17 +478,17 @@ class QuerySearchTestCase(ESTestCase):
         q = MatchAllQuery()
         all_fields = ["name", "parsedtext", "uuid", "position"]
         resultset = self.conn.search(query=Search(q), indices=self.index_name, doc_types=[self.document_type])
-        self.assertEquals(resultset.total, 3)
+        self.assertEqual(resultset.total, 3)
         for result in resultset:
             for field in all_fields:
                 self.assertTrue(result.get(field))
         resultset = self.conn.search(query=Search(q,fields=[]), indices=self.index_name, doc_types=[self.document_type])
-        self.assertEquals(resultset.total, 3)
+        self.assertEqual(resultset.total, 3)
         for result in resultset:
             for field in all_fields:
                 self.assertTrue(not result.get(field))
         resultset = self.conn.search(query=Search(q,fields=['name','position']), indices=self.index_name, doc_types=[self.document_type])
-        self.assertEquals(resultset.total, 3)
+        self.assertEqual(resultset.total, 3)
         for result in resultset:
             for field in ['parsedtext','uuid']:
                 self.assertTrue(not result.get(field))
@@ -503,27 +503,27 @@ class QuerySearchTestCase(ESTestCase):
         self.assertTrue(serialized["match"]["_all"]["query"], "nice")
 
         resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
-        self.assertEquals(resultset.total, 3)
+        self.assertEqual(resultset.total, 3)
 
         q = MatchQuery("_all", "Baloney Testere pizza", operator="and")
         resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
-        self.assertEquals(resultset.total, 0)
+        self.assertEqual(resultset.total, 0)
 
         q = MatchQuery("_all", "Baloney Testere pizza", operator="or", minimum_should_match="70%")
         resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
-        self.assertEquals(resultset.total, 1)
+        self.assertEqual(resultset.total, 1)
 
         q = MatchQuery("parsedtext", "Bill guy", type="phrase", slop=2)
         resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
-        self.assertEquals(resultset.total, 1)
+        self.assertEqual(resultset.total, 1)
 
         q = MatchQuery("parsedtext", "guy Bill", type="phrase", slop=2)
         resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
-        self.assertEquals(resultset.total, 0)
+        self.assertEqual(resultset.total, 0)
 
         q = MatchQuery("name", "Tester")
         resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
-        self.assertEquals(resultset.total, 1)
+        self.assertEqual(resultset.total, 1)
 
     def test_CustomBoostFactorQuery(self):
         q = CustomBoostFactorQuery(query=TermQuery("name", "joe"),
@@ -531,7 +531,7 @@ class QuerySearchTestCase(ESTestCase):
 
         resultset = self.conn.search(query=q, indices=self.index_name)
 
-        self.assertEquals(resultset.total, 1)
+        self.assertEqual(resultset.total, 1)
         score = resultset.hits[0]['_score']
 
         q = CustomBoostFactorQuery(query=TermQuery("name", "joe"),

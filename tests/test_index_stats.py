@@ -45,16 +45,16 @@ class IndexStatsTestCase(ESTestCase):
 
     def test_all_indices(self):
         result = self.conn.index_stats()
-        self.assertEquals(5, result._all.total.docs.count)
+        self.assertEqual(5, result._all.total.docs.count)
 
     def test_select_indices(self):
         result = self.conn.index_stats(self.index_name)
-        self.assertEquals(5, result._all.total.docs.count)
+        self.assertEqual(5, result._all.total.docs.count)
 
     def test_optimize(self):
         result = self.conn.indices.optimize(indices=self.index_name, wait_for_merge=True, max_num_segments=1)
-        self.assertEquals(result.ok, True)
-        self.assertEquals(result._shards["failed"], 0)
+        self.assertEqual(result.ok, True)
+        self.assertEqual(result._shards["failed"], 0)
 
 if __name__ == "__main__":
     unittest.main()

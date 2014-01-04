@@ -34,30 +34,30 @@ class NestedSearchTestCase(ESTestCase):
         q = FilteredQuery(MatchAllQuery(),
             TermFilter('_all', 'n_value1_1'))
         resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
-        self.assertEquals(resultset.total, 2)
+        self.assertEqual(resultset.total, 2)
 
         q = FilteredQuery(MatchAllQuery(),
             TermFilter('nested1.n_field1', 'n_value1_1'))
         resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
-        self.assertEquals(resultset.total, 0)
+        self.assertEqual(resultset.total, 0)
 
         q = FilteredQuery(MatchAllQuery(),
             TermFilter('nested1.n_field1', 'n_value1_1'))
         resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
-        self.assertEquals(resultset.total, 0)
+        self.assertEqual(resultset.total, 0)
 
         q = FilteredQuery(MatchAllQuery(),
             NestedFilter('nested1',
                 BoolQuery(must=[TermQuery('nested1.n_field1', 'n_value1_1')])))
         resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
-        self.assertEquals(resultset.total, 2)
+        self.assertEqual(resultset.total, 2)
 
         q = FilteredQuery(MatchAllQuery(),
             NestedFilter('nested1',
                 BoolQuery(must=[TermQuery('nested1.n_field1', 'n_value1_1'),
                                 TermQuery('nested1.n_field2', 'n_value2_1')])))
         resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
-        self.assertEquals(resultset.total, 1)
+        self.assertEqual(resultset.total, 1)
 
 
 if __name__ == "__main__":

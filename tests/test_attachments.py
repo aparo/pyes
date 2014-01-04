@@ -25,8 +25,8 @@ class TestFileSaveTestCase(ESTestCase):
         self.conn.indices.refresh(self.index_name)
         _ = self.conn.indices.get_mapping(self.document_type, self.index_name)
         nname, ncontent = self.conn.get_file(self.index_name, self.document_type, 1)
-        self.assertEquals(name, nname)
-        self.assertEquals(content, ncontent)
+        self.assertEqual(name, nname)
+        self.assertEqual(content, ncontent)
 
 
 class QueryAttachmentTestCase(ESTestCase):
@@ -80,5 +80,5 @@ class QueryAttachmentTestCase(ESTestCase):
             fields=['attachment', 'attachment.author', 'attachment.title', 'attachment.date'])
         #        q = TermQuery("uuid", "1", fields=['*'])
         resultset = self.conn.search(query=q, indices=self.index_name)
-        self.assertEquals(resultset.total, 1)
-        self.assertEquals(resultset.hits[0]['fields']['attachment.author'], u'Tika Developers')
+        self.assertEqual(resultset.total, 1)
+        self.assertEqual(resultset.hits[0]['fields']['attachment.author'], u'Tika Developers')

@@ -56,14 +56,14 @@ class BulkTestCase(ESTestCase):
             self.conn.index({"name": "Joe Tester", "parsedtext": "Joe Testere nice guy", "uuid": "11111", "position": 1}
                 ,
                 self.index_name, self.document_type, 4, bulk=True))
-        self.assertIsNone(self.conn.indices.flush_bulk(False))
+        self.assertIsNone(self.conn.flush_bulk(False))
         self.assertEqual(len(self.conn.bulker.bulk_data), 1)
 
         self.assertIsNone(
             self.conn.index(
                     {"name": "Bill Baloney", "parsedtext": "Bill Testere nice guy", "uuid": "22222", "position": 2},
                 self.index_name, self.document_type, 5, bulk=True))
-        self.assertIsNone(self.conn.indices.flush_bulk(False))
+        self.assertIsNone(self.conn.flush_bulk(False))
         self.assertEqual(len(self.conn.bulker.bulk_data), 2)
 
         bulk_result = self.conn.index(
@@ -75,15 +75,15 @@ class BulkTestCase(ESTestCase):
         self.conn.bulk_size = 3
 
         self.assertIsNone(self.conn.delete(self.index_name, self.document_type, 4, True))
-        self.assertIsNone(self.conn.indices.flush_bulk(False))
+        self.assertIsNone(self.conn.flush_bulk(False))
         self.assertEqual(len(self.conn.bulker.bulk_data), 1)
 
         self.assertIsNone(self.conn.delete(self.index_name, self.document_type, 5, True))
-        self.assertIsNone(self.conn.indices.flush_bulk(False))
+        self.assertIsNone(self.conn.flush_bulk(False))
         self.assertEqual(len(self.conn.bulker.bulk_data), 2)
 
         bulk_result = self.conn.delete(self.index_name, self.document_type, 6, True)
-        self.assertIsNone(self.conn.indices.flush_bulk(False))
+        self.assertIsNone(self.conn.flush_bulk(False))
         self.assertEqual(len(bulk_result['items']), 3)
         self.assertEqual(self.conn.bulker.bulk_data, [])
 
@@ -97,7 +97,7 @@ class BulkTestCase(ESTestCase):
             self.conn.index(
                     {"name": "Bill Baloney", "parsedtext": "Bill Testere nice guy", "uuid": "22222", "position": 2},
                 self.index_name, self.document_type, 7, bulk=True))
-        self.assertIsNone(self.conn.indices.flush_bulk(False))
+        self.assertIsNone(self.conn.flush_bulk(False))
         self.assertEqual(len(self.conn.bulker.bulk_data), 1)
 
         bulk_result = self.conn.index(
@@ -239,3 +239,7 @@ class BulkTestCase(ESTestCase):
         with self.assertRaises(BulkOperationException) as cm:
             self.conn.index(
                 "invalid", self.index_name, self.document_type, 8, bulk=True)
+
+if __name__ == "__main__":
+    import unittest
+    unittest.main()

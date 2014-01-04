@@ -81,7 +81,7 @@ class FacetSearchTestCase(ESTestCase):
         q4 = MatchAllQuery()
         q4 = q4.search()
         q4.facet.add_term_facet('bag')
-        self.assertNotEquals(q2, q4)
+        self.assertNotEqual(q2, q4)
 
     def test_terms_facet_filter(self):
         q = MatchAllQuery()
@@ -107,7 +107,7 @@ class FacetSearchTestCase(ESTestCase):
         q4 = FilteredQuery(q4, TermFilter('tag', 'foo'))
         q4 = q4.search()
         q4.facet.add_term_facet('bag')
-        self.assertNotEquals(q3, q4)
+        self.assertNotEqual(q3, q4)
 
     def test_date_facet(self):
         q = MatchAllQuery()
@@ -120,9 +120,9 @@ class FacetSearchTestCase(ESTestCase):
         self.assertEqual(resultset.facets.date_facet.entries, [{u'count': 2, u'time': 1301616000000},
                 {u'count': 1, u'time': 1304208000000}])
         self.assertEqual(datetime.datetime.utcfromtimestamp(1301616000000 / 1000.).date(),
-            datetime.date(2011, 04, 01))
+            datetime.date(2011, 4, 1))
         self.assertEqual(datetime.datetime.utcfromtimestamp(1304208000000 / 1000.).date(),
-            datetime.date(2011, 05, 01))
+            datetime.date(2011, 5, 1))
 
     def test_date_facet_filter(self):
         q = MatchAllQuery()

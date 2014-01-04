@@ -605,8 +605,8 @@ class ES(object):
             info['server']['name'] = res['name']
             info['server']['version'] = res['version']
             info['allinfo'] = res
-            info['status'] = self.status()
-            info['aliases'] = self.aliases()
+            info['status'] = self.cluster.status()
+            info['aliases'] = self.indices.aliases()
             self.info = info
             return True
         except:

@@ -148,7 +148,7 @@ class IndexingTestCase(ESTestCase):
 
     def testUpdateUsingFunc(self):
         def update_list_values(current, extra):
-            for k, v in extra.iteritems():
+            for k, v in extra.items():
                 if isinstance(current.get(k), list):
                     current[k].extend(v)
                 else:

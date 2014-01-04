@@ -45,10 +45,9 @@ class ElasticSearchModel(DotDict):
             self.update(dict(*args, **kwargs))
 
     def __setattr__(self, key, value):
-        if not self.__dict__.has_key(
-            '_ElasticSearchModel__initialised'):  # this test allows attributes to be set in the __init__ method
+        if '_ElasticSearchModel__initialised' not in list(self.__dict__.keys()):  # this test allows attributes to be set in the __init__ method
             return dict.__setattr__(self, key, value)
-        elif self.__dict__.has_key(key):       # any normal attributes are handled normally
+        elif key in list(self.__dict__.keys()):       # any normal attributes are handled normally
             dict.__setattr__(self, key, value)
         else:
             self.__setitem__(key, value)
@@ -260,7 +259,7 @@ class SortedDict(dict):
 
     def __deepcopy__(self, memo):
         return self.__class__([(key, copy.deepcopy(value, memo))
-                               for key, value in self.iteritems()])
+                               for key, value in self.items()])
 
     def __setitem__(self, key, value):
         if key not in self:
@@ -291,7 +290,7 @@ class SortedDict(dict):
     def items(self):
         return zip(self.keyOrder, self.values())
 
-    def iteritems(self):
+    def items(self):
         for key in self.keyOrder:
             yield key, self[key]
 
@@ -309,7 +308,7 @@ class SortedDict(dict):
             yield self[key]
 
     def update(self, dict_):
-        for k, v in dict_.iteritems():
+        for k, v in dict_.items():
             self[k] = v
 
     def setdefault(self, key, default):

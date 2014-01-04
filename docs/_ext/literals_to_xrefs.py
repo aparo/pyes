@@ -154,7 +154,7 @@ def colorize(text='', opts=(), **kwargs):
     code_list = []
     if text == '' and len(opts) == 1 and opts[0] == 'reset':
         return '\x1b[%sm' % RESET
-    for k, v in kwargs.iteritems():
+    for k, v in kwargs.items():
         if k == 'fg':
             code_list.append(foreground[v])
         elif k == 'bg':

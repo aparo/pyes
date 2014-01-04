@@ -48,8 +48,7 @@ class ESTestCase(unittest.TestCase):
         except excClass as e:
             return e
         else:
-            raise self.failureException, \
-                "Expected exception %s not raised" % excClass
+            raise self.failureException("Expected exception %s not raised" % excClass)
 
     def get_datafile(self, filename):
         """

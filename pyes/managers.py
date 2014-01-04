@@ -346,7 +346,7 @@ class Indices(object):
             refresh=refresh,
             flush=flush,
             )
-        for k, v in params.iteritems():
+        for k, v in params.items():
             params[k] = v and "true" or "false"
         if max_num_segments is not None:
             params['max_num_segments'] = max_num_segments

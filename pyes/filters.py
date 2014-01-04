@@ -12,7 +12,7 @@ class Filter(EqualityComparableUsingAttributeDictionary):
                               for key in self._extra_properties
                               if kwargs.get(key) is not None)
         if kwargs:
-            raise ValueError("Unknown properties: %s" % kwargs.keys())
+            raise ValueError("Unknown properties: %s" % list(kwargs.keys()))
 
     def serialize(self):
         data = self._serialize()

@@ -7,7 +7,7 @@ class ResultsetTestCase(ESTestCase):
         super(ResultsetTestCase, self).setUp()
         self.init_default_index()
 
-        for i in xrange(1000):
+        for i in range(1000):
             self.conn.index(
                     {"name": "Joe Tester%d" % i, "parsedtext": "Joe Testere nice guy", "uuid": "11111", "position": i},
                 self.index_name, self.document_type, i, bulk=True)

@@ -35,6 +35,7 @@ except ImportError:
     thrift_connect = None
     from .fakettypes import Method, RestRequest
 
+import six
 
 def file_to_attachment(filename, filehandler=None):
     """
@@ -223,7 +224,7 @@ class ES(object):
         Destructor
         """
         # Don't bother getting the lock
-        if self.bulker:
+        if self.bulker and self.bulker.bulk_size>0:
             # It's not safe to rely on the destructor to flush the queue:
             # the Python documentation explicitly states "It is not guaranteed
             # that __del__() methods are called for objects that still exist "
@@ -379,8 +380,9 @@ class ES(object):
         request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()],
                               uri=path, parameters=params, headers=headers, body=body)
         if self.dump_curl is not None:
-            print("# [%s]" % datetime.now().isoformat(), file=self.dump_curl)
-            print(self._get_curl_request(request), file=self.dump_curl)
+            self.dump_curl.write(("# [%s]" % datetime.now().isoformat()).encode('utf-8'))
+            self.dump_curl.write(self._get_curl_request(request).encode('utf-8'))
+
         if self.log_curl:
             logger.debug(self._get_curl_request(request))
 
@@ -388,24 +390,28 @@ class ES(object):
         response = self.connection.execute(request)
 
         if self.dump_curl is not None:
-            print("# response status: %s"%response.status, file=self.dump_curl)
-            print("# response body: %s"%response.body, file=self.dump_curl)
+            self.dump_curl.write(("# response status: %s"%response.status).encode('utf-8'))
+            self.dump_curl.write(("# response body: %s"%response.body).encode('utf-8'))
 
         if method == "HEAD":
             return response.status == 200
 
         # handle the response
+        response_body=response.body
+        if six.PY3:
+            response_body=response_body.decode(encoding='UTF-8')
+
         try:
-            decoded = json.loads(response.body, cls=self.decoder)
+            decoded = json.loads(response_body, cls=self.decoder)
         except ValueError:
             try:
-                decoded = json.loads(response.body, cls=ESJsonDecoder)
+                decoded = json.loads(response_body, cls=ESJsonDecoder)
             except ValueError:
                 # The only known place where we get back a body which can't be
                 # parsed as JSON is when no handler is found for a request URI.
                 # In this case, the body is actually a good message to return
                 # in the exception.
-                raise ElasticSearchException(response.body, response.status, response.body)
+                raise ElasticSearchException(response_body, response.status, response.body)
         if response.status not in [200, 201]:
             raise_if_error(response.status, decoded)
         if not raw and isinstance(decoded, dict):

@@ -51,3 +51,6 @@ class ResultsetTestCase(ESTestCase):
         self.assertEqual(range[0].position, 19)
 
 
+if __name__ == "__main__":
+    import unittest
+    unittest.main()

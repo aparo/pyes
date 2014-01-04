@@ -44,11 +44,11 @@ class IndexStatsTestCase(ESTestCase):
         self.conn.indices.refresh()
 
     def test_all_indices(self):
-        result = self.conn.index_stats()
+        result = self.conn.indices.stats()
         self.assertEqual(5, result._all.total.docs.count)
 
     def test_select_indices(self):
-        result = self.conn.index_stats(self.index_name)
+        result = self.conn.indices.stats(self.index_name)
         self.assertEqual(5, result._all.total.docs.count)
 
     def test_optimize(self):

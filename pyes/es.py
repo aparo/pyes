@@ -411,7 +411,7 @@ class ES(object):
                 # parsed as JSON is when no handler is found for a request URI.
                 # In this case, the body is actually a good message to return
                 # in the exception.
-                raise ElasticSearchException(response_body, response.status, response.body)
+                raise ElasticSearchException(response_body, response.status, response_body)
         if response.status not in [200, 201]:
             raise_if_error(response.status, decoded)
         if not raw and isinstance(decoded, dict):

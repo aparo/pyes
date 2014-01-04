@@ -1,14 +1,19 @@
+# -*- coding: utf-8 -*-
 
+import six
 
 from datetime import date, datetime
 from decimal import Decimal
-from urllib.parse import urlencode
-from urllib.parse import urlunsplit, urlparse
+if six.PY2:
+    from six.moves.urllib.parse import urlencode, urlunsplit, urlparse
+else:
+    from urllib.parse import urlencode, urlunsplit, urlparse
+#    import urllib.request, urllib.parse, urllib.error
+
 import base64
 import codecs
 import random
 import time
-import urllib.request, urllib.parse, urllib.error
 import weakref
 try:
     import simplejson as json
@@ -34,8 +39,6 @@ try:
 except ImportError:
     thrift_connect = None
     from .fakettypes import Method, RestRequest
-
-import six
 
 def file_to_attachment(filename, filehandler=None):
     """
@@ -1400,6 +1403,8 @@ class ResultSet(object):
         self.iterpos += 1
         self._current_item += 1
         return self.model(self.connection, res)
+
+    next=__next__
 
     def __iter__(self):
         self.iterpos = 0

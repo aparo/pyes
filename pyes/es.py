@@ -1370,30 +1370,40 @@ class ResultSet(object):
         return [model(self.connection, hit) for hit in hits]
 
     def next(self):
+        print "in ResultSet.next"
         if self._max_item is not None and self._current_item == self._max_item:
+            print "stopping iteration 1"
             raise StopIteration
         if self._results is None:
+            print "results are none... doing search"
             self._do_search()
         if "_scroll_id" in self._results and self._total != 0 and self._current_item == 0 and len(
-            self._results["hits"].get("hits", [])) == 0:
+                    self._results["hits"].get("hits", [])) == 0:
+            print "scrolling... doing search"
             self._do_search()
         if len(self.hits) == 0:
+            print "stopping iteration 2"
             raise StopIteration
         if self.iterpos < len(self.hits):
+            print "iterating through current results..."
             res = self.hits[self.iterpos]
             self.iterpos += 1
             self._current_item += 1
             return self.model(self.connection, res)
 
         if self.start + self.iterpos == self.total:
+            print "stopping iteration 3"
             raise StopIteration
+        print "doing another search with auto increment"
         self._do_search(auto_increment=True)
         self.iterpos = 0
         if len(self.hits) == 0:
+            print "stopping iteration 4"
             raise StopIteration
         res = self.hits[self.iterpos]
         self.iterpos += 1
         self._current_item += 1
+        print "fell through and returning from ResultSet.next"
         return self.model(self.connection, res)
 
     def __iter__(self):

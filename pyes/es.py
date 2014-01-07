@@ -1,14 +1,22 @@
 
+import sys
+is_py3 = sys.version >= (3, 0)
 
 from datetime import date, datetime
 from decimal import Decimal
-from urllib.parse import urlencode
-from urllib.parse import urlunsplit, urlparse
+
+if is_py3:
+    from urllib.parse import urlencode
+    from urllib.parse import urlunsplit, urlparse
+    #import urllib.request, urllib.parse, urllib.error
+else:
+    from urlparse import urlparse, urlsplit
+    from urllib import urlencode
+
 import base64
 import codecs
 import random
 import time
-import urllib.request, urllib.parse, urllib.error
 import weakref
 try:
     import simplejson as json
@@ -1400,6 +1408,9 @@ class ResultSet(object):
         self.iterpos += 1
         self._current_item += 1
         return self.model(self.connection, res)
+
+    if not is_py3:
+        next = __next__
 
     def __iter__(self):
         self.iterpos = 0

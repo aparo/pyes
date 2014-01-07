@@ -35,18 +35,14 @@ class ElasticSearchModel(DotDict):
         self._meta = DotDict()
         self.__initialised = True
         if len(args) == 2 and isinstance(args[0], ES):
-            print "ElasticSearchModel init: true"
             item = args[1]
-            print "item: " + str(item)
             self.update(item.pop("_source", DotDict()))
             self.update(item.pop("fields", {}))
             self._meta = DotDict([(k.lstrip("_"), v) for k, v in item.items()])
             self._meta.parent = self.pop("_parent", None)
             self._meta.connection = args[0]
         else:
-            print "ElasticSearchModel init: false"
             self.update(dict(*args, **kwargs))
-        print "initialized: " + str(self)
 
     def __setattr__(self, key, value):
         if not self.__dict__.has_key(

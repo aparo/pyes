@@ -1578,3 +1578,6 @@ class ResultSetMulti(object):
             return res
 
         raise StopIteration
+
+    if not is_py3:
+        next = __next__

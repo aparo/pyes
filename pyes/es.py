@@ -10,7 +10,7 @@ if is_py3:
     from urllib.parse import urlunsplit, urlparse
     #import urllib.request, urllib.parse, urllib.error
 else:
-    from urlparse import urlparse, urlsplit
+    from urlparse import urlparse, urlsplit, urlunsplit
     from urllib import urlencode
 
 import base64

@@ -75,14 +75,14 @@ TIP: Remember to refresh the index before query to obtain latest insert document
    >>> conn.refresh()
 
 
-Quering
+Querying
 -------
 
 You can query ES with :
 
-    - a Query object or derivated
+    - a Query object or derivative
 
-    - a Search object or derivated
+    - a Search object or derivative
 
     - a dict
 

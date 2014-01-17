@@ -1367,8 +1367,7 @@ class ResultSet(object):
         model = self.model
 
         if self._results:
-            if start >= 0 and end <= self.start + self.chuck_size and len(self._results['hits']['hits']) > 0 and \
-                ("_source" in self._results['hits']['hits'][0] or "_fields" in self._results['hits']['hits'][0]):
+            if start >= 0 and end <= self.start + self.chuck_size and len(self._results['hits']['hits']) > 0:
                 if not isinstance(val, slice):
                     return model(self.connection, self._results['hits']['hits'][val - self.start])
                 else:

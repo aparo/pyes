@@ -29,7 +29,7 @@ def to_bool(value):
 check_values = {
     'index': ['no', 'analyzed', 'not_analyzed'],
     'term_vector': ['no', 'yes', 'with_offsets', 'with_positions', 'with_positions_offsets'],
-    'type': ['float', 'double', 'short', 'integer', 'long'],
+    'type': ['float', 'double', 'byte', 'short', 'integer', 'long'],
     'store': ['yes', 'no'],
     'index_analyzer': [],
     'search_analyzer': [],
@@ -195,6 +195,10 @@ class IpField(NumericFieldAbstract):
         super(IpField, self).__init__(*args, **kwargs)
         self.type = "ip"
 
+class ByteField(NumericFieldAbstract):
+    def __init__(self, *args, **kwargs):
+        super(ByteField, self).__init__(*args, **kwargs)
+        self.type = "byte"
 
 class ShortField(NumericFieldAbstract):
     def __init__(self, *args, **kwargs):
@@ -564,6 +568,8 @@ def get_field(name, data, default="object", document_object_field=None, is_docum
         return BinaryField(name=name, **data)
     elif _type == "boolean":
         return BooleanField(name=name, **data)
+    elif _type == "byte":
+        return ByteField(name=name, **data)
     elif _type == "short":
         return ShortField(name=name, **data)
     elif _type == "integer":

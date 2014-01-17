@@ -36,8 +36,8 @@ class ElasticSearchModel(DotDict):
         self.__initialised = True
         if len(args) == 2 and isinstance(args[0], ES):
             item = args[1]
-            self.update(item.pop("_source", DotDict()))
-            self.update(item.pop("fields", {}))
+            self.update(item.get("_source", DotDict()))
+            self.update(item.get("fields", {}))
             self._meta = DotDict([(k.lstrip("_"), v) for k, v in item.items()])
             self._meta.parent = self.pop("_parent", None)
             self._meta.connection = args[0]

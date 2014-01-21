@@ -541,6 +541,13 @@ class QuerySearchTestCase(ESTestCase):
         score_boosted = resultset.hits[0]['_score']
         self.assertEqual(score*2, score_boosted)
 
+    def test_FunctionScoreQuery(self):
+
+        functions = [FunctionScoreQuery.BoostFunction(boost_factor=20, filter=TermFilter('uuid', '33333'))]
+        q = FunctionScoreQuery(functions=functions, score_mode=FunctionScoreQuery.ScoreModes.AVG)
+        resultset = self.conn.search(query=q, indices=self.index_name)
+
+        self.assertEqual(resultset.hits[0]['_score'], 20)
 
 if __name__ == "__main__":
     unittest.main()

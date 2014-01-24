@@ -24,7 +24,7 @@ def make_id(value):
     :return: a string
     """
     if isinstance(value, six.string_types):
-        value=value.encode("utf8", errors="ignore")
+        value=value.encode("utf8", "ignore")
     from hashlib import md5
     val = uuid.UUID(bytes=md5(value).digest(), version=4)
 

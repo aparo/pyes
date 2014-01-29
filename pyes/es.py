@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import six
-is_py3 = sys.version >= (3, 0)
 
 from datetime import date, datetime
 from decimal import Decimal
@@ -1577,5 +1576,5 @@ class ResultSetMulti(object):
 
         raise StopIteration
 
-    if not is_py3:
+    if six.PY2:
         next = __next__

@@ -1405,7 +1405,7 @@ class ResultSet(object):
         self._current_item += 1
         return self.model(self.connection, res)
 
-    if not is_py3:
+    if six.PY2:
         next = __next__
 
 

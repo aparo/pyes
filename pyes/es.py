@@ -1545,7 +1545,7 @@ class ResultSetMulti(object):
         return len(self._results_list or [])
 
     def __getitem__(self, val):
-        if not isinstance(val, (int, slice)):
+        if not isinstance(val, (int, long, slice)):
             raise TypeError('%s indices must be integers, not %s' % (
                 self.__class__.__name__, val.__class__.__name__))
 

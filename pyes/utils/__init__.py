@@ -14,7 +14,7 @@ import six
 __all__ = ['clean_string', "ESRange", "ESRangeOp", "string_b64encode", "string_b64decode", "make_path", "make_id"]
 
 def quote(value):
-    value = value.encode('utf8', errors='ignore') if isinstance(value,  six.string_types) else str(value)
+    value = value.encode('utf8', 'ignore') if isinstance(value,  six.string_types) else str(value)
     return _quote(value, safe='')
 
 def make_id(value):
@@ -24,7 +24,7 @@ def make_id(value):
     :return: a string
     """
     if isinstance(value, six.string_types):
-        value=value.encode("utf8", errors="ignore")
+        value=value.encode("utf8", "ignore")
     from hashlib import md5
     val = uuid.UUID(bytes=md5(value).digest(), version=4)
 

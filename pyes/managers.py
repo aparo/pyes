@@ -50,16 +50,8 @@ class Indices(object):
                          `alias` are the index and alias to add or remove.
 
         """
-        # body = {'actions': [{command: dict(index=index, alias=alias, **params)}
-        #                     for (command, index, alias, params) in commands]}
-        body = {}
-        for args in commands:
-            command = index = alias = params = None
-            if len(args) == 3:
-                command, index, alias = args
-            elif len(args) == 4:
-                command, index, alias, params = args
-            body['actions'][command] = dict(index=index, alias=alias, **params)
+        body = {'actions': [{command: dict(index=index, alias=alias, **params)}
+                            for (command, index, alias, params) in commands]}
         return self.conn._send_request('POST', "_aliases", body)
 
     def _get_alias_params(self, **kwargs):

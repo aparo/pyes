@@ -24,6 +24,7 @@ except ImportError:
     import json
 
 from . import logger
+from . import connection_http
 from .connection_http import connect as http_connect
 from .convert_errors import raise_if_error
 #from .decorators import deprecated
@@ -138,7 +139,8 @@ class ES(object):
                  basic_auth=None,
                  raise_on_bulk_item_failure=False,
                  document_object_field=None,
-                 bulker_class=ListBulker):
+                 bulker_class=ListBulker,
+                 cert_reqs='CERT_OPTIONAL'):
         """
         Init a es object.
         Servers can be defined in different forms:
@@ -203,6 +205,8 @@ class ES(object):
                                    raise_on_bulk_item_failure=raise_on_bulk_item_failure)
         self.bulker_class = bulker_class
         self._raise_on_bulk_item_failure = raise_on_bulk_item_failure
+
+        connection_http.CERT_REQS = cert_reqs
 
         self.info = {}  #info about the current server
         if encoder:

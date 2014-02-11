@@ -25,9 +25,11 @@ DEFAULT_SERVER = ("http", "127.0.0.1", 9200)
 
 POOLS = {}
 
+CERT_REQS = 'CERT_OPTIONAL'
+
 def get_pool():
     if not current_process() in POOLS:
-        POOLS[current_process()] = urllib3.PoolManager()
+        POOLS[current_process()] = urllib3.PoolManager(cert_reqs=CERT_REQS)
     return POOLS[current_process()]
 
 def update_connection_pool(maxsize=1):

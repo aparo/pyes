@@ -1543,3 +1543,159 @@ class CustomBoostFactorQuery(Query):
             data['boost_factor'] = float(self.boost_factor)
 
         return data
+
+
+class FunctionScoreQuery(Query):
+    """The functoin_score query exists since 0.90.4.
+    It replaces CustomScoreQuery and some other.
+    """
+
+    class FunctionScoreFunction(EqualityComparableUsingAttributeDictionary):
+
+        def serialize(self):
+            """Serialize the function to a structure using the query DSL."""
+            return {self._internal_name: self._serialize()}
+
+    class DecayFunction(FunctionScoreFunction):
+
+        def __init__(self, decay_function, field, origin, scale,  decay=None, offset=None, filter=None):
+
+            decay_functions = ["gauss", "exp", "linear"]
+            if decay_function not in decay_functions:
+                raise RuntimeError("The decay_function  %s is not allowed" % decay_function)
+
+            self.__internal_name = decay_function
+            self.decay_function = decay_function
+            self.field = field
+            self.origin = origin
+            self.scale = scale
+            self.decay = decay
+            self.filter = filter
+            self.offset = offset
+
+        def _serialize(self):
+
+            field_data = {'origin': self.origin, 'scale': self.scale}
+            if decay:
+                field_data['decay'] = decay
+
+            if offset:
+                field_data['offset'] = offset
+
+            return {self.field: field_data }
+
+    class BoostFunction(FunctionScoreFunction):
+        """Boost by a factor"""
+        _internal_name = 'boost_factor'
+
+        def __init__(self, boost_factor, filter=None):
+            self.boost_factor = boost_factor
+            self.filter = filter
+
+        def serialize(self):
+            return {
+                self._internal_name: self.boost_factor,
+                'filter': self.filter.serialize()
+            }
+
+    class RandomFunction(FunctionScoreFunction):
+        """Is a random boost based on a seed value"""
+        _internal_name = 'random_Score'
+
+        def __init__(self, seed, filter=None):
+            self.seed = seed
+            self.filter = filter
+
+        def _serialize(self):
+            data = {'seed': self.seed}
+            if self.filter:
+                data['filter'] = self.filter.serialize()
+            return data
+
+
+    class ScriptScoreFunction(FunctionScoreFunction):
+        """Scripting function with params and a script.
+        Also possible to switch the script language"""
+        _interna_name = "script_score"
+
+        def __init__(self, script=None, params=None, lang='', filter=None):
+
+            self.filter = filter
+            self.params = params
+            self.lang = lang
+            self.script = script
+
+        def serialize(self):
+            data = {}
+            if self.filter:
+                data['filter'] = self.filter.serialize()
+            if self.params is not None:
+                data['params'] = self.params
+            if self.script is not None:
+                data['script'] = self.script
+            if self.lang is not None:
+                data['lang'] = self.lang
+            return data
+
+    class ScoreModes(object):
+        """Some helper object to show the possibility of
+        score_mode"""
+        MULTIPLY = "multiply"
+        SUM = "sum"
+        AVG = "avg"
+        FIRST = "first"
+        MAX = "max"
+        MIN = "min"
+
+    class BoostModes(object):
+        """Some helper object to show the possibility of
+        boost_mode"""
+        MULTIPLY = "multiply"
+        REPLACE = "replace"
+        SUM = "sum"
+        AVG = "avg"
+        MAX = "max"
+        MIN = "min"
+
+    _internal_name = "function_score"
+
+    def __init__(
+            self, functions=None, query=None, filter=None, max_boost=None, boost=None,
+            score_mode=None, boost_mode=None, params=None):
+
+        if not functions:
+            functions = list()
+
+        if max_boost:
+            self.max_boost = int(max_boost)
+
+        self.score_mode = score_mode
+        self.boost_mode = boost_mode
+        self.params = params
+        self.functions = functions
+        self.filter = filter
+        self.query = query
+
+    def _serialize(self):
+
+        data = {}
+        if self.params:
+            data['params'] = dict(self.params)
+        if self.functions:
+            data['functions'] = []
+        for function in self.functions:
+            data['functions'].append(function.serialize())
+
+        if self.score_mode:
+            data['score_mode'] = self.score_mode
+
+        if self.boost_mode:
+            data['boost_mode'] = self.boost_mode
+
+        if self.query:
+            data['query'] = self.query.serialize()
+
+        if self.filter:
+            data['filter'] = self.filter.serialize()
+
+        return data

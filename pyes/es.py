@@ -1,17 +1,15 @@
+# -*- coding: utf-8 -*-
 
-import sys
-is_py3 = sys.version >= (3, 0)
+import six
 
 from datetime import date, datetime
 from decimal import Decimal
-
-if is_py3:
-    from urllib.parse import urlencode
-    from urllib.parse import urlunsplit, urlparse
-    #import urllib.request, urllib.parse, urllib.error
+if six.PY2:
+    from six.moves.urllib.parse import urlencode, urlunsplit, urlparse
 else:
-    from urlparse import urlparse, urlsplit, urlunsplit
-    from urllib import urlencode
+    from urllib.parse import urlencode, urlunsplit, urlparse
+#    import urllib.request, urllib.parse, urllib.error
+
 
 import base64
 import codecs
@@ -43,8 +41,6 @@ try:
 except ImportError:
     thrift_connect = None
     from .fakettypes import Method, RestRequest
-
-import six
 
 def file_to_attachment(filename, filehandler=None):
     """
@@ -1413,8 +1409,9 @@ class ResultSet(object):
         self._current_item += 1
         return self.model(self.connection, res)
 
-    if not is_py3:
+    if six.PY2:
         next = __next__
+
 
     def __iter__(self):
         self.iterpos = 0
@@ -1583,5 +1580,5 @@ class ResultSetMulti(object):
 
         raise StopIteration
 
-    if not is_py3:
+    if six.PY2:
         next = __next__

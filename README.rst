@@ -31,54 +31,16 @@ Features
 Changelog
 =========
 
-v. 0.19.1:
+v. 0.90.1:
 
-    Renamed field_name in name in ScriptFields
+    Bug Fix releases for some python3 introduced regression
 
-    Fixed ResultSet slicing.
+v. 0.90.0:
 
-    Create Manager to manage API action grouped as Elasticsearch.
+    A lot of improvements.
 
-    Moved tests outside pyes code dir. Update references. Upgraded test elasticsearch to 0.19.9.
-
-    Added documentation links
-
-    Got docs building on readthedocs.org (Wraithan - Chris McDonald)
-
-    Renamed scroll_timeout in scroll
-
-    Moved FacetFactory include
-
-    Renamed field_name in name in ScriptFields
-
-    Using only thrift_connect to manage thrift existence
-
-    Added model and scan to query
-
-    Added exists document call
-
-    Added routing to delete
-
-    Removed minimum_number_should_match parameter.It is not supported by elastic search and causes errors when using a BoolFilter. (Jernej Kos)
-
-    Improved speed json conversion of datetime values
-
-    Add boost argument to TextQuery
-
-    Added boost argument to TextQuery. (Jernej Kos)
-
-    Go back to urllib3 instead of requests. (gsakkis)
-
-    Enhance Twitter River class. (thanks @dendright)
-
-    Add OAuth authentication and filtering abilities to Twitter River. (Jack Riches)
-
-    HasChildFilter expects a Query. (gsakkis)
-
-    Fixed _parent being pulled from _meta rather than the instance itself. (merrellb)
-
-    Add support of all_terms to TermFacet. (mouad)
-
+    Python 3 support.
+    
 
 
 TODO

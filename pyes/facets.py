@@ -312,7 +312,7 @@ class TermFacet(Facet):
 
     def __init__(self, field=None, fields=None, name=None, size=10, order=None,
                  exclude=None, regex=None, regex_flags="DOTALL", script=None,
-                 all_terms=None, **kwargs):
+                 lang=None, all_terms=None, **kwargs):
         super(TermFacet, self).__init__(name or field, **kwargs)
         self.field = field
         self.fields = fields
@@ -322,6 +322,7 @@ class TermFacet(Facet):
         self.regex = regex
         self.regex_flags = regex_flags
         self.script = script
+        self.lang = lang
         self.all_terms = all_terms
 
     def _serialize(self):
@@ -336,6 +337,8 @@ class TermFacet(Facet):
 
         if self.script:
             data['script'] = self.script
+            if self.lang:
+                data['lang'] = self.lang
         if self.size is not None:
             data['size'] = self.size
         if self.order:

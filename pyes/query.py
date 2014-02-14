@@ -137,7 +137,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
     def __init__(self, query=None, filter=None, fields=None, start=None,
                  size=None, highlight=None, sort=None, explain=False, facet=None, rescore=None,
                  window_size=None, version=None, track_scores=None, script_fields=None, index_boost=None,
-                 min_score=None, stats=None, bulk_read=None, partial_fields=None):
+                 min_score=None, stats=None, bulk_read=None, partial_fields=None, _source=None):
         """
         fields: if is [], the _source is not returned
         """
@@ -161,6 +161,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
         self.stats = stats
         self.bulk_read = bulk_read
         self.partial_fields = partial_fields
+        self._source = _source
 
     def get_facet_factory(self):
         """
@@ -222,6 +223,8 @@ class Search(EqualityComparableUsingAttributeDictionary):
             res['stats'] = self.stats
         if self.partial_fields:
             res['partial_fields'] = self.partial_fields
+        if self._source:
+            res['_source'] = self._source
         return res
 
     @property

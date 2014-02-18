@@ -1277,7 +1277,6 @@ class ResultSet(object):
     def facets(self):
         if self._results is None:
             self._do_search()
-            self.fix_keys()
         return self._facets
 
     def fix_facets(self):
@@ -1388,7 +1387,7 @@ class ResultSet(object):
         if self._results is None:
             self._do_search()
         if "_scroll_id" in self._results and self._total != 0 and self._current_item == 0 and len(
-            self._results["hits"].get("hits", [])) == 0:
+                    self._results["hits"].get("hits", [])) == 0:
             self._do_search()
         if len(self.hits) == 0:
             raise StopIteration

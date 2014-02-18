@@ -382,20 +382,21 @@ class TermStatsFacet(Facet):
             if self.order not in self.ORDER_VALUES:
                 raise RuntimeError("Invalid order value:%s" % self.order)
             data['order'] = self.order
+
         if self.key_field:
             data['key_field'] = self.key_field
-            if self.value_field:
-                data['value_field'] = self.value_field
-            else:
-                raise RuntimeError("Invalid key_field: value_field required")
-        elif self.key_script:
-            data['key_script'] = self.key_script
-            if self.value_script:
-                data['value_script'] = self.value_script
-            else:
-                raise RuntimeError("Invalid key_script: value_script required")
+        else:
+            raise RuntimeError("key_field required")
+
+        if self.value_field:
+            data['value_field'] = self.value_field
+        elif self.value_script:
+            data['value_script'] = self.value_script 
             if self.params:
                 data['params'] = self.params
+        else:
+            raise RuntimeError("Invalid value: value_field OR value_script required")
+
         return data
 
 

@@ -501,7 +501,7 @@ class ES(object):
         if exists and not mappings and not clear:
             return
         if exists and clear:
-            self.indices.indices.delete_index(index)
+            self.indices.delete_index(index)
             exists = False
 
         if exists:

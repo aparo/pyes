@@ -220,17 +220,17 @@ def _is_bulk_item_ok(item):
         else:
             return False
     if "index" in item:
-        if 'ok' in item['create']:
+        if 'ok' in item['index']:
             return True
-        elif "status" in item['create']:
+        elif "status" in item['index']:
             return item["index"]['status'] in [200,201]
         else:
             return False
     elif "delete" in item:
         if 'ok' in item['delete']:
             return True
-        elif 'status' in item['create']:
-            return item['index']['stats'] in [200,201]
+        elif 'status' in item['delete']:
+            return item['delete']['stats'] in [200,201]
         else:
             return False
     else:

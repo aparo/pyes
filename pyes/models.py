@@ -230,7 +230,7 @@ def _is_bulk_item_ok(item):
         if 'ok' in item['delete']:
             return True
         elif 'status' in item['delete']:
-            return item['delete']['stats'] in [200,201]
+            return item['delete']['status'] in [200,201]
         else:
             return False
     else:

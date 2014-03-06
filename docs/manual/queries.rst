@@ -75,7 +75,7 @@ TIP: Remember to refresh the index before query to obtain latest insert document
    >>> conn.refresh()
 
 
-Quering
+Querying
 -------
 
 You can query ES with :

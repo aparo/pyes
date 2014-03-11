@@ -105,20 +105,21 @@ class ESRange(EqualityComparableUsingAttributeDictionary):
 
 
 class ESRangeOp(ESRange):
-    def __init__(self, field, op, value, boost=None):
+    def __init__(self, field, op1, value1, op2=None, value2=None, boost=None):
         from_value = to_value = include_lower = include_upper = None
-        if op == "gt":
-            from_value = value
-            include_lower = False
-        elif op == "gte":
-            from_value = value
-            include_lower = True
-        if op == "lt":
-            to_value = value
-            include_upper = False
-        elif op == "lte":
-            to_value = value
-            include_upper = True
+        for op, value in ((op1, value1), (op2, value2)):
+            if op == "gt":
+                from_value = value
+                include_lower = False
+            elif op == "gte":
+                from_value = value
+                include_lower = True
+            if op == "lt":
+                to_value = value
+                include_upper = False
+            elif op == "lte":
+                to_value = value
+                include_upper = True
         super(ESRangeOp, self).__init__(field, from_value, to_value,
             include_lower, include_upper, boost)
 

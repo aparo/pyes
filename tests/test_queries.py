@@ -363,6 +363,8 @@ class QuerySearchTestCase(ESTestCase):
             ESRangeOp("foo", "gt", 5))
         self.assertEqual(ESRangeOp("bar", "lt", 6),
             ESRangeOp("bar", "lt", 6))
+        self.assertEqual(ESRangeOp("bar", "gt", 3, "lt", 6),
+            ESRangeOp("bar", "lt", 6, "gt", 3))
 
     def test_RawFilter_dict(self):
         filter_ = dict(ids=dict(type="my_type", values=["1", "4", "100"]))

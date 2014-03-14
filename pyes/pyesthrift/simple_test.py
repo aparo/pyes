@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 from __future__ import absolute_import
+from __future__ import print_function
+
 import sys
 import pprint
 from urlparse import urlparse
@@ -26,6 +28,6 @@ client = Client(protocol)
 transport.open()
 
 res = RestRequest(0, "/test-index/test-type/1", {}, {})
-print client.execute(res)
+print(client.execute(res))
 
 transport.close()

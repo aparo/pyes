@@ -209,7 +209,7 @@ class ES(object):
             self.encoder = encoder
         if decoder:
             self.decoder = decoder
-        if isinstance(server, str):
+        if isinstance(server, basestring):
             self.servers = [server]
         elif isinstance(server, tuple):
             self.servers = [server]
@@ -266,7 +266,7 @@ class ES(object):
                 _type, host, port = server
                 server = urlparse('%s://%s:%s' % (_type, host, port))
                 check_format(server)
-            elif isinstance(server, str):
+            elif isinstance(server, basestring):
                 if server.startswith(("thrift:", "http:", "https:")):
                     server = urlparse(server)
                     check_format(server)

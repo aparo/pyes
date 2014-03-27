@@ -7,8 +7,8 @@ from datetime import date, datetime
 from decimal import Decimal
 
 if is_py3:
-from urllib.parse import urlencode
-from urllib.parse import urlunsplit, urlparse
+    from urllib.parse import urlencode
+    from urllib.parse import urlunsplit, urlparse
     #import urllib.request, urllib.parse, urllib.error
 else:
     from urlparse import urlparse, urlsplit, urlunsplit

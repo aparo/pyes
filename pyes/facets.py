@@ -312,7 +312,7 @@ class TermFacet(Facet):
 
     def __init__(self, field=None, fields=None, name=None, size=10, order=None,
                  exclude=None, regex=None, regex_flags="DOTALL", script=None,
-                 all_terms=None, **kwargs):
+                 lang=None, all_terms=None, **kwargs):
         super(TermFacet, self).__init__(name or field, **kwargs)
         self.field = field
         self.fields = fields
@@ -322,6 +322,7 @@ class TermFacet(Facet):
         self.regex = regex
         self.regex_flags = regex_flags
         self.script = script
+        self.lang = lang
         self.all_terms = all_terms
 
     def _serialize(self):
@@ -336,6 +337,8 @@ class TermFacet(Facet):
 
         if self.script:
             data['script'] = self.script
+            if self.lang:
+                data['lang'] = self.lang
         if self.size is not None:
             data['size'] = self.size
         if self.order:
@@ -379,20 +382,21 @@ class TermStatsFacet(Facet):
             if self.order not in self.ORDER_VALUES:
                 raise RuntimeError("Invalid order value:%s" % self.order)
             data['order'] = self.order
+
         if self.key_field:
             data['key_field'] = self.key_field
-            if self.value_field:
-                data['value_field'] = self.value_field
-            else:
-                raise RuntimeError("Invalid key_field: value_field required")
-        elif self.key_script:
-            data['key_script'] = self.key_script
-            if self.value_script:
-                data['value_script'] = self.value_script
-            else:
-                raise RuntimeError("Invalid key_script: value_script required")
+        else:
+            raise RuntimeError("key_field required")
+
+        if self.value_field:
+            data['value_field'] = self.value_field
+        elif self.value_script:
+            data['value_script'] = self.value_script 
             if self.params:
                 data['params'] = self.params
+        else:
+            raise RuntimeError("Invalid value: value_field OR value_script required")
+
         return data
 
 

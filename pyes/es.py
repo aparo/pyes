@@ -1,18 +1,15 @@
 # -*- coding: utf-8 -*-
 
-import sys
-is_py3 = sys.version >= (3, 0)
+import six
 
 from datetime import date, datetime
 from decimal import Decimal
-
-if is_py3:
-from urllib.parse import urlencode
-from urllib.parse import urlunsplit, urlparse
-    #import urllib.request, urllib.parse, urllib.error
+if six.PY2:
+    from six.moves.urllib.parse import urlencode, urlunsplit, urlparse
 else:
-    from urlparse import urlparse, urlsplit, urlunsplit
-    from urllib import urlencode
+    from urllib.parse import urlencode, urlunsplit, urlparse
+#    import urllib.request, urllib.parse, urllib.error
+
 
 import base64
 import codecs
@@ -25,6 +22,7 @@ except ImportError:
     import json
 
 from . import logger
+from . import connection_http
 from .connection_http import connect as http_connect
 from .convert_errors import raise_if_error
 #from .decorators import deprecated
@@ -139,7 +137,8 @@ class ES(object):
                  basic_auth=None,
                  raise_on_bulk_item_failure=False,
                  document_object_field=None,
-                 bulker_class=ListBulker):
+                 bulker_class=ListBulker,
+                 cert_reqs='CERT_OPTIONAL'):
         """
         Init a es object.
         Servers can be defined in different forms:
@@ -205,12 +204,14 @@ class ES(object):
         self.bulker_class = bulker_class
         self._raise_on_bulk_item_failure = raise_on_bulk_item_failure
 
+        connection_http.CERT_REQS = cert_reqs
+
         self.info = {}  #info about the current server
         if encoder:
             self.encoder = encoder
         if decoder:
             self.decoder = decoder
-        if isinstance(server, str):
+        if isinstance(server, basestring):
             self.servers = [server]
         elif isinstance(server, tuple):
             self.servers = [server]
@@ -267,7 +268,7 @@ class ES(object):
                 _type, host, port = server
                 server = urlparse('%s://%s:%s' % (_type, host, port))
                 check_format(server)
-            elif isinstance(server, str):
+            elif isinstance(server, basestring):
                 if server.startswith(("thrift:", "http:", "https:")):
                     server = urlparse(server)
                     check_format(server)
@@ -502,7 +503,7 @@ class ES(object):
         if exists and not mappings and not clear:
             return
         if exists and clear:
-            self.indices.indices.delete_index(index)
+            self.indices.delete_index(index)
             exists = False
 
         if exists:
@@ -1381,7 +1382,6 @@ class ResultSet(object):
     def facets(self):
         if self._results is None:
             self._do_search()
-            self.fix_keys()
         return self._facets
 
     def fix_facets(self):
@@ -1513,8 +1513,9 @@ class ResultSet(object):
         self._current_item += 1
         return self.model(self.connection, res)
 
-    if not is_py3:
-        next = __next__
+    if six.PY2:
+    next=__next__
+
 
     def __iter__(self):
         self.iterpos = 0
@@ -1566,10 +1567,6 @@ class EmptyResultSet(object):
 
     def __iter__(self):
         return self
-
-    if not is_py3:
-        next = __next__
-
 
 class ResultSetMulti(object):
     def __init__(self, connection, searches, indices_list=None,
@@ -1687,5 +1684,5 @@ class ResultSetMulti(object):
 
         raise StopIteration
 
-    if not is_py3:
+    if six.PY2:
         next = __next__

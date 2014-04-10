@@ -430,6 +430,28 @@ class GeoPolygonFilter(Filter):
         return {self.field: {"points": self.points}}
 
 
+class GeoShapeFilter(Filter):
+    """http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-geo-shape-filter.html"""
+
+    _internal_name = 'geo_shape'
+
+    def __init__(self, field=None, coordinates=None, type=None, **kwargs):
+        super(GeoShapeFilter, self).__init__(**kwargs)
+        self.field = field
+        self.coordinates = coordinates
+        self.type = type
+
+    def _serialize(self):
+        return {
+            self.field: {
+                'shape': {
+                    'type': self.type,
+                    'coordinates': self.coordinates
+                }
+            }
+        }
+
+
 class MatchAllFilter(Filter):
     """A filter that matches on all documents"""
 

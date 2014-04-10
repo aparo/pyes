@@ -36,7 +36,7 @@ class FilterList(Filter):
 
     def _serialize(self):
         if not self.filters:
-            raise RuntimeError("A least a filter must be declared")
+            raise RuntimeError("At least one filter must be declared")
         serialized = [filter.serialize() for filter in self.filters]
         if self._extra_values:
             serialized = {"filters": serialized}

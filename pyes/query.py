@@ -5,6 +5,7 @@ from .exceptions import InvalidQuery, InvalidParameterQuery, QueryError, \
     ScriptFieldsError
 from .sort import SortFactory
 from .facets import FacetFactory
+from .aggs import AggFactory
 from .filters import ANDFilter, Filter
 from .highlight import HighLighter
 from .scriptfields import ScriptFields
@@ -135,7 +136,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
     """
 
     def __init__(self, query=None, filter=None, fields=None, start=None,
-                 size=None, highlight=None, sort=None, explain=False, facet=None, rescore=None,
+                 size=None, highlight=None, sort=None, explain=False, facet=None, agg=None, rescore=None,
                  window_size=None, version=None, track_scores=None, script_fields=None, index_boost=None,
                  min_score=None, stats=None, bulk_read=None, partial_fields=None, _source=None):
         """
@@ -151,6 +152,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
         self.sort = sort or SortFactory()
         self.explain = explain
         self.facet = facet or FacetFactory()
+        self.agg = agg or AggFactory()
         self.rescore = rescore
         self.window_size = window_size
         self.version = version
@@ -169,6 +171,12 @@ class Search(EqualityComparableUsingAttributeDictionary):
         """
         return self.facet
 
+    def get_agg_factory(self):
+        """
+        Returns the agg factory
+        """
+        return self.agg
+
     def serialize(self):
         """Serialize the search to a structure as passed for a search body."""
         res = {}
@@ -183,6 +191,8 @@ class Search(EqualityComparableUsingAttributeDictionary):
             res['filter'] = self.filter.serialize()
         if self.facet.facets:
             res['facets'] = self.facet.serialize()
+        if self.agg.aggs:
+            res['aggs'] = self.agg.serialize()
         if self.rescore:
             res['rescore'] = self.rescore.serialize()
         if self.window_size:

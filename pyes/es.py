@@ -1192,6 +1192,7 @@ class ResultSet(object):
         self._max_score = None
         self.valid = False
         self._facets = {}
+        self._aggs = {}
         self._hits = []
         self.auto_fix_keys = auto_fix_keys
         self.auto_clean_highlight = auto_clean_highlight
@@ -1243,6 +1244,7 @@ class ResultSet(object):
 
     def _post_process_query(self):
             self._facets = self._results.get('facets', {})
+            self._aggs = self._results.get('aggregations', {})
             if 'hits' in self._results:
                 self.valid = True
                 self._hits = self._results['hits']['hits']
@@ -1279,6 +1281,12 @@ class ResultSet(object):
             self._do_search()
         return self._facets
 
+    @property
+    def aggs(self):
+        if self._results is None:
+            self._do_search()
+        return self._aggs
+
     def fix_facets(self):
         """
         This function convert date_histogram facets to datetime
@@ -1288,6 +1296,21 @@ class ResultSet(object):
             _type = facets[key].get("_type", "unknown")
             if _type == "date_histogram":
                 for entry in facets[key].get("entries", []):
+                    for k, v in list(entry.items()):
+                        if k in ["count", "max", "min", "total_count", "mean", "total"]:
+                            continue
+                        if not isinstance(entry[k], datetime):
+                            entry[k] = datetime.utcfromtimestamp(v / 1e3)
+
+    def fix_aggs(self):
+        """
+        This function convert date_histogram aggs to datetime
+        """
+        aggs = self.aggs
+        for key in list(aggs.keys()):
+            _type = aggs[key].get("_type", "unknown")
+            if _type == "date_histogram":
+                for entry in aggs[key].get("entries", []):
                     for k, v in list(entry.items()):
                         if k in ["count", "max", "min", "total_count", "mean", "total"]:
                             continue
@@ -1332,6 +1355,10 @@ class ResultSet(object):
             self._do_search()
         if name == "facets":
             return self._facets
+
+        elif name == "aggs":
+            return self._aggs
+
         elif name == "hits":
             return self._hits
 
@@ -1446,6 +1473,10 @@ class EmptyResultSet(object):
 
     @property
     def facets(self):
+        return {}
+
+    @property
+    def aggs(self):
         return {}
 
     def __len__(self):

@@ -15,6 +15,7 @@ import six
 from .es import ES
 from .filters import ANDFilter, ORFilter, NotFilter, Filter, TermsFilter, TermFilter, RangeFilter, ExistsFilter
 from .facets import Facet, TermFacet
+from .aggs import Agg, TermsAgg
 from .models import ElasticSearchModel
 from .query import MatchAllQuery, BoolQuery, FilteredQuery, Search
 from .utils import ESRange
@@ -75,6 +76,7 @@ class QuerySet(object):
         self._queries = []
         self._filters = []
         self._facets = []
+        self._aggs = []
         self._ordering = []
         self._fields = [] #fields to load
         self._size=None
@@ -152,6 +154,9 @@ class QuerySet(object):
         if self._facets:
             for facet in self._facets:
                 query.facet.add(facet)
+        if self._aggs:
+            for agg in self._aggs:
+                query.agg.add(agg)
         if self._start is not None:
             query.start = self._start
         if self._size is not None:
@@ -477,6 +482,7 @@ class QuerySet(object):
     def values(self, *fields):
         search = self._build_search()
         search.facet.reset()
+        search.agg.reset()
         search.fields=fields
         return get_es_connection(self.es_url, self.es_kwargs).search(search, indices=self.index, doc_types=self.type)
 
@@ -490,6 +496,7 @@ class QuerySet(object):
         assert fields, "A least a field is required"
         search = self._build_search()
         search.facet.reset()
+        search.agg.reset()
         search.fields=fields
         if flat:
             return get_es_connection(self.es_url, self.es_kwargs).search(search, indices=self.index, doc_types=self.type,
@@ -512,11 +519,14 @@ class QuerySet(object):
         search.facet.reset()
         search.facet.add_date_facet(name=field_name.replace("__", "."),
                  field=field_name, interval=kind)
+        search.agg.reset()
+        search.agg.add_date_agg(name=field_name.replace("__", "."),
+                 field=field_name, interval=kind)
         search.size=0
         resulset = get_es_connection(self.es_url, self.es_kwargs).search(search, indices=self.index, doc_types=self.type)
-        resulset.fix_facets()
+        resulset.fix_aggs()
         entries = []
-        for val in resulset.facets.get(field_name.replace("__", ".")).get("entries", []):
+        for val in resulset.aggs.get(field_name.replace("__", ".")).get("entries", []):
             if "time" in val:
                 entries.append(val["time"])
         if order=="ASC":
@@ -639,6 +649,9 @@ class QuerySet(object):
     def facet(self, *args, **kwargs):
         return self.annotate(*args, **kwargs)
 
+    def agg(self, *args, **kwargs):
+        return self.annotate(*args, **kwargs)
+
     def annotate(self, *args, **kwargs):
         """
         Return a query set in which the returned objects have been annotated
@@ -651,6 +664,10 @@ class QuerySet(object):
                 obj._facets.append(arg)
             elif isinstance(arg, six.string_types):
                 obj._facets.append(TermFacet(arg.replace("__", ".")))
+            elif isinstance(arg, Agg):
+                obj._aggs.append(arg)
+            elif isinstance(arg, six.string_types):
+                obj._facets.append(TermFacet(arg.replace("__", ".")))
             else:
                 raise NotImplementedError("invalid type")
 
@@ -658,6 +675,7 @@ class QuerySet(object):
         # Add the aggregates/facet to the query
         for name, field in kwargs.items():
             obj._facets.append(TermFacet(field=field.replace("__", "."), name=name.replace("__", ".")))
+            obj._aggs.append(TermsAgg(field=field.replace("__", "."), name=name.replace("__", ".")))
         return obj
 
     def order_by(self, *field_names):
@@ -779,6 +797,14 @@ class QuerySet(object):
             len(self)
         return self._result_cache.facets
 
+    @property
+    def aggs(self):
+        if len(self._aggs)==0:
+            return {}
+        if self._result_cache is None:
+            len(self)
+        return self._result_cache.aggs
+
     ###################
     # PRIVATE METHODS #
     ###################
@@ -792,6 +818,7 @@ class QuerySet(object):
         c._queries=list(self._queries)
         c._filters=list(self._filters)
         c._facets=list(self._facets)
+        c._aggs=list(self._aggs)
         c._fields=list(self._fields)
         c._ordering=list(self._ordering)
         c._size=self._size

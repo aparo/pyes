@@ -10,9 +10,19 @@
 
 --
 
-pyes is a connector to use elasticsearch from python.
+pyes is a pythonic way to use ElasticSearch since 2010. 
 
 This version requires elasticsearch 0.90 or above.
+
+We are working to provide full support to ElasticSearch 1.0.0 (check the develop branch: we are using the git-flow workflow) that'll have:
+
+- connection based on Official ElasticSearch cliient
+- full support to ElasticSearch 1.0.0 (removed old support due imcompatibility with old version of ES)
+- aggregation support
+- migration from multi_field to >field>.fields
+- refactory of old code to be more pythonic
+- performance improvements
+
 
 Features
 ========

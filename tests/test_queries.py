@@ -363,6 +363,8 @@ class QuerySearchTestCase(ESTestCase):
             ESRangeOp("foo", "gt", 5))
         self.assertEqual(ESRangeOp("bar", "lt", 6),
             ESRangeOp("bar", "lt", 6))
+        self.assertEqual(ESRangeOp("bar", "gt", 3, "lt", 6),
+            ESRangeOp("bar", "lt", 6, "gt", 3))
 
     def test_RawFilter_dict(self):
         filter_ = dict(ids=dict(type="my_type", values=["1", "4", "100"]))
@@ -541,6 +543,13 @@ class QuerySearchTestCase(ESTestCase):
         score_boosted = resultset.hits[0]['_score']
         self.assertEqual(score*2, score_boosted)
 
+    def test_FunctionScoreQuery(self):
+
+        functions = [FunctionScoreQuery.BoostFunction(boost_factor=20, filter=TermFilter('uuid', '33333'))]
+        q = FunctionScoreQuery(functions=functions, score_mode=FunctionScoreQuery.ScoreModes.AVG)
+        resultset = self.conn.search(query=q, indices=self.index_name)
+
+        self.assertEqual(resultset.hits[0]['_score'], 20)
 
 if __name__ == "__main__":
     unittest.main()

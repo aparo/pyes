@@ -25,6 +25,7 @@ except ImportError:
     import json
 
 from . import logger
+from . import connection_http
 from .connection_http import connect as http_connect
 from .convert_errors import raise_if_error
 #from .decorators import deprecated
@@ -139,7 +140,8 @@ class ES(object):
                  basic_auth=None,
                  raise_on_bulk_item_failure=False,
                  document_object_field=None,
-                 bulker_class=ListBulker):
+                 bulker_class=ListBulker,
+                 cert_reqs='CERT_OPTIONAL'):
         """
         Init a es object.
         Servers can be defined in different forms:
@@ -205,12 +207,14 @@ class ES(object):
         self.bulker_class = bulker_class
         self._raise_on_bulk_item_failure = raise_on_bulk_item_failure
 
+        connection_http.CERT_REQS = cert_reqs
+
         self.info = {}  #info about the current server
         if encoder:
             self.encoder = encoder
         if decoder:
             self.decoder = decoder
-        if isinstance(server, str):
+        if isinstance(server, basestring):
             self.servers = [server]
         elif isinstance(server, tuple):
             self.servers = [server]
@@ -267,7 +271,7 @@ class ES(object):
                 _type, host, port = server
                 server = urlparse('%s://%s:%s' % (_type, host, port))
                 check_format(server)
-            elif isinstance(server, str):
+            elif isinstance(server, basestring):
                 if server.startswith(("thrift:", "http:", "https:")):
                     server = urlparse(server)
                     check_format(server)
@@ -502,7 +506,7 @@ class ES(object):
         if exists and not mappings and not clear:
             return
         if exists and clear:
-            self.indices.indices.delete_index(index)
+            self.indices.delete_index(index)
             exists = False
 
         if exists:
@@ -1296,6 +1300,7 @@ class ResultSet(object):
         self._max_score = None
         self.valid = False
         self._facets = {}
+        self._aggs = {}
         self._hits = []
         self.auto_fix_keys = auto_fix_keys
         self.auto_clean_highlight = auto_clean_highlight
@@ -1347,6 +1352,7 @@ class ResultSet(object):
 
     def _post_process_query(self):
             self._facets = self._results.get('facets', {})
+            self._aggs = self._results.get('aggregations', {})
             if 'hits' in self._results:
                 self.valid = True
                 self._hits = self._results['hits']['hits']
@@ -1381,8 +1387,13 @@ class ResultSet(object):
     def facets(self):
         if self._results is None:
             self._do_search()
-            self.fix_keys()
         return self._facets
+
+    @property
+    def aggs(self):
+        if self._results is None:
+            self._do_search()
+        return self._aggs
 
     def fix_facets(self):
         """
@@ -1393,6 +1404,21 @@ class ResultSet(object):
             _type = facets[key].get("_type", "unknown")
             if _type == "date_histogram":
                 for entry in facets[key].get("entries", []):
+                    for k, v in list(entry.items()):
+                        if k in ["count", "max", "min", "total_count", "mean", "total"]:
+                            continue
+                        if not isinstance(entry[k], datetime):
+                            entry[k] = datetime.utcfromtimestamp(v / 1e3)
+
+    def fix_aggs(self):
+        """
+        This function convert date_histogram aggs to datetime
+        """
+        aggs = self.aggs
+        for key in list(aggs.keys()):
+            _type = aggs[key].get("_type", "unknown")
+            if _type == "date_histogram":
+                for entry in aggs[key].get("entries", []):
                     for k, v in list(entry.items()):
                         if k in ["count", "max", "min", "total_count", "mean", "total"]:
                             continue
@@ -1437,6 +1463,10 @@ class ResultSet(object):
             self._do_search()
         if name == "facets":
             return self._facets
+
+        elif name == "aggs":
+            return self._aggs
+
         elif name == "hits":
             return self._hits
 
@@ -1492,7 +1522,7 @@ class ResultSet(object):
         if self._results is None:
             self._do_search()
         if "_scroll_id" in self._results and self._total != 0 and self._current_item == 0 and len(
-            self._results["hits"].get("hits", [])) == 0:
+                    self._results["hits"].get("hits", [])) == 0:
             self._do_search()
         if len(self.hits) == 0:
             raise StopIteration
@@ -1512,6 +1542,7 @@ class ResultSet(object):
         self.iterpos += 1
         self._current_item += 1
         return self.model(self.connection, res)
+
 
     if not is_py3:
         next = __next__
@@ -1550,6 +1581,10 @@ class EmptyResultSet(object):
 
     @property
     def facets(self):
+        return {}
+
+    @property
+    def aggs(self):
         return {}
 
     def __len__(self):
@@ -1687,5 +1722,5 @@ class ResultSetMulti(object):
 
         raise StopIteration
 
-    if not is_py3:
+    if six.PY2:
         next = __next__

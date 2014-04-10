@@ -36,7 +36,7 @@ class FilterList(Filter):
 
     def _serialize(self):
         if not self.filters:
-            raise RuntimeError("A least a filter must be declared")
+            raise RuntimeError("At least one filter must be declared")
         serialized = [filter.serialize() for filter in self.filters]
         if self._extra_values:
             serialized = {"filters": serialized}
@@ -428,6 +428,28 @@ class GeoPolygonFilter(Filter):
 
     def _serialize(self):
         return {self.field: {"points": self.points}}
+
+
+class GeoShapeFilter(Filter):
+    """http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-geo-shape-filter.html"""
+
+    _internal_name = 'geo_shape'
+
+    def __init__(self, field=None, coordinates=None, type=None, **kwargs):
+        super(GeoShapeFilter, self).__init__(**kwargs)
+        self.field = field
+        self.coordinates = coordinates
+        self.type = type
+
+    def _serialize(self):
+        return {
+            self.field: {
+                'shape': {
+                    'type': self.type,
+                    'coordinates': self.coordinates
+                }
+            }
+        }
 
 
 class MatchAllFilter(Filter):

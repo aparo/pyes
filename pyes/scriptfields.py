@@ -3,6 +3,14 @@ from __future__ import absolute_import
 
 from .exceptions import ScriptFieldsError
 
+
+class ScriptField(object):
+    def __init__(self, script, lang="mvel", params=None):
+        self.script = script
+        self.lang = lang
+        self.params = params
+
+
 class ScriptFields(object):
     """
     This object create the script_fields definition

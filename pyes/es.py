@@ -1,15 +1,18 @@
 # -*- coding: utf-8 -*-
 
-import six
+import sys
+is_py3 = sys.version >= (3, 0)
 
 from datetime import date, datetime
 from decimal import Decimal
-if six.PY2:
-    from six.moves.urllib.parse import urlencode, urlunsplit, urlparse
-else:
-    from urllib.parse import urlencode, urlunsplit, urlparse
-#    import urllib.request, urllib.parse, urllib.error
 
+if is_py3:
+    from urllib.parse import urlencode
+    from urllib.parse import urlunsplit, urlparse
+    #import urllib.request, urllib.parse, urllib.error
+else:
+    from urlparse import urlparse, urlsplit, urlunsplit
+    from urllib import urlencode
 
 import base64
 import codecs
@@ -41,6 +44,8 @@ try:
 except ImportError:
     thrift_connect = None
     from .fakettypes import Method, RestRequest
+
+import six
 
 def file_to_attachment(filename, filehandler=None):
     """
@@ -1154,6 +1159,8 @@ class ES(object):
         return json.dumps(serializable.serialize(), cls=self.encoder)
 
     def _encode_query(self, query):
+        from .query import Query
+
         if isinstance(query, Query):
             query = query.serialize()
         if isinstance(query, dict):
@@ -1162,6 +1169,107 @@ class ES(object):
         raise InvalidQuery("`query` must be Query or dict instance, not %s"
                            % query.__class__)
 
+class ResultSetList(object):
+    def __init__(self, items, model=None):
+        """
+        results: an es query results dict
+        fix_keys: remove the "_" from every key, useful for django views
+        clean_highlight: removed empty highlight
+        search: a Search object.
+        """
+
+        self.items = items
+        self.model = model or self.connection.model
+        self.iterpos = 0  #keep track of iterator position
+        self._current_item = 0
+
+    @property
+    def total(self):
+        return len(self.items)
+
+    @property
+    def facets(self):
+        return {}
+
+    def __len__(self):
+        return len(self.items)
+
+    def count(self):
+        return len(self.items)
+
+    def __getattr__(self, name):
+        if name == "facets":
+            return {}
+        elif name == "hits":
+            return self.items
+
+        # elif name in self._results:
+        #     #we manage took, timed_out, _shards
+        #     return self._results[name]
+        #
+        # elif name == "shards" and "_shards" in self._results:
+        #     #trick shards -> _shards
+        #     return self._results["_shards"]
+        # return self._results['hits'][name]
+        return None
+
+    def __getitem__(self, val):
+        if not isinstance(val, (int, long, slice)):
+            raise TypeError('%s indices must be integers, not %s' % (
+                self.__class__.__name__, val.__class__.__name__))
+
+        def get_start_end(val):
+            if isinstance(val, slice):
+                start = val.start
+                if not start:
+                    start = 0
+                end = val.stop or len(self.items)
+                if end < 0:
+                    end = len(self.items) + end
+                if end > len(self.items):
+                    end = len(self.items)
+                return start, end
+            return val, val + 1
+
+
+        start, end = get_start_end(val)
+
+        if not isinstance(val, slice):
+            if len(self.items) == 1:
+                return self.items[0]
+            raise IndexError
+        return [hit for hit in self.items[start:end]]
+
+
+    def __next__(self):
+
+        if len(self.items) == self.iterpos:
+            raise StopIteration
+        res = self.items[self.iterpos]
+        self.iterpos += 1
+        return res
+
+    def __iter__(self):
+        self.iterpos = 0
+        self._current_item = 0
+        return self
+
+    def _search_raw(self, start=None, size=None):
+
+        if start is None and size is None:
+            query_params = self.query_params
+        else:
+            query_params = dict(self.query_params)
+            if start is not None:
+                query_params["from"] = start
+            if size is not None:
+                query_params["size"] = size
+
+        return self.connection.search_raw(self.search, indices=self.indices,
+                                          doc_types=self.doc_types, **query_params)
+
+    if not is_py3:
+        next = __next__
 
 class ResultSet(object):
 
@@ -1372,7 +1480,7 @@ class ResultSet(object):
         return self._results['hits'][name]
 
     def __getitem__(self, val):
-        if not isinstance(val, (int, slice)):
+        if not isinstance(val, (int, long, slice)):
             raise TypeError('%s indices must be integers, not %s' % (
                 self.__class__.__name__, val.__class__.__name__))
 
@@ -1435,9 +1543,9 @@ class ResultSet(object):
         self._current_item += 1
         return self.model(self.connection, res)
 
-    if six.PY2:
-        next = __next__
 
+    if not is_py3:
+        next = __next__
 
     def __iter__(self):
         self.iterpos = 0
@@ -1493,6 +1601,10 @@ class EmptyResultSet(object):
 
     def __iter__(self):
         return self
+
+    if not is_py3:
+        next = __next__
+
 
 class ResultSetMulti(object):
     def __init__(self, connection, searches, indices_list=None,
@@ -1576,7 +1688,7 @@ class ResultSetMulti(object):
         return len(self._results_list or [])
 
     def __getitem__(self, val):
-        if not isinstance(val, (int, slice)):
+        if not isinstance(val, (int, long, slice)):
             raise TypeError('%s indices must be integers, not %s' % (
                 self.__class__.__name__, val.__class__.__name__))
 

@@ -23,13 +23,6 @@ from .utils.compat import integer_types
 
 REPR_OUTPUT_SIZE = 20
 
-class DoesNotExist(Exception):
-    pass
-
-
-class MultipleObjectsReturned(Exception):
-    pass
-
 
 def get_es_connection(es_url, es_kwargs):
     #import pdb;pdb.set_trace()

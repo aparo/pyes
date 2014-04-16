@@ -17,6 +17,16 @@ def quote(value):
     value = value.encode('utf8', 'ignore') if isinstance(value,  six.string_types) else str(value)
     return _quote(value, safe='')
 
+def plain_concepts_extractor(explanation):
+
+    if "description" in explanation and explanation["description"].startswith(u"weight("):
+        description = explanation["description"]
+        return [(description.split(u"weight(")[1].split(u")")[0].rsplit(u" in ", 1)[0], explanation["value"])]
+    results = []
+    for detail in explanation.get("details", []):
+        results.extend(plain_concepts_extractor(detail))
+    return results
+
 def make_id(value):
     """
     Build a string id from a value

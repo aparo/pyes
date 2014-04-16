@@ -37,20 +37,30 @@ check_values = {
 
 
 class AbstractField(object):
-    def __init__(self, index="not_analyzed", store="no", boost=1.0,
-                 term_vector="no", omit_norms=True,
+    def __init__(self, index=True, store=False, boost=1.0,
+                 term_vector=False,
+                 term_vector_positions=False,
+                 term_vector_offsets=False,
+                 omit_norms=True, tokenize=True,
                  omit_term_freq_and_positions=True,
                  type=None, index_name=None,
+                 index_options=None,
                  path=None,
+                 norms=None,
                  analyzer=None,
                  index_analyzer=None,
                  search_analyzer=None,
                  name=None,
-                 **kwargs):
+                 locale=None,
+                 fields=None):
+        self.tokenize = tokenize
         self.store = to_bool(store)
         self.boost = boost
         self.term_vector = term_vector
+        self.term_vector_positions = term_vector_positions
+        self.term_vector_offsets = term_vector_offsets
         self.index = index
+        self.index_options = index_options
         self.omit_norms = omit_norms
         self.omit_term_freq_and_positions = omit_term_freq_and_positions
         self.index_name = index_name
@@ -60,6 +70,29 @@ class AbstractField(object):
         self.search_analyzer = search_analyzer
         self.name = name
         self.path = path
+        self.meta = meta or {}
+        self.locale = locale
+        self.permission = permission or []
+        #back compatibility
+        if isinstance(store, six.string_types):
+            self.store = to_bool(store)
+        if isinstance(index, six.string_types):
+            if index == "no":
+                self.index = False
+                self.tokenize = False
+            elif index == "not_analyzed":
+                self.index = True
+                self.tokenize = False
+            elif index == "analyzed":
+                self.index = True
+                self.tokenize = True
+        self.fields=[]
+        if fields and isinstance(fields, dict):
+            _fs=[]
+            for n,v in fields.items():
+                _fs.append(get_field(n,v))
+            self.fields=_fs
+        self.norms=norms
 
     def as_dict(self):
         result = {"type": self.type,
@@ -74,14 +107,27 @@ class AbstractField(object):
                 result['store'] = self.store
         if self.boost != 1.0:
             result['boost'] = self.boost
-        if self.term_vector != "no":
+        if self.required:
+            result['required'] = self.required
+        if self.permission:
+            result['permission'] = self.permission
+        if self.term_vector:
             result['term_vector'] = self.term_vector
+        if self.term_vector_positions:
+            result['term_vector_positions'] = self.term_vector_positions
+        if self.term_vector_offsets:
+            result['term_vector_offsets'] = self.term_vector_offsets
+        if self.index_options:
+            result['index_options'] = self.index_options
+
         if self.omit_norms != True:
             result['omit_norms'] = self.omit_norms
         if self.omit_term_freq_and_positions != True:
             result['omit_term_freq_and_positions'] = self.omit_term_freq_and_positions
         if self.index_name:
             result['index_name'] = self.index_name
+        if self.norms:
+            result['norms'] = self.norms
         if self.analyzer:
             result['analyzer'] = self.analyzer
         if self.index_analyzer:
@@ -90,6 +136,12 @@ class AbstractField(object):
             result['search_analyzer'] = self.search_analyzer
         if self.path is not None:
             result['path'] = self.path
+        if self.meta:
+            result['meta'] = self.meta
+        if self.locale:
+            result['locale'] = self.locale
+        if self.fields:
+            result['fields'] = dict([(f.name,t.as_dict()) for f in self.fields])
 
         return result
 
@@ -113,6 +165,10 @@ class StringField(AbstractField):
             result['null_value'] = self.null_value
         if self.include_in_all is not None:
             result['include_in_all'] = self.include_in_all
+        if self.term_vector_positions:
+            result['term_vector_positions'] = self.term_vector_positions
+        if self.term_vector_offsets:
+            result['term_vector_offsets'] = self.term_vector_offsets
         return result
 
 
@@ -151,7 +207,6 @@ class GeoPointField(AbstractField):
 
         if self.validate_lon is not None:
             result['validate_lon'] = self.validate_lon
-
 
         if self.validate_lat is not None:
             result['validate_lat'] = self.validate_lat
@@ -242,6 +297,19 @@ class DateField(NumericFieldAbstract):
             result['format'] = self.format
         return result
 
+    def to_es(self, value):
+        if isinstance(value, datetime):
+            if value.microsecond:
+                value = value.replace(microsecond=0)
+            return value.isoformat()
+        elif isinstance(value, date):
+            return date.isoformat()
+
+    def to_python(self, value):
+        if isinstance(value, six.string_types) and len(value) == 19:
+            return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S")
+        elif isinstance(value, six.string_types) and len(value) == 10:
+            return date.strptime(value, "%Y-%m-%d")
 
 class BooleanField(AbstractField):
     def __init__(self, null_value=None, include_in_all=None, *args, **kwargs):
@@ -282,6 +350,16 @@ class MultiField(object):
                 for field in fields:
                     self.fields[field.name] = field.as_dict()
 
+    def add_fields(self, fields):
+        if isinstance(fields, list):
+            for field in fields:
+                if isinstance(field, AbstractField):
+                    self.fields[field.name] = field.as_dict()
+                elif isinstance(field, tuple):
+                    name, data = field
+                    self.fields[name] = data
+
+
     def as_dict(self):
         result = {"type": self.type,
                   "fields": {}}
@@ -294,6 +372,28 @@ class MultiField(object):
         if self.path:
             result['path'] = self.path
         return result
+    def get_diff(self, other_mapping):
+        """
+        Returns a Multifield with diff fields. If not changes, returns None
+        :param other_mapping:
+        :return: a Multifield or None
+        """
+        result = MultiField(name=self.name)
+        new_fields = set(self.fields.keys())
+        if not isinstance(other_mapping, MultiField):
+            n_mapping = MultiField(name=self.name)
+            n_mapping.add_fields([other_mapping])
+            other_mapping = n_mapping
+
+        old_fields = set(other_mapping.fields.keys())
+        #we propagate new fields
+        added = new_fields - old_fields
+        if added:
+            result.add_fields([(add, self.fields[add]) for add in added])
+            #TODO: raise in field changed
+        if len(result.fields) > 0:
+            return result
+        return None
 
 
 class AttachmentField(object):
@@ -307,11 +407,13 @@ class AttachmentField(object):
         self.name = name
         self.type = "attachment"
         self.path = path
-        self.fields = dict([(name, get_field(name, data)) for name, data in list(fields.items())])
+        #        self.fields = dict([(name, get_field(name, data)) for name, data in fields.items()])
+        self.fields = fields
 
     def as_dict(self):
-        result_fields = dict((name, value.as_dict())
-        for (name, value) in list(self.fields.items()))
+    #        result_fields = dict((name, value.as_dict())
+    #                             for (name, value) in self.fields.items())
+        result_fields = self.fields
         result = dict(type=self.type, fields=result_fields)
         if self.path:
             result['path'] = self.path
@@ -337,7 +439,7 @@ class ObjectField(object):
         self.connection = connection
         self.index_name = index_name
         if properties:
-            self.properties = dict([(name, get_field(name, data)) for name, data in list(properties.items())])
+            self.properties = OrderedDict(sorted([(name, get_field(name, data)) for name, data in properties.items()]))
         else:
             self.properties = {}
 
@@ -371,6 +473,12 @@ class ObjectField(object):
 
     def __str__(self):
         return str(self.as_dict())
+
+    def clear_properties(self):
+        """
+        Helper function to reset properties
+        """
+        self.properties = OrderedDict()
 
     def save(self):
         if self.connection is None:
@@ -411,6 +519,34 @@ class ObjectField(object):
                     prop.get_properties_by_type(type, recursive=recursive, parent_path=parent_path + prop.name))
         return sorted(properties)
 
+    def get_property_by_name(self, name):
+        """
+        Returns a mapped object.
+
+        :param name the name of the property
+        :returns the mapped object or exception NotFoundMapping
+
+        """
+        if "." not in name and name in self.properties:
+            return self.properties[name]
+
+        tokens = name.split(".")
+        object = self
+        for token in tokens:
+            if isinstance(object, (DocumentObjectField, ObjectField, NestedObject)):
+                if token in object.properties:
+                    object = object.properties[token]
+                    continue
+            elif isinstance(object, MultiField):
+                if token in object.fields:
+                    object = object.fields[token]
+                    continue
+            raise MappedFieldNotFoundException(token)
+        if isinstance(object, (AbstractField, MultiField)):
+            return object
+        raise MappedFieldNotFoundException(object)
+
+
     def get_available_facets(self):
         """
         Returns Available facets for the document
@@ -433,6 +569,23 @@ class ObjectField(object):
                     result.append((self.name + "." + k, t))
         return result
 
+    def get_datetime_properties(self, recursive=True):
+        """
+        Returns a dict of property.path and property.
+
+        :param recursive the name of the property
+        :returns a dict
+
+        """
+        res = {}
+        for name, field in self.properties.items():
+            if isinstance(field, DateField):
+                res[name] = field
+            elif recursive and isinstance(field, ObjectField):
+                for n, f in field.get_datetime_properties(recursive=recursive):
+                    res[name + "." + n] = f
+        return res
+
     def get_code(self, num=1):
         data = SortedDict(self.as_dict())
         data.pop("properties", [])
@@ -445,6 +598,49 @@ class ObjectField(object):
             code.append("%s.add_property(%s)"%(var_name, vname))
 
         return var_name, '\n'.join(code)
+
+    def get_diff(self, new_mapping):
+        """
+        Given two mapping it extracts a schema evolution mapping. Returns None if no evolutions are required
+        :param new_mapping: the new mapping
+        :return: a new evolution mapping or None
+        """
+        result = copy.deepcopy(new_mapping)
+        result.clear_properties()
+
+        no_check_types = (BooleanField, IntegerField, FloatField, DateField, LongField, BinaryField,
+                          GeoPointField, IpField)
+
+        old_fields = set(self.properties.keys())
+        new_fields = set(new_mapping.properties.keys())
+        #we propagate new fields
+        added = new_fields - old_fields
+        if added:
+            for add in added:
+                result.add_property(new_mapping.properties[add])
+
+        #we check common fields
+        common_fields = new_fields & old_fields
+
+        #removing standard data
+        common_fields = [c for c in common_fields if not isinstance(new_mapping.properties[c], no_check_types)]
+
+        for field in common_fields:
+            prop = new_mapping.properties[field]
+            if isinstance(prop, StringField):
+                continue
+            if isinstance(prop, MultiField):
+                diff = prop.get_diff(self.properties[field])
+                if diff:
+                    result.add_property(diff)
+            elif isinstance(prop, ObjectField):
+                diff = self.properties[field].get_diff(prop)
+                if diff:
+                    result.add_property(diff)
+
+        if len(result.properties) > 0:
+            return result
+        return None
 
 class NestedObject(ObjectField):
     def __init__(self, *args, **kwargs):
@@ -594,6 +790,7 @@ def get_field(name, data, default="object", document_object_field=None, is_docum
         if document_object_field:
             return document_object_field(name=name, **data)
         else:
+            data.pop("name",None)
             return DocumentObjectField(name=name, **data)
 
     elif _type == "object":
@@ -620,10 +817,11 @@ class Mapper(object):
         :param document_object_field: the kind of object to be used for document object Field
         :return:
         """
-        self.indices = {}
-        self.mappings = {}
+        self.indices = OrderedDict()
+        self.mappings = OrderedDict()
         self.is_mapping = is_mapping
         self.connection = connection
+        self.full_mappings = False
         self.document_object_field = document_object_field
         self._process(data)
 
@@ -631,37 +829,35 @@ class Mapper(object):
         """
         Process indexer data
         """
-        if self.is_mapping:
-            for docname, docdata in list(data.items()):
-                self.mappings[docname] = get_field(docname, docdata, "document",
-                                                   document_object_field=self.document_object_field, is_document=True)
-        else:
-            indices = []
-            for indexname, indexdata in list(data.items()):
-                idata = []
-                for docname, docdata in list(indexdata.items()):
-                    o = get_field(docname, docdata, document_object_field=self.document_object_field, is_document=True)
-                    o.connection = self.connection
-                    o.index_name = indexname
-                    idata.append((docname, o))
-                idata.sort()
-                indices.append((indexname, idata))
-            indices.sort()
-            self.indices = indices
+        indices = []
+        for indexname, indexdata in list(data.items()):
+            idata = []
+            for docname, docdata in list(indexdata.items()):
+                o = get_field(docname, docdata, document_object_field=self.document_object_field, is_document=True)
+                o.connection = self.connection
+                o.index_name = indexname
+                idata.append((docname, o))
+            idata.sort()
+            indices.append((indexname, idata))
+        indices.sort()
+        self.indices = indices
 
 
     def get_doctypes(self, index, edges=True):
         """
         Returns a list of doctypes given an index
         """
-        #TODO lazy loading of index in mapping not exists
-        return self.indices[index]
+        if index not in self.indices:
+            self.get_all_indices()
+        return self.indices.get(index, {})
 
     def get_doctype(self, index, name):
         """
         Returns a doctype given an index and a name
         """
-        return self.indices[index][name]
+        if index not in self.indices:
+            self.get_all_indices()
+        return self.indices.get(index, {}).get(name, None)
 
     def get_property(self, index, doctype, name):
         """
@@ -671,6 +867,39 @@ class Mapper(object):
         """
 
         return self.indices[index][doctype].properties[name]
+
+    def get_all_indices(self):
+        if not self.full_mappings:
+            mappings = self.connection.indices.get_mapping(raw=True)
+            self._process(mappings)
+            self.full_mappings = True
+        return self.indices.keys()
+
+    def migrate(self, mapping, index, doc_type):
+        """
+        Migrate a ES mapping
+
+
+        :param mapping: new mapping
+        :param index: index of old mapping
+        :param doc_type: type of old mapping
+        :return: The diff mapping
+        """
+        old_mapping = self.get_doctype(index, doc_type)
+        #case missing
+        if not old_mapping:
+            self.connection.indices.put_mapping(doc_type=doc_type, mapping=mapping, indices=index)
+            return mapping
+            # we need to calculate the diff
+        mapping_diff = old_mapping.get_diff(mapping)
+        if not mapping_diff:
+            return None
+        from pprint import pprint
+
+        pprint(mapping_diff.as_dict())
+        mapping_diff.connection = old_mapping.connection
+        mapping_diff.save()
+
 
 MAPPING_NAME_TYPE = {
     "attachment": AttachmentField,

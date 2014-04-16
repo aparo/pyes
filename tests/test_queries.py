@@ -254,10 +254,10 @@ class QuerySearchTestCase(ESTestCase):
     #        # When this test is re-enabled, be sure to add equality and inequality tests (issue 128)
 
     def test_CustomScoreQueryMvel(self):
-        q = CustomScoreQuery(query=MatchAllQuery(),
+        q = FunctionScoreQuery(functions=[FunctionScoreQuery.ScriptScoreFunction(
             lang="mvel",
             script="_score*(5+doc.position.value)"
-        )
+        )])
         self.assertEqual(q,
             CustomScoreQuery(query=MatchAllQuery(),
                 lang="mvel",
@@ -275,10 +275,10 @@ class QuerySearchTestCase(ESTestCase):
         self.assertEqual(resultset.max_score, 8.0)
 
     def test_CustomScoreQueryJS(self):
-        q = CustomScoreQuery(query=MatchAllQuery(),
+        q = FunctionScoreQuery(functions=[FunctionScoreQuery.ScriptScoreFunction(
             lang="js",
             script="parseFloat(_score*(5+doc.position.value))"
-        )
+        )])
         resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
         self.assertEqual(resultset.total, 3)
         self.assertEqual(resultset[0]._meta.score, 8.0)
@@ -286,10 +286,10 @@ class QuerySearchTestCase(ESTestCase):
         self.assertEqual(resultset.max_score, 8.0)
 
     def test_CustomScoreQueryPython(self):
-        q = CustomScoreQuery(query=MatchAllQuery(),
+        q = FunctionScoreQuery(functions=[FunctionScoreQuery.ScriptScoreFunction(
             lang="python",
             script="_score*(5+doc['position'].value)"
-        )
+        )])
         resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
         self.assertEqual(resultset.total, 3)
         self.assertEqual(resultset[0]._meta.score, 8.0)
@@ -391,36 +391,36 @@ class QuerySearchTestCase(ESTestCase):
         self.assertEqual(Search(filter=RawFilter(filter_string)).serialize(),
             dict(filter=filter_))
 
-    def test_CustomFiltersScoreQuery_ScoreMode(self):
-        self.assertEqual(CustomFiltersScoreQuery.ScoreMode.FIRST, "first")
-        self.assertEqual(CustomFiltersScoreQuery.ScoreMode.MIN, "min")
-        self.assertEqual(CustomFiltersScoreQuery.ScoreMode.MAX, "max")
-        self.assertEqual(CustomFiltersScoreQuery.ScoreMode.TOTAL, "total")
-        self.assertEqual(CustomFiltersScoreQuery.ScoreMode.AVG, "avg")
-        self.assertEqual(CustomFiltersScoreQuery.ScoreMode.MULTIPLY, "multiply")
-
-    def test_CustomFiltersScoreQuery_Filter(self):
-        with self.assertRaises(ValueError) as cm:
-            CustomFiltersScoreQuery.Filter(MatchAllFilter())
-        self.assertEqual(cm.exception.message, "Exactly one of boost and script must be specified")
-
-        with self.assertRaises(ValueError) as cm:
-            CustomFiltersScoreQuery.Filter(MatchAllFilter(), 5.0, "someScript")
-        self.assertEqual(cm.exception.message, "Exactly one of boost and script must be specified")
-
-        filter1 = CustomFiltersScoreQuery.Filter(MatchAllFilter(), 5.0)
-        self.assertEqual(filter1, CustomFiltersScoreQuery.Filter(MatchAllFilter(), 5.0))
-        self.assertEqual(filter1.filter_, MatchAllFilter())
-        self.assertEqual(filter1.boost, 5.0)
-        self.assertIsNone(filter1.script)
-        self.assertEqual(filter1.serialize(), {'filter': {'match_all': {}}, 'boost': 5.0})
-
-        filter2 = CustomFiltersScoreQuery.Filter(NotFilter(MatchAllFilter()), script="hello")
-        self.assertEqual(filter2, CustomFiltersScoreQuery.Filter(NotFilter(MatchAllFilter()), script="hello"))
-        self.assertEqual(filter2.filter_, NotFilter(MatchAllFilter()))
-        self.assertEqual(filter2.script, "hello")
-        self.assertIsNone(filter2.boost)
-        self.assertEqual(filter2.serialize(), {'filter': {'not': {'filter': {'match_all': {}}}}, 'script': 'hello'})
+    # def test_CustomFiltersScoreQuery_ScoreMode(self):
+    #     self.assertEqual(CustomFiltersScoreQuery.ScoreMode.FIRST, "first")
+    #     self.assertEqual(CustomFiltersScoreQuery.ScoreMode.MIN, "min")
+    #     self.assertEqual(CustomFiltersScoreQuery.ScoreMode.MAX, "max")
+    #     self.assertEqual(CustomFiltersScoreQuery.ScoreMode.TOTAL, "total")
+    #     self.assertEqual(CustomFiltersScoreQuery.ScoreMode.AVG, "avg")
+    #     self.assertEqual(CustomFiltersScoreQuery.ScoreMode.MULTIPLY, "multiply")
+    #
+    # def test_CustomFiltersScoreQuery_Filter(self):
+    #     with self.assertRaises(ValueError) as cm:
+    #         CustomFiltersScoreQuery.Filter(MatchAllFilter())
+    #     self.assertEqual(cm.exception.message, "Exactly one of boost and script must be specified")
+    #
+    #     with self.assertRaises(ValueError) as cm:
+    #         CustomFiltersScoreQuery.Filter(MatchAllFilter(), 5.0, "someScript")
+    #     self.assertEqual(cm.exception.message, "Exactly one of boost and script must be specified")
+    #
+    #     filter1 = CustomFiltersScoreQuery.Filter(MatchAllFilter(), 5.0)
+    #     self.assertEqual(filter1, CustomFiltersScoreQuery.Filter(MatchAllFilter(), 5.0))
+    #     self.assertEqual(filter1.filter_, MatchAllFilter())
+    #     self.assertEqual(filter1.boost, 5.0)
+    #     self.assertIsNone(filter1.script)
+    #     self.assertEqual(filter1.serialize(), {'filter': {'match_all': {}}, 'boost': 5.0})
+    #
+    #     filter2 = CustomFiltersScoreQuery.Filter(NotFilter(MatchAllFilter()), script="hello")
+    #     self.assertEqual(filter2, CustomFiltersScoreQuery.Filter(NotFilter(MatchAllFilter()), script="hello"))
+    #     self.assertEqual(filter2.filter_, NotFilter(MatchAllFilter()))
+    #     self.assertEqual(filter2.script, "hello")
+    #     self.assertIsNone(filter2.boost)
+    #     self.assertEqual(filter2.serialize(), {'filter': {'not': {'filter': {'match_all': {}}}}, 'script': 'hello'})
 
     def test_CustomFiltersScoreQuery(self):
         script1 = "max(1,2)"
@@ -527,21 +527,21 @@ class QuerySearchTestCase(ESTestCase):
         resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
         self.assertEqual(resultset.total, 1)
 
-    def test_CustomBoostFactorQuery(self):
-        q = CustomBoostFactorQuery(query=TermQuery("name", "joe"),
-            boost_factor=1.0)
-
-        resultset = self.conn.search(query=q, indices=self.index_name)
-
-        self.assertEqual(resultset.total, 1)
-        score = resultset.hits[0]['_score']
-
-        q = CustomBoostFactorQuery(query=TermQuery("name", "joe"),
-            boost_factor=2.0)
-        resultset = self.conn.search(query=q, indices=self.index_name)
-
-        score_boosted = resultset.hits[0]['_score']
-        self.assertEqual(score*2, score_boosted)
+    # def test_CustomBoostFactorQuery(self):
+    #     q = CustomBoostFactorQuery(query=TermQuery("name", "joe"),
+    #         boost_factor=1.0)
+    #
+    #     resultset = self.conn.search(query=q, indices=self.index_name)
+    #
+    #     self.assertEqual(resultset.total, 1)
+    #     score = resultset.hits[0]['_score']
+    #
+    #     q = CustomBoostFactorQuery(query=TermQuery("name", "joe"),
+    #         boost_factor=2.0)
+    #     resultset = self.conn.search(query=q, indices=self.index_name)
+    #
+    #     score_boosted = resultset.hits[0]['_score']
+    #     self.assertEqual(score*2, score_boosted)
 
     def test_FunctionScoreQuery(self):
 

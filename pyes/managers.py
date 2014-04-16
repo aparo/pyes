@@ -598,6 +598,15 @@ class Cluster(object):
         path = make_path(*parts)
         return self.conn._send_request('GET', path)
 
+
+    def info(self):
+        """
+        The cluster :ref:`nodes info <es-guide-reference-api-admin-cluster-state>` API allows to retrieve one or more (or all) of
+        the cluster nodes information.
+        """
+        return self.conn._send_request('GET', "/")
+
+
     def node_stats(self, nodes=None):
         """
         The cluster :ref:`nodes info <es-guide-reference-api-admin-cluster-nodes-stats>` API allows to retrieve one or more (or all) of

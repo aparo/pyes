@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import
+import copy
+
 from .exceptions import QueryParameterError
 from .utils import ESRange, EqualityComparableUsingAttributeDictionary
 from .es import json

@@ -58,6 +58,42 @@ def file_to_attachment(filename, filehandler=None):
         }
 
 
+def expand_suggest_text(suggest):
+    from itertools import product
+
+    suggested = set()
+    all_segments = {}
+    for field, tokens in suggest.items():
+        if field.startswith(u"_"):
+            #we skip _shards
+            continue
+        if len(tokens) == 1 and not tokens[0]["options"]:
+            continue
+        texts = []
+        for token in tokens:
+            if not token["options"]:
+                texts.append([(1.0, 1, token["text"])])
+                continue
+            values = []
+            for option in token["options"]:
+                values.append((option["score"], option.get("freq", option["score"]), option["text"]))
+            texts.append(values)
+        for terms in product(*texts):
+            score = sum([v for v, _, _ in terms])
+            freq = sum([v for _, v, _ in terms])
+            text = u' '.join([t for _, _, t in terms])
+            if text in all_segments:
+                olds, oldf = all_segments[text]
+                all_segments[text] = (score + olds, freq + oldf)
+            else:
+                all_segments[text] = (score, freq)
+        #removing dupped
+    for t, (s, f) in all_segments.items():
+        suggested.add((s, f, t))
+
+    return sorted(suggested, reverse=True)
+
+
 class ESJsonEncoder(json.JSONEncoder):
     def default(self, value):
         """Convert rogue and mysterious data types.
@@ -116,6 +152,10 @@ class ESJsonDecoder(json.JSONDecoder):
             elif isinstance(v, list):
                 d[k] = [self.string_to_datetime(elem) for elem in v]
         return DotDict(d)
+
+
+def get_id(text):
+    return str(uuid.uuid3(DotDict(bytes=""), text))
 
 
 class ES(object):
@@ -211,7 +251,7 @@ class ES(object):
             self.encoder = encoder
         if decoder:
             self.decoder = decoder
-        if isinstance(server, basestring):
+        if isinstance(server, six.string_types):
             self.servers = [server]
         elif isinstance(server, tuple):
             self.servers = [server]
@@ -268,7 +308,7 @@ class ES(object):
                 _type, host, port = server
                 server = urlparse('%s://%s:%s' % (_type, host, port))
                 check_format(server)
-            elif isinstance(server, basestring):
+            elif isinstance(server, six.string_types):
                 if server.startswith(("thrift:", "http:", "https:")):
                     server = urlparse(server)
                     check_format(server)
@@ -364,12 +404,13 @@ class ES(object):
 
     raise_on_bulk_item_failure = property(_get_raise_on_bulk_item_failure, _set_raise_on_bulk_item_failure)
 
-    def _send_request(self, method, path, body=None, params=None, headers=None, raw=False):
+    def _send_request(self, method, path, body=None, params=None, headers=None, raw=False, return_response=False):
         if params is None:
             params = {}
         elif "routing" in params and params["routing"] is None:
             del params["routing"]
 
+        path = path.replace("%2C", ",")
         if headers is None:
             headers = {}
         if not path.startswith("/"):
@@ -377,7 +418,7 @@ class ES(object):
         if not self.connection:
             self._init_connection()
         if body:
-            if isinstance(body, SettingsBuilder):
+            if not isinstance(body, dict) and hasattr(body, "as_dict"):
                 body = body.as_dict()
             if isinstance(body, dict):
                body = json.dumps(body, cls=self.encoder)
@@ -402,6 +443,9 @@ class ES(object):
         if self.dump_curl is not None:
             self.dump_curl.write(("# response status: %s"%response.status).encode('utf-8'))
             self.dump_curl.write(("# response body: %s"%response.body).encode('utf-8'))
+
+        if return_response:
+            return response
 
         if method == "HEAD":
             return response.status == 200
@@ -451,6 +495,20 @@ class ES(object):
         if isinstance(indices, str):
             indices = [indices]
         return indices
+
+    def validate_types(self, types=None):
+        """Return a valid list of types.
+
+        `types` may be a string or a list of strings.
+        If `types` is not supplied, returns the default_types.
+
+        """
+        types = types or self.default_types
+        if types is None:
+            types = []
+        if isinstance(types, six.string_types):
+            types = [types]
+        return types
 
     def _get_curl_request(self, request):
         params = {'pretty': 'true'}
@@ -523,6 +581,8 @@ class ES(object):
                     self.indices.put_mapping(doc_type=name, mapping=data, indices=index)
 
             else:
+                from brainaetic.echidnasearch.mappings import DocumentObjectField, ObjectField
+
                 for maps in mappings:
                     if isinstance(maps, tuple):
                         name, mapping = maps
@@ -530,6 +590,8 @@ class ES(object):
                     elif isinstance(maps, dict):
                         for name, data in list(maps.items()):
                             self.indices.put_mapping(doc_type=name, mapping=maps, indices=index)
+                    elif isinstance(maps, (DocumentObjectField, ObjectField)):
+                        self.put_mapping(doc_type=maps.name, mapping=maps.as_dict(), indices=index)
 
                 return
 
@@ -1265,7 +1327,7 @@ class ResultSetList(object):
         return self.connection.search_raw(self.search, indices=self.indices,
                                           doc_types=self.doc_types, **query_params)
 
-    if not is_py3:
+    if six.PY2:
         next = __next__
 
 class ResultSet(object):
@@ -1477,7 +1539,7 @@ class ResultSet(object):
         return self._results['hits'][name]
 
     def __getitem__(self, val):
-        if not isinstance(val, (int, long, slice)):
+        if not isinstance(val, (int, slice)):
             raise TypeError('%s indices must be integers, not %s' % (
                 self.__class__.__name__, val.__class__.__name__))
 
@@ -1540,14 +1602,9 @@ class ResultSet(object):
         self._current_item += 1
         return self.model(self.connection, res)
 
-<<<<<<< Temporary merge branch 1
-    if not is_py3:
-        next = __next__
-=======
     if six.PY2:
         next = __next__
 
->>>>>>> Temporary merge branch 2
 
     def __iter__(self):
         self.iterpos = 0
@@ -1569,6 +1626,10 @@ class ResultSet(object):
 
         return self.connection.search_raw(self.search, indices=self.indices,
                                           doc_types=self.doc_types, headers=self.headers, **query_params)
+
+    def get_suggested_texts(self):
+        return expand_suggest_text(self.suggest)
+
 
 class EmptyResultSet(object):
     def __init__(self, *args, **kwargs):
@@ -1686,7 +1747,7 @@ class ResultSetMulti(object):
         return len(self._results_list or [])
 
     def __getitem__(self, val):
-        if not isinstance(val, (int, long, slice)):
+        if not isinstance(val, (int, slice)):
             raise TypeError('%s indices must be integers, not %s' % (
                 self.__class__.__name__, val.__class__.__name__))
 

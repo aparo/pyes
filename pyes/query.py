@@ -608,45 +608,45 @@ class DisMaxQuery(Query):
             raise InvalidQuery("A least a query is required")
         return filters
 
-
-class FieldQuery(Query):
-
-    _internal_name = "field"
-
-    def __init__(self, fieldparameters=None, default_operator="OR", analyzer=None,
-                 allow_leading_wildcard=True, lowercase_expanded_terms=True,
-                 enable_position_increments=True, fuzzy_prefix_length=0,
-                 fuzzy_min_sim=0.5, phrase_slop=0, boost=1.0, use_dis_max=True,
-                 tie_breaker=0, **kwargs):
-        super(FieldQuery, self).__init__(**kwargs)
-        self.field_parameters = []
-        self.default_operator = default_operator
-        self.analyzer = analyzer
-        self.allow_leading_wildcard = allow_leading_wildcard
-        self.lowercase_expanded_terms = lowercase_expanded_terms
-        self.enable_position_increments = enable_position_increments
-        self.fuzzy_prefix_length = fuzzy_prefix_length
-        self.fuzzy_min_sim = fuzzy_min_sim
-        self.phrase_slop = phrase_slop
-        self.boost = boost
-        self.use_dis_max = use_dis_max
-        self.tie_breaker = tie_breaker
-        if fieldparameters:
-            if isinstance(fieldparameters, list):
-                self.field_parameters.extend(fieldparameters)
-            else:
-                self.field_parameters.append(fieldparameters)
-
-    def add(self, field, query, **kwargs):
-        fp = FieldParameter(field, query, **kwargs)
-        self.field_parameters.append(fp)
-
-    def _serialize(self):
-        result = {}
-        for f in self.field_parameters:
-            val, filters = f.serialize()
-            result[val] = filters
-        return result
+#Removed in ES 1.x
+# class FieldQuery(Query):
+#
+#     _internal_name = "field"
+#
+#     def __init__(self, fieldparameters=None, default_operator="OR", analyzer=None,
+#                  allow_leading_wildcard=True, lowercase_expanded_terms=True,
+#                  enable_position_increments=True, fuzzy_prefix_length=0,
+#                  fuzzy_min_sim=0.5, phrase_slop=0, boost=1.0, use_dis_max=True,
+#                  tie_breaker=0, **kwargs):
+#         super(FieldQuery, self).__init__(**kwargs)
+#         self.field_parameters = []
+#         self.default_operator = default_operator
+#         self.analyzer = analyzer
+#         self.allow_leading_wildcard = allow_leading_wildcard
+#         self.lowercase_expanded_terms = lowercase_expanded_terms
+#         self.enable_position_increments = enable_position_increments
+#         self.fuzzy_prefix_length = fuzzy_prefix_length
+#         self.fuzzy_min_sim = fuzzy_min_sim
+#         self.phrase_slop = phrase_slop
+#         self.boost = boost
+#         self.use_dis_max = use_dis_max
+#         self.tie_breaker = tie_breaker
+#         if fieldparameters:
+#             if isinstance(fieldparameters, list):
+#                 self.field_parameters.extend(fieldparameters)
+#             else:
+#                 self.field_parameters.append(fieldparameters)
+#
+#     def add(self, field, query, **kwargs):
+#         fp = FieldParameter(field, query, **kwargs)
+#         self.field_parameters.append(fp)
+#
+#     def _serialize(self):
+#         result = {}
+#         for f in self.field_parameters:
+#             val, filters = f.serialize()
+#             result[val] = filters
+#         return result
 
 
 class FilteredQuery(Query):
@@ -1489,73 +1489,73 @@ class RescoreQuery(Query):
         return data
 
 
-class CustomFiltersScoreQuery(Query):
-
-    _internal_name = "custom_filters_score"
-
-    class ScoreMode(object):
-        FIRST = "first"
-        MIN = "min"
-        MAX = "max"
-        TOTAL = "total"
-        AVG = "avg"
-        MULTIPLY = "multiply"
-
-    class Filter(EqualityComparableUsingAttributeDictionary):
-
-        def __init__(self, filter_, boost=None, script=None):
-            if (boost is None) == (script is None):
-                raise ValueError("Exactly one of boost and script must be specified")
-            self.filter_ = filter_
-            self.boost = boost
-            self.script = script
-
-        def serialize(self):
-            data = {'filter': self.filter_.serialize()}
-            if self.boost is not None:
-                data['boost'] = self.boost
-            if self.script is not None:
-                data['script'] = self.script
-            return data
-
-    def __init__(self, query, filters, score_mode=None, params=None, lang=None,
-                 **kwargs):
-        super(CustomFiltersScoreQuery, self).__init__(**kwargs)
-        self.query = query
-        self.filters = filters
-        self.score_mode = score_mode
-        self.params = params
-        self.lang = lang
-
-    def _serialize(self):
-        data = {'query': self.query.serialize(),
-                'filters': [filter_.serialize() for filter_ in self.filters]}
-        if self.score_mode is not None:
-            data['score_mode'] = self.score_mode
-        if self.params is not None:
-            data['params'] = self.params
-        if self.lang is not None:
-            data['lang'] = self.lang
-        return data
-
-
-class CustomBoostFactorQuery(Query):
-    _internal_name = "custom_boost_factor"
-
-    def __init__(self, query, boost_factor, **kwargs):
-        super(CustomBoostFactorQuery, self).__init__(**kwargs)
-        self.boost_factor = boost_factor
-        self.query = query
-
-    def _serialize(self):
-        data = {'query': self.query.serialize()}
-
-        if isinstance(self.boost_factor, (float, int)):
-            data['boost_factor'] = self.boost_factor
-        else:
-            data['boost_factor'] = float(self.boost_factor)
-
-        return data
+# class CustomFiltersScoreQuery(Query):
+#
+#     _internal_name = "custom_filters_score"
+#
+#     class ScoreMode(object):
+#         FIRST = "first"
+#         MIN = "min"
+#         MAX = "max"
+#         TOTAL = "total"
+#         AVG = "avg"
+#         MULTIPLY = "multiply"
+#
+#     class Filter(EqualityComparableUsingAttributeDictionary):
+#
+#         def __init__(self, filter_, boost=None, script=None):
+#             if (boost is None) == (script is None):
+#                 raise ValueError("Exactly one of boost and script must be specified")
+#             self.filter_ = filter_
+#             self.boost = boost
+#             self.script = script
+#
+#         def serialize(self):
+#             data = {'filter': self.filter_.serialize()}
+#             if self.boost is not None:
+#                 data['boost'] = self.boost
+#             if self.script is not None:
+#                 data['script'] = self.script
+#             return data
+#
+#     def __init__(self, query, filters, score_mode=None, params=None, lang=None,
+#                  **kwargs):
+#         super(CustomFiltersScoreQuery, self).__init__(**kwargs)
+#         self.query = query
+#         self.filters = filters
+#         self.score_mode = score_mode
+#         self.params = params
+#         self.lang = lang
+#
+#     def _serialize(self):
+#         data = {'query': self.query.serialize(),
+#                 'filters': [filter_.serialize() for filter_ in self.filters]}
+#         if self.score_mode is not None:
+#             data['score_mode'] = self.score_mode
+#         if self.params is not None:
+#             data['params'] = self.params
+#         if self.lang is not None:
+#             data['lang'] = self.lang
+#         return data
+#
+#
+# class CustomBoostFactorQuery(Query):
+#     _internal_name = "custom_boost_factor"
+#
+#     def __init__(self, query, boost_factor, **kwargs):
+#         super(CustomBoostFactorQuery, self).__init__(**kwargs)
+#         self.boost_factor = boost_factor
+#         self.query = query
+#
+#     def _serialize(self):
+#         data = {'query': self.query.serialize()}
+#
+#         if isinstance(self.boost_factor, (float, int)):
+#             data['boost_factor'] = self.boost_factor
+#         else:
+#             data['boost_factor'] = float(self.boost_factor)
+#
+#         return data
 
 
 class FunctionScoreQuery(Query):
@@ -1589,11 +1589,11 @@ class FunctionScoreQuery(Query):
         def _serialize(self):
 
             field_data = {'origin': self.origin, 'scale': self.scale}
-            if decay:
-                field_data['decay'] = decay
+            if self.decay:
+                field_data['decay'] = self.decay
 
-            if offset:
-                field_data['offset'] = offset
+            if self.offset:
+                field_data['offset'] = self.offset
 
             return {self.field: field_data }
 
@@ -1629,7 +1629,7 @@ class FunctionScoreQuery(Query):
     class ScriptScoreFunction(FunctionScoreFunction):
         """Scripting function with params and a script.
         Also possible to switch the script language"""
-        _interna_name = "script_score"
+        _internal_name = "script_score"
 
         def __init__(self, script=None, params=None, lang='', filter=None):
 
@@ -1638,7 +1638,7 @@ class FunctionScoreQuery(Query):
             self.lang = lang
             self.script = script
 
-        def serialize(self):
+        def _serialize(self):
             data = {}
             if self.filter:
                 data['filter'] = self.filter.serialize()
@@ -1696,8 +1696,8 @@ class FunctionScoreQuery(Query):
             data['params'] = dict(self.params)
         if self.functions:
             data['functions'] = []
-        for function in self.functions:
-            data['functions'].append(function.serialize())
+            for function in self.functions:
+                data['functions'].append(function.serialize())
 
         if self.score_mode:
             data['score_mode'] = self.score_mode

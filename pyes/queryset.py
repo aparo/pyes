@@ -20,7 +20,6 @@ from .models import ElasticSearchModel
 from .query import MatchAllQuery, BoolQuery, FilteredQuery, Search
 from .utils import ESRange
 from .utils.compat import integer_types
-
 REPR_OUTPUT_SIZE = 20
 
 

@@ -59,7 +59,7 @@ class Agg(EqualityComparableUsingAttributeDictionary):
 
 
 class BucketAgg(Agg):
-    def __init__(self, name, sub_aggs, **kwargs):
+    def __init__(self, name, sub_aggs=None, **kwargs):
         super(BucketAgg, self).__init__(name, **kwargs)
         self.sub_aggs = sub_aggs
         self.name = name
@@ -67,12 +67,13 @@ class BucketAgg(Agg):
     def serialize(self):
         data = super(BucketAgg, self).serialize()
         sub_data = {}
-        for sub_agg in self.sub_aggs:
-            if isinstance(sub_agg, Agg):
-                sub_data.update(sub_agg.serialize())
-            else:
-                raise RuntimeError("Invalid Agg: Only Stats-Aggregations allowed as Sub-Aggregations")
-        data[self.name].update({"aggs": sub_data})
+        if self.sub_aggs is not None:
+            for sub_agg in self.sub_aggs:
+                if isinstance(sub_agg, Agg):
+                    sub_data.update(sub_agg.serialize())
+                else:
+                    raise RuntimeError("Invalid Agg: Only Stats-Aggregations allowed as Sub-Aggregations")
+            data[self.name].update({"aggs": sub_data})
         return data
 
     @property
@@ -242,10 +243,30 @@ class RangeAgg(BucketAgg):
 
 class StatsAgg(Agg):
 
-    _internal_name = "statistical"
+    _internal_name = "stats"
 
     def __init__(self, name, field=None, script=None, params=None, **kwargs):
         super(StatsAgg, self).__init__(name, **kwargs)
+        self.field = field
+        self.script = script
+        self.params = params
+
+    def _serialize(self):
+        data = {}
+        if self.field:
+            data['field'] = self.field
+        elif self.script:
+            data['script'] = self.script
+            if self.params:
+                data['params'] = self.params
+        return data
+
+class ValueCountAgg(Agg):
+
+    _internal_name = "value_count"
+
+    def __init__(self, name, field=None, script=None, params=None, **kwargs):
+        super(ValueCountAgg, self).__init__(name, **kwargs)
         self.field = field
         self.script = script
         self.params = params
@@ -281,14 +302,34 @@ class SumAgg(Agg):
         return data
 
 
+class AvgAgg(Agg):
+
+    _internal_name = "avg"
+
+    def __init__(self, name, field=None, script=None, params=None, **kwargs):
+        super(AvgAgg, self).__init__(name, **kwargs)
+        self.field = field
+        self.script = script
+        self.params = params
+
+    def _serialize(self):
+        data = {}
+        if self.field:
+            data['field'] = self.field
+        elif self.script:
+            data['script'] = self.script
+            if self.params:
+                data['params'] = self.params
+        return data
+
 class TermsAgg(BucketAgg):
 
     _internal_name = "terms"
 
-    def __init__(self, field=None, fields=None, name=None, size=10, order=None,
+    def __init__(self, name, field=None, fields=None, size=100, order=None,
                  exclude=None, regex=None, regex_flags="DOTALL", script=None,
                  lang=None, all_terms=None, **kwargs):
-        super(TermsAgg, self).__init__(name or field, **kwargs)
+        super(TermsAgg, self).__init__(name, **kwargs)
         self.field = field
         self.fields = fields
         self.size = size

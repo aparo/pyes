@@ -1213,6 +1213,98 @@ class QueryStringQuery(Query):
           filters['minimum_should_match']=self.minimum_should_match
         return filters
 
+class SimpleQueryStringQuery(Query):
+    """
+    A query that uses the SimpleQueryParser to parse its context. Unlike the regular query_string query,
+    the simple_query_string query will never throw an exception, and discards invalid parts of the query.
+
+    Example:
+
+    q = SimpleQueryStringQuery('elasticsearch')
+    results = conn.search(q)
+    """
+
+    _internal_name = "simple_query_string"
+
+    def __init__(self, query, default_field=None, search_fields=None,
+                 default_operator="OR", analyzer=None, allow_leading_wildcard=True,
+                 lowercase_expanded_terms=True, enable_position_increments=True,
+                 fuzzy_prefix_length=0, fuzzy_min_sim=0.5, phrase_slop=0,
+                 boost=1.0, analyze_wildcard=False, use_dis_max=True,
+                 tie_breaker=0, clean_text=False, minimum_should_match=None,
+                 **kwargs):
+        super(SimpleQueryStringQuery, self).__init__(**kwargs)
+        self.clean_text = clean_text
+        self.search_fields = search_fields or []
+        self.query = query
+        self.default_field = default_field
+        self.default_operator = default_operator
+        self.analyzer = analyzer
+        self.allow_leading_wildcard = allow_leading_wildcard
+        self.lowercase_expanded_terms = lowercase_expanded_terms
+        self.enable_position_increments = enable_position_increments
+        self.fuzzy_prefix_length = fuzzy_prefix_length
+        self.fuzzy_min_sim = fuzzy_min_sim
+        self.phrase_slop = phrase_slop
+        self.boost = boost
+        self.analyze_wildcard = analyze_wildcard
+        self.use_dis_max = use_dis_max
+        self.tie_breaker = tie_breaker
+        self.minimum_should_match = minimum_should_match
+
+    def _serialize(self):
+        filters = {}
+        if self.default_field:
+            filters["default_field"] = self.default_field
+            if not isinstance(self.default_field, six.string_types) and isinstance(self.default_field, list):
+                if not self.use_dis_max:
+                    filters["use_dis_max"] = self.use_dis_max
+                if self.tie_breaker:
+                    filters["tie_breaker"] = self.tie_breaker
+
+        if self.default_operator != "OR":
+            filters["default_operator"] = self.default_operator
+        if self.analyzer:
+            filters["analyzer"] = self.analyzer
+        if not self.allow_leading_wildcard:
+            filters["allow_leading_wildcard"] = self.allow_leading_wildcard
+        if not self.lowercase_expanded_terms:
+            filters["lowercase_expanded_terms"] = self.lowercase_expanded_terms
+        if not self.enable_position_increments:
+            filters["enable_position_increments"] = self.enable_position_increments
+        if self.fuzzy_prefix_length:
+            filters["fuzzy_prefix_length"] = self.fuzzy_prefix_length
+        if self.fuzzy_min_sim != 0.5:
+            filters["fuzzy_min_sim"] = self.fuzzy_min_sim
+        if self.phrase_slop:
+            filters["phrase_slop"] = self.phrase_slop
+        if self.search_fields:
+            if isinstance(self.search_fields, six.string_types):
+                filters["fields"] = [self.search_fields]
+            else:
+                filters["fields"] = self.search_fields
+
+            if len(filters["fields"]) > 1:
+                if not self.use_dis_max:
+                    filters["use_dis_max"] = self.use_dis_max
+                if self.tie_breaker:
+                    filters["tie_breaker"] = self.tie_breaker
+        if self.boost != 1.0:
+            filters["boost"] = self.boost
+        if self.analyze_wildcard:
+            filters["analyze_wildcard"] = self.analyze_wildcard
+        if self.clean_text:
+            query = clean_string(self.query)
+            if not query:
+                raise InvalidQuery("The query is empty")
+            filters["query"] = query
+        else:
+            if not self.query.strip():
+                raise InvalidQuery("The query is empty")
+            filters["query"] = self.query
+        if self.minimum_should_match:
+          filters['minimum_should_match']=self.minimum_should_match
+        return filters
 
 class RangeQuery(Query):
 
@@ -1631,7 +1723,7 @@ class FunctionScoreQuery(Query):
         Also possible to switch the script language"""
         _internal_name = "script_score"
 
-        def __init__(self, script=None, params=None, lang='', filter=None):
+        def __init__(self, script=None, params=None, lang=None, filter=None):
 
             self.filter = filter
             self.params = params

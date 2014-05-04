@@ -34,17 +34,17 @@ class PercolatorTestCase(ESTestCase):
         self.conn.create_percolator(
             'test-index',
             'test-perc1',
-            StringQuery(query='apple', search_fields='_all')
+            QueryStringQuery(query='apple', search_fields='_all')
         )
         self.conn.create_percolator(
             'test-index',
             'test-perc2',
-            StringQuery(query='apple OR iphone', search_fields='_all')
+            QueryStringQuery(query='apple OR iphone', search_fields='_all')
         )
         self.conn.create_percolator(
             'test-index',
             'test-perc3',
-            StringQuery(query='apple AND iphone', search_fields='_all')
+            QueryStringQuery(query='apple AND iphone', search_fields='_all')
         )
         self.conn.indices.refresh(self.index_name)
 

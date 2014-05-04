@@ -1,7 +1,7 @@
 
-wget -c --no-check-certificate https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.1.0.tar.gz
-tar xfvz elasticsearch-1.1.0.tar.gz
-mv elasticsearch-1.1.0 elasticsearch
+wget -c --no-check-certificate https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.1.1.tar.gz
+tar xfvz elasticsearch-1.1.1.tar.gz
+mv elasticsearch-1.1.1 elasticsearch
 #elasticsearch/bin/plugin -install lukas-vlcek/bigdesk 
 elasticsearch/bin/plugin -install mobz/elasticsearch-head
 elasticsearch/bin/plugin -install elasticsearch/elasticsearch-lang-python/2.0.0

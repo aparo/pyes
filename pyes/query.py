@@ -130,7 +130,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
 
     Example:
 
-    q = StringQuery('elasticsearch')
+    q = QueryStringQuery('elasticsearch')
     s = Search(q, fields=['title', 'author'], start=100, size=50)
     results = conn.search(s)
     """
@@ -1121,13 +1121,13 @@ class RegexTermQuery(TermQuery):
     _internal_name = "regex_term"
 
 
-class StringQuery(Query):
+class QueryStringQuery(Query):
     """
     Query to match values on all fields for a given string
 
     Example:
 
-    q = StringQuery('elasticsearch')
+    q = QueryStringQuery('elasticsearch')
     results = conn.search(q)
     """
 
@@ -1140,7 +1140,7 @@ class StringQuery(Query):
                  boost=1.0, analyze_wildcard=False, use_dis_max=True,
                  tie_breaker=0, clean_text=False, minimum_should_match=None,
                  **kwargs):
-        super(StringQuery, self).__init__(**kwargs)
+        super(QueryStringQuery, self).__init__(**kwargs)
         self.clean_text = clean_text
         self.search_fields = search_fields or []
         self.query = query

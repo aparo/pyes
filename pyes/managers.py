@@ -441,7 +441,8 @@ class Indices(object):
         if raw:
             return result
         from pyes.mappings import Mapper
-        mapper = Mapper(result, is_mapping=is_mapping, connection=self.conn,
+        mapper = Mapper(result['mappings'], is_mapping=is_mapping,
+                        connection=self.conn,
                         document_object_field=self.conn.document_object_field)
         if doc_type:
             return mapper.mappings[doc_type]

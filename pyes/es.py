@@ -538,7 +538,7 @@ class ES(object):
     @property
     def mappings(self):
         if self._mappings is None:
-            self._mappings = Mapper(self.get_mapping(indices=self.default_indices),
+            self._mappings = Mapper(self.indices.get_mapping(indices=self.default_indices),
                                     connection=self,
                                     document_object_field=self.document_object_field)
         return self._mappings

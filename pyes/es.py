@@ -1673,7 +1673,7 @@ class EmptyResultSet(object):
 
 class ResultSetMulti(object):
     def __init__(self, connection, searches, indices_list=None,
-                 doc_types_list=None, routing_list=None, models=None):
+                 doc_types_list=None, routing_list=None, search_type_list=None, models=None):
         """
         results: an es query results dict
         fix_keys: remove the "_" from every key, useful for django views
@@ -1701,6 +1701,10 @@ class ResultSetMulti(object):
             self.routing_list = [None] * num_searches
         else:
             self.routing_list = routing_list
+        if search_type_list is None:
+            self.search_type_list = [None] * num_searches
+        else:
+            self.search_type_list = search_type_list
         self._results_list = None
         self.models = models or self.connection.model
         self._total = None
@@ -1742,7 +1746,8 @@ class ResultSetMulti(object):
     def _search_raw_multi(self):
         self.multi_search_query, result = self.connection.search_raw_multi(
             self.searches, indices_list=self.indices_list,
-            doc_types_list=self.doc_types_list, routing_list=self.routing_list)
+            doc_types_list=self.doc_types_list, routing_list=self.routing_list,
+            search_type_list=self.search_type_list)
 
         return result
 
@@ -1789,3 +1794,4 @@ class ResultSetMulti(object):
 
     if six.PY2:
         next = __next__
+

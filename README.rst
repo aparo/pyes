@@ -12,12 +12,12 @@
 
 pyes is a pythonic way to use ElasticSearch since 2010. 
 
-This version requires elasticsearch 1.1.0 or above.
+This version requires elasticsearch 1.x or above. It's a pre release for pyes 1.x. Give a look to migrations documentation to upgrade you code for ElasticSearch 1.x.
 
 We are working to provide full support to ElasticSearch 1.x (check the develop branch: we are using the git-flow workflow) that'll have:
 
-- connection based on Official ElasticSearch cliient
-- full support to ElasticSearch 1.0.0 (removed old support due incompatibility with old version of ES)
+- connection based on Official ElasticSearch client ??
+- full support to ElasticSearch 1.x (removed old support due incompatibility with old version of ES)
 - migration from multi_field to >field>.fields
 - refactory of old code to be more pythonic
 - performance improvements
@@ -40,6 +40,12 @@ Features
 
 Changelog
 =========
+
+v. 0.99.0:
+
+    Migrated many code to ElasticSearch 1.x
+
+    Full coverage for actual queries
 
 v. 0.99:
 

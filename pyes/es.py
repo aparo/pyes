@@ -1000,7 +1000,7 @@ class ES(object):
         return self._send_request('GET', path, body, params=query_params, headers=headers)
 
     def search_raw_multi(self, queries, indices_list=None, doc_types_list=None,
-                         routing_list=None):
+                         routing_list=None, search_type_list=None):
         if indices_list is None:
             indices_list = [None] * len(queries)
 
@@ -1010,13 +1010,17 @@ class ES(object):
         if routing_list is None:
             routing_list = [None] * len(queries)
 
+        if search_type_list is None:
+            search_type_list = [None] * len(queries)
+
         queries = [query.search() if isinstance(query, Query)
                    else query.serialize() for query in queries]
         queries = list(map(self._encode_query, queries))
         headers = []
-        for index_name, doc_type, routing in zip(indices_list,
-                                                 doc_types_list,
-                                                 routing_list):
+        for index_name, doc_type, routing, search_type in zip(indices_list,
+                                                              doc_types_list,
+                                                              routing_list,
+                                                              search_type_list):
             d = {}
             if index_name is not None:
                 d['index'] = index_name
@@ -1024,6 +1028,8 @@ class ES(object):
                 d['type'] = doc_type
             if routing is not None:
                 d['routing'] = routing
+            if search_type is not None:
+                d['search_type'] = search_type
 
             if d:
                 headers.append(d)

@@ -1066,12 +1066,12 @@ class ES(object):
                          model=model, query_params=query_params, headers=headers)
 
     def search_multi(self, queries, indices_list=None, doc_types_list=None,
-                     routing_list=None, models=None, scans=None):
+                     routing_list=None, search_type_list=None, models=None, scans=None):
         searches = [query if isinstance(query, Search) else Search(query) for query in queries]
 
         return ResultSetMulti(self, searches, indices_list=indices_list,
                               doc_types_list=doc_types_list,
-                              routing_list=routing_list, models=models)
+                              routing_list=routing_list, search_type_list=None, models=models)
 
 
     #    scan method is no longer working due to change in ES.search behavior.  May no longer warrant its own method.

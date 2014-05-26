@@ -218,8 +218,12 @@ class Indices(object):
         indices_metadata = state['metadata']['indices']
         for index in sorted(indices_status.keys()):
             info = indices_status[index]
-            num_docs = info['docs']['num_docs']
+            try:
+                num_docs = info['docs']['num_docs']
+            except KeyError:
+                num_docs = 0
             result[index] = dict(num_docs=num_docs)
+
             if not include_aliases:
                 continue
             try:

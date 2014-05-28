@@ -199,6 +199,18 @@ class DateHistogramAgg(BucketAgg):
                 raise RuntimeError("Invalid key_field: value_field or value_script required")
         return data
 
+class NestedAgg(BucketAgg):
+    _internal_name = "nested"
+
+    def __init__(self, name, path, **kwargs):
+        super(NestedAgg, self).__init__(name, **kwargs)
+        self.path = path
+
+    def _serialize(self):
+        data = {}
+        data['path'] = self.path
+        return data
+
 
 class RangeAgg(BucketAgg):
 
@@ -237,7 +249,6 @@ class RangeAgg(BucketAgg):
             if self.params:
                 data['params'] = self.params
         return data
-
 
 
 

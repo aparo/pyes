@@ -17,6 +17,7 @@ from .filters import ANDFilter, ORFilter, NotFilter, Filter, TermsFilter, TermFi
 from .facets import Facet, TermFacet
 from .aggs import Agg, TermsAgg
 from .models import ElasticSearchModel
+from .orm.exceptions import DoesNotExist, MultipleObjectsReturned
 from .query import MatchAllQuery, BoolQuery, FilteredQuery, Search
 from .utils import ESRange
 from .utils.compat import integer_types

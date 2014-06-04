@@ -76,6 +76,13 @@ except ImportError:
     # For Python < 2.6 or people using a newer version of simplejson
     install_requires.append("simplejson")
 
+try:
+    from collections import OrderedDict
+except ImportError:
+    # Python 2.6 or earlier, use backport
+    #from ordereddict import OrderedDict
+    install_requires.append("ordereddict")
+
 py_version = sys.version_info
 if not sys.platform.startswith("java") and sys.version_info < (2, 6):
     install_requires.append("multiprocessing==2.6.2.1")

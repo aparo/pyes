@@ -98,11 +98,12 @@ class HistogramAgg(BucketAgg):
     _internal_name = "histogram"
 
     def __init__(self, name, field=None, interval=None, time_interval=None,
-                 key_field=None, value_field=None, key_script=None,
+                 key_field=None, value_field=None, key_script=None, min_doc_count=None,
                  value_script=None, params=None, **kwargs):
         super(HistogramAgg, self).__init__(name, **kwargs)
         self.field = field
         self.interval = interval
+        self.min_doc_count = min_doc_count
         self.time_interval = time_interval
         self.key_field = key_field
         self.value_field = value_field
@@ -142,6 +143,8 @@ class HistogramAgg(BucketAgg):
                 data['interval'] = self.interval
             elif self.time_interval:
                 data['time_interval'] = self.time_interval
+        if self.min_doc_count is not None:
+            data['min_doc_count'] = self.min_doc_count
         return data
 
 
@@ -151,7 +154,8 @@ class DateHistogramAgg(BucketAgg):
 
     def __init__(self, name, field=None, interval=None, time_zone=None, pre_zone=None,
                  post_zone=None, factor=None, pre_offset=None, post_offset=None,
-                 key_field=None, value_field=None, value_script=None, params=None, **kwargs):
+                 key_field=None, value_field=None, value_script=None, params=None,
+                 min_doc_count=None, **kwargs):
         super(DateHistogramAgg, self).__init__(name, **kwargs)
         self.field = field
         self.interval = interval
@@ -164,6 +168,7 @@ class DateHistogramAgg(BucketAgg):
         self.key_field = key_field
         self.value_field = value_field
         self.value_script = value_script
+        self.min_doc_count = min_doc_count
         self.params = params
 
 
@@ -185,6 +190,8 @@ class DateHistogramAgg(BucketAgg):
             data['pre_offset'] = self.pre_offset
         if self.post_offset:
             data['post_offset'] = self.post_offset
+        if self.min_doc_count is not None:
+            data['min_doc_count'] = self.min_doc_count
         if self.field:
             data['field'] = self.field
         elif self.key_field:

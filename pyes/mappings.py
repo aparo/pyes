@@ -9,7 +9,7 @@ except ImportError:
     from ordereddict import OrderedDict
 from .models import SortedDict, DotDict
 
-
+import six
 
 _thread_locals = threading.local()
 #store threadsafe data
@@ -77,9 +77,7 @@ class AbstractField(object):
         self.search_analyzer = search_analyzer
         self.name = name
         self.path = path
-        self.meta = meta or {}
         self.locale = locale
-        self.permission = permission or []
         #back compatibility
         if isinstance(store, six.string_types):
             self.store = to_bool(store)
@@ -839,7 +837,7 @@ class Mapper(object):
         indices = []
         for indexname, indexdata in list(data.items()):
             idata = []
-            for docname, docdata in list(indexdata.items()):
+            for docname, docdata in list(indexdata.get("mappings", {}).items()):
                 o = get_field(docname, docdata, document_object_field=self.document_object_field, is_document=True)
                 o.connection = self.connection
                 o.index_name = indexname
@@ -847,7 +845,7 @@ class Mapper(object):
             idata.sort()
             indices.append((indexname, idata))
         indices.sort()
-        self.indices = indices
+        self.indices = OrderedDict(indices)
 
 
     def get_doctypes(self, index, edges=True):

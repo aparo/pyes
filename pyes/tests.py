@@ -69,7 +69,8 @@ class ESTestCase(unittest.TestCase):
         pprint(result)
 
     def init_default_index(self):
-        settings = SettingsBuilder()
+        settings = SettingsBuilder({'index.number_of_replicas': 0,
+                                     "index.number_of_shards": 1})
         from pyes.mappings import DocumentObjectField
         from pyes.mappings import IntegerField
         from pyes.mappings import NestedObject

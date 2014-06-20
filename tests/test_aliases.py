@@ -19,7 +19,7 @@ class ErrorReportingTestCase(ESTestCase):
         """Test errors thrown when creating or deleting aliases.
 
         """
-        self.assertTrue('ok' in self.conn.indices.create_index(self.index_name))
+        self.assertTrue('acknowledged' in self.conn.indices.create_index(self.index_name))
 
         # Check initial output of get_indices.
         result = self.conn.indices.get_indices(include_aliases=True)
@@ -82,10 +82,10 @@ class ErrorReportingTestCase(ESTestCase):
         self.assertEqual(str(err), '[test-alias] missing')
 
     def testWriteToAlias(self):
-        self.assertTrue('ok' in self.conn.indices.create_index(self.index_name))
-        self.assertTrue('ok' in self.conn.indices.create_index("test-index2"))
-        self.assertTrue('ok' in self.conn.indices.set_alias("test-alias", ['test-index']))
-        self.assertTrue('ok' in self.conn.indices.set_alias("test-alias2", ['test-index', 'test-index2']))
+        self.assertTrue('acknowledged' in self.conn.indices.create_index(self.index_name))
+        self.assertTrue('acknowledged' in self.conn.indices.create_index("test-index2"))
+        self.assertTrue('acknowledged' in self.conn.indices.set_alias("test-alias", ['test-index']))
+        self.assertTrue('acknowledged' in self.conn.indices.set_alias("test-alias2", ['test-index', 'test-index2']))
 
         # Can write to indices.aliases only if they point to exactly one index.
         self.conn.index(dict(title='doc1'), 'test-index', 'testtype')

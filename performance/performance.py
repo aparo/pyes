@@ -3,7 +3,7 @@ import sys
 #sys.path.insert(0, "../")
 
 #from pyes import ES
-from brainaetic.echidnasearch.es import ES
+from pyes.es import ES
 from datetime import datetime
 import shelve
 conn = ES('127.0.0.1:9500')

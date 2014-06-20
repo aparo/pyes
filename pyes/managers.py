@@ -218,10 +218,17 @@ class Indices(object):
         indices_metadata = state['metadata']['indices']
         for index in sorted(indices_status.keys()):
             info = indices_status[index]
-            metadata = indices_metadata[index]
-            num_docs = info['docs']['num_docs']
+            try:
+                num_docs = info['docs']['num_docs']
+            except KeyError:
+                num_docs = 0
             result[index] = dict(num_docs=num_docs)
+
             if not include_aliases:
+                continue
+            try:
+                metadata = indices_metadata[index]
+            except KeyError:
                 continue
             for alias in metadata.get('aliases', []):
                 try:
@@ -438,7 +445,8 @@ class Indices(object):
         if raw:
             return result
         from pyes.mappings import Mapper
-        mapper = Mapper(result, is_mapping=is_mapping, connection=self.conn,
+        mapper = Mapper(result, is_mapping=False,
+                        connection=self.conn,
                         document_object_field=self.conn.document_object_field)
         if doc_type:
             return mapper.mappings[doc_type]
@@ -594,6 +602,15 @@ class Cluster(object):
             parts.append(",".join(nodes))
         path = make_path(*parts)
         return self.conn._send_request('GET', path)
+
+
+    def info(self):
+        """
+        The cluster :ref:`nodes info <es-guide-reference-api-admin-cluster-state>` API allows to retrieve one or more (or all) of
+        the cluster nodes information.
+        """
+        return self.conn._send_request('GET', "/")
+
 
     def node_stats(self, nodes=None):
         """

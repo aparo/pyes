@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from future import print_function
+
 from pyes.es import ES
 from pyes import mappings
 
@@ -31,6 +33,4 @@ def mappings_to_code(obj, doc_count=0):
 if __name__ == '__main__':
     es = ES("192.168.1.1:9200")
     res = mappings_to_code(es.mappings.get_doctype("twitter", "twitter"))
-    print "\n".join(res)
-
-
+    print("\n".join(res))

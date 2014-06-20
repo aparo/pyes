@@ -17,7 +17,7 @@ class ErrorReportingTestCase(ESTestCase):
 
         """
         result = self.conn.indices.create_index(self.index_name)
-        self.assertTrue('ok' in result)
+        self.assertTrue('acknowledge' in result)
         self.assertTrue('error' not in result)
 
         err = self.checkRaises(exceptions.IndexAlreadyExistsException,

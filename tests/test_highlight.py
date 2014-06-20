@@ -2,7 +2,7 @@
 from __future__ import absolute_import
 import unittest
 from pyes.tests import ESTestCase
-from pyes.query import Search, StringQuery, HighLighter
+from pyes.query import Search, QueryStringQuery, HighLighter
 
 class QuerySearchTestCase(ESTestCase):
     def setUp(self):
@@ -39,7 +39,7 @@ class QuerySearchTestCase(ESTestCase):
         self.conn.indices.refresh(self.index_name)
 
     def test_QueryHighlight(self):
-        q = Search(StringQuery("joe"))
+        q = Search(QueryStringQuery("joe"))
         q.add_highlight("parsedtext")
         q.add_highlight("name")
         resultset = self.conn.search(q, indices=self.index_name)
@@ -51,7 +51,7 @@ class QuerySearchTestCase(ESTestCase):
 
     def test_QueryHighlightWithHighLighter(self):
         h = HighLighter(['<b>'], ['</b>'])
-        q = Search(StringQuery("joe"), highlight=h)
+        q = Search(QueryStringQuery("joe"), highlight=h)
         q.add_highlight("parsedtext")
         q.add_highlight("name")
         resultset = self.conn.search(q, indices=self.index_name)

@@ -4,11 +4,12 @@ import six
 
 from datetime import date, datetime
 from decimal import Decimal
+
 if six.PY2:
     from six.moves.urllib.parse import urlencode, urlunsplit, urlparse
 else:
     from urllib.parse import urlencode, urlunsplit, urlparse
-#    import urllib.request, urllib.parse, urllib.error
+# import urllib.request, urllib.parse, urllib.error
 
 
 import base64
@@ -16,12 +17,14 @@ import codecs
 import random
 import time
 import weakref
+
 try:
     import simplejson as json
 except ImportError:
     import json
 
 from . import logger
+from . import connection_http
 from .connection_http import connect as http_connect
 from .convert_errors import raise_if_error
 #from .decorators import deprecated
@@ -34,12 +37,16 @@ from .models import ElasticSearchModel, DotDict, ListBulker
 from .query import Search, Query
 from .rivers import River
 from .utils import make_path
+
 try:
     from .connection import connect as thrift_connect
     from .pyesthrift.ttypes import Method, RestRequest
 except ImportError:
     thrift_connect = None
     from .fakettypes import Method, RestRequest
+
+import six
+
 
 def file_to_attachment(filename, filehandler=None):
     """
@@ -53,6 +60,42 @@ def file_to_attachment(filename, filehandler=None):
         return {'_name': filename,
                 'content': base64.b64encode(_file.read())
         }
+
+
+def expand_suggest_text(suggest):
+    from itertools import product
+
+    suggested = set()
+    all_segments = {}
+    for field, tokens in suggest.items():
+        if field.startswith(u"_"):
+            #we skip _shards
+            continue
+        if len(tokens) == 1 and not tokens[0]["options"]:
+            continue
+        texts = []
+        for token in tokens:
+            if not token["options"]:
+                texts.append([(1.0, 1, token["text"])])
+                continue
+            values = []
+            for option in token["options"]:
+                values.append((option["score"], option.get("freq", option["score"]), option["text"]))
+            texts.append(values)
+        for terms in product(*texts):
+            score = sum([v for v, _, _ in terms])
+            freq = sum([v for _, v, _ in terms])
+            text = u' '.join([t for _, _, t in terms])
+            if text in all_segments:
+                olds, oldf = all_segments[text]
+                all_segments[text] = (score + olds, freq + oldf)
+            else:
+                all_segments[text] = (score, freq)
+                #removing dupped
+    for t, (s, f) in all_segments.items():
+        suggested.add((s, f, t))
+
+    return sorted(suggested, reverse=True)
 
 
 class ESJsonEncoder(json.JSONEncoder):
@@ -115,6 +158,10 @@ class ESJsonDecoder(json.JSONDecoder):
         return DotDict(d)
 
 
+def get_id(text):
+    return str(uuid.uuid3(DotDict(bytes=""), text))
+
+
 class ES(object):
     """
     ES connection object.
@@ -126,6 +173,7 @@ class ES(object):
     def __init__(self, server="localhost:9200", timeout=30.0, bulk_size=400,
                  encoder=None, decoder=None,
                  max_retries=3,
+                 retry_time=60,
                  default_indices=None,
                  default_types=None,
                  log_curl=False,
@@ -134,7 +182,8 @@ class ES(object):
                  basic_auth=None,
                  raise_on_bulk_item_failure=False,
                  document_object_field=None,
-                 bulker_class=ListBulker):
+                 bulker_class=ListBulker,
+                 cert_reqs='CERT_OPTIONAL'):
         """
         Init a es object.
         Servers can be defined in different forms:
@@ -151,6 +200,7 @@ class ES(object):
         :param bulk_size: size of bulk operation
         :param encoder: tojson encoder
         :param max_retries: number of max retries for server if a server is down
+        :param retry_time: number of seconds between retries
         :param basic_auth: Dictionary with 'username' and 'password' keys for HTTP Basic Auth.
         :param model: used to objectify the dictinary. If None, the raw dict is returned.
 
@@ -170,6 +220,7 @@ class ES(object):
         self.timeout = timeout
         self.default_indices = default_indices
         self.max_retries = max_retries
+        self.retry_time = retry_time
         self.cluster = None
         self.debug_dump = False
         self.cluster_name = "undefined"
@@ -200,12 +251,14 @@ class ES(object):
         self.bulker_class = bulker_class
         self._raise_on_bulk_item_failure = raise_on_bulk_item_failure
 
+        connection_http.CERT_REQS = cert_reqs
+
         self.info = {}  #info about the current server
         if encoder:
             self.encoder = encoder
         if decoder:
             self.decoder = decoder
-        if isinstance(server, str):
+        if isinstance(server, six.string_types):
             self.servers = [server]
         elif isinstance(server, tuple):
             self.servers = [server]
@@ -228,7 +281,7 @@ class ES(object):
         Destructor
         """
         # Don't bother getting the lock
-        if self.bulker and self.bulker.bulk_size>0:
+        if self.bulker and self.bulker.bulk_size > 0:
             # It's not safe to rely on the destructor to flush the queue:
             # the Python documentation explicitly states "It is not guaranteed
             # that __del__() methods are called for objects that still exist "
@@ -262,7 +315,7 @@ class ES(object):
                 _type, host, port = server
                 server = urlparse('%s://%s:%s' % (_type, host, port))
                 check_format(server)
-            elif isinstance(server, str):
+            elif isinstance(server, six.string_types):
                 if server.startswith(("thrift:", "http:", "https:")):
                     server = urlparse(server)
                     check_format(server)
@@ -300,12 +353,12 @@ class ES(object):
         if server.scheme in ["http", "https"]:
             self.connection = http_connect(
                 [server for server in self.servers if server.scheme in ["http", "https"]],
-                timeout=self.timeout, basic_auth=self.basic_auth, max_retries=self.max_retries)
+                timeout=self.timeout, basic_auth=self.basic_auth, max_retries=self.max_retries, retry_time=self.retry_time)
             return
         elif server.scheme == "thrift":
             self.connection = thrift_connect(
                 [server for server in self.servers if server.scheme == "thrift"],
-                timeout=self.timeout, max_retries=self.max_retries)
+                timeout=self.timeout, max_retries=self.max_retries, retry_time=self.retry_time)
 
     def _discovery(self):
         """
@@ -358,12 +411,13 @@ class ES(object):
 
     raise_on_bulk_item_failure = property(_get_raise_on_bulk_item_failure, _set_raise_on_bulk_item_failure)
 
-    def _send_request(self, method, path, body=None, params=None, headers=None, raw=False):
+    def _send_request(self, method, path, body=None, params=None, headers=None, raw=False, return_response=False):
         if params is None:
             params = {}
         elif "routing" in params and params["routing"] is None:
             del params["routing"]
 
+        path = path.replace("%2C", ",")
         if headers is None:
             headers = {}
         if not path.startswith("/"):
@@ -371,10 +425,10 @@ class ES(object):
         if not self.connection:
             self._init_connection()
         if body:
-            if isinstance(body, SettingsBuilder):
+            if not isinstance(body, dict) and hasattr(body, "as_dict"):
                 body = body.as_dict()
             if isinstance(body, dict):
-               body = json.dumps(body, cls=self.encoder)
+                body = json.dumps(body, cls=self.encoder)
         else:
             body = ""
 
@@ -394,16 +448,19 @@ class ES(object):
         response = self.connection.execute(request)
 
         if self.dump_curl is not None:
-            self.dump_curl.write(("# response status: %s"%response.status).encode('utf-8'))
-            self.dump_curl.write(("# response body: %s"%response.body).encode('utf-8'))
+            self.dump_curl.write(("# response status: %s" % response.status).encode('utf-8'))
+            self.dump_curl.write(("# response body: %s" % response.body).encode('utf-8'))
+
+        if return_response:
+            return response
 
         if method == "HEAD":
             return response.status == 200
 
         # handle the response
-        response_body=response.body
+        response_body = response.body
         if six.PY3:
-            response_body=response_body.decode(encoding='UTF-8')
+            response_body = response_body.decode(encoding='UTF-8')
 
         try:
             decoded = json.loads(response_body, cls=self.decoder)
@@ -446,6 +503,20 @@ class ES(object):
             indices = [indices]
         return indices
 
+    def validate_types(self, types=None):
+        """Return a valid list of types.
+
+        `types` may be a string or a list of strings.
+        If `types` is not supplied, returns the default_types.
+
+        """
+        types = types or self.default_types
+        if types is None:
+            types = []
+        if isinstance(types, six.string_types):
+            types = [types]
+        return types
+
     def _get_curl_request(self, request):
         params = {'pretty': 'true'}
         params.update(request.parameters)
@@ -474,7 +545,7 @@ class ES(object):
     @property
     def mappings(self):
         if self._mappings is None:
-            self._mappings = Mapper(self.get_mapping(indices=self.default_indices),
+            self._mappings = Mapper(self.indices.get_mapping(indices=self.default_indices, raw=True),
                                     connection=self,
                                     document_object_field=self.document_object_field)
         return self._mappings
@@ -483,8 +554,8 @@ class ES(object):
         """
         Create a bulker object and return it to allow to manage custom bulk policies
         """
-        return  self.bulker_class(self, bulk_size=self.bulk_size,
-                                  raise_on_bulk_item_failure=self.raise_on_bulk_item_failure)
+        return self.bulker_class(self, bulk_size=self.bulk_size,
+                                 raise_on_bulk_item_failure=self.raise_on_bulk_item_failure)
 
     def ensure_index(self, index, mappings=None, settings=None, clear=False):
         """
@@ -497,7 +568,7 @@ class ES(object):
         if exists and not mappings and not clear:
             return
         if exists and clear:
-            self.indices.indices.delete_index(index)
+            self.indices.delete_index(index)
             exists = False
 
         if exists:
@@ -517,6 +588,8 @@ class ES(object):
                     self.indices.put_mapping(doc_type=name, mapping=data, indices=index)
 
             else:
+                from pyes.mappings import DocumentObjectField, ObjectField
+
                 for maps in mappings:
                     if isinstance(maps, tuple):
                         name, mapping = maps
@@ -524,6 +597,8 @@ class ES(object):
                     elif isinstance(maps, dict):
                         for name, data in list(maps.items()):
                             self.indices.put_mapping(doc_type=name, mapping=maps, indices=index)
+                    elif isinstance(maps, (DocumentObjectField, ObjectField)):
+                        self.put_mapping(doc_type=maps.name, mapping=maps.as_dict(), indices=index)
 
                 return
 
@@ -550,14 +625,14 @@ class ES(object):
         """
         if not querystring_args:
             querystring_args = {}
-        doc_types_str=''
+        doc_types_str = ''
         if doc_types:
             doc_types_str = '/' + ','.join(doc_types)
         path = '/{0}{1}/_warmer/{2}'.format(','.join(indices), doc_types_str, name)
         if hasattr(warmer, 'serialize'):
-            body=warmer.serialize()
+            body = warmer.serialize()
         else:
-            body=warmer
+            body = warmer
         return self._send_request(method='PUT', path=path, body=body, params=querystring_args)
 
     def get_warmer(self, doc_types=None, indices=None, name=None, querystring_args=None):
@@ -572,7 +647,7 @@ class ES(object):
         name = name or ''
         if not querystring_args:
             querystring_args = {}
-        doc_types_str=''
+        doc_types_str = ''
         if doc_types:
             doc_types_str = '/' + ','.join(doc_types)
         path = '/{0}{1}/_warmer/{2}'.format(','.join(indices), doc_types_str, name)
@@ -591,7 +666,7 @@ class ES(object):
         name = name or ''
         if not querystring_args:
             querystring_args = {}
-        doc_types_str=''
+        doc_types_str = ''
         if doc_types:
             doc_types_str = '/' + ','.join(doc_types)
         path = '/{0}{1}/_warmer/{2}'.format(','.join(indices), doc_types_str, name)
@@ -837,7 +912,7 @@ class ES(object):
         Delete documents from one or more indices and one or more types based on a query.
         """
         path = self._make_path(indices, doc_types, '_query')
-        body = self._encode_query(query)
+        body = {"query": self._encode_query(query)}
         return self._send_request('DELETE', path, body, query_params)
 
     def exists(self, index, doc_type, id, **query_params):
@@ -932,7 +1007,7 @@ class ES(object):
         return self._send_request('GET', path, body, params=query_params, headers=headers)
 
     def search_raw_multi(self, queries, indices_list=None, doc_types_list=None,
-                         routing_list=None):
+                         routing_list=None, search_type_list=None):
         if indices_list is None:
             indices_list = [None] * len(queries)
 
@@ -942,13 +1017,17 @@ class ES(object):
         if routing_list is None:
             routing_list = [None] * len(queries)
 
+        if search_type_list is None:
+            search_type_list = [None] * len(queries)
+
         queries = [query.search() if isinstance(query, Query)
                    else query.serialize() for query in queries]
         queries = list(map(self._encode_query, queries))
         headers = []
-        for index_name, doc_type, routing in zip(indices_list,
-                                                 doc_types_list,
-                                                 routing_list):
+        for index_name, doc_type, routing, search_type in zip(indices_list,
+                                                              doc_types_list,
+                                                              routing_list,
+                                                              search_type_list):
             d = {}
             if index_name is not None:
                 d['index'] = index_name
@@ -956,6 +1035,8 @@ class ES(object):
                 d['type'] = doc_type
             if routing is not None:
                 d['routing'] = routing
+            if search_type is not None:
+                d['search_type'] = search_type
 
             if d:
                 headers.append(d)
@@ -992,12 +1073,12 @@ class ES(object):
                          model=model, query_params=query_params, headers=headers)
 
     def search_multi(self, queries, indices_list=None, doc_types_list=None,
-                     routing_list=None, models=None, scans=None):
+                     routing_list=None, search_type_list=None, models=None, scans=None):
         searches = [query if isinstance(query, Search) else Search(query) for query in queries]
 
         return ResultSetMulti(self, searches, indices_list=indices_list,
                               doc_types_list=doc_types_list,
-                              routing_list=routing_list, models=models)
+                              routing_list=routing_list, search_type_list=None, models=models)
 
 
     #    scan method is no longer working due to change in ES.search behavior.  May no longer warrant its own method.
@@ -1097,7 +1178,7 @@ class ES(object):
                 continue
             meta = mapping.get_meta()
             meta.update(values)
-            mapping = {doc_type:{"_meta":meta}}
+            mapping = {doc_type: {"_meta": meta}}
             self.indices.put_mapping(doc_type=doc_type, mapping=mapping, indices=indices)
 
     def morelikethis(self, index, doc_type, id, fields, **query_params):
@@ -1150,6 +1231,8 @@ class ES(object):
         return json.dumps(serializable.serialize(), cls=self.encoder)
 
     def _encode_query(self, query):
+        from .query import Query
+
         if isinstance(query, Query):
             query = query.serialize()
         if isinstance(query, dict):
@@ -1159,8 +1242,110 @@ class ES(object):
                            % query.__class__)
 
 
-class ResultSet(object):
+class ResultSetList(object):
+    def __init__(self, items, model=None):
+        """
+        results: an es query results dict
+        fix_keys: remove the "_" from every key, useful for django views
+        clean_highlight: removed empty highlight
+        search: a Search object.
+        """
 
+        self.items = items
+        self.model = model or self.connection.model
+        self.iterpos = 0  #keep track of iterator position
+        self._current_item = 0
+
+    @property
+    def total(self):
+        return len(self.items)
+
+    @property
+    def facets(self):
+        return {}
+
+    def __len__(self):
+        return len(self.items)
+
+    def count(self):
+        return len(self.items)
+
+    def __getattr__(self, name):
+        if name == "facets":
+            return {}
+        elif name == "hits":
+            return self.items
+
+        # elif name in self._results:
+        #     #we manage took, timed_out, _shards
+        #     return self._results[name]
+        #
+        # elif name == "shards" and "_shards" in self._results:
+        #     #trick shards -> _shards
+        #     return self._results["_shards"]
+        # return self._results['hits'][name]
+        return None
+
+    def __getitem__(self, val):
+        if not isinstance(val, (int, long, slice)):
+            raise TypeError('%s indices must be integers, not %s' % (
+                self.__class__.__name__, val.__class__.__name__))
+
+        def get_start_end(val):
+            if isinstance(val, slice):
+                start = val.start
+                if not start:
+                    start = 0
+                end = val.stop or len(self.items)
+                if end < 0:
+                    end = len(self.items) + end
+                if end > len(self.items):
+                    end = len(self.items)
+                return start, end
+            return val, val + 1
+
+
+        start, end = get_start_end(val)
+
+        if not isinstance(val, slice):
+            if len(self.items) == 1:
+                return self.items[0]
+            raise IndexError
+        return [hit for hit in self.items[start:end]]
+
+
+    def __next__(self):
+
+        if len(self.items) == self.iterpos:
+            raise StopIteration
+        res = self.items[self.iterpos]
+        self.iterpos += 1
+        return res
+
+    def __iter__(self):
+        self.iterpos = 0
+        self._current_item = 0
+        return self
+
+    def _search_raw(self, start=None, size=None):
+
+        if start is None and size is None:
+            query_params = self.query_params
+        else:
+            query_params = dict(self.query_params)
+            if start is not None:
+                query_params["from"] = start
+            if size is not None:
+                query_params["size"] = size
+
+        return self.connection.search_raw(self.search, indices=self.indices,
+                                          doc_types=self.doc_types, **query_params)
+
+    if six.PY2:
+        next = __next__
+
+
+class ResultSet(object):
     def __init__(self, connection, search, indices=None, doc_types=None, query_params=None,
                  headers=None, auto_fix_keys=False, auto_clean_highlight=False, model=None):
         """
@@ -1188,6 +1373,7 @@ class ResultSet(object):
         self._max_score = None
         self.valid = False
         self._facets = {}
+        self._aggs = {}
         self._hits = []
         self.auto_fix_keys = auto_fix_keys
         self.auto_clean_highlight = auto_clean_highlight
@@ -1238,16 +1424,17 @@ class ResultSet(object):
             self._post_process_query()
 
     def _post_process_query(self):
-            self._facets = self._results.get('facets', {})
-            if 'hits' in self._results:
-                self.valid = True
-                self._hits = self._results['hits']['hits']
-            else:
-                self._hits = []
-            if self.auto_fix_keys:
-                self._fix_keys()
-            if self.auto_clean_highlight:
-                self.clean_highlight()
+        self._facets = self._results.get('facets', {})
+        self._aggs = self._results.get('aggregations', {})
+        if 'hits' in self._results:
+            self.valid = True
+            self._hits = self._results['hits']['hits']
+        else:
+            self._hits = []
+        if self.auto_fix_keys:
+            self._fix_keys()
+        if self.auto_clean_highlight:
+            self.clean_highlight()
 
     @property
     def total(self):
@@ -1273,8 +1460,13 @@ class ResultSet(object):
     def facets(self):
         if self._results is None:
             self._do_search()
-            self.fix_keys()
         return self._facets
+
+    @property
+    def aggs(self):
+        if self._results is None:
+            self._do_search()
+        return self._aggs
 
     def fix_facets(self):
         """
@@ -1285,6 +1477,21 @@ class ResultSet(object):
             _type = facets[key].get("_type", "unknown")
             if _type == "date_histogram":
                 for entry in facets[key].get("entries", []):
+                    for k, v in list(entry.items()):
+                        if k in ["count", "max", "min", "total_count", "mean", "total"]:
+                            continue
+                        if not isinstance(entry[k], datetime):
+                            entry[k] = datetime.utcfromtimestamp(v / 1e3)
+
+    def fix_aggs(self):
+        """
+        This function convert date_histogram aggs to datetime
+        """
+        aggs = self.aggs
+        for key in list(aggs.keys()):
+            _type = aggs[key].get("_type", "unknown")
+            if _type == "date_histogram":
+                for entry in aggs[key].get("entries", []):
                     for k, v in list(entry.items()):
                         if k in ["count", "max", "min", "total_count", "mean", "total"]:
                             continue
@@ -1329,6 +1536,10 @@ class ResultSet(object):
             self._do_search()
         if name == "facets":
             return self._facets
+
+        elif name == "aggs":
+            return self._aggs
+
         elif name == "hits":
             return self._hits
 
@@ -1364,7 +1575,7 @@ class ResultSet(object):
 
         if self._results:
             if start >= 0 and end <= self.start + self.chuck_size and len(self._results['hits']['hits']) > 0 and \
-                ("_source" in self._results['hits']['hits'][0] or "_fields" in self._results['hits']['hits'][0]):
+                    ("_source" in self._results['hits']['hits'][0] or "_fields" in self._results['hits']['hits'][0]):
                 if not isinstance(val, slice):
                     return model(self.connection, self._results['hits']['hits'][val - self.start])
                 else:
@@ -1384,7 +1595,7 @@ class ResultSet(object):
         if self._results is None:
             self._do_search()
         if "_scroll_id" in self._results and self._total != 0 and self._current_item == 0 and len(
-            self._results["hits"].get("hits", [])) == 0:
+                self._results["hits"].get("hits", [])) == 0:
             self._do_search()
         if len(self.hits) == 0:
             raise StopIteration
@@ -1430,6 +1641,10 @@ class ResultSet(object):
         return self.connection.search_raw(self.search, indices=self.indices,
                                           doc_types=self.doc_types, headers=self.headers, **query_params)
 
+    def get_suggested_texts(self):
+        return expand_suggest_text(self.suggest)
+
+
 class EmptyResultSet(object):
     def __init__(self, *args, **kwargs):
         """
@@ -1443,6 +1658,10 @@ class EmptyResultSet(object):
 
     @property
     def facets(self):
+        return {}
+
+    @property
+    def aggs(self):
         return {}
 
     def __len__(self):
@@ -1460,9 +1679,10 @@ class EmptyResultSet(object):
     def __iter__(self):
         return self
 
+
 class ResultSetMulti(object):
     def __init__(self, connection, searches, indices_list=None,
-                 doc_types_list=None, routing_list=None, models=None):
+                 doc_types_list=None, routing_list=None, search_type_list=None, models=None):
         """
         results: an es query results dict
         fix_keys: remove the "_" from every key, useful for django views
@@ -1490,6 +1710,10 @@ class ResultSetMulti(object):
             self.routing_list = [None] * num_searches
         else:
             self.routing_list = routing_list
+        if search_type_list is None:
+            self.search_type_list = [None] * num_searches
+        else:
+            self.search_type_list = search_type_list
         self._results_list = None
         self.models = models or self.connection.model
         self._total = None
@@ -1511,9 +1735,9 @@ class ResultSetMulti(object):
             self._results_list = [ResultSet(self.connection, search,
                                             indices=indices, query_params={},
                                             doc_types=doc_types)
-                for search, indices, doc_types in
-                    zip(self.searches, self.indices_list,
-                        self.doc_types_list)]
+                                  for search, indices, doc_types in
+                                  zip(self.searches, self.indices_list,
+                                      self.doc_types_list)]
 
             for rs, rsp in zip(self._results_list, responses):
                 if 'error' in rsp:
@@ -1531,7 +1755,8 @@ class ResultSetMulti(object):
     def _search_raw_multi(self):
         self.multi_search_query, result = self.connection.search_raw_multi(
             self.searches, indices_list=self.indices_list,
-            doc_types_list=self.doc_types_list, routing_list=self.routing_list)
+            doc_types_list=self.doc_types_list, routing_list=self.routing_list,
+            search_type_list=self.search_type_list)
 
         return result
 
@@ -1578,3 +1803,4 @@ class ResultSetMulti(object):
 
     if six.PY2:
         next = __next__
+

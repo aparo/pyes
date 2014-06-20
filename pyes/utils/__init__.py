@@ -1,21 +1,33 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 import base64
+
 try:
-    #python3
+    # python3
     from urllib.parse import quote as _quote
 except ImportError:
-    #Python 2
+    # Python 2
     from urllib import quote as _quote
-import array
 import uuid
 import six
 
 __all__ = ['clean_string', "ESRange", "ESRangeOp", "string_b64encode", "string_b64decode", "make_path", "make_id"]
 
+
 def quote(value):
-    value = value.encode('utf8', errors='ignore') if isinstance(value,  six.string_types) else str(value)
+    value = value.encode('utf8', 'ignore') if isinstance(value, six.string_types) else str(value)
     return _quote(value, safe='')
+
+
+def plain_concepts_extractor(explanation):
+    if "description" in explanation and explanation["description"].startswith(u"weight("):
+        description = explanation["description"]
+        return [(description.split(u"weight(")[1].split(u")")[0].rsplit(u" in ", 1)[0], explanation["value"])]
+    results = []
+    for detail in explanation.get("details", []):
+        results.extend(plain_concepts_extractor(detail))
+    return results
+
 
 def make_id(value):
     """
@@ -24,11 +36,13 @@ def make_id(value):
     :return: a string
     """
     if isinstance(value, six.string_types):
-        value=value.encode("utf8", errors="ignore")
+        value = value.encode("utf8", "ignore")
     from hashlib import md5
+
     val = uuid.UUID(bytes=md5(value).digest(), version=4)
 
     return base64.urlsafe_b64encode(val.get_bytes())[:-2]
+
 
 def make_path(*path_components):
     """
@@ -39,6 +53,7 @@ def make_path(*path_components):
     if not path.startswith('/'):
         path = '/' + path
     return path
+
 
 def string_b64encode(s):
     """
@@ -57,6 +72,7 @@ def string_b64decode(s):
 SPECIAL_CHARS = [33, 34, 38, 40, 41, 42, 45, 58, 63, 91, 92, 93, 94, 123, 124, 125, 126]
 UNI_SPECIAL_CHARS = dict((c, None) for c in SPECIAL_CHARS)
 STR_SPECIAL_CHARS = ''.join([chr(c) for c in SPECIAL_CHARS])
+
 
 class EqualityComparableUsingAttributeDictionary(object):
     """
@@ -105,29 +121,30 @@ class ESRange(EqualityComparableUsingAttributeDictionary):
 
 
 class ESRangeOp(ESRange):
-    def __init__(self, field, op, value, boost=None):
+    def __init__(self, field, op1, value1, op2=None, value2=None, boost=None):
         from_value = to_value = include_lower = include_upper = None
-        if op == "gt":
-            from_value = value
-            include_lower = False
-        elif op == "gte":
-            from_value = value
-            include_lower = True
-        if op == "lt":
-            to_value = value
-            include_upper = False
-        elif op == "lte":
-            to_value = value
-            include_upper = True
+        for op, value in ((op1, value1), (op2, value2)):
+            if op == "gt":
+                from_value = value
+                include_lower = False
+            elif op == "gte":
+                from_value = value
+                include_lower = True
+            if op == "lt":
+                to_value = value
+                include_upper = False
+            elif op == "lte":
+                to_value = value
+                include_upper = True
         super(ESRangeOp, self).__init__(field, from_value, to_value,
-            include_lower, include_upper, boost)
+                                        include_lower, include_upper, boost)
 
 
 def clean_string(text):
     """
     Remove Lucene reserved characters from query string
     """
-    if isinstance(text,  six.string_types):
+    if isinstance(text, six.string_types):
         return text.translate(UNI_SPECIAL_CHARS).strip()
     return text.translate(None, STR_SPECIAL_CHARS).strip()
 
@@ -138,7 +155,7 @@ def keys_to_string(data):
     """
     if isinstance(data, dict):
         for key in list(data.keys()):
-            if isinstance(key,  six.string_types):
+            if isinstance(key, six.string_types):
                 value = data[key]
                 val = keys_to_string(value)
                 del data[key]

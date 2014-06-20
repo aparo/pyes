@@ -50,21 +50,21 @@ class PercolatorTestCase(ESTestCase):
 
     def test_percolator(self):
         results = self.conn.percolate('test-index', 'test-type', PercolatorQuery({'name': 'iphone'}))
-        self.assertTrue('test-perc1' not in results['matches'])
-        self.assertTrue('test-perc2' in results['matches'])
-        self.assertTrue('test-perc3' not in results['matches'])
+        self.assertTrue({'_id': 'test-perc1', '_index': 'test-index'} not in results['matches'])
+        self.assertTrue({'_id': 'test-perc2','_index': 'test-index'} in results['matches'])
+        self.assertTrue({'_id': 'test-perc3', '_index': 'test-index'} not in results['matches'])
 
     def test_or(self):
         results = self.conn.percolate('test-index', 'test-type', PercolatorQuery({'name': 'apple'}))
-        self.assertTrue('test-perc1' in results['matches'])
-        self.assertTrue('test-perc2' in results['matches'])
-        self.assertTrue('test-perc3' not in results['matches'])
+        self.assertTrue({'_id': 'test-perc1', '_index': 'test-index'} in results['matches'])
+        self.assertTrue({'_id': 'test-perc2', '_index': 'test-index'} in results['matches'])
+        self.assertTrue({'_id': 'test-perc3', '_index': 'test-index'} not in results['matches'])
 
     def test_and(self):
         results = self.conn.percolate('test-index', 'test-type', PercolatorQuery({'name': 'apple iphone'}))
-        self.assertTrue('test-perc1' in results['matches'])
-        self.assertTrue('test-perc2' in results['matches'])
-        self.assertTrue('test-perc3' in results['matches'])
+        self.assertTrue({'_id': 'test-perc1', '_index': 'test-index'} in results['matches'])
+        self.assertTrue({'_id': 'test-perc2', '_index': 'test-index'} in results['matches'])
+        self.assertTrue({'_id': 'test-perc3', '_index': 'test-index'} in results['matches'])
 
     def tearDown(self):
         self.conn.delete_percolator('test-index', 'test-perc1')

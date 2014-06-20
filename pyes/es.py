@@ -4,11 +4,12 @@ import six
 
 from datetime import date, datetime
 from decimal import Decimal
+
 if six.PY2:
     from six.moves.urllib.parse import urlencode, urlunsplit, urlparse
 else:
     from urllib.parse import urlencode, urlunsplit, urlparse
-#    import urllib.request, urllib.parse, urllib.error
+# import urllib.request, urllib.parse, urllib.error
 
 
 import base64
@@ -16,6 +17,7 @@ import codecs
 import random
 import time
 import weakref
+
 try:
     import simplejson as json
 except ImportError:
@@ -35,6 +37,7 @@ from .models import ElasticSearchModel, DotDict, ListBulker
 from .query import Search, Query
 from .rivers import River
 from .utils import make_path
+
 try:
     from .connection import connect as thrift_connect
     from .pyesthrift.ttypes import Method, RestRequest
@@ -43,6 +46,7 @@ except ImportError:
     from .fakettypes import Method, RestRequest
 
 import six
+
 
 def file_to_attachment(filename, filehandler=None):
     """
@@ -87,7 +91,7 @@ def expand_suggest_text(suggest):
                 all_segments[text] = (score + olds, freq + oldf)
             else:
                 all_segments[text] = (score, freq)
-        #removing dupped
+                #removing dupped
     for t, (s, f) in all_segments.items():
         suggested.add((s, f, t))
 
@@ -169,6 +173,7 @@ class ES(object):
     def __init__(self, server="localhost:9200", timeout=30.0, bulk_size=400,
                  encoder=None, decoder=None,
                  max_retries=3,
+                 retry_time=60,
                  default_indices=None,
                  default_types=None,
                  log_curl=False,
@@ -195,6 +200,7 @@ class ES(object):
         :param bulk_size: size of bulk operation
         :param encoder: tojson encoder
         :param max_retries: number of max retries for server if a server is down
+        :param retry_time: number of seconds between retries
         :param basic_auth: Dictionary with 'username' and 'password' keys for HTTP Basic Auth.
         :param model: used to objectify the dictinary. If None, the raw dict is returned.
 
@@ -214,6 +220,7 @@ class ES(object):
         self.timeout = timeout
         self.default_indices = default_indices
         self.max_retries = max_retries
+        self.retry_time = retry_time
         self.cluster = None
         self.debug_dump = False
         self.cluster_name = "undefined"
@@ -274,7 +281,7 @@ class ES(object):
         Destructor
         """
         # Don't bother getting the lock
-        if self.bulker and self.bulker.bulk_size>0:
+        if self.bulker and self.bulker.bulk_size > 0:
             # It's not safe to rely on the destructor to flush the queue:
             # the Python documentation explicitly states "It is not guaranteed
             # that __del__() methods are called for objects that still exist "
@@ -346,12 +353,12 @@ class ES(object):
         if server.scheme in ["http", "https"]:
             self.connection = http_connect(
                 [server for server in self.servers if server.scheme in ["http", "https"]],
-                timeout=self.timeout, basic_auth=self.basic_auth, max_retries=self.max_retries)
+                timeout=self.timeout, basic_auth=self.basic_auth, max_retries=self.max_retries, retry_time=self.retry_time)
             return
         elif server.scheme == "thrift":
             self.connection = thrift_connect(
                 [server for server in self.servers if server.scheme == "thrift"],
-                timeout=self.timeout, max_retries=self.max_retries)
+                timeout=self.timeout, max_retries=self.max_retries, retry_time=self.retry_time)
 
     def _discovery(self):
         """
@@ -421,7 +428,7 @@ class ES(object):
             if not isinstance(body, dict) and hasattr(body, "as_dict"):
                 body = body.as_dict()
             if isinstance(body, dict):
-               body = json.dumps(body, cls=self.encoder)
+                body = json.dumps(body, cls=self.encoder)
         else:
             body = ""
 
@@ -441,8 +448,8 @@ class ES(object):
         response = self.connection.execute(request)
 
         if self.dump_curl is not None:
-            self.dump_curl.write(("# response status: %s"%response.status).encode('utf-8'))
-            self.dump_curl.write(("# response body: %s"%response.body).encode('utf-8'))
+            self.dump_curl.write(("# response status: %s" % response.status).encode('utf-8'))
+            self.dump_curl.write(("# response body: %s" % response.body).encode('utf-8'))
 
         if return_response:
             return response
@@ -451,9 +458,9 @@ class ES(object):
             return response.status == 200
 
         # handle the response
-        response_body=response.body
+        response_body = response.body
         if six.PY3:
-            response_body=response_body.decode(encoding='UTF-8')
+            response_body = response_body.decode(encoding='UTF-8')
 
         try:
             decoded = json.loads(response_body, cls=self.decoder)
@@ -547,8 +554,8 @@ class ES(object):
         """
         Create a bulker object and return it to allow to manage custom bulk policies
         """
-        return  self.bulker_class(self, bulk_size=self.bulk_size,
-                                  raise_on_bulk_item_failure=self.raise_on_bulk_item_failure)
+        return self.bulker_class(self, bulk_size=self.bulk_size,
+                                 raise_on_bulk_item_failure=self.raise_on_bulk_item_failure)
 
     def ensure_index(self, index, mappings=None, settings=None, clear=False):
         """
@@ -618,14 +625,14 @@ class ES(object):
         """
         if not querystring_args:
             querystring_args = {}
-        doc_types_str=''
+        doc_types_str = ''
         if doc_types:
             doc_types_str = '/' + ','.join(doc_types)
         path = '/{0}{1}/_warmer/{2}'.format(','.join(indices), doc_types_str, name)
         if hasattr(warmer, 'serialize'):
-            body=warmer.serialize()
+            body = warmer.serialize()
         else:
-            body=warmer
+            body = warmer
         return self._send_request(method='PUT', path=path, body=body, params=querystring_args)
 
     def get_warmer(self, doc_types=None, indices=None, name=None, querystring_args=None):
@@ -640,7 +647,7 @@ class ES(object):
         name = name or ''
         if not querystring_args:
             querystring_args = {}
-        doc_types_str=''
+        doc_types_str = ''
         if doc_types:
             doc_types_str = '/' + ','.join(doc_types)
         path = '/{0}{1}/_warmer/{2}'.format(','.join(indices), doc_types_str, name)
@@ -659,7 +666,7 @@ class ES(object):
         name = name or ''
         if not querystring_args:
             querystring_args = {}
-        doc_types_str=''
+        doc_types_str = ''
         if doc_types:
             doc_types_str = '/' + ','.join(doc_types)
         path = '/{0}{1}/_warmer/{2}'.format(','.join(indices), doc_types_str, name)
@@ -905,7 +912,7 @@ class ES(object):
         Delete documents from one or more indices and one or more types based on a query.
         """
         path = self._make_path(indices, doc_types, '_query')
-        body = {"query":self._encode_query(query)}
+        body = {"query": self._encode_query(query)}
         return self._send_request('DELETE', path, body, query_params)
 
     def exists(self, index, doc_type, id, **query_params):
@@ -1171,7 +1178,7 @@ class ES(object):
                 continue
             meta = mapping.get_meta()
             meta.update(values)
-            mapping = {doc_type:{"_meta":meta}}
+            mapping = {doc_type: {"_meta": meta}}
             self.indices.put_mapping(doc_type=doc_type, mapping=mapping, indices=indices)
 
     def morelikethis(self, index, doc_type, id, fields, **query_params):
@@ -1233,6 +1240,7 @@ class ES(object):
 
         raise InvalidQuery("`query` must be Query or dict instance, not %s"
                            % query.__class__)
+
 
 class ResultSetList(object):
     def __init__(self, items, model=None):
@@ -1336,8 +1344,8 @@ class ResultSetList(object):
     if six.PY2:
         next = __next__
 
-class ResultSet(object):
 
+class ResultSet(object):
     def __init__(self, connection, search, indices=None, doc_types=None, query_params=None,
                  headers=None, auto_fix_keys=False, auto_clean_highlight=False, model=None):
         """
@@ -1416,17 +1424,17 @@ class ResultSet(object):
             self._post_process_query()
 
     def _post_process_query(self):
-            self._facets = self._results.get('facets', {})
-            self._aggs = self._results.get('aggregations', {})
-            if 'hits' in self._results:
-                self.valid = True
-                self._hits = self._results['hits']['hits']
-            else:
-                self._hits = []
-            if self.auto_fix_keys:
-                self._fix_keys()
-            if self.auto_clean_highlight:
-                self.clean_highlight()
+        self._facets = self._results.get('facets', {})
+        self._aggs = self._results.get('aggregations', {})
+        if 'hits' in self._results:
+            self.valid = True
+            self._hits = self._results['hits']['hits']
+        else:
+            self._hits = []
+        if self.auto_fix_keys:
+            self._fix_keys()
+        if self.auto_clean_highlight:
+            self.clean_highlight()
 
     @property
     def total(self):
@@ -1567,7 +1575,7 @@ class ResultSet(object):
 
         if self._results:
             if start >= 0 and end <= self.start + self.chuck_size and len(self._results['hits']['hits']) > 0 and \
-                ("_source" in self._results['hits']['hits'][0] or "_fields" in self._results['hits']['hits'][0]):
+                    ("_source" in self._results['hits']['hits'][0] or "_fields" in self._results['hits']['hits'][0]):
                 if not isinstance(val, slice):
                     return model(self.connection, self._results['hits']['hits'][val - self.start])
                 else:
@@ -1587,7 +1595,7 @@ class ResultSet(object):
         if self._results is None:
             self._do_search()
         if "_scroll_id" in self._results and self._total != 0 and self._current_item == 0 and len(
-                    self._results["hits"].get("hits", [])) == 0:
+                self._results["hits"].get("hits", [])) == 0:
             self._do_search()
         if len(self.hits) == 0:
             raise StopIteration
@@ -1671,6 +1679,7 @@ class EmptyResultSet(object):
     def __iter__(self):
         return self
 
+
 class ResultSetMulti(object):
     def __init__(self, connection, searches, indices_list=None,
                  doc_types_list=None, routing_list=None, search_type_list=None, models=None):
@@ -1726,9 +1735,9 @@ class ResultSetMulti(object):
             self._results_list = [ResultSet(self.connection, search,
                                             indices=indices, query_params={},
                                             doc_types=doc_types)
-                for search, indices, doc_types in
-                    zip(self.searches, self.indices_list,
-                        self.doc_types_list)]
+                                  for search, indices, doc_types in
+                                  zip(self.searches, self.indices_list,
+                                      self.doc_types_list)]
 
             for rs, rsp in zip(self._results_list, responses):
                 if 'error' in rsp:

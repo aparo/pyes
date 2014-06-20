@@ -581,7 +581,7 @@ class ES(object):
                     self.indices.put_mapping(doc_type=name, mapping=data, indices=index)
 
             else:
-                from brainaetic.echidnasearch.mappings import DocumentObjectField, ObjectField
+                from pyes.mappings import DocumentObjectField, ObjectField
 
                 for maps in mappings:
                     if isinstance(maps, tuple):

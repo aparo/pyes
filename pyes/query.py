@@ -223,7 +223,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
             if isinstance(self.script_fields, ScriptFields):
                 res['script_fields'] = self.script_fields.serialize()
             elif isinstance(self.script_fields, dict):
-                res['script_fields'] = self.script_fields.serialize()
+                res['script_fields'] = self.script_fields
             else:
                 raise ScriptFieldsError("Parameter script_fields should of type ScriptFields or dict")
         if self.index_boost:

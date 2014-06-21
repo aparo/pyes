@@ -5,10 +5,11 @@ from .exceptions import ScriptFieldsError
 
 
 class ScriptField(object):
-    def __init__(self, script, lang="mvel", params=None):
+    def __init__(self, script, lang="mvel", params=None, ignore_failure=False):
         self.script = script
         self.lang = lang
         self.params = params
+        self.ignore_failure = ignore_failure
 
 
 class ScriptFields(object):
@@ -17,12 +18,12 @@ class ScriptFields(object):
     """
     _internal_name = "script_fields"
 
-    def __init__(self, name=None, script=None, lang=None, params=None):
+    def __init__(self, name=None, script=None, lang=None, params=None, ignore_failure=False):
         self.fields = {}
         if name:
-            self.add_field(name, script, lang, params or {})
+            self.add_field(name, script, lang, params or {}, ignore_failure)
 
-    def add_field(self, name, script, lang=None, params=None):
+    def add_field(self, name, script, lang=None, params=None, ignore_failure=False):
         """
         Add a field to script_fields
         """
@@ -40,7 +41,8 @@ class ScriptFields(object):
                     data['params'] = params
             else:
                 raise ScriptFieldsError("Parameters should be a valid dictionary")
-
+        if ignore_failure:
+            data['ignore_failure'] = ignore_failure
         self.fields[name] = data
 
     def add_parameter(self, field_name, param_name, param_value):

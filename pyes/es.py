@@ -1203,7 +1203,7 @@ class ES(object):
         if kwargs:
             query.update(kwargs)
 
-        path = make_path('_percolator', index, name)
+        path = make_path(index, '.percolator', name)
         body = json.dumps(query, cls=self.encoder)
         return self._send_request('PUT', path, body)
 
@@ -1211,7 +1211,7 @@ class ES(object):
         """
         Delete a percolator document
         """
-        return self.delete('_percolator', index, name)
+        return self.delete(index, '.percolator', name)
 
     def percolate(self, index, doc_types, query):
         """

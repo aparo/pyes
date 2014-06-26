@@ -1672,7 +1672,7 @@ class FunctionScoreQuery(Query):
             if decay_function not in decay_functions:
                 raise RuntimeError("The decay_function  %s is not allowed" % decay_function)
 
-            self.__internal_name = decay_function
+            self._internal_name = decay_function
             self.decay_function = decay_function
             self.field = field
             self.origin = origin

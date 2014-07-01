@@ -161,3 +161,10 @@ def keys_to_string(data):
                 del data[key]
                 data[key.encode("utf8", "ignore")] = val
     return data
+
+def get_unicode_string(string):
+  try:
+    return str(string, 'utf8')
+  except TypeError: # python 2.x compatible
+    return unicode(string)
+

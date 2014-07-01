@@ -36,7 +36,7 @@ from .mappings import Mapper
 from .models import ElasticSearchModel, DotDict, ListBulker
 from .query import Search, Query
 from .rivers import River
-from .utils import make_path
+from .utils import make_path, get_unicode_string
 
 try:
     from .connection import connect as thrift_connect
@@ -527,7 +527,7 @@ class ES(object):
         body = request.body
         if body:
             if not isinstance(body, str):
-                body = str(body, "utf8")
+                body = get_unicode_string(body)
             curl_cmd += " -d '%s'" % body
         return curl_cmd
 

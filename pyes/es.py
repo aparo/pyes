@@ -912,7 +912,7 @@ class ES(object):
         Delete documents from one or more indices and one or more types based on a query.
         """
         path = self._make_path(indices, doc_types, '_query')
-        body = {"query": self._encode_query(query)}
+        body = {"query": query.serialize()}
         return self._send_request('DELETE', path, body, query_params)
 
     def exists(self, index, doc_type, id, **query_params):

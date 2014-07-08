@@ -443,3 +443,17 @@ class AggQueryWrap(EqualityComparableUsingAttributeDictionary):
     def serialize(self):
         return {"query": self.wrap_object.serialize()}
 
+
+class MissingAgg(Agg):
+
+    _internal_name = "missing"
+
+    def __init__(self, name, field=None, **kwargs):
+        super(MissingAgg, self).__init__(name, **kwargs)
+        self.field = field
+
+    def _serialize(self):
+        data = {}
+        if self.field:
+            data['field'] = self.field
+        return data

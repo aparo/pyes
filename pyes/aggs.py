@@ -467,3 +467,14 @@ class MinAgg(ValueCountAgg):
 class MaxAgg(ValueCountAgg):
 
     _internal_name = "max"
+
+
+class ReverseNestedAgg(BucketAgg):
+    _internal_name = "reverse_nested"
+
+    def __init__(self, name, path=None, **kwargs):
+        self.path = path
+        super(ReverseNestedAgg, self).__init__(name=name, **kwargs)
+
+    def _serialize(self):
+        return {"path": self.path} if self.path else {}

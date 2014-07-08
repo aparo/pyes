@@ -2,7 +2,7 @@
 from __future__ import absolute_import
 import unittest
 from pyes.tests import ESTestCase
-from pyes.aggs import MissingAgg
+from pyes.aggs import MissingAgg, MinAgg, MaxAgg
 
 from pyes.query import MatchAllQuery
 
@@ -76,9 +76,23 @@ class AggsSearchTestCase(ESTestCase):
         self.assertEqual(resultset.total, 3)
         self.assertEqual(resultset.aggs.missing, {u'doc_count': 1})
 
+    def test_min_agg(self):
 
+        q = MatchAllQuery()
+        q = q.search()
+        missing = MinAgg(name="min", field="position")
+        q.agg.add(missing)
+        resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
+        self.assertEqual(resultset.total, 3)
+        self.assertEqual(resultset.aggs.min, {u'value': 1})
 
+    def test_max_agg(self):
 
-
-
+        q = MatchAllQuery()
+        q = q.search()
+        missing = MaxAgg(name="max", field="position")
+        q.agg.add(missing)
+        resultset = self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
+        self.assertEqual(resultset.total, 3)
+        self.assertEqual(resultset.aggs.max, {u'value': 3})
 

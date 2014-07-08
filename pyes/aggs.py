@@ -457,3 +457,13 @@ class MissingAgg(Agg):
         if self.field:
             data['field'] = self.field
         return data
+
+
+class MinAgg(ValueCountAgg):
+
+    _internal_name = "min"
+
+
+class MaxAgg(ValueCountAgg):
+
+    _internal_name = "max"

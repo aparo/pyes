@@ -517,7 +517,7 @@ class NestedFilter(Filter):
         self.filter = filter
 
     def _serialize(self):
-        return {"path": self.path, "query": self.filter.serialize()}
+        return {"path": self.path, "filter": self.filter.serialize()}
 
 
 class IdsFilter(Filter):

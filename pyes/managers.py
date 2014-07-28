@@ -403,7 +403,7 @@ class Indices(object):
         path = self.conn._make_path(indices, (), '_gateway', 'snapshot')
         return self.conn._send_request('POST', path)
 
-    def put_mapping(self, doc_type=None, mapping=None, indices=None):
+    def put_mapping(self, doc_type=None, mapping=None, indices=None, ignore_conflicts=None):
         """
         Register specific mapping definition for a specific type against one or more indices.
         (See :ref:`es-guide-reference-api-admin-indices-put-mapping`)
@@ -422,7 +422,12 @@ class Indices(object):
         else:
             path = self.conn._make_path(indices, (), "_mapping")
 
-        return self.conn._send_request('PUT', path, mapping)
+        parameters = {}
+
+        if ignore_conflicts is not None:
+            parameters['ignore_conflicts'] = ignore_conflicts
+
+        return self.conn._send_request('PUT', path, mapping, params=parameters)
 
     def get_mapping(self, doc_type=None, indices=None, raw=False):
         """

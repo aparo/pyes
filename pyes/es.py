@@ -1106,7 +1106,7 @@ class ES(object):
         return self._send_request('GET', "_search/scroll", scroll_id, {"scroll": scroll})
 
     def suggest_from_object(self, suggest, indices=None, preference=None, routing=None, raw=False, **kwargs):
-        indices = self.validate_indices(indices)
+        indices = self._validate_indices(indices)
 
         path = make_path(','.join(indices), "_suggest")
         querystring_args = {}
@@ -1125,7 +1125,7 @@ class ES(object):
         from .query import Suggest
 
         suggest = Suggest()
-        suggest.add_field(text, name=name, field=field, size=size)
+        suggest.add_term(text, name, field, size=size)
         return self.suggest_from_object(suggest, **kwargs)
 
 

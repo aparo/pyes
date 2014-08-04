@@ -30,6 +30,31 @@ class Suggest(EqualityComparableUsingAttributeDictionary):
         else:
             self.add_term(text=text, name=name, field=field, size=size)
 
+    def add_completion(self, text, name, field, size=None):
+        """
+        Add completion-type suggestion:
+
+        http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/search-suggesters-completion.html
+
+        :param text: text for searching using autocompletion
+        :param name: name for the suggester
+        :param field: document's field to be autocompleted
+        :param size: (optional) size of the autocomplete list
+        :return:
+        """
+        data = {
+            'field': field
+        }
+
+        if size:
+            data['size'] = size
+
+        self.fields[name] = {
+            'text': text,
+            'completion': data,
+        }
+
+
     def add_term(self, text, name, field, size=None):
         data = {"field": field}
 

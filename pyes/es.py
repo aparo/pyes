@@ -1105,8 +1105,9 @@ class ES(object):
         """
         return self._send_request('GET', "_search/scroll", scroll_id, {"scroll": scroll})
 
-    def suggest_from_object(self, suggest, indices=None, preference=None, routing=None, raw=False, **kwargs):
-        indices = self.validate_indices(indices)
+    def suggest_from_object(self, suggest, indices=None, preference=None,
+                            routing=None, raw=False, **kwargs):
+        indices = self._validate_indices(indices)
 
         path = make_path(','.join(indices), "_suggest")
         querystring_args = {}
@@ -1121,11 +1122,27 @@ class ES(object):
         return expand_suggest_text(result)
 
 
-    def suggest(self, name, text, field, size=None, **kwargs):
+    def suggest(self, name, text, field, type='term', size=None, params=None,
+                **kwargs):
+        """
+        Execute suggester of given type.
+
+        :param name: name for the suggester
+        :param text: text to search for
+        :param field: field to search
+        :param type: One of: completion, phrase, term
+        :param size: number of results
+        :param params: additional suggester params
+        :param kwargs:
+        :return:
+        """
+
         from .query import Suggest
 
         suggest = Suggest()
-        suggest.add_field(text, name=name, field=field, size=size)
+
+        suggest.add(text, name, field, type=type, size=size, params=params)
+
         return self.suggest_from_object(suggest, **kwargs)
 
 

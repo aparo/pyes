@@ -528,7 +528,7 @@ class ConstantScoreQuery(Query):
             if len(self.queries) == 1:
                 queries.update(self.queries[0].serialize())
             else:
-                queries.update(BooleanQuery(must=self.queries).serialize())
+                queries.update(BoolQuery(must=self.queries).serialize())
             data['query'] = queries
 
         return data

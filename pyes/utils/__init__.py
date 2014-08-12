@@ -91,14 +91,15 @@ class EqualityComparableUsingAttributeDictionary(object):
 
 
 class ESRange(EqualityComparableUsingAttributeDictionary):
+
     def __init__(self, field, from_value=None, to_value=None, include_lower=None,
-                 include_upper=None, boost=None, **kwargs):
+                 include_upper=None, execution=None, **kwargs):
         self.field = field
         self.from_value = from_value
         self.to_value = to_value
         self.include_lower = include_lower
         self.include_upper = include_upper
-        self.boost = boost
+        self.execution = execution
 
     def negate(self):
         """Reverse the range"""
@@ -108,20 +109,21 @@ class ESRange(EqualityComparableUsingAttributeDictionary):
     def serialize(self):
         filters = {}
         if self.from_value is not None:
-            filters['from'] = self.from_value
+            include_lower = "gte" if self.include_lower else "gt"
+            filters[include_lower] = self.from_value
+
         if self.to_value is not None:
-            filters['to'] = self.to_value
-        if self.include_lower is not None:
-            filters['include_lower'] = self.include_lower
-        if self.include_upper is not None:
-            filters['include_upper'] = self.include_upper
-        if self.boost is not None:
-            filters['boost'] = self.boost
+            include_upper = "lte" if self.include_upper else "lt"
+            filters[include_upper] = self.to_value
+
+        if self.execution in ["index", "fielddata"]:
+            filters['execution'] = self.execution
+
         return self.field, filters
 
 
 class ESRangeOp(ESRange):
-    def __init__(self, field, op1, value1, op2=None, value2=None, boost=None):
+    def __init__(self, field, op1, value1, op2=None, value2=None):
         from_value = to_value = include_lower = include_upper = None
         for op, value in ((op1, value1), (op2, value2)):
             if op == "gt":
@@ -137,7 +139,7 @@ class ESRangeOp(ESRange):
                 to_value = value
                 include_upper = True
         super(ESRangeOp, self).__init__(field, from_value, to_value,
-                                        include_lower, include_upper, boost)
+                                        include_lower, include_upper)
 
 
 def clean_string(text):

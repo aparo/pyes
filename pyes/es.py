@@ -36,7 +36,7 @@ from .mappings import Mapper
 from .models import ElasticSearchModel, DotDict, ListBulker
 from .query import Search, Query
 from .rivers import River
-from .utils import make_path
+from .utils import make_path, get_unicode_string
 
 try:
     from .connection import connect as thrift_connect
@@ -527,7 +527,7 @@ class ES(object):
         body = request.body
         if body:
             if not isinstance(body, str):
-                body = str(body, "utf8")
+                body = get_unicode_string(body)
             curl_cmd += " -d '%s'" % body
         return curl_cmd
 
@@ -912,7 +912,7 @@ class ES(object):
         Delete documents from one or more indices and one or more types based on a query.
         """
         path = self._make_path(indices, doc_types, '_query')
-        body = {"query": self._encode_query(query)}
+        body = {"query": query.serialize()}
         return self._send_request('DELETE', path, body, query_params)
 
     def exists(self, index, doc_type, id, **query_params):
@@ -1105,8 +1105,9 @@ class ES(object):
         """
         return self._send_request('GET', "_search/scroll", scroll_id, {"scroll": scroll})
 
-    def suggest_from_object(self, suggest, indices=None, preference=None, routing=None, raw=False, **kwargs):
-        indices = self.validate_indices(indices)
+    def suggest_from_object(self, suggest, indices=None, preference=None,
+                            routing=None, raw=False, **kwargs):
+        indices = self._validate_indices(indices)
 
         path = make_path(','.join(indices), "_suggest")
         querystring_args = {}
@@ -1121,11 +1122,27 @@ class ES(object):
         return expand_suggest_text(result)
 
 
-    def suggest(self, name, text, field, size=None, **kwargs):
+    def suggest(self, name, text, field, type='term', size=None, params=None,
+                **kwargs):
+        """
+        Execute suggester of given type.
+
+        :param name: name for the suggester
+        :param text: text to search for
+        :param field: field to search
+        :param type: One of: completion, phrase, term
+        :param size: number of results
+        :param params: additional suggester params
+        :param kwargs:
+        :return:
+        """
+
         from .query import Suggest
 
         suggest = Suggest()
-        suggest.add_field(text, name=name, field=field, size=size)
+
+        suggest.add(text, name, field, type=type, size=size, params=params)
+
         return self.suggest_from_object(suggest, **kwargs)
 
 
@@ -1137,7 +1154,7 @@ class ES(object):
 
         if query is None:
             query = MatchAllQuery()
-        body = self._encode_query(query)
+        body = self._encode_query({"query":query})
         path = self._make_path(indices, doc_types, "_count")
         return self._send_request('GET', path, body, params=query_params)
 
@@ -1203,7 +1220,7 @@ class ES(object):
         if kwargs:
             query.update(kwargs)
 
-        path = make_path('_percolator', index, name)
+        path = make_path(index, '.percolator', name)
         body = json.dumps(query, cls=self.encoder)
         return self._send_request('PUT', path, body)
 
@@ -1211,7 +1228,7 @@ class ES(object):
         """
         Delete a percolator document
         """
-        return self.delete('_percolator', index, name)
+        return self.delete(index, '.percolator', name)
 
     def percolate(self, index, doc_types, query):
         """

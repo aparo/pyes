@@ -15,29 +15,72 @@ class Suggest(EqualityComparableUsingAttributeDictionary):
     def __init__(self, fields=None):
         self.fields = fields or {}
 
-    def add(self, text, name, field, size=None):
+    def add(self, text, name, field, type='term', size=None, params=None):
         """
-        Set the suggester with autodetect
+        Set the suggester of given type.
+
         :param text: text
         :param name: name of suggest
         :param field: field to be used
+        :param type: type of suggester to add, available types are: completion,
+                     phrase, term
         :param size: number of phrases
+        :param params: dict of additional parameters to pass to the suggester
         :return: None
         """
-        num_tokens = text.count(' ') + 1
-        if num_tokens > 1:
-            self.add_phrase(text=text, name=name, field=field, size=size)
-        else:
-            self.add_term(text=text, name=name, field=field, size=size)
+        func = None
 
-    def add_term(self, text, name, field, size=None):
+        if type == 'completion':
+            func = self.add_completion
+        elif type == 'phrase':
+            func = self.add_phrase
+        elif type == 'term':
+            func = self.add_term
+        else:
+            raise InvalidQuery('Invalid type')
+
+        func(text=text, name=name, field=field, size=size, params=params)
+
+    def add_completion(self, text, name, field, size=None, params=None):
+        """
+        Add completion-type suggestion:
+
+        http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/search-suggesters-completion.html
+
+        :param text: text for searching using autocompletion
+        :param name: name for the suggester
+        :param field: document's field to be autocompleted
+        :param size: (optional) size of the autocomplete list
+        :return:
+        """
+        data = {
+            'field': field
+        }
+
+        if size:
+            data['size'] = size
+
+        if params:
+            data.update(params)
+
+        self.fields[name] = {
+            'text': text,
+            'completion': data,
+        }
+
+
+    def add_term(self, text, name, field, size=None, params=None):
         data = {"field": field}
 
         if size:
             data["size"] = size
+
+        if params:
+            data.update(params)
+
         self.fields[name] = {"text": text, "term": data}
 
-    def add_phrase(self, text, name, field, size=10):
+    def add_phrase(self, text, name, field, size=None, params=None):
         tokens = text.split()
         gram = field + ".bigram"
         # if len(tokens) > 3:
@@ -65,6 +108,10 @@ class Suggest(EqualityComparableUsingAttributeDictionary):
 
         if size:
             data["size"] = size
+
+        if params:
+            data.update(params)
+
         self.fields[name] = {"text": text, "phrase": data}
 
     def is_valid(self):
@@ -1672,7 +1719,7 @@ class FunctionScoreQuery(Query):
             if decay_function not in decay_functions:
                 raise RuntimeError("The decay_function  %s is not allowed" % decay_function)
 
-            self.__internal_name = decay_function
+            self._internal_name = decay_function
             self.decay_function = decay_function
             self.field = field
             self.origin = origin

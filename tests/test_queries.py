@@ -543,5 +543,12 @@ class QuerySearchTestCase(ESTestCase):
 
         self.assertEqual(resultset.hits[0]['_score'], 20)
 
+    def test_DeleteByQuery(self):
+        q = TermQuery("name", "joe")
+        result = self.conn.delete_by_query(self.index_name,
+            [self.document_type], q)
+        self.assertEqual(result['_indices'][self.index_name]
+            ['_shards']['failed'], 0)
+
 if __name__ == "__main__":
     unittest.main()

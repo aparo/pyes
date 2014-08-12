@@ -443,3 +443,38 @@ class AggQueryWrap(EqualityComparableUsingAttributeDictionary):
     def serialize(self):
         return {"query": self.wrap_object.serialize()}
 
+
+class MissingAgg(Agg):
+
+    _internal_name = "missing"
+
+    def __init__(self, name, field=None, **kwargs):
+        super(MissingAgg, self).__init__(name, **kwargs)
+        self.field = field
+
+    def _serialize(self):
+        data = {}
+        if self.field:
+            data['field'] = self.field
+        return data
+
+
+class MinAgg(ValueCountAgg):
+
+    _internal_name = "min"
+
+
+class MaxAgg(ValueCountAgg):
+
+    _internal_name = "max"
+
+
+class ReverseNestedAgg(BucketAgg):
+    _internal_name = "reverse_nested"
+
+    def __init__(self, name, path=None, **kwargs):
+        self.path = path
+        super(ReverseNestedAgg, self).__init__(name=name, **kwargs)
+
+    def _serialize(self):
+        return {"path": self.path} if self.path else {}

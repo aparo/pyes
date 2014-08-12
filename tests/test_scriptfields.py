@@ -12,5 +12,6 @@ class ScriptFieldsTest(unittest.TestCase):
         serialized = fields.serialize()
         self.assertIn("ignore_failure", serialized.get("a_field", {}))
 
+
 if __name__ == '__main__':
     unittest.main()

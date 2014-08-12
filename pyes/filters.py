@@ -162,9 +162,11 @@ class NotFilter(Filter):
 class RangeFilter(Filter):
 
     _internal_name = "range"
+    _execution_modes = ["index", "fielddata"]
 
-    def __init__(self, qrange=None, **kwargs):
+    def __init__(self, qrange=None, execution=None, **kwargs):
         super(RangeFilter, self).__init__(**kwargs)
+        self.execution = execution
         self.ranges = []
         if qrange:
             self.add(qrange)
@@ -182,8 +184,14 @@ class RangeFilter(Filter):
 
     def _serialize(self):
         if not self.ranges:
-            raise RuntimeError("A least a range must be declared")
-        return dict([r.serialize() for r in self.ranges])
+            raise RuntimeError("At least a range must be declared")
+        ranges = dict([r.serialize() for r in self.ranges])
+        if self.execution in ["index", "fielddata"]:
+            ranges['execution'] = self.execution
+        elif self.execution:
+            raise ValueError("Execution mode %s none of %r" % (
+                self.execution, self._execution_modes))
+        return ranges
 
 NumericRangeFilter = RangeFilter
 

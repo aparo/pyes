@@ -3,7 +3,8 @@ from __future__ import absolute_import
 import copy
 
 from .exceptions import QueryParameterError
-from .utils import ESRange, EqualityComparableUsingAttributeDictionary
+from .utils import (ESRange, EqualityComparableUsingAttributeDictionary,
+                    TermsLookup)
 from .es import json
 import six
 
@@ -338,6 +339,20 @@ class LimitFilter(Filter):
 
 
 class TermsFilter(Filter):
+    """
+    If you want to use the Terms lookup feature, you can do it like that:
+
+    from pyes.utils import TermsLookup
+
+    Example:
+
+    tl = TermsLookup(index='index', type='type', id='id', path='path')
+    f = TermsFilter('key', tl)
+
+    q = FilteredQuery(MatchAllQuery(), f)
+    results = conn.search(q)
+
+    """
 
     _internal_name = "terms"
 
@@ -355,6 +370,9 @@ class TermsFilter(Filter):
         if not self._values:
             raise RuntimeError("A least a field/value pair must be added")
         data = self._values.copy()
+        for field, term in data.iteritems():
+            if isinstance(term, TermsLookup):
+                data[field] = term.serialize()
         if self.execution:
             data["execution"] = self.execution
         return data

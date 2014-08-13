@@ -511,13 +511,17 @@ class NestedFilter(Filter):
 
     _internal_name = "nested"
 
-    def __init__(self, path, filter, **kwargs):
+    def __init__(self, path, filter, join=None, **kwargs):
         super(NestedFilter, self).__init__(**kwargs)
         self.path = path
         self.filter = filter
+        self.join = join
 
     def _serialize(self):
-        return {"path": self.path, "filter": self.filter.serialize()}
+        data = {"path": self.path, "filter": self.filter.serialize()}
+        if self.join:
+            data['join'] = self.join
+        return data
 
 
 class IdsFilter(Filter):

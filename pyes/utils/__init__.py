@@ -140,6 +140,27 @@ class ESRangeOp(ESRange):
                                         include_lower, include_upper, boost)
 
 
+class TermsLookup(EqualityComparableUsingAttributeDictionary):
+
+    def __init__(self, index, type, id, path, routing=None, cache=None):
+
+        self.index = index
+        self.type = type
+        self.id = id
+        self.path = path
+        self.routing = routing
+        self.cache = cache
+
+    def serialize(self):
+        data = {"index": self.index, "type": self.type,
+                "id": self.id, "path": self.path}
+        if self.routing:
+            data['routing'] = self.routing
+        if self.cache:
+            data['cache'] = self.cache
+        return data
+
+
 def clean_string(text):
     """
     Remove Lucene reserved characters from query string

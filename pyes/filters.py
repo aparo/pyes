@@ -456,6 +456,32 @@ class GeoShapeFilter(Filter):
         }
 
 
+class GeoIndexedShapeFilter(Filter):
+    """http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-geo-shape-filter.html#_pre_indexed_shape"""
+
+    _internal_name = 'geo_indexed_shape'
+
+    def __init__(self, field=None, id=None, type=None, index=None, path=None, **kwargs):
+        super(GeoIndexedShapeFilter, self).__init__(**kwargs)
+        self.field = field
+        self.id = id
+        self.type = type
+        self.index = index
+        self.path = path
+
+    def _serialize(self):
+        return {
+            self.field: {
+                'indexed_shape': {
+                    'id': self.id,
+                    'type': self.type,
+                    'index': self.index,
+                    'path': self.path
+                }
+            }
+        }
+
+
 class MatchAllFilter(Filter):
     """A filter that matches on all documents"""
 

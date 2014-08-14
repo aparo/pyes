@@ -46,6 +46,10 @@ class FilterTests(ESTestCase):
             "terms_filter": {
                 "type": "integer"
             },
+            "exists_filter": {
+                "type": "string"
+            },
+
         }
         self.conn.indices.create_index(self.index_name)
         self.conn.indices.put_mapping(self.document_type,
@@ -63,7 +67,8 @@ class FilterTests(ESTestCase):
                         "key_2": [4]
                     }
                 ],
-                "terms_filter": 25
+                "terms_filter": 25,
+                "exists_filter": "something"
             },
             self.index_name, self.document_type, 1)
         self.conn.index(
@@ -75,7 +80,7 @@ class FilterTests(ESTestCase):
                         "key_2": [3, 5]
                     }
                 ],
-                "terms_filter": 24
+                "terms_filter": 24,
             },
             self.index_name, self.document_type, 2)
 
@@ -203,63 +208,60 @@ class RangeFilterTestCase(ESTestCase):
 
         super(RangeFilterTestCase, self).setUp()
         mapping = {
-                   u'value': {'store': 'yes',
-                            'type': u'integer'},
-                   u'date': {'store': 'yes',
-                             'type': u'date'},
-                  }
+            u'value': {'store': 'yes',
+                       'type': u'integer'},
+            u'date': {'store': 'yes',
+                      'type': u'date'},
+        }
         self.conn.indices.create_index(self.index_name)
-        self.conn.indices.put_mapping(self.document_type, {'properties': mapping}, self.index_name)
-        self.conn.index({
-                         'date': datetime.date(2011, 5, 16),
-                         'value': 10
-                         },
-            self.index_name, self.document_type, 1)
-        self.conn.index({'value': 100,
-                         'date': datetime.date(2011, 4, 16)},
-            self.index_name, self.document_type, 2)
-        self.conn.index({'value': 99,
-                         'date': datetime.date(2011, 4, 28)},
-            self.index_name, self.document_type, 3)
+        self.conn.indices.put_mapping(self.document_type,
+                                      {'properties': mapping},
+                                      self.index_name)
+        self.conn.index({'date': datetime.date(2011, 5, 16), 'value': 10},
+                        self.index_name, self.document_type, 1)
+        self.conn.index({'value': 100, 'date': datetime.date(2011, 4, 16)},
+                        self.index_name, self.document_type, 2)
+        self.conn.index({'value': 99, 'date': datetime.date(2011, 4, 28)},
+                        self.index_name, self.document_type, 3)
         self.conn.indices.refresh(self.index_name)
 
     def search(self, qrange):
         f = filters.RangeFilter(qrange)
         q = Search(filter=f)
-        return self.conn.search(query=q, indices=self.index_name, doc_types=[self.document_type])
+        return self.conn.search(query=q, indices=self.index_name,
+                                doc_types=[self.document_type])
 
     def test_upper_bound(self):
-        qrange = utils.ESRange(field="value", from_value=10, to_value=100, include_lower=None,
-                         include_upper=False)
+        qrange = utils.ESRange(field="value", from_value=10, to_value=100,
+                               include_lower=None, include_upper=False)
         result = self.search(qrange)
         self.assertEqual(1, len(result.hits))
 
-        qrange = utils.ESRange(field="value", from_value=10, to_value=100, include_lower=None,
-                         include_upper=True)
+        qrange = utils.ESRange(field="value", from_value=10, to_value=100,
+                               include_lower=None, include_upper=True)
         result = self.search(qrange)
         self.assertEqual(2, len(result.hits))
 
     def test_lower_bound(self):
-        qrange = utils.ESRange(field="value", from_value=10, to_value=1000, include_lower=False,
-                         include_upper=None)
+        qrange = utils.ESRange(field="value", from_value=10, to_value=1000,
+                               include_lower=False, include_upper=None)
         result = self.search(qrange)
         self.assertEqual(2, len(result.hits))
 
-        qrange = utils.ESRange(field="value", from_value=10, to_value=1000, include_lower=True,
-                         include_upper=None)
+        qrange = utils.ESRange(field="value", from_value=10, to_value=1000,
+                               include_lower=True, include_upper=None)
         result = self.search(qrange)
         self.assertEqual(3, len(result.hits))
 
     def test_lower_none(self):
-        qrange = utils.ESRange(field="value", from_value=None, to_value=11, include_lower=None,
-                         include_upper=None)
+        qrange = utils.ESRange(field="value", from_value=None, to_value=11,
+                               include_lower=None, include_upper=None)
         result = self.search(qrange)
         self.assertEqual(1, len(result.hits))
 
-
     def test_upper_none(self):
-        qrange = utils.ESRange(field="value", from_value=98.0, to_value=None, include_lower=None,
-                         include_upper=None)
+        qrange = utils.ESRange(field="value", from_value=98.0, to_value=None,
+                               include_lower=None, include_upper=None)
         result = self.search(qrange)
         self.assertEqual(2, len(result.hits))
 
@@ -267,20 +269,31 @@ class RangeFilterTestCase(ESTestCase):
 class TermsLookupTestCase(FilterTests):
 
     def test_filter(self):
-        tl = utils.TermsLookup(index=self.index_name, type=self.document_type, id=1, path='terms_lookup_filter')
-        f = filters.TermsFilter('terms_filter', tl) 
+        tl = utils.TermsLookup(index=self.index_name, type=self.document_type,
+                               id=1, path='terms_lookup_filter')
+        f = filters.TermsFilter('terms_filter', tl)
         q = Search(filter=f)
         result = self.conn.search(query=q, indices=self.index_name,
                                   doc_types=[self.document_type])
         self.assertEqual(2, len(result.hits))
 
-        tl = utils.TermsLookup(index=self.index_name, type=self.document_type, id=2, path='terms_lookup_filter')
-        f = filters.TermsFilter('terms_filter', tl) 
+        tl = utils.TermsLookup(index=self.index_name, type=self.document_type,
+                               id=2, path='terms_lookup_filter')
+        f = filters.TermsFilter('terms_filter', tl)
         q = Search(filter=f)
         result = self.conn.search(query=q, indices=self.index_name,
                                   doc_types=[self.document_type])
         self.assertEqual(1, len(result.hits))
 
+
+class ExistsFilterTestCase(FilterTests):
+    def test_exists(self):
+        f = filters.ExistsFilter(field='exists_filter')
+        q = Search(filter=f)
+        result = self.conn.search(query=q, indices=self.index_name,
+                                  doc_types=[self.document_type])
+        self.assertEqual(1, len(result.hits))
+        self.assertEqual(u'1', result.hits[0]['_id'])
 
 if __name__ == "__main__":
     unittest.main()

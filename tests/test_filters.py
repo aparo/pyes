@@ -295,5 +295,25 @@ class ExistsFilterTestCase(FilterTests):
         self.assertEqual(1, len(result.hits))
         self.assertEqual(u'1', result.hits[0]['_id'])
 
+
+class TypeFilterTestCase(FilterTests):
+
+    def test_type(self):
+        f = filters.TypeFilter(type=self.document_type)
+        q = Search(filter=f)
+        print self.dump(q.serialize())
+        result = self.conn.search(query=q, indices=self.index_name,
+                                  doc_types=[])
+        self.assertEqual(2, len(result.hits))
+        print result.hits
+        self.assertItemsEqual([u'1', u'2'], [item._id for item in result.hits])
+
+        f = filters.TypeFilter(type=self.internal_type)
+        q = Search(filter=f)
+        result = self.conn.search(query=q, indices=self.index_name,
+                                  doc_types=[])
+        self.assertEqual(1, len(result.hits))
+        self.assertItemsEqual([u'4'], [item._id for item in result.hits])
+
 if __name__ == "__main__":
     unittest.main()

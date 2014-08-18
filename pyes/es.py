@@ -129,12 +129,12 @@ class ESJsonDecoder(json.JSONDecoder):
         """
         Decode a datetime string to a datetime object
         """
-        if isinstance(obj, str) and len(obj) == 19:
+        if isinstance(obj, six.string_types) and len(obj) == 19:
             try:
                 return datetime(*time.strptime(obj, "%Y-%m-%dT%H:%M:%S")[:6])
             except ValueError:
                 pass
-        if isinstance(obj, str) and len(obj) == 10:
+        if isinstance(obj, six.string_types) and len(obj) == 10:
             try:
                 return datetime(*time.strptime(obj, "%Y-%m-%d")[:3])
             except ValueError:
@@ -147,7 +147,7 @@ class ESJsonDecoder(json.JSONDecoder):
         Decode datetime value from string to datetime
         """
         for k, v in list(d.items()):
-            if isinstance(v, str) and len(v) == 19:
+            if isinstance(v, six.string_types) and len(v) == 19:
                 # Decode a datetime string to a datetime object
                 try:
                     d[k] = datetime(*time.strptime(v, "%Y-%m-%dT%H:%M:%S")[:6])
@@ -234,7 +234,7 @@ class ES(object):
         self.model = model
         self.log_curl = log_curl
         if dump_curl:
-            if isinstance(dump_curl, str):
+            if isinstance(dump_curl, six.string_types):
                 self.dump_curl = codecs.open(dump_curl, "wb", "utf8")
             elif hasattr(dump_curl, 'write'):
                 self.dump_curl = dump_curl
@@ -487,7 +487,7 @@ class ES(object):
                 indices = []
         if doc_types is None:
             doc_types = self.default_types
-        if isinstance(doc_types, str):
+        if isinstance(doc_types, six.string_types):
             doc_types = [doc_types]
         return make_path(','.join(indices), ','.join(doc_types), *components)
 
@@ -499,7 +499,7 @@ class ES(object):
         """
         if indices is None:
             indices = self.default_indices
-        if isinstance(indices, str):
+        if isinstance(indices, six.string_types):
             indices = [indices]
         return indices
 
@@ -1154,7 +1154,7 @@ class ES(object):
 
         if query is None:
             query = MatchAllQuery()
-        body = self._encode_query({"query":query})
+        body = {"query": query.serialize()}
         path = self._make_path(indices, doc_types, "_count")
         return self._send_request('GET', path, body, params=query_params)
 

@@ -159,6 +159,7 @@ class ESJsonDecoder(json.JSONDecoder):
 
 
 def get_id(text):
+    import uuid
     return str(uuid.uuid3(DotDict(bytes=""), text))
 
 

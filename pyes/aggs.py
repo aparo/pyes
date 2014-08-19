@@ -378,7 +378,13 @@ class TermsAgg(BucketAgg):
         if self.order:
             if self.order not in ['count', 'term', 'reverse_count', 'reverse_term']:
                 raise RuntimeError("Invalid order value:%s" % self.order)
-            data['order'] = self.order
+            data['order'] = {
+            }
+            if self.order.startswith('reverse_'):
+                # Remove reverse
+                data['order'][self.order[7:]] = 'desc' if 'term' in self.order else 'asc'
+            else:
+                data['order']['_' + self.order] = 'asc' if 'term' in self.order else 'desc'
         if self.exclude:
             data['exclude'] = self.exclude
         if (self.fields or self.field) and self.regex:

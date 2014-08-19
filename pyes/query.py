@@ -536,16 +536,19 @@ class ConstantScoreQuery(Query):
 
 class HasQuery(Query):
 
-    def __init__(self, type, query, _scope=None, **kwargs):
+    def __init__(self, type, query, _scope=None, score_mode=None, **kwargs):
         super(HasQuery, self).__init__(**kwargs)
         self.type = type
         self._scope = _scope
+        self.score_mode = score_mode
         self.query = query
 
     def _serialize(self):
         data = {'type': self.type, 'query': self.query.serialize()}
         if self._scope is not None:
             data['_scope'] = self._scope
+        if self.score_mode is not None:
+            data['score_mode'] = self.score_mode
         return data
 
 
@@ -553,10 +556,20 @@ class HasChildQuery(HasQuery):
 
     _internal_name = "has_child"
 
+    def __init__(self, *args, **kwargs):
+        super(HasChildQuery, self).__init__(*args, **kwargs)
+        if self.score_mode and self.score_mode not in ["max", "sum", "avg", "none"]:
+            raise InvalidParameterQuery("Invalid value '%s' for score_mode" % self.score_mode)
+
 
 class HasParentQuery(HasQuery):
 
     _internal_name = "has_parent"
+
+    def __init__(self, *args, **kwargs):
+        super(HasParentQuery, self).__init__(*args, **kwargs)
+        if self.score_mode and self.score_mode not in ["score", "none"]:
+            raise InvalidParameterQuery("Invalid value '%s' for score_mode" % self.score_mode)
 
 
 class TopChildrenQuery(ConstantScoreQuery):

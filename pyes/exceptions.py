@@ -150,6 +150,8 @@ class DocumentAlreadyExistsException(ElasticSearchException):
 class TypeMissingException(ElasticSearchException):
     pass
 
+class MappedFieldNotFoundException(ElasticSearchException):
+    pass
 
 class BulkOperationException(ElasticSearchException, EqualityComparableUsingAttributeDictionary):
     def __init__(self, errors, bulk_result):

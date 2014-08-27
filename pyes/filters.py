@@ -3,7 +3,8 @@ from __future__ import absolute_import
 import copy
 
 from .exceptions import QueryParameterError
-from .utils import ESRange, EqualityComparableUsingAttributeDictionary
+from .utils import (ESRange, EqualityComparableUsingAttributeDictionary,
+                    TermsLookup)
 from .es import json
 import six
 
@@ -162,9 +163,11 @@ class NotFilter(Filter):
 class RangeFilter(Filter):
 
     _internal_name = "range"
+    _execution_modes = ["index", "fielddata"]
 
-    def __init__(self, qrange=None, **kwargs):
+    def __init__(self, qrange=None, execution=None, **kwargs):
         super(RangeFilter, self).__init__(**kwargs)
+        self.execution = execution
         self.ranges = []
         if qrange:
             self.add(qrange)
@@ -182,8 +185,14 @@ class RangeFilter(Filter):
 
     def _serialize(self):
         if not self.ranges:
-            raise RuntimeError("A least a range must be declared")
-        return dict([r.serialize() for r in self.ranges])
+            raise RuntimeError("At least a range must be declared")
+        ranges = dict([r.serialize() for r in self.ranges])
+        if self.execution in ["index", "fielddata"]:
+            ranges['execution'] = self.execution
+        elif self.execution:
+            raise ValueError("Execution mode %s none of %r" % (
+                self.execution, self._execution_modes))
+        return ranges
 
 NumericRangeFilter = RangeFilter
 
@@ -330,6 +339,20 @@ class LimitFilter(Filter):
 
 
 class TermsFilter(Filter):
+    """
+    If you want to use the Terms lookup feature, you can do it like that:
+
+    from pyes.utils import TermsLookup
+
+    Example:
+
+    tl = TermsLookup(index='index', type='type', id='id', path='path')
+    f = TermsFilter('key', tl)
+
+    q = FilteredQuery(MatchAllQuery(), f)
+    results = conn.search(q)
+
+    """
 
     _internal_name = "terms"
 
@@ -347,6 +370,9 @@ class TermsFilter(Filter):
         if not self._values:
             raise RuntimeError("A least a field/value pair must be added")
         data = self._values.copy()
+        for field, term in data.iteritems():
+            if isinstance(term, TermsLookup):
+                data[field] = term.serialize()
         if self.execution:
             data["execution"] = self.execution
         return data
@@ -537,13 +563,17 @@ class NestedFilter(Filter):
 
     _internal_name = "nested"
 
-    def __init__(self, path, filter, **kwargs):
+    def __init__(self, path, filter, join=None, **kwargs):
         super(NestedFilter, self).__init__(**kwargs)
         self.path = path
         self.filter = filter
+        self.join = join
 
     def _serialize(self):
-        return {"path": self.path, "filter": self.filter.serialize()}
+        data = {"path": self.path, "filter": self.filter.serialize()}
+        if self.join:
+            data['join'] = self.join
+        return data
 
 
 class IdsFilter(Filter):

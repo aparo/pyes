@@ -8,8 +8,9 @@ except ImportError:
     # python 2.6 or earlier, use backport
     from ordereddict import OrderedDict
 from .models import SortedDict, DotDict
-
+from datetime import datetime, date
 import six
+from .exceptions import MappedFieldNotFoundException
 
 _thread_locals = threading.local()
 #store threadsafe data
@@ -112,10 +113,6 @@ class AbstractField(object):
                 result['store'] = self.store
         if self.boost != 1.0:
             result['boost'] = self.boost
-        if self.required:
-            result['required'] = self.required
-        if self.permission:
-            result['permission'] = self.permission
         if self.term_vector:
             result['term_vector'] = self.term_vector
         if self.term_vector_positions:
@@ -141,12 +138,10 @@ class AbstractField(object):
             result['search_analyzer'] = self.search_analyzer
         if self.path is not None:
             result['path'] = self.path
-        if self.meta:
-            result['meta'] = self.meta
         if self.locale:
             result['locale'] = self.locale
         if self.fields:
-            result['fields'] = dict([(f.name,t.as_dict()) for f in self.fields])
+            result['fields'] = dict([(f.name, f.as_dict()) for f in self.fields])
 
         return result
 
@@ -610,6 +605,7 @@ class ObjectField(object):
         :param new_mapping: the new mapping
         :return: a new evolution mapping or None
         """
+        import copy
         result = copy.deepcopy(new_mapping)
         result.clear_properties()
 

@@ -218,7 +218,7 @@ class MongoDBRiver(River):
             "filter": filter
         }
 
-    def serialize(self):
+    def _serialize(self):
         result = {
             'type': self.type,
             'mongodb': self.mongodb

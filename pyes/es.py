@@ -27,7 +27,7 @@ from . import logger
 from . import connection_http
 from .connection_http import connect as http_connect
 from .convert_errors import raise_if_error
-#from .decorators import deprecated
+# from .decorators import deprecated
 from .exceptions import ElasticSearchException, ReduceSearchPhaseException, \
     InvalidQuery, VersionConflictEngineException
 from .helpers import SettingsBuilder
@@ -69,7 +69,7 @@ def expand_suggest_text(suggest):
     all_segments = {}
     for field, tokens in suggest.items():
         if field.startswith(u"_"):
-            #we skip _shards
+            # we skip _shards
             continue
         if len(tokens) == 1 and not tokens[0]["options"]:
             continue
@@ -91,7 +91,7 @@ def expand_suggest_text(suggest):
                 all_segments[text] = (score + olds, freq + oldf)
             else:
                 all_segments[text] = (score, freq)
-                #removing dupped
+                # removing dupped
     for t, (s, f) in all_segments.items():
         suggested.add((s, f, t))
 
@@ -160,6 +160,7 @@ class ESJsonDecoder(json.JSONDecoder):
 
 def get_id(text):
     import uuid
+
     return str(uuid.uuid3(DotDict(bytes=""), text))
 
 
@@ -167,7 +168,7 @@ class ES(object):
     """
     ES connection object.
     """
-    #static to easy overwrite
+    # static to easy overwrite
     encoder = ESJsonEncoder
     decoder = ESJsonDecoder
 
@@ -184,7 +185,11 @@ class ES(object):
                  raise_on_bulk_item_failure=False,
                  document_object_field=None,
                  bulker_class=ListBulker,
-                 cert_reqs='CERT_OPTIONAL'):
+                 cert_reqs='CERT_OPTIONAL',
+                 sniff_on_start=True,
+                 sniff_on_connection_fail=True,
+                 sniffer_timeout=60
+    ):
         """
         Init a es object.
         Servers can be defined in different forms:
@@ -215,6 +220,10 @@ class ES(object):
         bulk operation fails
 
         :param document_object_field: a class to use as base document field in mapper
+        :param sniff_on_start: sniff before doing anything
+        :param sniff_on_connection_fail: refresh nodes after a node fails to respond
+        :param sniffer_timeout: sniffer timeout
+
         """
         if default_indices is None:
             default_indices = ["_all"]
@@ -229,6 +238,9 @@ class ES(object):
         self.connection = None
         self._mappings = None
         self.document_object_field = document_object_field
+        self._sniff_on_start = sniff_on_start
+        self._sniff_on_connection_fail = sniff_on_connection_fail
+        self._sniffer_timeout = sniffer_timeout
 
         if model is None:
             model = lambda connection, model: model
@@ -294,8 +306,13 @@ class ES(object):
             self.bulker.flush_bulk(True)
 
     def _check_servers(self):
-        """Check the servers variable and convert in a valid tuple form"""
+        """
+        Check the servers variable and convert in a valid dictionary form.
+        It tries to keep compatibility with pyes version priors 1.x
+        """
         new_servers = []
+        protocols=set() #keep track of protocols. They must be all the same
+
 
         def check_format(server):
             if server.scheme not in ["thrift", "http", "https"]:
@@ -309,11 +326,28 @@ class ES(object):
 
             new_servers.append(server)
 
+        def add_protocol(port):
+            if 9200 <= port <= 9299:
+               protocols.add("http")
+            elif 9500 <= port <= 9599:
+                protocols.add("thrift")
+
         for server in self.servers:
-            if isinstance(server, (tuple, list)):
+            if isinstance(server, dict):
+                if 'port' in server:
+                    add_protocol(server["port"])
+                if "ssl" in server:
+                    protocols.add("http")
+
+                new_servers.append(server)
+            elif isinstance(server, (tuple, list)):
                 if len(list(server)) != 3:
                     raise RuntimeError("Invalid server definition: \"%s\"" % repr(server))
                 _type, host, port = server
+                if _type not in ["thrift", "http", "https", "memcached"]:
+                    raise RuntimeError("Unable to recognize protocol: \"%s\"" % _type)
+                protocols.add(_type)
+                new_servers.append({"host":host, "port":port})
                 server = urlparse('%s://%s:%s' % (_type, host, port))
                 check_format(server)
             elif isinstance(server, six.string_types):
@@ -354,7 +388,8 @@ class ES(object):
         if server.scheme in ["http", "https"]:
             self.connection = http_connect(
                 [server for server in self.servers if server.scheme in ["http", "https"]],
-                timeout=self.timeout, basic_auth=self.basic_auth, max_retries=self.max_retries, retry_time=self.retry_time)
+                timeout=self.timeout, basic_auth=self.basic_auth, max_retries=self.max_retries,
+                retry_time=self.retry_time)
             return
         elif server.scheme == "thrift":
             self.connection = thrift_connect(
@@ -1271,7 +1306,7 @@ class ResultSetList(object):
 
         self.items = items
         self.model = model or self.connection.model
-        self.iterpos = 0  #keep track of iterator position
+        self.iterpos = 0  # keep track of iterator position
         self._current_item = 0
 
     @property
@@ -1295,7 +1330,7 @@ class ResultSetList(object):
             return self.items
 
         # elif name in self._results:
-        #     #we manage took, timed_out, _shards
+        # #we manage took, timed_out, _shards
         #     return self._results[name]
         #
         # elif name == "shards" and "_shards" in self._results:
@@ -1396,7 +1431,7 @@ class ResultSet(object):
         self.auto_fix_keys = auto_fix_keys
         self.auto_clean_highlight = auto_clean_highlight
 
-        self.iterpos = 0  #keep track of iterator position
+        self.iterpos = 0  # keep track of iterator position
         self.start = query_params.get("start", search.start) or 0
         self._max_item = query_params.get("size", search.size)
         self._current_item = 0
@@ -1409,7 +1444,7 @@ class ResultSet(object):
 
     def _do_search(self, auto_increment=False):
         self.iterpos = 0
-        process_post_query = True  #used to skip results in first scan
+        process_post_query = True  # used to skip results in first scan
         if self.scroller_id is None:
             if auto_increment:
                 self.start += self.chuck_size
@@ -1425,7 +1460,7 @@ class ResultSet(object):
                     self.chuck_size = self.scroller_parameters['size'] = self.query_params.pop('size')
 
             if '_scroll_id' in self._results:
-                #scan query, let's load the first bulk of data
+                # scan query, let's load the first bulk of data
                 self.scroller_id = self._results['_scroll_id']
                 self._do_search()
                 process_post_query = False
@@ -1435,7 +1470,7 @@ class ResultSet(object):
                                                               self.scroller_parameters.get("scroll", "10m"))
                 self.scroller_id = self._results['_scroll_id']
             except ReduceSearchPhaseException:
-                #bad hack, should be not hits on the last iteration
+                # bad hack, should be not hits on the last iteration
                 self._results['hits']['hits'] = []
 
         if process_post_query:
@@ -1562,11 +1597,11 @@ class ResultSet(object):
             return self._hits
 
         elif name in self._results:
-            #we manage took, timed_out, _shards
+            # we manage took, timed_out, _shards
             return self._results[name]
 
         elif name == "shards" and "_shards" in self._results:
-            #trick shards -> _shards
+            # trick shards -> _shards
             return self._results["_shards"]
         return self._results['hits'][name]
 

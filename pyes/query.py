@@ -1168,7 +1168,7 @@ class MultiMatchQuery(Query):
 
 class RegexTermQuery(TermQuery):
 
-    _internal_name = "regex_term"
+    _internal_name = "regexp"
 
 
 class QueryStringQuery(Query):

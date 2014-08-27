@@ -296,7 +296,7 @@ class MissingFilter(Filter):
 
 class RegexTermFilter(Filter):
 
-    _internal_name = "regex_term"
+    _internal_name = "regexp"
 
     def __init__(self, field=None, value=None, ignorecase=False, **kwargs):
         super(RegexTermFilter, self).__init__(**kwargs)

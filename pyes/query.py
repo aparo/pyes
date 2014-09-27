@@ -1168,7 +1168,7 @@ class MultiMatchQuery(Query):
 
 class RegexTermQuery(TermQuery):
 
-    _internal_name = "regex_term"
+    _internal_name = "regexp"
 
 
 class QueryStringQuery(Query):
@@ -1623,9 +1623,9 @@ class RescoreQuery(Query):
         """Serialize the query to a structure using the query DSL."""
 
         data = {self._internal_name: self.query.serialize()}
-        if self.query_weight:
+        if self.query_weight is not None:
             data['query_weight'] = self.query_weight
-        if self.rescore_query_weight:
+        if self.rescore_query_weight is not None:
             data['rescore_query_weight'] = self.rescore_query_weight
 
         return data

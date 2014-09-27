@@ -257,7 +257,7 @@ class ES(object):
         else:
             self.dump_curl = None
 
-        #used in bulk
+        # used in bulk
         self._bulk_size = bulk_size  #size of the bulk
         self.bulker = bulker_class(weakref.proxy(self), bulk_size=bulk_size,
                                    raise_on_bulk_item_failure=raise_on_bulk_item_failure)
@@ -311,7 +311,7 @@ class ES(object):
         It tries to keep compatibility with pyes version priors 1.x
         """
         new_servers = []
-        protocols=set() #keep track of protocols. They must be all the same
+        protocols = set()  # keep track of protocols. They must be all the same
 
 
         def check_format(server):
@@ -328,7 +328,7 @@ class ES(object):
 
         def add_protocol(port):
             if 9200 <= port <= 9299:
-               protocols.add("http")
+                protocols.add("http")
             elif 9500 <= port <= 9599:
                 protocols.add("thrift")
 
@@ -347,7 +347,7 @@ class ES(object):
                 if _type not in ["thrift", "http", "https", "memcached"]:
                     raise RuntimeError("Unable to recognize protocol: \"%s\"" % _type)
                 protocols.add(_type)
-                new_servers.append({"host":host, "port":port})
+                new_servers.append({"host": host, "port": port})
                 server = urlparse('%s://%s:%s' % (_type, host, port))
                 check_format(server)
             elif isinstance(server, six.string_types):
@@ -380,21 +380,36 @@ class ES(object):
         """
         Create initial connection pool
         """
-        #detect connectiontype
+        from elasticsearch import Elasticsearch
+        from elasticsearch.connection.thrift import ThriftConnection
+        # detect connectiontype
         if not self.servers:
-            raise RuntimeError("No server defined")
+            # we fallback to localhost:9200
+            self.connection = Elasticsearch(sniff_on_start=self._sniff_on_start, sniffer_timeout=self._sniffer_timeout,
+                                            sniff_on_connection_fail=self._sniff_on_connection_fail,
+                                            max_retries=self.max_retries)
+            return
 
         server = random.choice(self.servers)
         if server.scheme in ["http", "https"]:
-            self.connection = http_connect(
-                [server for server in self.servers if server.scheme in ["http", "https"]],
-                timeout=self.timeout, basic_auth=self.basic_auth, max_retries=self.max_retries,
-                retry_time=self.retry_time)
-            return
+            # self.connection = http_connect(
+            #     [server for server in self.servers if server.scheme in ["http", "https"]],
+            #     timeout=self.timeout, basic_auth=self.basic_auth, max_retries=self.max_retries,
+            #     retry_time=self.retry_time)
+            self.connection = Elasticsearch([server for server in self.servers if server.scheme in ["http", "https"]],
+                                            sniff_on_start=self._sniff_on_start, sniffer_timeout=self._sniffer_timeout,
+                                            sniff_on_connection_fail=self._sniff_on_connection_fail,
+                                            max_retries=self.max_retries)
+
         elif server.scheme == "thrift":
-            self.connection = thrift_connect(
-                [server for server in self.servers if server.scheme == "thrift"],
-                timeout=self.timeout, max_retries=self.max_retries, retry_time=self.retry_time)
+            # self.connection = thrift_connect(
+            #     [server for server in self.servers if server.scheme == "thrift"],
+            #     timeout=self.timeout, max_retries=self.max_retries, retry_time=self.retry_time)
+            self.connection = Elasticsearch([server for server in self.servers if server.scheme in ["http", "https"]],
+                                            connection_class=ThriftConnection,
+                                            sniff_on_start=self._sniff_on_start, sniffer_timeout=self._sniffer_timeout,
+                                            sniff_on_connection_fail=self._sniff_on_connection_fail,
+                                            max_retries=self.max_retries)
 
     def _discovery(self):
         """
@@ -760,7 +775,7 @@ class ES(object):
                 cmd[op_type]['_routing'] = querystring_args['routing']
             if 'percolate' in querystring_args:
                 cmd[op_type]['percolate'] = querystring_args['percolate']
-            if id is not None:  #None to support 0 as id
+            if id is not None:  # None to support 0 as id
                 cmd[op_type]['_id'] = id
             if ttl is not None:
                 cmd[op_type]['_ttl'] = ttl
@@ -1117,7 +1132,7 @@ class ES(object):
                               routing_list=routing_list, search_type_list=None, models=models)
 
 
-    #    scan method is no longer working due to change in ES.search behavior.  May no longer warrant its own method.
+    # scan method is no longer working due to change in ES.search behavior.  May no longer warrant its own method.
     #    def scan(self, query, indices=None, doc_types=None, scroll="10m", **query_params):
     #        """Return a generator which will scan against one or more indices and iterate over the search hits. (currently support only by ES Master)
     #
@@ -1331,7 +1346,7 @@ class ResultSetList(object):
 
         # elif name in self._results:
         # #we manage took, timed_out, _shards
-        #     return self._results[name]
+        # return self._results[name]
         #
         # elif name == "shards" and "_shards" in self._results:
         #     #trick shards -> _shards

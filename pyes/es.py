@@ -235,7 +235,11 @@ class ES(object):
         self.debug_dump = False
         self.cluster_name = "undefined"
         self.basic_auth = basic_auth
-        self.connection = None
+
+        from elasticsearch import Elasticsearch
+        self.connection = Elasticsearch()
+
+
         self._mappings = None
         self.document_object_field = document_object_field
         self._sniff_on_start = sniff_on_start
@@ -258,7 +262,7 @@ class ES(object):
             self.dump_curl = None
 
         # used in bulk
-        self._bulk_size = bulk_size  #size of the bulk
+        self._bulk_size = bulk_size  # size of the bulk
         self.bulker = bulker_class(weakref.proxy(self), bulk_size=bulk_size,
                                    raise_on_bulk_item_failure=raise_on_bulk_item_failure)
         self.bulker_class = bulker_class
@@ -266,7 +270,7 @@ class ES(object):
 
         connection_http.CERT_REQS = cert_reqs
 
-        self.info = {}  #info about the current server
+        self.info = {}  # info about the current server
         if encoder:
             self.encoder = encoder
         if decoder:
@@ -278,7 +282,7 @@ class ES(object):
         else:
             self.servers = server
 
-        #init managers
+        # init managers
         self.indices = Indices(weakref.proxy(self))
         self.cluster = Cluster(weakref.proxy(self))
 
@@ -323,21 +327,31 @@ class ES(object):
                     raise RuntimeError("If you want to use thrift, please install thrift. \"pip install thrift\"")
                 if server.port is None:
                     raise RuntimeError("If you want to use thrift, please provide a port number")
+            port = 9200
+            try:
+                port = int(server.netloc.split(":")[1])
+            except:
+                pass
 
-            new_servers.append(server)
+            return {"scheme": server.scheme, "host": server.netloc.split(":")[0], "port": port,
+                    "url_prefix": server.path}
+            # new_servers.append(server)
 
         def add_protocol(port):
             if 9200 <= port <= 9299:
                 protocols.add("http")
+                return "http"
             elif 9500 <= port <= 9599:
                 protocols.add("thrift")
+                return "thrift"
 
         for server in self.servers:
             if isinstance(server, dict):
                 if 'port' in server:
-                    add_protocol(server["port"])
+                    server["scheme"] = add_protocol(server["port"])
                 if "ssl" in server:
                     protocols.add("http")
+                    server["scheme"] = add_protocol(server["port"])
 
                 new_servers.append(server)
             elif isinstance(server, (tuple, list)):
@@ -347,9 +361,9 @@ class ES(object):
                 if _type not in ["thrift", "http", "https", "memcached"]:
                     raise RuntimeError("Unable to recognize protocol: \"%s\"" % _type)
                 protocols.add(_type)
-                new_servers.append({"host": host, "port": port})
                 server = urlparse('%s://%s:%s' % (_type, host, port))
                 check_format(server)
+                new_servers.append({"host": host, "port": port, "scheme": _type})
             elif isinstance(server, six.string_types):
                 if server.startswith(("thrift:", "http:", "https:")):
                     server = urlparse(server)
@@ -372,9 +386,10 @@ class ES(object):
                             raise RuntimeError("Unable to recognize port-type: \"%s\"" % port)
 
                         server = urlparse('%s://%s:%s' % (_type, host, port))
-                        check_format(server)
+                        new_servers.append(check_format(server))
 
         self.servers = new_servers
+        print self.servers
 
     def _init_connection(self):
         """
@@ -391,21 +406,21 @@ class ES(object):
             return
 
         server = random.choice(self.servers)
-        if server.scheme in ["http", "https"]:
+        if server.get("scheme", "http") in ["http", "https"]:
             # self.connection = http_connect(
-            #     [server for server in self.servers if server.scheme in ["http", "https"]],
+            # [server for server in self.servers if server.scheme in ["http", "https"]],
             #     timeout=self.timeout, basic_auth=self.basic_auth, max_retries=self.max_retries,
             #     retry_time=self.retry_time)
-            self.connection = Elasticsearch([server for server in self.servers if server.scheme in ["http", "https"]],
+            self.connection = Elasticsearch([server for server in self.servers if server.get("scheme", "http") in ["http", "https"]],
                                             sniff_on_start=self._sniff_on_start, sniffer_timeout=self._sniffer_timeout,
                                             sniff_on_connection_fail=self._sniff_on_connection_fail,
                                             max_retries=self.max_retries)
 
-        elif server.scheme == "thrift":
+        elif server.get("scheme", "http") == "thrift":
             # self.connection = thrift_connect(
-            #     [server for server in self.servers if server.scheme == "thrift"],
+            # [server for server in self.servers if server.scheme == "thrift"],
             #     timeout=self.timeout, max_retries=self.max_retries, retry_time=self.retry_time)
-            self.connection = Elasticsearch([server for server in self.servers if server.scheme in ["http", "https"]],
+            self.connection = Elasticsearch([server for server in self.servers if server.get("scheme", "http") in ["http", "https"]],
                                             connection_class=ThriftConnection,
                                             sniff_on_start=self._sniff_on_start, sniffer_timeout=self._sniffer_timeout,
                                             sniff_on_connection_fail=self._sniff_on_connection_fail,
@@ -573,7 +588,7 @@ class ES(object):
         params.update(request.parameters)
         method = Method._VALUES_TO_NAMES[request.method]
         server = self.servers[0]
-        url = urlunsplit((server.scheme, server.netloc, request.uri, urlencode(params), ''))
+        url = urlunsplit((server.get("scheme", "http"), server["host"]+":"+str(server["port"]), request.uri, urlencode(params), ''))
         curl_cmd = "curl -X%s '%s'" % (method, url)
         body = request.body
         if body:
@@ -664,65 +679,6 @@ class ES(object):
         if not exists:
             self.indices.create_index(index, settings)
             self.indices.refresh(index, timesleep=1)
-
-    def put_warmer(self, doc_types=None, indices=None, name=None, warmer=None, querystring_args=None):
-        """
-        Put new warmer into index (or type)
-
-        :param doc_types: list of document types
-        :param warmer: anything with ``serialize`` method or a dictionary
-        :param name: warmer name
-        :param querystring_args: additional arguments passed as GET params to ES
-        """
-        if not querystring_args:
-            querystring_args = {}
-        doc_types_str = ''
-        if doc_types:
-            doc_types_str = '/' + ','.join(doc_types)
-        path = '/{0}{1}/_warmer/{2}'.format(','.join(indices), doc_types_str, name)
-        if hasattr(warmer, 'serialize'):
-            body = warmer.serialize()
-        else:
-            body = warmer
-        return self._send_request(method='PUT', path=path, body=body, params=querystring_args)
-
-    def get_warmer(self, doc_types=None, indices=None, name=None, querystring_args=None):
-        """
-        Retrieve warmer
-
-        :param doc_types: list of document types
-        :param warmer: anything with ``serialize`` method or a dictionary
-        :param name: warmer name. If not provided, all warmers will be returned
-        :param querystring_args: additional arguments passed as GET params to ES
-        """
-        name = name or ''
-        if not querystring_args:
-            querystring_args = {}
-        doc_types_str = ''
-        if doc_types:
-            doc_types_str = '/' + ','.join(doc_types)
-        path = '/{0}{1}/_warmer/{2}'.format(','.join(indices), doc_types_str, name)
-
-        return self._send_request(method='GET', path=path, params=querystring_args)
-
-    def delete_warmer(self, doc_types=None, indices=None, name=None, querystring_args=None):
-        """
-        Retrieve warmer
-
-        :param doc_types: list of document types
-        :param warmer: anything with ``serialize`` method or a dictionary
-        :param name: warmer name. If not provided, all warmers for given indices will be deleted
-        :param querystring_args: additional arguments passed as GET params to ES
-        """
-        name = name or ''
-        if not querystring_args:
-            querystring_args = {}
-        doc_types_str = ''
-        if doc_types:
-            doc_types_str = '/' + ','.join(doc_types)
-        path = '/{0}{1}/_warmer/{2}'.format(','.join(indices), doc_types_str, name)
-
-        return self._send_request(method='DELETE', path=path, params=querystring_args)
 
     def collect_info(self):
         """
@@ -1133,7 +1089,7 @@ class ES(object):
 
 
     # scan method is no longer working due to change in ES.search behavior.  May no longer warrant its own method.
-    #    def scan(self, query, indices=None, doc_types=None, scroll="10m", **query_params):
+    # def scan(self, query, indices=None, doc_types=None, scroll="10m", **query_params):
     #        """Return a generator which will scan against one or more indices and iterate over the search hits. (currently support only by ES Master)
     #
     #        `query` must be a Search object, a Query object, or a custom
@@ -1349,7 +1305,7 @@ class ResultSetList(object):
         # return self._results[name]
         #
         # elif name == "shards" and "_shards" in self._results:
-        #     #trick shards -> _shards
+        # #trick shards -> _shards
         #     return self._results["_shards"]
         # return self._results['hits'][name]
         return None

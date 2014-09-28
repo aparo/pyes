@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from elasticsearch import SerializationError
 
 import six
 
@@ -99,6 +100,7 @@ def expand_suggest_text(suggest):
 
 
 class ESJsonEncoder(json.JSONEncoder):
+
     def default(self, value):
         """Convert rogue and mysterious data types.
         Conversion notes:
@@ -113,7 +115,7 @@ class ESJsonEncoder(json.JSONEncoder):
             dt = datetime(value.year, value.month, value.day, 0, 0, 0)
             return dt.isoformat()
         elif isinstance(value, Decimal):
-            return float(str(value))
+            return float(value)
         elif isinstance(value, set):
             return list(value)
         # raise TypeError
@@ -121,6 +123,7 @@ class ESJsonEncoder(json.JSONEncoder):
 
 
 class ESJsonDecoder(json.JSONDecoder):
+
     def __init__(self, *args, **kwargs):
         kwargs['object_hook'] = self.dict_to_object
         super(ESJsonDecoder, self).__init__(*args, **kwargs)
@@ -156,6 +159,31 @@ class ESJsonDecoder(json.JSONDecoder):
             elif isinstance(v, list):
                 d[k] = [self.string_to_datetime(elem) for elem in v]
         return DotDict(d)
+
+
+class JSONSerializer(object):
+    mimetype = 'application/json'
+
+    def loads(self, s):
+        try:
+            decoded = json.loads(s, cls=ES.decoder)
+        except ValueError:
+            try:
+                decoded = json.loads(s, cls=ESJsonDecoder)
+            except (ValueError, TypeError) as e:
+                raise SerializationError(s, e)
+        return decoded
+
+
+    def dumps(self, data):
+        # don't serialize strings
+        if isinstance(data, six.string_types):
+            return data
+
+        try:
+            json.dumps(data, cls=ES.encoder)
+        except (ValueError, TypeError) as e:
+            raise SerializationError(data, e)
 
 
 def get_id(text):
@@ -402,29 +430,103 @@ class ES(object):
             # we fallback to localhost:9200
             self.connection = Elasticsearch(sniff_on_start=self._sniff_on_start, sniffer_timeout=self._sniffer_timeout,
                                             sniff_on_connection_fail=self._sniff_on_connection_fail,
-                                            max_retries=self.max_retries)
-            return
+                                            max_retries=self.max_retries, serializer=JSONSerializer())
+        else:
+            server = random.choice(self.servers)
+            if server.get("scheme", "http") in ["http", "https"]:
+                # self.connection = http_connect(
+                # [server for server in self.servers if server.scheme in ["http", "https"]],
+                #     timeout=self.timeout, basic_auth=self.basic_auth, max_retries=self.max_retries,
+                #     retry_time=self.retry_time)
+                self.connection = Elasticsearch([server for server in self.servers if server.get("scheme", "http") in ["http", "https"]],
+                                                sniff_on_start=self._sniff_on_start, sniffer_timeout=self._sniffer_timeout,
+                                                sniff_on_connection_fail=self._sniff_on_connection_fail,
+                                                max_retries=self.max_retries, serializer=JSONSerializer())
 
-        server = random.choice(self.servers)
-        if server.get("scheme", "http") in ["http", "https"]:
-            # self.connection = http_connect(
-            # [server for server in self.servers if server.scheme in ["http", "https"]],
-            #     timeout=self.timeout, basic_auth=self.basic_auth, max_retries=self.max_retries,
-            #     retry_time=self.retry_time)
-            self.connection = Elasticsearch([server for server in self.servers if server.get("scheme", "http") in ["http", "https"]],
-                                            sniff_on_start=self._sniff_on_start, sniffer_timeout=self._sniffer_timeout,
-                                            sniff_on_connection_fail=self._sniff_on_connection_fail,
-                                            max_retries=self.max_retries)
+            elif server.get("scheme", "http") == "thrift":
+                # self.connection = thrift_connect(
+                # [server for server in self.servers if server.scheme == "thrift"],
+                #     timeout=self.timeout, max_retries=self.max_retries, retry_time=self.retry_time)
+                self.connection = Elasticsearch([server for server in self.servers if server.get("scheme", "http") in ["http", "https"]],
+                                                connection_class=ThriftConnection,
+                                                sniff_on_start=self._sniff_on_start, sniffer_timeout=self._sniffer_timeout,
+                                                sniff_on_connection_fail=self._sniff_on_connection_fail,
+                                                max_retries=self.max_retries, serializer=JSONSerializer())
+        #monkey patching transport
+        self.connection.transport.perform_request=self.__perform_request
 
-        elif server.get("scheme", "http") == "thrift":
-            # self.connection = thrift_connect(
-            # [server for server in self.servers if server.scheme == "thrift"],
-            #     timeout=self.timeout, max_retries=self.max_retries, retry_time=self.retry_time)
-            self.connection = Elasticsearch([server for server in self.servers if server.get("scheme", "http") in ["http", "https"]],
-                                            connection_class=ThriftConnection,
-                                            sniff_on_start=self._sniff_on_start, sniffer_timeout=self._sniffer_timeout,
-                                            sniff_on_connection_fail=self._sniff_on_connection_fail,
-                                            max_retries=self.max_retries)
+
+    def __perform_request(self, method, url, params=None, body=None):
+        """
+        we monkey-patch the elasticsearch default client for better manage the pyes responses
+
+        Perform the actual request. Retrieve a connection from the connection
+        pool, pass all the information to it's perform_request method and
+        return the data.
+
+        If an exception was raised, mark the connection as failed and retry (up
+        to `max_retries` times).
+
+        If the operation was succesful and the connection used was previously
+        marked as dead, mark it as live, resetting it's failure count.
+
+        :arg method: HTTP method to use
+        :arg url: absolute url (without host) to target
+        :arg params: dictionary of query parameters, will be handed over to the
+            underlying :class:`~elasticsearch.Connection` class for serialization
+        :arg body: body of the request, will be serializes using serializer and
+            passed to the connection
+        """
+        from elasticsearch.exceptions import ConnectionError
+        if body is not None:
+            body = self.connection.transport.serializer.dumps(body)
+
+            # some clients or environments don't support sending GET with body
+            if method == 'GET' and self.connection.transport.send_get_body_as != 'GET':
+                # send it as post instead
+                if self.connection.transport.send_get_body_as == 'POST':
+                    method = 'POST'
+
+                # or as source parameter
+                elif self.connection.transport.send_get_body_as == 'source':
+                    if params is None:
+                        params = {}
+                    params['source'] = body
+                    body = None
+
+        if body is not None:
+            try:
+                body = body.encode('utf-8')
+            except UnicodeDecodeError:
+                # Python 2 and str, no need to re-encode
+                pass
+
+        ignore = ()
+        timeout = None
+        if params:
+            timeout = params.pop('request_timeout', None)
+            ignore = params.pop('ignore', ())
+            if isinstance(ignore, int):
+                ignore = (ignore, )
+
+        for attempt in range(self.connection.transport.max_retries + 1):
+            connection = self.connection.transport.get_connection()
+
+            try:
+                status, headers, data = connection.perform_request(method, url, params, body, ignore=ignore, timeout=timeout)
+            except ConnectionError:
+                self.connection.transport.mark_dead(connection)
+
+                # raise exception on last retry
+                if attempt == self.max_retries:
+                    raise
+            else:
+                # connection didn't fail, confirm it's live status
+                self.connection.transport.connection_pool.mark_live(connection)
+                # if data:
+                #     data = self.connection.transport.deserializer.loads(data, headers.get('content-type'))
+                return status, headers, data
+
 
     def _discovery(self):
         """
@@ -501,6 +603,7 @@ class ES(object):
         if params:
             for k in params:
                 params[k] = str(params[k])
+        #only for debug purpose
         request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()],
                               uri=path, parameters=params, headers=headers, body=body)
         if self.dump_curl is not None:
@@ -511,20 +614,23 @@ class ES(object):
             logger.debug(self._get_curl_request(request))
 
         # execute the request
-        response = self.connection.execute(request)
+        #response = self.connection.execute(request)
+        params["ignore"]=(404,)
+
+        status, headers, data=self.connection.transport.perform_request(method, path, params=params, body=body)
 
         if self.dump_curl is not None:
-            self.dump_curl.write(("# response status: %s" % response.status).encode('utf-8'))
-            self.dump_curl.write(("# response body: %s" % response.body).encode('utf-8'))
+            self.dump_curl.write(("# response status: %s" % status).encode('utf-8'))
+            self.dump_curl.write(("# response body: %s" % body).encode('utf-8'))
 
         if return_response:
-            return response
+            return DotDict({"status":status, "body":data, "headers":headers})
 
         if method == "HEAD":
-            return response.status == 200
+            return status == 200
 
         # handle the response
-        response_body = response.body
+        response_body = data
         if six.PY3:
             response_body = response_body.decode(encoding='UTF-8')
 
@@ -538,9 +644,9 @@ class ES(object):
                 # parsed as JSON is when no handler is found for a request URI.
                 # In this case, the body is actually a good message to return
                 # in the exception.
-                raise ElasticSearchException(response_body, response.status, response_body)
-        if response.status not in [200, 201]:
-            raise_if_error(response.status, decoded)
+                raise ElasticSearchException(response_body, status, response_body)
+        if status not in [200, 201]:
+            raise_if_error(status, decoded)
         if not raw and isinstance(decoded, dict):
             decoded = DotDict(decoded)
         return decoded

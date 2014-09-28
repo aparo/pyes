@@ -615,7 +615,8 @@ class ES(object):
 
         # execute the request
         #response = self.connection.execute(request)
-        params["ignore"]=(404,)
+        #pyes has its own error management code
+        params["ignore"]=(400,404,409)
 
         status, headers, data=self.connection.transport.perform_request(method, path, params=params, body=body)
 

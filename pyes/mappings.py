@@ -45,12 +45,12 @@ check_values = {
 
 
 class AbstractField(object):
-    def __init__(self, index=True, store=False, boost=1.0,
+    def __init__(self, store=False, boost=1.0,
                  term_vector=False,
                  term_vector_positions=False,
                  term_vector_offsets=False,
-                 omit_norms=True, tokenize=True,
-                 omit_term_freq_and_positions=True,
+                 omit_norms=True,
+                 tokenize=True, index=True,
                  type=None, index_name=None,
                  index_options=None,
                  path=None,
@@ -70,7 +70,6 @@ class AbstractField(object):
         self.index = index
         self.index_options = index_options
         self.omit_norms = omit_norms
-        self.omit_term_freq_and_positions = omit_term_freq_and_positions
         self.index_name = index_name
         self.type = type
         self.analyzer = analyzer
@@ -101,8 +100,19 @@ class AbstractField(object):
         self.norms=norms
 
     def as_dict(self):
-        result = {"type": self.type,
-                  'index': self.index}
+        result = {"type": self.type}
+        #ES 1.3 don't like type object
+        if self.type=="object":
+            result.pop("type")
+
+        if self.index:
+            if self.tokenize:
+                result["index"]="analyzed"
+            else:
+                result["index"]="not_analyzed"
+        else:
+            result["index"]="no"
+
         if self.store != "no":
             if isinstance(self.store, bool):
                 if self.store:
@@ -124,8 +134,6 @@ class AbstractField(object):
 
         if self.omit_norms != True:
             result['omit_norms'] = self.omit_norms
-        if self.omit_term_freq_and_positions != True:
-            result['omit_term_freq_and_positions'] = self.omit_term_freq_and_positions
         if self.index_name:
             result['index_name'] = self.index_name
         if self.norms:
@@ -230,6 +238,7 @@ class NumericFieldAbstract(AbstractField):
         self.numeric_resolution = numeric_resolution
         self.ignore_malformed=ignore_malformed
 
+
     def as_dict(self):
         result = super(NumericFieldAbstract, self).as_dict()
         if self.null_value is not None:
@@ -242,6 +251,14 @@ class NumericFieldAbstract(AbstractField):
             result['numeric_resolution'] = self.numeric_resolution
         if self.ignore_malformed is not None:
             result['ignore_malformed'] = self.ignore_malformed
+
+        if "index" in result:
+            #we switch index from boolean to "no"
+            if result["index"]==True:
+                result.pop("index", None)
+            else:
+                result["index"]="no"
+
         return result
 
 
@@ -450,8 +467,7 @@ class ObjectField(object):
         self.properties[prop.name] = prop
 
     def as_dict(self):
-        result = {"type": self.type,
-                  "properties": {}}
+        result = {"properties": {}}
         if self.dynamic is not None:
             result['dynamic'] = self.dynamic
         if self.enabled is not None:

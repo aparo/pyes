@@ -504,7 +504,7 @@ class Indices(object):
             body = warmer.serialize()
         else:
             body = warmer
-        return self.connection._send_request(method='PUT', path=path, body=body, params=querystring_args)
+        return self.conn._send_request(method='PUT', path=path, body=body, params=querystring_args)
 
     def get_warmer(self, doc_types=None, indices=None, name=None, querystring_args=None):
         """
@@ -523,7 +523,7 @@ class Indices(object):
             doc_types_str = '/' + ','.join(doc_types)
         path = '/{0}{1}/_warmer/{2}'.format(','.join(indices), doc_types_str, name)
 
-        return self._send_request(method='GET', path=path, params=querystring_args)
+        return self.conn._send_request(method='GET', path=path, params=querystring_args)
 
     def delete_warmer(self, doc_types=None, indices=None, name=None, querystring_args=None):
         """
@@ -542,7 +542,7 @@ class Indices(object):
             doc_types_str = '/' + ','.join(doc_types)
         path = '/{0}{1}/_warmer/{2}'.format(','.join(indices), doc_types_str, name)
 
-        return self._send_request(method='DELETE', path=path, params=querystring_args)
+        return self.conn._send_request(method='DELETE', path=path, params=querystring_args)
 
 
 class Cluster(object):

@@ -53,7 +53,6 @@ class IndexStatsTestCase(ESTestCase):
 
     def test_optimize(self):
         result = self.conn.indices.optimize(indices=self.index_name, wait_for_merge=True, max_num_segments=1)
-        self.assertEqual(result.ok, True)
         self.assertEqual(result._shards["failed"], 0)
 
 if __name__ == "__main__":

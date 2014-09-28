@@ -41,7 +41,6 @@
                             "index": "not_analyzed", 
                             "index_name": "id", 
                             "omit_norms": true, 
-                            "omit_term_freq_and_positions": true, 
                             "precision_step": 4, 
                             "store": "yes", 
                             "term_vector": "no", 
@@ -54,7 +53,7 @@
                                     "index": "analyzed", 
                                     "index_name": "name_of_firm", 
                                     "omit_norms": false, 
-                                    "omit_term_freq_and_positions": false, 
+                                     
                                     "store": "yes", 
                                     "term_vector": "with_positions_offsets", 
                                     "type": "string"
@@ -65,7 +64,7 @@
                                     "index": "not_analyzed", 
                                     "index_name": "untouched", 
                                     "omit_norms": false, 
-                                    "omit_term_freq_and_positions": false, 
+                                     
                                     "store": "yes", 
                                     "term_vector": "no", 
                                     "type": "string"
@@ -87,7 +86,7 @@
                             "index": "analyzed", 
                             "index_name": "short_description", 
                             "omit_norms": false, 
-                            "omit_term_freq_and_positions": false, 
+                             
                             "store": "no", 
                             "term_vector": "no", 
                             "type": "string"
@@ -97,7 +96,7 @@
                             "index": "analyzed", 
                             "index_name": "description", 
                             "omit_norms": false, 
-                            "omit_term_freq_and_positions": false, 
+                             
                             "store": "yes", 
                             "term_vector": "with_positions_offsets", 
                             "type": "string"
@@ -107,7 +106,7 @@
                             "index": "not_analyzed", 
                             "index_name": "id", 
                             "omit_norms": false, 
-                            "omit_term_freq_and_positions": false, 
+                             
                             "store": "yes", 
                             "term_vector": "no", 
                             "type": "string"
@@ -117,7 +116,7 @@
                             "index": "analyzed", 
                             "index_name": "id_typeric", 
                             "omit_norms": false, 
-                            "omit_term_freq_and_positions": false, 
+                             
                             "store": "no", 
                             "term_vector": "no", 
                             "type": "string"
@@ -127,7 +126,7 @@
                             "index": "analyzed", 
                             "index_name": "leaf", 
                             "omit_norms": false, 
-                            "omit_term_freq_and_positions": false, 
+                             
                             "store": "no", 
                             "term_vector": "no", 
                             "type": "string"
@@ -137,7 +136,7 @@
                             "index": "not_analyzed", 
                             "index_name": "level", 
                             "omit_norms": true, 
-                            "omit_term_freq_and_positions": true, 
+                             
                             "precision_step": 4, 
                             "store": "no", 
                             "term_vector": "no", 
@@ -151,7 +150,7 @@
                     "index": "not_analyzed", 
                     "index_name": "codsan", 
                     "omit_norms": false, 
-                    "omit_term_freq_and_positions": false, 
+                     
                     "store": "yes", 
                     "term_vector": "no", 
                     "type": "string"
@@ -163,7 +162,7 @@
                             "index": "analyzed", 
                             "index_name": "tags", 
                             "omit_norms": false, 
-                            "omit_term_freq_and_positions": false, 
+                             
                             "store": "yes", 
                             "term_vector": "with_positions_offsets", 
                             "type": "string"
@@ -174,7 +173,7 @@
                             "index": "not_analyzed", 
                             "index_name": "untouched", 
                             "omit_norms": false, 
-                            "omit_term_freq_and_positions": false, 
+                             
                             "store": "yes", 
                             "term_vector": "no", 
                             "type": "string"
@@ -193,7 +192,7 @@
                             "index": "not_analyzed", 
                             "index_name": "id", 
                             "omit_norms": true, 
-                            "omit_term_freq_and_positions": true, 
+                             
                             "precision_step": 4, 
                             "store": "yes", 
                             "term_vector": "no", 
@@ -204,7 +203,7 @@
                             "index": "not_analyzed", 
                             "index_name": "name_of_base", 
                             "omit_norms": false, 
-                            "omit_term_freq_and_positions": false, 
+                             
                             "store": "yes", 
                             "term_vector": "no", 
                             "type": "string"
@@ -216,7 +215,7 @@
                                     "index": "analyzed", 
                                     "index_name": "name_of_product", 
                                     "omit_norms": false, 
-                                    "omit_term_freq_and_positions": false, 
+                                     
                                     "store": "yes", 
                                     "term_vector": "with_positions_offsets", 
                                     "type": "string"
@@ -227,7 +226,7 @@
                                     "index": "not_analyzed", 
                                     "index_name": "untouched", 
                                     "omit_norms": false, 
-                                    "omit_term_freq_and_positions": false, 
+                                     
                                     "store": "yes", 
                                     "term_vector": "no", 
                                     "type": "string"
@@ -244,7 +243,7 @@
                     "index": "not_analyzed", 
                     "index_name": "flag_mod", 
                     "omit_norms": true, 
-                    "omit_term_freq_and_positions": false, 
+                     
                     "store": "yes", 
                     "term_vector": "no", 
                     "type": "boolean"
@@ -254,7 +253,7 @@
                     "index": "not_analyzed", 
                     "index_name": "stock", 
                     "omit_norms": true, 
-                    "omit_term_freq_and_positions": false, 
+                     
                     "store": "yes", 
                     "term_vector": "no", 
                     "type": "boolean"
@@ -264,7 +263,7 @@
                     "index": "not_analyzed", 
                     "index_name": "id", 
                     "omit_norms": true, 
-                    "omit_term_freq_and_positions": true, 
+                     
                     "precision_step": 4, 
                     "store": "yes", 
                     "term_vector": "no", 
@@ -280,7 +279,7 @@
                             "index": "not_analyzed", 
                             "index_name": "filename", 
                             "omit_norms": false, 
-                            "omit_term_freq_and_positions": false, 
+                             
                             "store": "no", 
                             "term_vector": "no", 
                             "type": "string"
@@ -290,7 +289,7 @@
                             "index": "not_analyzed", 
                             "index_name": "numero", 
                             "omit_norms": false, 
-                            "omit_term_freq_and_positions": false, 
+                             
                             "store": "yes", 
                             "term_vector": "no", 
                             "type": "string"
@@ -302,7 +301,7 @@
                                     "index": "analyzed", 
                                     "index_name": "title", 
                                     "omit_norms": false, 
-                                    "omit_term_freq_and_positions": false, 
+                                     
                                     "store": "yes", 
                                     "term_vector": "with_positions_offsets", 
                                     "type": "string"
@@ -313,7 +312,7 @@
                                     "index": "not_analyzed", 
                                     "index_name": "untouched", 
                                     "omit_norms": false, 
-                                    "omit_term_freq_and_positions": false, 
+                                     
                                     "store": "yes", 
                                     "term_vector": "no", 
                                     "type": "string"
@@ -330,7 +329,7 @@
                     "index": "not_analyzed", 
                     "index_name": "price", 
                     "omit_norms": true, 
-                    "omit_term_freq_and_positions": true, 
+                     
                     "precision_step": 4, 
                     "store": "yes", 
                     "term_vector": "no", 
@@ -346,7 +345,7 @@
                             "index": "not_analyzed", 
                             "index_name": "id", 
                             "omit_norms": true, 
-                            "omit_term_freq_and_positions": true, 
+                             
                             "precision_step": 4, 
                             "store": "yes", 
                             "term_vector": "no", 
@@ -357,7 +356,7 @@
                             "index": "analyzed", 
                             "index_name": "title", 
                             "omit_norms": false, 
-                            "omit_term_freq_and_positions": false, 
+                             
                             "store": "yes", 
                             "term_vector": "with_positions_offsets", 
                             "type": "string"
@@ -375,7 +374,7 @@
                             "index": "not_analyzed", 
                             "index_name": "id", 
                             "omit_norms": true, 
-                            "omit_term_freq_and_positions": true, 
+                             
                             "precision_step": 4, 
                             "store": "yes", 
                             "term_vector": "no", 
@@ -386,7 +385,7 @@
                             "index": "analyzed", 
                             "index_name": "title", 
                             "omit_norms": false, 
-                            "omit_term_freq_and_positions": false, 
+                             
                             "store": "yes", 
                             "term_vector": "with_positions_offsets", 
                             "type": "string"
@@ -399,7 +398,7 @@
                     "index": "not_analyzed", 
                     "index_name": "type_folder", 
                     "omit_norms": false, 
-                    "omit_term_freq_and_positions": false, 
+                     
                     "store": "yes", 
                     "term_vector": "no", 
                     "type": "string"

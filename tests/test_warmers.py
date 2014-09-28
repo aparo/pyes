@@ -15,7 +15,7 @@ class WarmerTestCase(ESTestCase):
         #ES fails if the index is empty
         self.conn.index({'a':1}, self.index_name, self.document_type)
         self.conn.indices.refresh(self.index_name)
-        self.conn.put_warmer(indices=[self.index_name], name='w1', warmer=warmer1)
+        self.conn.indices.put_warmer(indices=[self.index_name], name='w1', warmer=warmer1)
         result = self.conn.get_warmer(indices=[self.index_name], name='w1')
         expected = {
             self.index_name: {
@@ -33,11 +33,11 @@ class WarmerTestCase(ESTestCase):
 
     def test_delete_warmer(self):
         warmer1 = pyes.Search(pyes.MatchAllQuery())
-        self.conn.put_warmer(indices=[self.index_name], name='w1', warmer=warmer1)
-        self.conn.delete_warmer(indices=[self.index_name], name='w1')
+        self.conn.indices.put_warmer(indices=[self.index_name], name='w1', warmer=warmer1)
+        self.conn.indices.delete_warmer(indices=[self.index_name], name='w1')
         self.assertRaises(
             pyes.exceptions.ElasticSearchException,
-            self.conn.get_warmer,
+            self.conn.indices.get_warmer,
             indices=[self.index_name],
             name='w1'
         )

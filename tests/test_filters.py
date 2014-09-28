@@ -266,24 +266,24 @@ class RangeFilterTestCase(ESTestCase):
         self.assertEqual(2, len(result.hits))
 
 
-class TermsLookupTestCase(FilterTests):
-
-    def test_filter(self):
-        tl = utils.TermsLookup(index=self.index_name, type=self.document_type,
-                               id=1, path='terms_lookup_filter')
-        f = filters.TermsFilter('terms_filter', tl)
-        q = Search(filter=f)
-        result = self.conn.search(query=q, indices=self.index_name,
-                                  doc_types=[self.document_type])
-        self.assertEqual(2, len(result.hits))
-
-        tl = utils.TermsLookup(index=self.index_name, type=self.document_type,
-                               id=2, path='terms_lookup_filter')
-        f = filters.TermsFilter('terms_filter', tl)
-        q = Search(filter=f)
-        result = self.conn.search(query=q, indices=self.index_name,
-                                  doc_types=[self.document_type])
-        self.assertEqual(1, len(result.hits))
+# class TermsLookupTestCase(FilterTests):
+#
+#     def test_filter(self):
+#         tl = utils.TermsLookup(index=self.index_name, type=self.document_type,
+#                                id=1, path='terms_lookup_filter')
+#         f = filters.TermsFilter('terms_filter', tl)
+#         q = Search(filter=f)
+#         result = self.conn.search(query=q, indices=self.index_name,
+#                                   doc_types=[self.document_type])
+#         self.assertEqual(2, len(result.hits))
+#
+#         tl = utils.TermsLookup(index=self.index_name, type=self.document_type,
+#                                id=2, path='terms_lookup_filter')
+#         f = filters.TermsFilter('terms_filter', tl)
+#         q = Search(filter=f)
+#         result = self.conn.search(query=q, indices=self.index_name,
+#                                   doc_types=[self.document_type])
+#         self.assertEqual(1, len(result.hits))
 
 
 class ExistsFilterTestCase(FilterTests):

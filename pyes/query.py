@@ -1398,13 +1398,13 @@ class SpanFirstQuery(TermQuery):
 class SpanMultiQuery(Query):
     """
     This query allows you to wrap multi term queries (fuzzy, prefix, wildcard, range).
-    
+
     The query element is either of type WildcardQuery, FuzzyQuery, PrefixQuery or RangeQuery.
     A boost can also be associated with the element query
     """
-    
+
     _internal_name = "span_multi"
-    
+
     def __init__(self, query, **kwargs):
         super(SpanMultiQuery, self).__init__(**kwargs)
         self.query = query
@@ -1811,6 +1811,25 @@ class FunctionScoreQuery(Query):
         AVG = "avg"
         MAX = "max"
         MIN = "min"
+
+    class FieldValueFactor(FunctionScoreFunction):
+        """ Boost by field value """
+        _internal_name = "field_value_factor"
+
+        def __init__(self, field, factor=None, modifier=None):
+            self.field = field
+            self.factor = factor
+            self.modifier = modifier
+
+        def _serialize(self):
+            data = {
+                'field': self.field
+            }
+            if self.factor:
+                data['factor'] = self.factor
+            if self.modifier:
+                data['modifier'] = self.modifier
+            return data
 
     _internal_name = "function_score"
 

@@ -549,6 +549,11 @@ class QuerySearchTestCase(ESTestCase):
         resultset = self.conn.search(query=q)
         self.assertEqual(resultset.hits[0]['_score'], 6.0)
 
+    def test_FunctionScoreQuery_BoostFunction(self):
+        function = FunctionScoreQuery.BoostFunction(2)
+        serialized = function.serialize()
+        self.assertEqual(serialized, {"boost_factor": 2})
+
     def test_DeleteByQuery(self):
         q = TermQuery("name", "joe")
         result = self.conn.delete_by_query(self.index_name,

@@ -1748,10 +1748,10 @@ class FunctionScoreQuery(Query):
             self.filter = filter
 
         def serialize(self):
-            return {
-                self._internal_name: self.boost_factor,
-                'filter': self.filter.serialize()
-            }
+            data = {self._internal_name: self.boost_factor}
+            if self.filter:
+                data['filter'] = self.filter.serialize()
+            return data
 
     class RandomFunction(FunctionScoreFunction):
         """Is a random boost based on a seed value"""

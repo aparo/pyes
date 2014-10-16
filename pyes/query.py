@@ -245,7 +245,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
             res['rescore'] = self.rescore.serialize()
         if self.window_size:
             res['window_size'] = self.window_size
-        if self.fields is not None: #Deal properly with self.fields = []
+        if self.fields is not None:  # Deal properly with self.fields = []
             res['fields'] = self.fields
         if self.size is not None:
             res['size'] = self.size
@@ -658,7 +658,7 @@ class DisMaxQuery(Query):
             raise InvalidQuery("A least a query is required")
         return filters
 
-#Removed in ES 1.x
+# Removed in ES 1.x
 # class FieldQuery(Query):
 #
 #     _internal_name = "field"
@@ -1260,7 +1260,7 @@ class QueryStringQuery(Query):
                 raise InvalidQuery("The query is empty")
             filters["query"] = self.query
         if self.minimum_should_match:
-          filters['minimum_should_match']=self.minimum_should_match
+          filters['minimum_should_match'] = self.minimum_should_match
         return filters
 
 class SimpleQueryStringQuery(Query):
@@ -1713,7 +1713,7 @@ class FunctionScoreQuery(Query):
 
     class DecayFunction(FunctionScoreFunction):
 
-        def __init__(self, decay_function, field, origin, scale,  decay=None, offset=None, filter=None):
+        def __init__(self, decay_function, field, origin=None, scale=None, decay=None, offset=None, filter=None):
 
             decay_functions = ["gauss", "exp", "linear"]
             if decay_function not in decay_functions:
@@ -1729,11 +1729,13 @@ class FunctionScoreQuery(Query):
             self.offset = offset
 
         def _serialize(self):
-
-            field_data = {'origin': self.origin, 'scale': self.scale}
+            field_data = {}
+            if self.origin is not None:
+                field_data['origin'] = self.origin
+            if self.scale is not None:
+                field_data['scale'] = self.scale
             if self.decay:
                 field_data['decay'] = self.decay
-
             if self.offset:
                 field_data['offset'] = self.offset
 

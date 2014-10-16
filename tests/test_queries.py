@@ -554,6 +554,11 @@ class QuerySearchTestCase(ESTestCase):
         serialized = function.serialize()
         self.assertEqual(serialized, {"boost_factor": 2})
 
+    def test_FunctionScoreQuery_DecayFunction(self):
+        function = FunctionScoreQuery.DecayFunction("gauss", "timestamp", scale="4w")
+        serialized = function.serialize()
+        self.assertEqual(serialized, {"gauss": {"timestamp": {"scale": "4w"}}})
+
     def test_DeleteByQuery(self):
         q = TermQuery("name", "joe")
         result = self.conn.delete_by_query(self.index_name,

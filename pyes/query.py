@@ -245,7 +245,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
             res['rescore'] = self.rescore.serialize()
         if self.window_size:
             res['window_size'] = self.window_size
-        if self.fields is not None:  # Deal properly with self.fields = []
+        if self.fields is not None: #Deal properly with self.fields = []
             res['fields'] = self.fields
         if self.size is not None:
             res['size'] = self.size
@@ -658,7 +658,7 @@ class DisMaxQuery(Query):
             raise InvalidQuery("A least a query is required")
         return filters
 
-# Removed in ES 1.x
+#Removed in ES 1.x
 # class FieldQuery(Query):
 #
 #     _internal_name = "field"
@@ -1260,7 +1260,7 @@ class QueryStringQuery(Query):
                 raise InvalidQuery("The query is empty")
             filters["query"] = self.query
         if self.minimum_should_match:
-          filters['minimum_should_match'] = self.minimum_should_match
+          filters['minimum_should_match']=self.minimum_should_match
         return filters
 
 class SimpleQueryStringQuery(Query):

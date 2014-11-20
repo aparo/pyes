@@ -27,10 +27,12 @@ POOLS = {}
 
 CERT_REQS = 'CERT_OPTIONAL'
 
+
 def get_pool():
     if not current_process() in POOLS:
         POOLS[current_process()] = urllib3.PoolManager(cert_reqs=CERT_REQS)
     return POOLS[current_process()]
+
 
 def update_connection_pool(maxsize=1):
     """Update the global connection pool manager parameters.
@@ -39,6 +41,7 @@ def update_connection_pool(maxsize=1):
              More than 1 is useful in multithreaded situations.
     """
     get_pool().connection_pool_kw.update(maxsize=maxsize)
+
 
 class Connection(object):
     """An ElasticSearch connection to a randomly chosen server of the list.
@@ -68,7 +71,7 @@ class Connection(object):
     """
 
     def __init__(self, servers=None, retry_time=60, max_retries=3, timeout=None,
-                 basic_auth=None):
+                 preserve_connection_pool=False, basic_auth=None):
         if servers is None:
             servers = [DEFAULT_SERVER]
         self._active_servers = [server.geturl() for server in servers]
@@ -76,8 +79,10 @@ class Connection(object):
         self._retry_time = retry_time
         self._max_retries = max_retries
         self._timeout = timeout
+        self._preserve_connection_pool = preserve_connection_pool
         if basic_auth:
-            self._headers = urllib3.make_headers(basic_auth="%(username)s:%(password)s" % basic_auth)
+            self._headers = urllib3.make_headers(
+                basic_auth="%(username)s:%(password)s" % basic_auth)
         else:
             self._headers = {}
         self._lock = threading.RLock()
@@ -110,14 +115,20 @@ class Connection(object):
             try:
                 parse_result = urlparse(server)
                 conn = get_pool().connection_from_host(parse_result.hostname,
-                                                         parse_result.port,
-                                                         parse_result.scheme)
+                                                       parse_result.port,
+                                                       parse_result.scheme)
                 response = conn.urlopen(**kwargs)
                 return RestResponse(status=response.status,
                                     body=response.data,
                                     headers=response.headers)
             except (IOError, urllib3.exceptions.HTTPError) as ex:
-                self._drop_server(server)
+
+                # Maybe we want to keep the failing server in the pool.
+                # Say, if there is only one, and we want to wait until it's
+                # back up.
+                if not self._preserve_connection_pool:
+                    self._drop_server(server)
+
                 self._local.server = server = None
                 if retry >= self._max_retries:
                     logger.error("Client error: bailing out after %d failed retries",

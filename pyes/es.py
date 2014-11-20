@@ -174,6 +174,7 @@ class ES(object):
                  encoder=None, decoder=None,
                  max_retries=3,
                  retry_time=60,
+                 preserve_connection_pool=False,
                  default_indices=None,
                  default_types=None,
                  log_curl=False,
@@ -221,6 +222,7 @@ class ES(object):
         self.default_indices = default_indices
         self.max_retries = max_retries
         self.retry_time = retry_time
+        self.preserve_connection_pool = preserve_connection_pool
         self.cluster = None
         self.debug_dump = False
         self.cluster_name = "undefined"
@@ -353,7 +355,8 @@ class ES(object):
         if server.scheme in ["http", "https"]:
             self.connection = http_connect(
                 [server for server in self.servers if server.scheme in ["http", "https"]],
-                timeout=self.timeout, basic_auth=self.basic_auth, max_retries=self.max_retries, retry_time=self.retry_time)
+                timeout=self.timeout, max_retries=self.max_retries, retry_time=self.retry_time,
+                preserve_connection_pool=self.preserve_connection_pool, basic_auth=self.basic_auth)
             return
         elif server.scheme == "thrift":
             self.connection = thrift_connect(

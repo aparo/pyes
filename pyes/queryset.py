@@ -446,7 +446,7 @@ class QuerySet(object):
         # and one to delete. Make sure that the discovery of related
         # objects is performed on the same database as the deletion.
         del_query._clear_ordering()
-        get_es_connection(self.es_url, self.es_kwargs).delete_by_query(self._build_query())
+        get_es_connection(self.es_url, self.es_kwargs).delete_by_query(self.index, self.type, self._build_query())
         # Clear the result cache, in case this QuerySet gets reused.
         self._result_cache = None
 

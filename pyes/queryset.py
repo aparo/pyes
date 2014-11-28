@@ -329,7 +329,11 @@ class QuerySet(object):
         and returning the created object.
         """
         obj = self.model(**kwargs)
-        obj.save(force_insert=True, using=self.index)
+	meta = obj.get_meta()
+        meta.connection = get_es_connection(self.es_url, self.es_kwargs)
+        meta.index=self.index
+        meta.type=self.type
+        obj.save(force=True)
         return obj
 
     def bulk_create(self, objs, batch_size=None):

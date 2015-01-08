@@ -212,30 +212,22 @@ class ListBulker(BaseBulker):
 def _is_bulk_item_ok(item):
     # this becomes messier if we're supporting pre-1.0 ElasticSearch
     # alongside 1.0 ones.
-    if "create" in item:
-        if 'ok' in item['create']:
-            return True
-        elif 'status' in item['create']:
-            return item["create"]['status'] in [200,201]
-        else:
-            return False
-    if "index" in item:
-        if 'ok' in item['index']:
-            return True
-        elif "status" in item['index']:
-            return item["index"]['status'] in [200,201]
-        else:
-            return False
-    elif "delete" in item:
-        if 'ok' in item['delete']:
-            return True
-        elif 'status' in item['delete']:
-            return item['delete']['status'] in [200,201]
-        else:
-            return False
-    else:
-        # unknown response type; be conservative
-        return False
+
+    operations = ("create", "index", "delete", "update")
+
+    for op in operations:
+        try:
+            if 'ok' in item[op]:
+                return True
+            elif 'status' in item[op]:
+                return item[op]['status'] in [200, 201]
+            else:
+                return False
+        except KeyError:
+            continue
+
+    # unknown response type; be conservative
+    return False
 
 
 def _raise_exception_if_bulk_item_failed(bulk_result):

@@ -587,14 +587,14 @@ class TopChildrenQuery(ConstantScoreQuery):
         if self.score not in ["max", "min", "avg", "sum"]:
             raise InvalidParameterQuery("Invalid value '%s' for score" % self.score)
 
-        filters = {}
+        queries = {}
         if self.boost != 1.0:
-            filters["boost"] = self.boost
-        for f in self.filters:
-            filters.update(f.serialize())
+            queries["boost"] = self.boost
+        for f in self.queries:
+            queries.update(f.serialize())
         return {
             'type': self.type,
-            'query': filters,
+            'query':queries ,
             'score': self.score,
             'factor': self.factor,
             'incremental_factor': self.incremental_factor,

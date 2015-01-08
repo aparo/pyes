@@ -1713,7 +1713,7 @@ class FunctionScoreQuery(Query):
 
     class DecayFunction(FunctionScoreFunction):
 
-        def __init__(self, decay_function, field, origin, scale,  decay=None, offset=None, filter=None):
+        def __init__(self, decay_function, field, origin=None, scale=None, decay=None, offset=None, filter=None):
 
             decay_functions = ["gauss", "exp", "linear"]
             if decay_function not in decay_functions:
@@ -1729,11 +1729,13 @@ class FunctionScoreQuery(Query):
             self.offset = offset
 
         def _serialize(self):
-
-            field_data = {'origin': self.origin, 'scale': self.scale}
+            field_data = {}
+            if self.origin is not None:
+                field_data['origin'] = self.origin
+            if self.scale is not None:
+                field_data['scale'] = self.scale
             if self.decay:
                 field_data['decay'] = self.decay
-
             if self.offset:
                 field_data['offset'] = self.offset
 
@@ -1748,10 +1750,10 @@ class FunctionScoreQuery(Query):
             self.filter = filter
 
         def serialize(self):
-            return {
-                self._internal_name: self.boost_factor,
-                'filter': self.filter.serialize()
-            }
+            data = {self._internal_name: self.boost_factor}
+            if self.filter:
+                data['filter'] = self.filter.serialize()
+            return data
 
     class RandomFunction(FunctionScoreFunction):
         """Is a random boost based on a seed value"""

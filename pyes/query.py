@@ -594,7 +594,7 @@ class TopChildrenQuery(ConstantScoreQuery):
             queries.update(f.serialize())
         return {
             'type': self.type,
-            'query':queries ,
+            'query': queries,
             'score': self.score,
             'factor': self.factor,
             'incremental_factor': self.incremental_factor,

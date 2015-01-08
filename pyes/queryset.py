@@ -329,7 +329,11 @@ class QuerySet(object):
         and returning the created object.
         """
         obj = self.model(**kwargs)
-        obj.save(force_insert=True, using=self.index)
+	meta = obj.get_meta()
+        meta.connection = get_es_connection(self.es_url, self.es_kwargs)
+        meta.index=self.index
+        meta.type=self.type
+        obj.save(force=True)
         return obj
 
     def bulk_create(self, objs, batch_size=None):
@@ -442,7 +446,7 @@ class QuerySet(object):
         # and one to delete. Make sure that the discovery of related
         # objects is performed on the same database as the deletion.
         del_query._clear_ordering()
-        get_es_connection(self.es_url, self.es_kwargs).delete_by_query(self._build_query())
+        get_es_connection(self.es_url, self.es_kwargs).delete_by_query(self.index, self.type, self._build_query())
         # Clear the result cache, in case this QuerySet gets reused.
         self._result_cache = None
 

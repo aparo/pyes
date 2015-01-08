@@ -808,6 +808,7 @@ class ES(object):
             body.update({"script": script, "lang": lang})
         if params:
             body["params"] = params
+
         if upsert:
             body["upsert"] = upsert
         if document:
@@ -873,7 +874,7 @@ class ES(object):
                     raise
                 self.refresh(index)
 
-    def partial_update(self, index, doc_type, id, script, params=None,
+    def partial_update(self, index, doc_type, id, doc=None, script=None, params=None,
                        upsert=None, querystring_args=None):
         """
         Partially update a document with a script
@@ -881,14 +882,17 @@ class ES(object):
         if querystring_args is None:
             querystring_args = {}
 
-        cmd = {"script": script}
+        if doc is None and script is None:
+            raise InvalidQuery("script or doc can not both be None")
 
-        if params:
-            cmd["params"] = params
-
-        if upsert:
-            cmd["upsert"] = upsert
-
+        if doc is None:
+            cmd = {"script": script}
+            if params:
+                cmd["params"] = params
+            if upsert:
+                cmd["upsert"] = params
+        else:
+            cmd = {"doc": doc }
         path = make_path(index, doc_type, id, "_update")
 
         return self._send_request('POST', path, cmd, querystring_args)
@@ -1820,4 +1824,3 @@ class ResultSetMulti(object):
 
     if six.PY2:
         next = __next__
-

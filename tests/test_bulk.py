@@ -117,6 +117,15 @@ class BulkTestCase(ESTestCase):
         self.assertTrue("error" in bulk_result["items"][1]["delete"])
         self.assertEqual(self.conn.bulker.bulk_data, [])
 
+    def test_bulk_update(self):
+        update_ok_1 = {'update': {'_type': 'test-type', '_id': '4', 'ok': True, '_version': 1, '_index': 'test-index'}}
+        self.assertTrue(_is_bulk_item_ok(update_ok_1))
+
+        update_error_1 = {'update': {'_type': 'test-type', '_id': '8', '_index': 'test-index',
+                                     'error': 'ElasticSearchParseException[Failed to derive xcontent from (offset=0, length=7): [105, 110, 118, 97, 108, 105, 100]]'}}
+
+        self.assertFalse(_is_bulk_item_ok(update_error_1))
+
     def test_raise_exception_if_bulk_item_failed(self):
         index_ok_1 = {'index': {'_type': 'test-type', '_id': '4', 'ok': True, '_version': 1, '_index': 'test-index'}}
         self.assertTrue(_is_bulk_item_ok(index_ok_1))

@@ -10,6 +10,8 @@
 
 --
 
+[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/aparo/pyes?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 pyes is a pythonic way to use ElasticSearch since 2010. 
 
 This version requires elasticsearch 1.x or above. It's a pre release for pyes 1.x. Give a look to migrations documentation to upgrade you code for ElasticSearch 1.x.

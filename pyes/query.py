@@ -536,16 +536,19 @@ class ConstantScoreQuery(Query):
 
 class HasQuery(Query):
 
-    def __init__(self, type, query, _scope=None, **kwargs):
+    def __init__(self, type, query, _scope=None, score_mode=None, **kwargs):
         super(HasQuery, self).__init__(**kwargs)
         self.type = type
         self._scope = _scope
+        self.score_mode = score_mode
         self.query = query
 
     def _serialize(self):
         data = {'type': self.type, 'query': self.query.serialize()}
         if self._scope is not None:
             data['_scope'] = self._scope
+        if self.score_mode is not None:
+            data['score_mode'] = self.score_mode
         return data
 
 
@@ -553,10 +556,20 @@ class HasChildQuery(HasQuery):
 
     _internal_name = "has_child"
 
+    def __init__(self, *args, **kwargs):
+        super(HasChildQuery, self).__init__(*args, **kwargs)
+        if self.score_mode and self.score_mode not in ["max", "sum", "avg", "none"]:
+            raise InvalidParameterQuery("Invalid value '%s' for score_mode" % self.score_mode)
+
 
 class HasParentQuery(HasQuery):
 
     _internal_name = "has_parent"
+
+    def __init__(self, *args, **kwargs):
+        super(HasParentQuery, self).__init__(*args, **kwargs)
+        if self.score_mode and self.score_mode not in ["score", "none"]:
+            raise InvalidParameterQuery("Invalid value '%s' for score_mode" % self.score_mode)
 
 
 class TopChildrenQuery(ConstantScoreQuery):
@@ -574,14 +587,14 @@ class TopChildrenQuery(ConstantScoreQuery):
         if self.score not in ["max", "min", "avg", "sum"]:
             raise InvalidParameterQuery("Invalid value '%s' for score" % self.score)
 
-        filters = {}
+        queries = {}
         if self.boost != 1.0:
-            filters["boost"] = self.boost
-        for f in self.filters:
-            filters.update(f.serialize())
+            queries["boost"] = self.boost
+        for f in self.queries:
+            queries.update(f.serialize())
         return {
             'type': self.type,
-            'query': filters,
+            'query': queries,
             'score': self.score,
             'factor': self.factor,
             'incremental_factor': self.incremental_factor,
@@ -1114,25 +1127,23 @@ class MatchQuery(TextQuery):
 
 class MultiMatchQuery(Query):
     """
-    A family of match queries that accept text/numerics/dates, analyzes it, and constructs a query out of it.
-    Replaces TextQuery.
+    A query that matches same value on several fields with various types of matching and per field
+    boosting.
 
     Examples:
+    q = MultiMatch(['subject', 'message'], 'this is a test')
 
-    q = MatchQuery('book_title', 'elasticsearch')
-    results = conn.search(q)
-
-    q = MatchQuery('book_title', 'elasticsearch python', type='phrase')
-    results = conn.search(q)
+    Fore more, take a look at:
+    http://www.elasticsearch.org/guide/en/elasticsearch/reference/1.4/query-dsl-multi-match-query.html
     """
     _internal_name = "multi_match"
-    _valid_types = ['boolean', "phrase", "phrase_prefix"]
+    _valid_types = ["best_fields", "most_fields", "cross_fields", "phrase", "phrase_prefix"]
     _valid_operators = ['or', "and"]
 
-    def __init__(self, fields, text, type="boolean", slop=0, fuzziness=None,
+    def __init__(self, fields, text, type="best_fields", slop=0, fuzziness=None,
                  prefix_length=0, max_expansions=2147483647, rewrite=None,
                  operator="or", analyzer=None, use_dis_max=True, minimum_should_match=None,
-                 **kwargs):
+                 boost = None, tie_breaker=None, **kwargs):
         super(MultiMatchQuery, self).__init__(**kwargs)
 
         if type not in self._valid_types:
@@ -1142,6 +1153,8 @@ class MultiMatchQuery(Query):
                 "Invalid value '%s' for operator: allowed values are %s" % (operator, self._valid_operators))
         if not fields:
             raise QueryError("At least one field must be defined for multi_match")
+        if not isinstance(fields, list):
+          fields = [fields]
 
         query = {'type': type, 'query': text, 'fields': fields, 'use_dis_max': use_dis_max}
         if slop:
@@ -1160,6 +1173,11 @@ class MultiMatchQuery(Query):
             query["rewrite"] = rewrite
         if minimum_should_match:
             query['minimum_should_match'] = minimum_should_match
+        if boost:
+            query['boost'] = boost
+        if tie_breaker:
+            # 0.0 is a default, so we do not need to test against None
+            query['tie_breaker'] = tie_breaker
         self.query = query
 
     def _serialize(self):
@@ -1398,13 +1416,13 @@ class SpanFirstQuery(TermQuery):
 class SpanMultiQuery(Query):
     """
     This query allows you to wrap multi term queries (fuzzy, prefix, wildcard, range).
-    
+
     The query element is either of type WildcardQuery, FuzzyQuery, PrefixQuery or RangeQuery.
     A boost can also be associated with the element query
     """
-    
+
     _internal_name = "span_multi"
-    
+
     def __init__(self, query, **kwargs):
         super(SpanMultiQuery, self).__init__(**kwargs)
         self.query = query
@@ -1713,7 +1731,7 @@ class FunctionScoreQuery(Query):
 
     class DecayFunction(FunctionScoreFunction):
 
-        def __init__(self, decay_function, field, origin, scale,  decay=None, offset=None, filter=None):
+        def __init__(self, decay_function, field, origin=None, scale=None, decay=None, offset=None, filter=None):
 
             decay_functions = ["gauss", "exp", "linear"]
             if decay_function not in decay_functions:
@@ -1729,11 +1747,13 @@ class FunctionScoreQuery(Query):
             self.offset = offset
 
         def _serialize(self):
-
-            field_data = {'origin': self.origin, 'scale': self.scale}
+            field_data = {}
+            if self.origin is not None:
+                field_data['origin'] = self.origin
+            if self.scale is not None:
+                field_data['scale'] = self.scale
             if self.decay:
                 field_data['decay'] = self.decay
-
             if self.offset:
                 field_data['offset'] = self.offset
 
@@ -1748,10 +1768,10 @@ class FunctionScoreQuery(Query):
             self.filter = filter
 
         def serialize(self):
-            return {
-                self._internal_name: self.boost_factor,
-                'filter': self.filter.serialize()
-            }
+            data = {self._internal_name: self.boost_factor}
+            if self.filter:
+                data['filter'] = self.filter.serialize()
+            return data
 
     class RandomFunction(FunctionScoreFunction):
         """Is a random boost based on a seed value"""
@@ -1811,6 +1831,25 @@ class FunctionScoreQuery(Query):
         AVG = "avg"
         MAX = "max"
         MIN = "min"
+
+    class FieldValueFactor(FunctionScoreFunction):
+        """ Boost by field value """
+        _internal_name = "field_value_factor"
+
+        def __init__(self, field, factor=None, modifier=None):
+            self.field = field
+            self.factor = factor
+            self.modifier = modifier
+
+        def _serialize(self):
+            data = {
+                'field': self.field
+            }
+            if self.factor:
+                data['factor'] = self.factor
+            if self.modifier:
+                data['modifier'] = self.modifier
+            return data
 
     _internal_name = "function_score"
 

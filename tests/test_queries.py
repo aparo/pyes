@@ -34,14 +34,14 @@ class QuerySearchTestCase(ESTestCase):
         self.conn.indices.create_index(self.index_name)
         self.conn.indices.put_mapping(self.document_type, {'properties': mapping}, self.index_name)
         self.conn.indices.put_mapping("test-type2", {"_parent": {"type": self.document_type}}, self.index_name)
-        self.conn.index({"name": "Joe Tester", "parsedtext": "Joe Testere nice guy", "uuid": "11111", "position": 1},
+        self.conn.index({"name": "Joe Tester", "parsedtext": "Joe Testere nice guy", "uuid": "11111", "position": 1, "boost": 1.0},
             self.index_name, self.document_type, 1)
         self.conn.index({"name": "data1", "value": "value1"}, self.index_name, "test-type2", 1, parent=1)
-        self.conn.index({"name": "Bill Baloney", "parsedtext": "Bill Testere nice guy", "uuid": "22222", "position": 2},
+        self.conn.index({"name": "Bill Baloney", "parsedtext": "Bill Testere nice guy", "uuid": "22222", "position": 2, "boost": 2.0},
             self.index_name, self.document_type, 2)
         self.conn.index({"name": "data2", "value": "value2"}, self.index_name, "test-type2", 2, parent=2)
         self.conn.index({"name": "Bill Clinton", "parsedtext": """Bill is not
-                nice guy""", "uuid": "33333", "position": 3}, self.index_name, self.document_type, 3)
+                nice guy""", "uuid": "33333", "position": 3, "boost": 3.0}, self.index_name, self.document_type, 3)
 
         self.conn.default_indices = self.index_name
 
@@ -542,6 +542,22 @@ class QuerySearchTestCase(ESTestCase):
         resultset = self.conn.search(query=q, indices=self.index_name)
 
         self.assertEqual(resultset.hits[0]['_score'], 20)
+
+    def test_FunctionScoreQuery_FieldValueFactor(self):
+        functions = [FunctionScoreQuery.FieldValueFactor('boost', factor=2.0)]
+        q = FunctionScoreQuery(functions, MatchAllQuery(), score_mode=FunctionScoreQuery.ScoreModes.SUM)
+        resultset = self.conn.search(query=q)
+        self.assertEqual(resultset.hits[0]['_score'], 6.0)
+
+    def test_FunctionScoreQuery_BoostFunction(self):
+        function = FunctionScoreQuery.BoostFunction(2)
+        serialized = function.serialize()
+        self.assertEqual(serialized, {"boost_factor": 2})
+
+    def test_FunctionScoreQuery_DecayFunction(self):
+        function = FunctionScoreQuery.DecayFunction("gauss", "timestamp", scale="4w")
+        serialized = function.serialize()
+        self.assertEqual(serialized, {"gauss": {"timestamp": {"scale": "4w"}}})
 
     def test_DeleteByQuery(self):
         q = TermQuery("name", "joe")

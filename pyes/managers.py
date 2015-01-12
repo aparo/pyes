@@ -142,6 +142,16 @@ class Indices(object):
         """
         path = self.conn._make_path(indices, (), '_status', allow_all_indices=False)
         return self.conn._send_request('GET', path)
+    # Following signature differs because field data isn't available at _all endpoint.   
+    def field_stats(self, indices=''):
+        """
+        Retrieve the field data stats for one or more indices
+        (See :ref:'es-guide-reference-api-admin-cluster-nodes-stats')
+
+        :keyword indices: an index or a list of indices
+        """
+        path = self.conn._make_path(indices, (), '_stats','fielddata')
+        return self.conn._send_request('GET', path)
 
     def create_index(self, index, settings=None):
         """
@@ -688,6 +698,19 @@ class Cluster(object):
         parts = ["_cluster", "nodes", "stats"]
         if nodes:
             parts = ["_cluster", "nodes", ",".join(nodes), "stats"]
+
+        path = make_path(*parts)
+        return self.conn._send_request('GET', path)
+
+    def node_field_stats(self, nodes=None):
+        """
+        Retrieve field stats per node(s) or cluster wide
+        :ref:`nodes info <es-guide-reference-api-admin-cluster-nodes-stats>` API allows to retrieve one or more (or all) 
+        the cluster nodes info about field data memory usage
+        """
+        parts = ['_nodes', 'stats', 'indices']
+        if nodes:
+            paths = ['_nodes', ",".join(nodes), 'stats', 'indices']
 
         path = make_path(*parts)
         return self.conn._send_request('GET', path)

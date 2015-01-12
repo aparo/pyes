@@ -2,14 +2,6 @@
  pyes - Python ElasticSearch
 =============================
 
-:Web: http://pypi.python.org/pypi/pyes/
-:Download: http://pypi.python.org/pypi/pyes/
-:Source: http://github.com/aparo/pyes/
-:Documentation: http://pyes.rtfd.org/
-:Keywords: search, elastisearch, distribute search
-
---
-
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/aparo/pyes?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 pyes is a pythonic way to use ElasticSearch since 2010. 
@@ -88,5 +80,3 @@ License
 
 This software is licensed under the ``New BSD License``. See the ``LICENSE``
 file in the top distribution directory for the full license text.
-
-.. # vim: syntax=rst expandtab tabstop=4 shiftwidth=4 shiftround

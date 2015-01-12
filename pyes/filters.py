@@ -305,7 +305,7 @@ class MissingFilter(Filter):
 
 class RegexTermFilter(Filter):
 
-    _internal_name = "regex_term"
+    _internal_name = "regexp"
 
     def __init__(self, field=None, value=None, ignorecase=False, **kwargs):
         super(RegexTermFilter, self).__init__(**kwargs)
@@ -485,7 +485,7 @@ class GeoShapeFilter(Filter):
 class GeoIndexedShapeFilter(Filter):
     """http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-geo-shape-filter.html#_pre_indexed_shape"""
 
-    _internal_name = 'geo_indexed_shape'
+    _internal_name = 'geo_shape'
 
     def __init__(self, field=None, id=None, type=None, index=None, path=None, **kwargs):
         super(GeoIndexedShapeFilter, self).__init__(**kwargs)

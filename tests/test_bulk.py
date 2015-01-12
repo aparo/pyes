@@ -103,7 +103,7 @@ class BulkTestCase(ESTestCase):
         bulk_result = self.conn.index(
             "invalid", self.index_name, self.document_type, 8, bulk=True)
         self.assertEqual(len(bulk_result['items']), 2)
-        self.assertTrue(bulk_result["items"][0]["index"]["ok"])
+        self.assertTrue("_version" in bulk_result["items"][0]["index"])
         self.assertTrue("error" in bulk_result["items"][1]["index"])
         self.assertEqual(self.conn.bulker.bulk_data, [])
 
@@ -113,9 +113,18 @@ class BulkTestCase(ESTestCase):
         bulk_result = self.conn.delete(
             self.index_name, "#foo", 9, bulk=True)
         self.assertEqual(len(bulk_result['items']), 2)
-        self.assertTrue(bulk_result["items"][0]["delete"]["ok"])
+        self.assertTrue("_version" in bulk_result["items"][0]["delete"])
         self.assertTrue("error" in bulk_result["items"][1]["delete"])
         self.assertEqual(self.conn.bulker.bulk_data, [])
+
+    def test_bulk_update(self):
+        update_ok_1 = {'update': {'_type': 'test-type', '_id': '4', 'ok': True, '_version': 1, '_index': 'test-index'}}
+        self.assertTrue(_is_bulk_item_ok(update_ok_1))
+
+        update_error_1 = {'update': {'_type': 'test-type', '_id': '8', '_index': 'test-index',
+                                     'error': 'ElasticSearchParseException[Failed to derive xcontent from (offset=0, length=7): [105, 110, 118, 97, 108, 105, 100]]'}}
+
+        self.assertFalse(_is_bulk_item_ok(update_error_1))
 
     def test_raise_exception_if_bulk_item_failed(self):
         index_ok_1 = {'index': {'_type': 'test-type', '_id': '4', 'ok': True, '_version': 1, '_index': 'test-index'}}

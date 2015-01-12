@@ -6,6 +6,11 @@
 
 .. _version-0.19.1:
 
+1.0.0
+=====
+
+- Moved (put/get/delete)_warmer in indices manager
+
 0.19.1
 ======
 

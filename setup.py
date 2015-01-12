@@ -60,7 +60,7 @@ class QuickRunTests(TestCommand):
         TestCommand.run(self, *args, **kwargs)
 
 
-install_requires = ["urllib3>=1.7", "six>=1.5.2"]
+install_requires = ["urllib3>=1.7", "six>=1.5.2", "elasticsearch>=1.0.0,<2.0.0"]
 
 #if not sys.platform.startswith("java"):
 #    install_requires += [ "thrift", ]    

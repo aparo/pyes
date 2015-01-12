@@ -44,7 +44,7 @@ class IndexingTestCase(ESTestCase):
         result = self.conn.index({"name": "Joe Tester"}, self.index_name, self.document_type, 1)
         self.assertResultContains(result, {
             '_type': 'test-type',
-            '_id': '1', 'ok': True,
+            '_id': '1',
             '_index': 'test-index'})
 
     def testIndexingWithoutID(self):
@@ -52,7 +52,6 @@ class IndexingTestCase(ESTestCase):
         result = self.conn.index({"name": "Joe Tester"}, self.index_name, self.document_type)
         self.assertResultContains(result, {
             '_type': 'test-type',
-            'ok': True,
             '_index': 'test-index'})
         # should have an id of some value assigned.
         self.assertTrue('_id' in result.keys() and result['_id'])
@@ -61,7 +60,7 @@ class IndexingTestCase(ESTestCase):
         """Creazione indice"""
         self.conn.indices.delete_index("test-index2")
         result = self.conn.indices.create_index("test-index2")
-        self.assertResultContains(result, {'acknowledged': True, 'ok': True})
+        self.assertResultContains(result, {'acknowledged': True})
 
     def testDeleteByID(self):
         self.conn.index({"name": "Joe Tester"}, self.index_name, self.document_type, 1)
@@ -69,7 +68,7 @@ class IndexingTestCase(ESTestCase):
         result = self.conn.delete(self.index_name, self.document_type, 1)
         self.assertResultContains(result, {
             '_type': 'test-type',
-            '_id': '1', 'ok': True,
+            '_id': '1',
             '_index': 'test-index'})
 
     def testDeleteByIDWithEncoding(self):
@@ -79,13 +78,13 @@ class IndexingTestCase(ESTestCase):
         self.assertResultContains(result, {
             '_type': 'test-type',
             '_id': 'http://hello/?#\'there',
-            'ok': True,
+
             '_index': 'test-index'})
 
     def testDeleteIndex(self):
         self.conn.indices.create_index("another-index")
         result = self.conn.indices.delete_index("another-index")
-        self.assertResultContains(result, {'acknowledged': True, 'ok': True})
+        self.assertResultContains(result, {'acknowledged': True})
 
     def testCannotCreateExistingIndex(self):
         self.conn.indices.create_index("another-index")
@@ -96,32 +95,31 @@ class IndexingTestCase(ESTestCase):
         result = self.conn.indices.put_mapping(self.document_type,
                 {self.document_type: {"properties": {"name": {"type": "string", "store": "yes"}}}},
             indices=self.index_name)
-        self.assertResultContains(result, {'acknowledged': True, 'ok': True})
+        self.assertResultContains(result, {'acknowledged': True})
 
     def testIndexStatus(self):
         self.conn.indices.create_index("another-index")
         result = self.conn.indices.status(["another-index"])
         self.conn.indices.delete_index("another-index")
         self.assertTrue('indices' in result.keys())
-        self.assertResultContains(result, {'ok': True})
 
     def testIndexFlush(self):
         self.conn.indices.create_index("another-index")
         result = self.conn.indices.flush(["another-index"])
         self.conn.indices.delete_index("another-index")
-        self.assertResultContains(result, {'ok': True})
+        self.assertEqual(result._shards.failed, 0)
 
     def testIndexRefresh(self):
         self.conn.indices.create_index("another-index")
         result = self.conn.indices.refresh(["another-index"])
         self.conn.indices.delete_index("another-index")
-        self.assertResultContains(result, {'ok': True})
+        self.assertEqual(result._shards.failed, 0)
 
     def testIndexOptimize(self):
         self.conn.indices.create_index("another-index")
         result = self.conn.indices.optimize(["another-index"])
         self.conn.indices.delete_index("another-index")
-        self.assertResultContains(result, {'ok': True})
+        self.assertEqual(result._shards.failed, 0)
 
     def testUpdate(self):
         # Use these query strings for all, so we test that it works on all the calls

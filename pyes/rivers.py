@@ -204,7 +204,7 @@ class MongoDBRiver(River):
     type = "mongodb"
 
     def __init__(self, servers, db, collection, index_name, mapping_type, gridfs=False, options=None, bulk_size=1000,
-                 filter=None, **kwargs):
+                 filter=None, script=None, **kwargs):
         super(MongoDBRiver, self).__init__(**kwargs)
         self.name = index_name
         self.index_type = mapping_type
@@ -217,8 +217,10 @@ class MongoDBRiver(River):
             "gridfs": gridfs,
             "filter": filter
         }
+        if script:
+          self.mongodb['script'] = script
 
-    def serialize(self):
+    def _serialize(self):
         result = {
             'type': self.type,
             'mongodb': self.mongodb

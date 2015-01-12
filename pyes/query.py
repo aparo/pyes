@@ -587,14 +587,14 @@ class TopChildrenQuery(ConstantScoreQuery):
         if self.score not in ["max", "min", "avg", "sum"]:
             raise InvalidParameterQuery("Invalid value '%s' for score" % self.score)
 
-        filters = {}
+        queries = {}
         if self.boost != 1.0:
-            filters["boost"] = self.boost
-        for f in self.filters:
-            filters.update(f.serialize())
+            queries["boost"] = self.boost
+        for f in self.queries:
+            queries.update(f.serialize())
         return {
             'type': self.type,
-            'query': filters,
+            'query': queries,
             'score': self.score,
             'factor': self.factor,
             'incremental_factor': self.incremental_factor,
@@ -1127,25 +1127,23 @@ class MatchQuery(TextQuery):
 
 class MultiMatchQuery(Query):
     """
-    A family of match queries that accept text/numerics/dates, analyzes it, and constructs a query out of it.
-    Replaces TextQuery.
+    A query that matches same value on several fields with various types of matching and per field
+    boosting.
 
     Examples:
+    q = MultiMatch(['subject', 'message'], 'this is a test')
 
-    q = MatchQuery('book_title', 'elasticsearch')
-    results = conn.search(q)
-
-    q = MatchQuery('book_title', 'elasticsearch python', type='phrase')
-    results = conn.search(q)
+    Fore more, take a look at:
+    http://www.elasticsearch.org/guide/en/elasticsearch/reference/1.4/query-dsl-multi-match-query.html
     """
     _internal_name = "multi_match"
-    _valid_types = ['boolean', "phrase", "phrase_prefix"]
+    _valid_types = ["best_fields", "most_fields", "cross_fields", "phrase", "phrase_prefix"]
     _valid_operators = ['or', "and"]
 
-    def __init__(self, fields, text, type="boolean", slop=0, fuzziness=None,
+    def __init__(self, fields, text, type="best_fields", slop=0, fuzziness=None,
                  prefix_length=0, max_expansions=2147483647, rewrite=None,
                  operator="or", analyzer=None, use_dis_max=True, minimum_should_match=None,
-                 **kwargs):
+                 boost = None, tie_breaker=None, **kwargs):
         super(MultiMatchQuery, self).__init__(**kwargs)
 
         if type not in self._valid_types:
@@ -1155,6 +1153,8 @@ class MultiMatchQuery(Query):
                 "Invalid value '%s' for operator: allowed values are %s" % (operator, self._valid_operators))
         if not fields:
             raise QueryError("At least one field must be defined for multi_match")
+        if not isinstance(fields, list):
+          fields = [fields]
 
         query = {'type': type, 'query': text, 'fields': fields, 'use_dis_max': use_dis_max}
         if slop:
@@ -1173,6 +1173,11 @@ class MultiMatchQuery(Query):
             query["rewrite"] = rewrite
         if minimum_should_match:
             query['minimum_should_match'] = minimum_should_match
+        if boost:
+            query['boost'] = boost
+        if tie_breaker:
+            # 0.0 is a default, so we do not need to test against None
+            query['tie_breaker'] = tie_breaker
         self.query = query
 
     def _serialize(self):

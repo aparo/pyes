@@ -431,7 +431,7 @@ class Indices(object):
 
     def get_mapping(self, doc_type=None, indices=None, raw=False):
         """
-        Register specific mapping definition for a specific type against one or more indices.
+        Return specific mapping definition for a specific type against one or more indices.
         (See :ref:`es-guide-reference-api-admin-indices-get-mapping`)
 
         """
@@ -454,7 +454,9 @@ class Indices(object):
                         connection=self.conn,
                         document_object_field=self.conn.document_object_field)
         if doc_type:
-            return mapper.mappings[doc_type]
+            if indices and len(indices)==1 and len(doc_type)==1:
+                return mapper.get_doctype(indices[0], doc_type)
+
         return mapper
 
     def delete_mapping(self, index, doc_type):

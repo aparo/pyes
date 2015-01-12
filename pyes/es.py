@@ -912,7 +912,7 @@ class ES(object):
         data = self.get(index, doc_type, id)
         return data['_name'], base64.standard_b64decode(data['content'])
 
-    def update(self, index, doc_type, id, script=None, lang="mvel", params=None, document=None, upsert=None,
+    def update(self, index, doc_type, id, script=None, lang="groovy", params=None, document=None, upsert=None,
                model=None, bulk=False, querystring_args=None, retry_on_conflict=None, routing=None, doc_as_upsert=None):
         if querystring_args is None:
             querystring_args = {}

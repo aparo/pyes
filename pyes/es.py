@@ -890,7 +890,7 @@ class ES(object):
             if params:
                 cmd["params"] = params
             if upsert:
-                cmd["upsert"] = params
+                cmd["upsert"] = upsert
         else:
             cmd = {"doc": doc }
         path = make_path(index, doc_type, id, "_update")

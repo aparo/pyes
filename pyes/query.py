@@ -1775,7 +1775,7 @@ class FunctionScoreQuery(Query):
 
     class RandomFunction(FunctionScoreFunction):
         """Is a random boost based on a seed value"""
-        _internal_name = 'random_Score'
+        _internal_name = 'random_score'
 
         def __init__(self, seed, filter=None):
             self.seed = seed

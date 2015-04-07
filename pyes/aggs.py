@@ -346,7 +346,7 @@ class TermsAgg(BucketAgg):
 
     def __init__(self, name, field=None, fields=None, size=100, order=None,
                  exclude=None, regex=None, regex_flags="DOTALL", script=None,
-                 lang=None, all_terms=None, **kwargs):
+                 lang=None, all_terms=None, min_doc_count=None, **kwargs):
         super(TermsAgg, self).__init__(name, **kwargs)
         self.field = field
         self.fields = fields
@@ -358,6 +358,7 @@ class TermsAgg(BucketAgg):
         self.script = script
         self.lang = lang
         self.all_terms = all_terms
+        self.min_doc_count = int(min_doc_count) if min_doc_count else None
 
     def _serialize(self):
         if not self.fields and not self.field and not self.script:
@@ -393,6 +394,8 @@ class TermsAgg(BucketAgg):
                 data['regex_flags'] = self.regex_flags
         if self.all_terms:
             data['all_terms'] = self.all_terms
+        if self.min_doc_count:
+            data['min_doc_count'] = self.min_doc_count
         return data
 
 

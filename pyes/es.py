@@ -159,7 +159,7 @@ class ESJsonDecoder(json.JSONDecoder):
                     pass
             elif isinstance(v, six.string_types) and len(v) > 20:
                 try:
-                    return datetime.strptime(obj, "%Y-%m-%dT%H:%M:%S.%f")
+                    return datetime.strptime(v, "%Y-%m-%dT%H:%M:%S.%f")
                 except ValueError:
                     pass
             elif isinstance(v, list):

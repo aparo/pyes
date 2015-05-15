@@ -93,6 +93,23 @@ class FilterAgg(BucketAgg):
         return self.filter.serialize()
 
 
+class FiltersAgg(BucketAgg):
+
+    _internal_name = "filters"
+
+    def __init__(self, name, names, filters, **kwargs):
+        super(FiltersAgg, self).__init__(name, **kwargs)
+        self.filters = filters
+        self.names = names
+
+    def _serialize(self):
+        result = {'filters': {}}
+        for name, filter in zip(self.names, self.filters):
+            result['filters'][name] = filter.serialize()
+
+        return result
+
+
 class HistogramAgg(BucketAgg):
 
     _internal_name = "histogram"

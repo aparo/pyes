@@ -15,7 +15,6 @@ else:
 import base64
 import codecs
 import random
-import time
 import weakref
 
 try:
@@ -131,12 +130,17 @@ class ESJsonDecoder(json.JSONDecoder):
         """
         if isinstance(obj, six.string_types) and len(obj) == 19:
             try:
-                return datetime(*time.strptime(obj, "%Y-%m-%dT%H:%M:%S")[:6])
+                return datetime.strptime(obj, "%Y-%m-%dT%H:%M:%S")
+            except ValueError:
+                pass
+        if isinstance(obj, six.string_types) and len(obj) > 19:
+            try:
+                return datetime.strptime(obj, "%Y-%m-%dT%H:%M:%S.%f")
             except ValueError:
                 pass
         if isinstance(obj, six.string_types) and len(obj) == 10:
             try:
-                return datetime(*time.strptime(obj, "%Y-%m-%d")[:3])
+                return datetime.strptime(obj, "%Y-%m-%d")
             except ValueError:
                 pass
         return obj
@@ -150,7 +154,12 @@ class ESJsonDecoder(json.JSONDecoder):
             if isinstance(v, six.string_types) and len(v) == 19:
                 # Decode a datetime string to a datetime object
                 try:
-                    d[k] = datetime(*time.strptime(v, "%Y-%m-%dT%H:%M:%S")[:6])
+                    d[k] = datetime.strptime(v, "%Y-%m-%dT%H:%M:%S")
+                except ValueError:
+                    pass
+            elif isinstance(v, six.string_types) and len(v) > 20:
+                try:
+                    d[k] = datetime.strptime(v, "%Y-%m-%dT%H:%M:%S.%f")
                 except ValueError:
                     pass
             elif isinstance(v, list):

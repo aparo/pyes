@@ -228,6 +228,7 @@ class DateHistogramAgg(BucketAgg):
                 raise RuntimeError("Invalid key_field: value_field or value_script required")
         return data
 
+
 class NestedAgg(BucketAgg):
     _internal_name = "nested"
 
@@ -280,7 +281,6 @@ class RangeAgg(BucketAgg):
         return data
 
 
-
 class StatsAgg(Agg):
 
     _internal_name = "stats"
@@ -301,6 +301,7 @@ class StatsAgg(Agg):
                 data['params'] = self.params
         return data
 
+
 class ValueCountAgg(Agg):
 
     _internal_name = "value_count"
@@ -320,6 +321,7 @@ class ValueCountAgg(Agg):
             if self.params:
                 data['params'] = self.params
         return data
+
 
 class SumAgg(Agg):
 
@@ -361,6 +363,7 @@ class AvgAgg(Agg):
             if self.params:
                 data['params'] = self.params
         return data
+
 
 class TermsAgg(BucketAgg):
 

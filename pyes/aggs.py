@@ -116,17 +116,18 @@ class HistogramAgg(BucketAgg):
 
     def __init__(self, name, field=None, interval=None, time_interval=None,
                  key_field=None, value_field=None, key_script=None, min_doc_count=None,
-                 value_script=None, params=None, **kwargs):
+                 value_script=None, params=None, extended_bounds=None, **kwargs):
         super(HistogramAgg, self).__init__(name, **kwargs)
         self.field = field
         self.interval = interval
-        self.min_doc_count = min_doc_count
+        self.min_doc_count = int(min_doc_count) if min_doc_count else None
         self.time_interval = time_interval
         self.key_field = key_field
         self.value_field = value_field
         self.key_script = key_script
         self.value_script = value_script
         self.params = params
+        self.extended_bounds = extended_bounds
 
     def _add_interval(self, data):
         if self.interval:
@@ -162,6 +163,8 @@ class HistogramAgg(BucketAgg):
                 data['time_interval'] = self.time_interval
         if self.min_doc_count is not None:
             data['min_doc_count'] = self.min_doc_count
+        if self.extended_bounds is not None:
+            data['extended_bounds'] = self.extended_bounds
         return data
 
 
@@ -172,7 +175,7 @@ class DateHistogramAgg(BucketAgg):
     def __init__(self, name, field=None, interval=None, time_zone=None, pre_zone=None,
                  post_zone=None, factor=None, pre_offset=None, post_offset=None,
                  key_field=None, value_field=None, value_script=None, params=None,
-                 min_doc_count=None, **kwargs):
+                 min_doc_count=None, extended_bounds=None, **kwargs):
         super(DateHistogramAgg, self).__init__(name, **kwargs)
         self.field = field
         self.interval = interval
@@ -185,9 +188,9 @@ class DateHistogramAgg(BucketAgg):
         self.key_field = key_field
         self.value_field = value_field
         self.value_script = value_script
-        self.min_doc_count = min_doc_count
+        self.min_doc_count = int(min_doc_count) if min_doc_count else None
         self.params = params
-
+        self.extended_bounds = extended_bounds
 
     def _serialize(self):
         data = {}
@@ -209,6 +212,8 @@ class DateHistogramAgg(BucketAgg):
             data['post_offset'] = self.post_offset
         if self.min_doc_count is not None:
             data['min_doc_count'] = self.min_doc_count
+        if self.extended_bounds is not None:
+            data['extended_bounds'] = self.extended_bounds
         if self.field:
             data['field'] = self.field
         elif self.key_field:
@@ -222,6 +227,7 @@ class DateHistogramAgg(BucketAgg):
             else:
                 raise RuntimeError("Invalid key_field: value_field or value_script required")
         return data
+
 
 class NestedAgg(BucketAgg):
     _internal_name = "nested"
@@ -275,7 +281,6 @@ class RangeAgg(BucketAgg):
         return data
 
 
-
 class StatsAgg(Agg):
 
     _internal_name = "stats"
@@ -296,6 +301,7 @@ class StatsAgg(Agg):
                 data['params'] = self.params
         return data
 
+
 class ValueCountAgg(Agg):
 
     _internal_name = "value_count"
@@ -315,6 +321,7 @@ class ValueCountAgg(Agg):
             if self.params:
                 data['params'] = self.params
         return data
+
 
 class SumAgg(Agg):
 
@@ -356,6 +363,7 @@ class AvgAgg(Agg):
             if self.params:
                 data['params'] = self.params
         return data
+
 
 class TermsAgg(BucketAgg):
 

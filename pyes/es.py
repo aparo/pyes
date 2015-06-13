@@ -336,7 +336,7 @@ class ES(object):
                         try:
                             port = int(tokens[1])
                         except ValueError:
-                            raise RuntimeError("Invalid port: \"%s\"" % port)
+                            raise RuntimeError("Invalid port: \"%s\"" % tokens[1])
 
                         if 9200 <= port <= 9299:
                             _type = "http"

@@ -1216,7 +1216,7 @@ class ES(object):
         Execute a "more like this" search query against one or more fields and get back search hits.
         """
         path = make_path(index, doc_type, id, '_mlt')
-        query_params['fields'] = ','.join(fields)
+        query_params['mlt_fields'] = ','.join(fields)
         body = query_params["body"] if "body" in query_params else None
         return self._send_request('GET', path, body=body, params=query_params)
 

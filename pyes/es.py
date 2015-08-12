@@ -290,7 +290,7 @@ class ES(object):
         Destructor
         """
         # Don't bother getting the lock
-        if self.bulker and self.bulker.bulk_size > 0:
+        if self.bulker and self.bulker.bulk_data:
             # It's not safe to rely on the destructor to flush the queue:
             # the Python documentation explicitly states "It is not guaranteed
             # that __del__() methods are called for objects that still exist "

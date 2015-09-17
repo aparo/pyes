@@ -706,7 +706,7 @@ class ES(object):
         Function helper for fast inserting
 
         :param header: a string with the bulk header must be ended with a newline
-        :param header: a json document string must be ended with a newline
+        :param document: a json document string must be ended with a newline
         """
         self.bulker.add("%s%s" % (header, document))
         return self.flush_bulk()

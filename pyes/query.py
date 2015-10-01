@@ -737,6 +737,33 @@ class FilteredQuery(Query):
         }
 
 
+class BoostingQuery(Query):
+    """
+    The boosting query can be used to effectively demote results that match a given query. Unlike the "NOT"
+    clause in bool query, this still selects documents that contain undesirable terms, but reduces their overall score.
+
+    Example:
+
+    t = TermQuery('name', 'john')
+    q = BoostingQuery(MatchAllQuery(), t, negative_boost=0.2)
+    results = conn.search(q)
+    """
+
+    _internal_name = "boosting"
+
+    def __init__(self, positive, negative, negative_boost=0.0, **kwargs):
+        super(BoostingQuery, self).__init__(**kwargs)
+        self.positive = positive
+        self.negative = negative
+        self.negative_boost = negative_boost
+
+    def _serialize(self):
+        return {
+            'positive': self.positive.serialize(),
+            'negative': self.negative.serialize(),
+            'negative_boost': self.negative_boost
+        }
+
 class MoreLikeThisFieldQuery(Query):
 
     _internal_name = "more_like_this_field"

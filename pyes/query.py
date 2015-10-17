@@ -747,21 +747,24 @@ class BoostingQuery(Query):
     t = TermQuery('name', 'john')
     q = BoostingQuery(MatchAllQuery(), t, negative_boost=0.2)
     results = conn.search(q)
+    reference :https://github.com/elastic/elasticsearch/blob/148265bd164cd5a614cd020fb480d5974f523d81/core/src/main/java/org/elasticsearch/index/query/BoostingQueryParser.java
     """
 
     _internal_name = "boosting"
 
-    def __init__(self, positive, negative, negative_boost=0.0, **kwargs):
+    def __init__(self, positive, negative, negative_boost=0.0, boost=1.0, **kwargs):
         super(BoostingQuery, self).__init__(**kwargs)
         self.positive = positive
         self.negative = negative
         self.negative_boost = negative_boost
+        self.boost = boost
 
     def _serialize(self):
         return {
             'positive': self.positive.serialize(),
             'negative': self.negative.serialize(),
-            'negative_boost': self.negative_boost
+            'negative_boost': self.negative_boost,
+            'boost': self.boost
         }
 
 class MoreLikeThisFieldQuery(Query):

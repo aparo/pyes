@@ -265,6 +265,8 @@ class QuerySet(object):
         # iterating over the cache.
         return iter(self._result_cache)
 
+    def __bool__(self):
+        return self.__nonzero__()
 
     def __nonzero__(self):
         if self._result_cache is not None:

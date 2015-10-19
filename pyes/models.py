@@ -144,6 +144,9 @@ class BaseBulker(object):
             self.bulk_data = []
         self.raise_on_bulk_item_failure = raise_on_bulk_item_failure
 
+    def __bool__(self):
+        return self.__nonzero__()
+
     def get_bulk_size(self):
         """
         Get the current bulk_size

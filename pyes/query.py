@@ -936,7 +936,7 @@ class MoreLikeThisQuery(Query):
 
     _internal_name = "more_like_this"
 
-    def __init__(self, fields,ids=[], like_text, percent_terms_to_match=0.3,
+    def __init__(self, fields,ids=[], like_text=None, percent_terms_to_match=0.3,
                  min_term_freq=2, max_query_terms=25, stop_words=None,
                  min_doc_freq=5, max_doc_freq=None, min_word_len=0, max_word_len=0,
                  boost_terms=1, boost=1.0, **kwargs):

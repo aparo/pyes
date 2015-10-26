@@ -929,11 +929,14 @@ class MatchAllQuery(Query):
         return filters
 
 
+
+
+
 class MoreLikeThisQuery(Query):
 
     _internal_name = "more_like_this"
 
-    def __init__(self, fields, like_text, percent_terms_to_match=0.3,
+    def __init__(self, fields,ids=[], like_text=None, percent_terms_to_match=0.3,
                  min_term_freq=2, max_query_terms=25, stop_words=None,
                  min_doc_freq=5, max_doc_freq=None, min_word_len=0, max_word_len=0,
                  boost_terms=1, boost=1.0, **kwargs):
@@ -950,9 +953,17 @@ class MoreLikeThisQuery(Query):
         self.max_word_len = max_word_len
         self.boost_terms = boost_terms
         self.boost = boost
+        self.ids=ids
 
     def _serialize(self):
-        filters = {'fields': self.fields, 'like_text': self.like_text}
+        
+        filters={}
+        if self.fields :
+           filters['fields'] = self.fields 
+        if self.like_text:
+           filters["like_text"] = self.like_text
+        if self.ids:
+           filters['ids'] = self.ids
         if self.percent_terms_to_match != 0.3:
             filters["percent_terms_to_match"] = self.percent_terms_to_match
         if self.min_term_freq != 2:
@@ -974,6 +985,7 @@ class MoreLikeThisQuery(Query):
         if self.boost != 1.0:
             filters["boost"] = self.boost
         return filters
+
 
 
 class FilterQuery(Query):

@@ -928,31 +928,34 @@ class MatchAllQuery(Query):
                 filters['boost'] = float(self.boost)
         return filters
 
+class MoreLikeThisFieldQuery(Query):
 
-class MoreLikeThisQuery(Query):
+    _internal_name = "more_like_this_field"
 
-    _internal_name = "more_like_this"
-
-    def __init__(self, fields, like_text, percent_terms_to_match=0.3,
+    def __init__(self, field,ids=[], like_text=None, percent_terms_to_match=0.3,
                  min_term_freq=2, max_query_terms=25, stop_words=None,
                  min_doc_freq=5, max_doc_freq=None, min_word_len=0, max_word_len=0,
                  boost_terms=1, boost=1.0, **kwargs):
-        super(MoreLikeThisQuery, self).__init__(**kwargs)
-        self.fields = fields
+        super(MoreLikeThisFieldQuery, self).__init__(**kwargs)
+        self.field = field
         self.like_text = like_text
-        self.stop_words = stop_words or []
         self.percent_terms_to_match = percent_terms_to_match
         self.min_term_freq = min_term_freq
         self.max_query_terms = max_query_terms
+        self.stop_words = stop_words or []
         self.min_doc_freq = min_doc_freq
         self.max_doc_freq = max_doc_freq
         self.min_word_len = min_word_len
         self.max_word_len = max_word_len
         self.boost_terms = boost_terms
         self.boost = boost
+        self.ids=ids
+
 
     def _serialize(self):
-        filters = {'fields': self.fields, 'like_text': self.like_text}
+        filters={}
+        if self.like_text:
+           filters["like_text"]= self.like_text
         if self.percent_terms_to_match != 0.3:
             filters["percent_terms_to_match"] = self.percent_terms_to_match
         if self.min_term_freq != 2:
@@ -973,8 +976,10 @@ class MoreLikeThisQuery(Query):
             filters["boost_terms"] = self.boost_terms
         if self.boost != 1.0:
             filters["boost"] = self.boost
-        return filters
+        if self.ids and len(self.ids) > 0:
+            filters["ids"] =  self.ids
 
+        return {self.field: filters}
 
 class FilterQuery(Query):
 

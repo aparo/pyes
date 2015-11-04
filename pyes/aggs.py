@@ -384,6 +384,44 @@ class TermsAgg(BucketAgg):
         self.lang = lang
         self.all_terms = all_terms
         self.min_doc_count = int(min_doc_count) if min_doc_count else None
+    
+    def _serialize(self):
+        if not self.fields and not self.field and not self.script:
+            raise RuntimeError("Field, Fields or Script is required:%s" % self.order)
+
+        data = {}
+        if self.fields:
+            data['fields'] = self.fields
+        elif self.field:
+            data['field'] = self.field
+
+        if self.script:
+            data['script'] = self.script
+            if self.lang:
+                data['lang'] = self.lang
+        if self.size is not None:
+            data['size'] = self.size
+        if self.order:
+            if self.order not in ['count', 'term', 'reverse_count', 'reverse_term']:
+                raise RuntimeError("Invalid order value:%s" % self.order)
+            data['order'] = {
+            }
+            if self.order.startswith('reverse_'):
+                # Remove reverse
+                data['order'][self.order[7:]] = 'desc' if 'term' in self.order else 'asc'
+            else:
+                data['order']['_' + self.order] = 'asc' if 'term' in self.order else 'desc'
+        if self.exclude:
+            data['exclude'] = self.exclude
+        if (self.fields or self.field) and self.regex:
+            data['regex'] = self.regex
+            if self.regex_flags:
+                data['regex_flags'] = self.regex_flags
+        if self.all_terms:
+            data['all_terms'] = self.all_terms
+        if self.min_doc_count:
+            data['min_doc_count'] = self.min_doc_count
+        return data
 
 class CardinalityAgg(Agg):
 

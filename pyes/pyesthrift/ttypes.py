@@ -10,7 +10,7 @@ from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol, TProtocol
 try:
   from thrift.protocol import fastbinary
-except ImportError:
+except:
   fastbinary = None
 
 

@@ -1706,6 +1706,9 @@ class EmptyResultSet(object):
     def __next__(self):
         raise StopIteration
 
+    if six.PY2:
+        next = __next__
+
     def __iter__(self):
         return self
 

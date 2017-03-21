@@ -1,5 +1,5 @@
 =============================
- pyes - Python ElasticSearch
+ pyes - Python ElasticSearch(中文注释版)
 =============================
 
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/aparo/pyes?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)

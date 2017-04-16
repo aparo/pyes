@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from elasticsearch import SerializationError
 
 import six
 
@@ -26,7 +27,7 @@ from . import logger
 from . import connection_http
 from .connection_http import connect as http_connect
 from .convert_errors import raise_if_error
-#from .decorators import deprecated
+# from .decorators import deprecated
 from .exceptions import ElasticSearchException, ReduceSearchPhaseException, \
     InvalidQuery, VersionConflictEngineException
 from .helpers import SettingsBuilder
@@ -68,7 +69,7 @@ def expand_suggest_text(suggest):
     all_segments = {}
     for field, tokens in suggest.items():
         if field.startswith(u"_"):
-            #we skip _shards
+            # we skip _shards
             continue
         if len(tokens) == 1 and not tokens[0]["options"]:
             continue
@@ -90,7 +91,7 @@ def expand_suggest_text(suggest):
                 all_segments[text] = (score + olds, freq + oldf)
             else:
                 all_segments[text] = (score, freq)
-                #removing dupped
+                # removing dupped
     for t, (s, f) in all_segments.items():
         suggested.add((s, f, t))
 
@@ -98,6 +99,7 @@ def expand_suggest_text(suggest):
 
 
 class ESJsonEncoder(json.JSONEncoder):
+
     def default(self, value):
         """Convert rogue and mysterious data types.
         Conversion notes:
@@ -112,7 +114,7 @@ class ESJsonEncoder(json.JSONEncoder):
             dt = datetime(value.year, value.month, value.day, 0, 0, 0)
             return dt.isoformat()
         elif isinstance(value, Decimal):
-            return float(str(value))
+            return float(value)
         elif isinstance(value, set):
             return list(value)
         # raise TypeError
@@ -120,6 +122,7 @@ class ESJsonEncoder(json.JSONEncoder):
 
 
 class ESJsonDecoder(json.JSONDecoder):
+
     def __init__(self, *args, **kwargs):
         kwargs['object_hook'] = self.dict_to_object
         super(ESJsonDecoder, self).__init__(*args, **kwargs)
@@ -167,7 +170,34 @@ class ESJsonDecoder(json.JSONDecoder):
         return DotDict(d)
 
 
+class JSONSerializer(object):
+    mimetype = 'application/json'
+
+    def loads(self, s):
+        try:
+            decoded = json.loads(s, cls=ES.decoder)
+        except ValueError:
+            try:
+                decoded = json.loads(s, cls=ESJsonDecoder)
+            except (ValueError, TypeError) as e:
+                raise SerializationError(s, e)
+        return decoded
+
+
+    def dumps(self, data):
+        # don't serialize strings
+        if isinstance(data, six.string_types):
+            return data
+
+        try:
+            json.dumps(data, cls=ES.encoder)
+        except (ValueError, TypeError) as e:
+            raise SerializationError(data, e)
+
+
 def get_id(text):
+    import uuid
+
     return str(uuid.uuid3(DotDict(bytes=""), text))
 
 
@@ -175,7 +205,7 @@ class ES(object):
     """
     ES connection object.
     """
-    #static to easy overwrite
+    # static to easy overwrite
     encoder = ESJsonEncoder
     decoder = ESJsonDecoder
 
@@ -192,7 +222,11 @@ class ES(object):
                  raise_on_bulk_item_failure=False,
                  document_object_field=None,
                  bulker_class=ListBulker,
-                 cert_reqs='CERT_OPTIONAL'):
+                 cert_reqs='CERT_OPTIONAL',
+                 sniff_on_start=True,
+                 sniff_on_connection_fail=True,
+                 sniffer_timeout=60
+    ):
         """
         Init a es object.
         Servers can be defined in different forms:
@@ -223,6 +257,10 @@ class ES(object):
         bulk operation fails
 
         :param document_object_field: a class to use as base document field in mapper
+        :param sniff_on_start: sniff before doing anything
+        :param sniff_on_connection_fail: refresh nodes after a node fails to respond
+        :param sniffer_timeout: sniffer timeout
+
         """
         if default_indices is None:
             default_indices = ["_all"]
@@ -234,9 +272,16 @@ class ES(object):
         self.debug_dump = False
         self.cluster_name = "undefined"
         self.basic_auth = basic_auth
-        self.connection = None
+
+        from elasticsearch import Elasticsearch
+        self.connection = Elasticsearch()
+
+
         self._mappings = None
         self.document_object_field = document_object_field
+        self._sniff_on_start = sniff_on_start
+        self._sniff_on_connection_fail = sniff_on_connection_fail
+        self._sniffer_timeout = sniffer_timeout
 
         if model is None:
             model = lambda connection, model: model
@@ -253,8 +298,8 @@ class ES(object):
         else:
             self.dump_curl = None
 
-        #used in bulk
-        self._bulk_size = bulk_size  #size of the bulk
+        # used in bulk
+        self._bulk_size = bulk_size  # size of the bulk
         self.bulker = bulker_class(weakref.proxy(self), bulk_size=bulk_size,
                                    raise_on_bulk_item_failure=raise_on_bulk_item_failure)
         self.bulker_class = bulker_class
@@ -262,7 +307,7 @@ class ES(object):
 
         connection_http.CERT_REQS = cert_reqs
 
-        self.info = {}  #info about the current server
+        self.info = {}  # info about the current server
         if encoder:
             self.encoder = encoder
         if decoder:
@@ -274,7 +319,7 @@ class ES(object):
         else:
             self.servers = server
 
-        #init managers
+        # init managers
         self.indices = Indices(weakref.proxy(self))
         self.cluster = Cluster(weakref.proxy(self))
 
@@ -302,8 +347,13 @@ class ES(object):
             self.bulker.flush_bulk(True)
 
     def _check_servers(self):
-        """Check the servers variable and convert in a valid tuple form"""
+        """
+        Check the servers variable and convert in a valid dictionary form.
+        It tries to keep compatibility with pyes version priors 1.x
+        """
         new_servers = []
+        protocols = set()  # keep track of protocols. They must be all the same
+
 
         def check_format(server):
             if server.scheme not in ["thrift", "http", "https"]:
@@ -314,16 +364,43 @@ class ES(object):
                     raise RuntimeError("If you want to use thrift, please install thrift. \"pip install thrift\"")
                 if server.port is None:
                     raise RuntimeError("If you want to use thrift, please provide a port number")
+            port = 9200
+            try:
+                port = int(server.netloc.split(":")[1])
+            except:
+                pass
 
-            new_servers.append(server)
+            return {"scheme": server.scheme, "host": server.netloc.split(":")[0], "port": port,
+                    "url_prefix": server.path}
+            # new_servers.append(server)
+
+        def add_protocol(port):
+            if 9200 <= port <= 9299:
+                protocols.add("http")
+                return "http"
+            elif 9500 <= port <= 9599:
+                protocols.add("thrift")
+                return "thrift"
 
         for server in self.servers:
-            if isinstance(server, (tuple, list)):
+            if isinstance(server, dict):
+                if 'port' in server:
+                    server["scheme"] = add_protocol(server["port"])
+                if "ssl" in server:
+                    protocols.add("http")
+                    server["scheme"] = add_protocol(server["port"])
+
+                new_servers.append(server)
+            elif isinstance(server, (tuple, list)):
                 if len(list(server)) != 3:
                     raise RuntimeError("Invalid server definition: \"%s\"" % repr(server))
                 _type, host, port = server
+                if _type not in ["thrift", "http", "https", "memcached"]:
+                    raise RuntimeError("Unable to recognize protocol: \"%s\"" % _type)
+                protocols.add(_type)
                 server = urlparse('%s://%s:%s' % (_type, host, port))
                 check_format(server)
+                new_servers.append({"host": host, "port": port, "scheme": _type})
             elif isinstance(server, six.string_types):
                 if server.startswith(("thrift:", "http:", "https:")):
                     server = urlparse(server)
@@ -346,28 +423,119 @@ class ES(object):
                             raise RuntimeError("Unable to recognize port-type: \"%s\"" % port)
 
                         server = urlparse('%s://%s:%s' % (_type, host, port))
-                        check_format(server)
+                        new_servers.append(check_format(server))
 
         self.servers = new_servers
+        print self.servers
 
     def _init_connection(self):
         """
         Create initial connection pool
         """
-        #detect connectiontype
+        from elasticsearch import Elasticsearch
+        from elasticsearch.connection.thrift import ThriftConnection
+        # detect connectiontype
         if not self.servers:
-            raise RuntimeError("No server defined")
+            # we fallback to localhost:9200
+            self.connection = Elasticsearch(sniff_on_start=self._sniff_on_start, sniffer_timeout=self._sniffer_timeout,
+                                            sniff_on_connection_fail=self._sniff_on_connection_fail,
+                                            max_retries=self.max_retries, serializer=JSONSerializer())
+        else:
+            server = random.choice(self.servers)
+            if server.get("scheme", "http") in ["http", "https"]:
+                # self.connection = http_connect(
+                # [server for server in self.servers if server.scheme in ["http", "https"]],
+                #     timeout=self.timeout, basic_auth=self.basic_auth, max_retries=self.max_retries,
+                #     retry_time=self.retry_time)
+                self.connection = Elasticsearch([server for server in self.servers if server.get("scheme", "http") in ["http", "https"]],
+                                                sniff_on_start=self._sniff_on_start, sniffer_timeout=self._sniffer_timeout,
+                                                sniff_on_connection_fail=self._sniff_on_connection_fail,
+                                                max_retries=self.max_retries, serializer=JSONSerializer())
 
-        server = random.choice(self.servers)
-        if server.scheme in ["http", "https"]:
-            self.connection = http_connect(
-                [server for server in self.servers if server.scheme in ["http", "https"]],
-                timeout=self.timeout, basic_auth=self.basic_auth, max_retries=self.max_retries, retry_time=self.retry_time)
-            return
-        elif server.scheme == "thrift":
-            self.connection = thrift_connect(
-                [server for server in self.servers if server.scheme == "thrift"],
-                timeout=self.timeout, max_retries=self.max_retries, retry_time=self.retry_time)
+            elif server.get("scheme", "http") == "thrift":
+                # self.connection = thrift_connect(
+                # [server for server in self.servers if server.scheme == "thrift"],
+                #     timeout=self.timeout, max_retries=self.max_retries, retry_time=self.retry_time)
+                self.connection = Elasticsearch([server for server in self.servers if server.get("scheme", "http") in ["http", "https"]],
+                                                connection_class=ThriftConnection,
+                                                sniff_on_start=self._sniff_on_start, sniffer_timeout=self._sniffer_timeout,
+                                                sniff_on_connection_fail=self._sniff_on_connection_fail,
+                                                max_retries=self.max_retries, serializer=JSONSerializer())
+        #monkey patching transport
+        self.connection.transport.perform_request=self.__perform_request
+
+
+    def __perform_request(self, method, url, params=None, body=None):
+        """
+        we monkey-patch the elasticsearch default client for better manage the pyes responses
+
+        Perform the actual request. Retrieve a connection from the connection
+        pool, pass all the information to it's perform_request method and
+        return the data.
+
+        If an exception was raised, mark the connection as failed and retry (up
+        to `max_retries` times).
+
+        If the operation was succesful and the connection used was previously
+        marked as dead, mark it as live, resetting it's failure count.
+
+        :arg method: HTTP method to use
+        :arg url: absolute url (without host) to target
+        :arg params: dictionary of query parameters, will be handed over to the
+            underlying :class:`~elasticsearch.Connection` class for serialization
+        :arg body: body of the request, will be serializes using serializer and
+            passed to the connection
+        """
+        from elasticsearch.exceptions import ConnectionError
+        if body is not None:
+            body = self.connection.transport.serializer.dumps(body)
+
+            # some clients or environments don't support sending GET with body
+            if method == 'GET' and self.connection.transport.send_get_body_as != 'GET':
+                # send it as post instead
+                if self.connection.transport.send_get_body_as == 'POST':
+                    method = 'POST'
+
+                # or as source parameter
+                elif self.connection.transport.send_get_body_as == 'source':
+                    if params is None:
+                        params = {}
+                    params['source'] = body
+                    body = None
+
+        if body is not None:
+            try:
+                body = body.encode('utf-8')
+            except UnicodeDecodeError:
+                # Python 2 and str, no need to re-encode
+                pass
+
+        ignore = ()
+        timeout = None
+        if params:
+            timeout = params.pop('request_timeout', None)
+            ignore = params.pop('ignore', ())
+            if isinstance(ignore, int):
+                ignore = (ignore, )
+
+        for attempt in range(self.connection.transport.max_retries + 1):
+            connection = self.connection.transport.get_connection()
+
+            try:
+                status, headers, data = connection.perform_request(method, url, params, body, ignore=ignore, timeout=timeout)
+            except ConnectionError:
+                self.connection.transport.mark_dead(connection)
+
+                # raise exception on last retry
+                if attempt == self.max_retries:
+                    raise
+            else:
+                # connection didn't fail, confirm it's live status
+                self.connection.transport.connection_pool.mark_live(connection)
+                # if data:
+                #     data = self.connection.transport.deserializer.loads(data, headers.get('content-type'))
+                return status, headers, data
+
 
     def _discovery(self):
         """
@@ -444,6 +612,7 @@ class ES(object):
         if params:
             for k in params:
                 params[k] = str(params[k])
+        #only for debug purpose
         request = RestRequest(method=Method._NAMES_TO_VALUES[method.upper()],
                               uri=path, parameters=params, headers=headers, body=body)
         if self.dump_curl is not None:
@@ -454,20 +623,24 @@ class ES(object):
             logger.debug(self._get_curl_request(request))
 
         # execute the request
-        response = self.connection.execute(request)
+        #response = self.connection.execute(request)
+        #pyes has its own error management code
+        params["ignore"]=(400,404,409)
+
+        status, headers, data=self.connection.transport.perform_request(method, path, params=params, body=body)
 
         if self.dump_curl is not None:
-            self.dump_curl.write(("# response status: %s" % response.status).encode('utf-8'))
-            self.dump_curl.write(("# response body: %s" % response.body).encode('utf-8'))
+            self.dump_curl.write(("# response status: %s" % status).encode('utf-8'))
+            self.dump_curl.write(("# response body: %s" % body).encode('utf-8'))
 
         if return_response:
-            return response
+            return DotDict({"status":status, "body":data, "headers":headers})
 
         if method == "HEAD":
-            return response.status == 200
+            return status == 200
 
         # handle the response
-        response_body = response.body
+        response_body = data
         if six.PY3:
             response_body = response_body.decode(encoding='UTF-8')
 
@@ -481,9 +654,9 @@ class ES(object):
                 # parsed as JSON is when no handler is found for a request URI.
                 # In this case, the body is actually a good message to return
                 # in the exception.
-                raise ElasticSearchException(response_body, response.status, response_body)
-        if response.status not in [200, 201]:
-            raise_if_error(response.status, decoded)
+                raise ElasticSearchException(response_body, status, response_body)
+        if status not in [200, 201]:
+            raise_if_error(status, decoded)
         if not raw and isinstance(decoded, dict):
             decoded = DotDict(decoded)
         return decoded
@@ -531,7 +704,7 @@ class ES(object):
         params.update(request.parameters)
         method = Method._VALUES_TO_NAMES[request.method]
         server = self.servers[0]
-        url = urlunsplit((server.scheme, server.netloc, request.uri, urlencode(params), ''))
+        url = urlunsplit((server.get("scheme", "http"), server["host"]+":"+str(server["port"]), request.uri, urlencode(params), ''))
         curl_cmd = "curl -X%s '%s'" % (method, url)
         body = request.body
         if body:
@@ -623,65 +796,6 @@ class ES(object):
             self.indices.create_index(index, settings)
             self.indices.refresh(index, timesleep=1)
 
-    def put_warmer(self, doc_types=None, indices=None, name=None, warmer=None, querystring_args=None):
-        """
-        Put new warmer into index (or type)
-
-        :param doc_types: list of document types
-        :param warmer: anything with ``serialize`` method or a dictionary
-        :param name: warmer name
-        :param querystring_args: additional arguments passed as GET params to ES
-        """
-        if not querystring_args:
-            querystring_args = {}
-        doc_types_str = ''
-        if doc_types:
-            doc_types_str = '/' + ','.join(doc_types)
-        path = '/{0}{1}/_warmer/{2}'.format(','.join(indices), doc_types_str, name)
-        if hasattr(warmer, 'serialize'):
-            body = warmer.serialize()
-        else:
-            body = warmer
-        return self._send_request(method='PUT', path=path, body=body, params=querystring_args)
-
-    def get_warmer(self, doc_types=None, indices=None, name=None, querystring_args=None):
-        """
-        Retrieve warmer
-
-        :param doc_types: list of document types
-        :param warmer: anything with ``serialize`` method or a dictionary
-        :param name: warmer name. If not provided, all warmers will be returned
-        :param querystring_args: additional arguments passed as GET params to ES
-        """
-        name = name or ''
-        if not querystring_args:
-            querystring_args = {}
-        doc_types_str = ''
-        if doc_types:
-            doc_types_str = '/' + ','.join(doc_types)
-        path = '/{0}{1}/_warmer/{2}'.format(','.join(indices), doc_types_str, name)
-
-        return self._send_request(method='GET', path=path, params=querystring_args)
-
-    def delete_warmer(self, doc_types=None, indices=None, name=None, querystring_args=None):
-        """
-        Retrieve warmer
-
-        :param doc_types: list of document types
-        :param warmer: anything with ``serialize`` method or a dictionary
-        :param name: warmer name. If not provided, all warmers for given indices will be deleted
-        :param querystring_args: additional arguments passed as GET params to ES
-        """
-        name = name or ''
-        if not querystring_args:
-            querystring_args = {}
-        doc_types_str = ''
-        if doc_types:
-            doc_types_str = '/' + ','.join(doc_types)
-        path = '/{0}{1}/_warmer/{2}'.format(','.join(indices), doc_types_str, name)
-
-        return self._send_request(method='DELETE', path=path, params=querystring_args)
-
     def collect_info(self):
         """
         Collect info about the connection and fill the info dictionary.
@@ -733,7 +847,7 @@ class ES(object):
                 cmd[op_type]['_routing'] = querystring_args['routing']
             if 'percolate' in querystring_args:
                 cmd[op_type]['percolate'] = querystring_args['percolate']
-            if id is not None:  #None to support 0 as id
+            if id is not None:  # None to support 0 as id
                 cmd[op_type]['_id'] = id
             if ttl is not None:
                 cmd[op_type]['_ttl'] = ttl
@@ -1094,8 +1208,8 @@ class ES(object):
                               routing_list=routing_list, search_type_list=None, models=models)
 
 
-    #    scan method is no longer working due to change in ES.search behavior.  May no longer warrant its own method.
-    #    def scan(self, query, indices=None, doc_types=None, scroll="10m", **query_params):
+    # scan method is no longer working due to change in ES.search behavior.  May no longer warrant its own method.
+    # def scan(self, query, indices=None, doc_types=None, scroll="10m", **query_params):
     #        """Return a generator which will scan against one or more indices and iterate over the search hits. (currently support only by ES Master)
     #
     #        `query` must be a Search object, a Query object, or a custom
@@ -1283,7 +1397,7 @@ class ResultSetList(object):
 
         self.items = items
         self.model = model or self.connection.model
-        self.iterpos = 0  #keep track of iterator position
+        self.iterpos = 0  # keep track of iterator position
         self._current_item = 0
 
     @property
@@ -1307,11 +1421,11 @@ class ResultSetList(object):
             return self.items
 
         # elif name in self._results:
-        #     #we manage took, timed_out, _shards
-        #     return self._results[name]
+        # #we manage took, timed_out, _shards
+        # return self._results[name]
         #
         # elif name == "shards" and "_shards" in self._results:
-        #     #trick shards -> _shards
+        # #trick shards -> _shards
         #     return self._results["_shards"]
         # return self._results['hits'][name]
         return None
@@ -1408,7 +1522,7 @@ class ResultSet(object):
         self.auto_fix_keys = auto_fix_keys
         self.auto_clean_highlight = auto_clean_highlight
 
-        self.iterpos = 0  #keep track of iterator position
+        self.iterpos = 0  # keep track of iterator position
         self.start = query_params.get("start", search.start) or 0
         self._max_item = query_params.get("size", search.size)
         self._current_item = 0
@@ -1421,7 +1535,7 @@ class ResultSet(object):
 
     def _do_search(self, auto_increment=False):
         self.iterpos = 0
-        process_post_query = True  #used to skip results in first scan
+        process_post_query = True  # used to skip results in first scan
         if self.scroller_id is None:
             if auto_increment:
                 self.start += self.chuck_size
@@ -1437,7 +1551,7 @@ class ResultSet(object):
                     self.chuck_size = self.scroller_parameters['size'] = self.query_params.pop('size')
 
             if '_scroll_id' in self._results:
-                #scan query, let's load the first bulk of data
+                # scan query, let's load the first bulk of data
                 self.scroller_id = self._results['_scroll_id']
                 self._do_search()
                 process_post_query = False
@@ -1447,7 +1561,7 @@ class ResultSet(object):
                                                               self.scroller_parameters.get("scroll", "10m"))
                 self.scroller_id = self._results['_scroll_id']
             except ReduceSearchPhaseException:
-                #bad hack, should be not hits on the last iteration
+                # bad hack, should be not hits on the last iteration
                 self._results['hits']['hits'] = []
 
         if process_post_query:
@@ -1574,11 +1688,11 @@ class ResultSet(object):
             return self._hits
 
         elif name in self._results:
-            #we manage took, timed_out, _shards
+            # we manage took, timed_out, _shards
             return self._results[name]
 
         elif name == "shards" and "_shards" in self._results:
-            #trick shards -> _shards
+            # trick shards -> _shards
             return self._results["_shards"]
         return self._results['hits'][name]
 

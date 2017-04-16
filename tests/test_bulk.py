@@ -103,7 +103,7 @@ class BulkTestCase(ESTestCase):
         bulk_result = self.conn.index(
             "invalid", self.index_name, self.document_type, 8, bulk=True)
         self.assertEqual(len(bulk_result['items']), 2)
-        self.assertTrue(bulk_result["items"][0]["index"]["ok"])
+        self.assertTrue("_version" in bulk_result["items"][0]["index"])
         self.assertTrue("error" in bulk_result["items"][1]["index"])
         self.assertEqual(self.conn.bulker.bulk_data, [])
 
@@ -113,7 +113,7 @@ class BulkTestCase(ESTestCase):
         bulk_result = self.conn.delete(
             self.index_name, "#foo", 9, bulk=True)
         self.assertEqual(len(bulk_result['items']), 2)
-        self.assertTrue(bulk_result["items"][0]["delete"]["ok"])
+        self.assertTrue("_version" in bulk_result["items"][0]["delete"])
         self.assertTrue("error" in bulk_result["items"][1]["delete"])
         self.assertEqual(self.conn.bulker.bulk_data, [])
 

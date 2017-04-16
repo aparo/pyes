@@ -40,10 +40,10 @@ class ClusterTestCase(ESTestCase):
         self.assertTrue('blocks' in result)
         self.assertTrue('routing_table' in result)
 
-    def test_ClusterNodes(self):
-        result = self.conn.cluster.nodes_info()
-        self.assertTrue('cluster_name' in result)
-        self.assertTrue('nodes' in result)
+    # def test_ClusterNodes(self):
+    #     result = self.conn.cluster.nodes_info()
+    #     self.assertTrue('cluster_name' in result)
+    #     self.assertTrue('nodes' in result)
 
     def test_ClusterHealth(self):
         # Make sure that when we get the cluster health, that we get the

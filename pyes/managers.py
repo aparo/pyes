@@ -494,6 +494,67 @@ class Indices(object):
         path = make_path(index, "_settings")
         return self.conn._send_request('PUT', path, newvalues)
 
+    def put_warmer(self, doc_types=None, indices=None, name=None, warmer=None, querystring_args=None):
+        """
+        Put new warmer into index (or type)
+
+        :param doc_types: list of document types
+        :param warmer: anything with ``serialize`` method or a dictionary
+        :param name: warmer name
+        :param querystring_args: additional arguments passed as GET params to ES
+        """
+
+        if not querystring_args:
+            querystring_args = {}
+        doc_types_str = ''
+        if doc_types:
+            doc_types_str = '/' + ','.join(doc_types)
+        path = '/{0}{1}/_warmer/{2}'.format(','.join(indices), doc_types_str, name)
+        if hasattr(warmer, 'serialize'):
+            body = warmer.serialize()
+        else:
+            body = warmer
+        return self.conn._send_request(method='PUT', path=path, body=body, params=querystring_args)
+
+    def get_warmer(self, doc_types=None, indices=None, name=None, querystring_args=None):
+        """
+        Retrieve warmer
+
+        :param doc_types: list of document types
+        :param warmer: anything with ``serialize`` method or a dictionary
+        :param name: warmer name. If not provided, all warmers will be returned
+        :param querystring_args: additional arguments passed as GET params to ES
+        """
+        name = name or ''
+        if not querystring_args:
+            querystring_args = {}
+        doc_types_str = ''
+        if doc_types:
+            doc_types_str = '/' + ','.join(doc_types)
+        path = '/{0}{1}/_warmer/{2}'.format(','.join(indices), doc_types_str, name)
+
+        return self.conn._send_request(method='GET', path=path, params=querystring_args)
+
+    def delete_warmer(self, doc_types=None, indices=None, name=None, querystring_args=None):
+        """
+        Retrieve warmer
+
+        :param doc_types: list of document types
+        :param warmer: anything with ``serialize`` method or a dictionary
+        :param name: warmer name. If not provided, all warmers for given indices will be deleted
+        :param querystring_args: additional arguments passed as GET params to ES
+        """
+        name = name or ''
+        if not querystring_args:
+            querystring_args = {}
+        doc_types_str = ''
+        if doc_types:
+            doc_types_str = '/' + ','.join(doc_types)
+        path = '/{0}{1}/_warmer/{2}'.format(','.join(indices), doc_types_str, name)
+
+        return self.conn._send_request(method='DELETE', path=path, params=querystring_args)
+
+
 class Cluster(object):
     def __init__(self, conn):
         self.conn = conn

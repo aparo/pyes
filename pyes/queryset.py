@@ -332,7 +332,7 @@ class QuerySet(object):
         and returning the created object.
         """
         obj = self.model(**kwargs)
-	meta = obj.get_meta()
+        meta = obj.get_meta()
         meta.connection = get_es_connection(self.es_url, self.es_kwargs)
         meta.index=self.index
         meta.type=self.type

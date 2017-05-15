@@ -16,7 +16,6 @@ else:
 import base64
 import codecs
 import random
-import time
 import weakref
 
 try:
@@ -134,12 +133,17 @@ class ESJsonDecoder(json.JSONDecoder):
         """
         if isinstance(obj, six.string_types) and len(obj) == 19:
             try:
-                return datetime(*time.strptime(obj, "%Y-%m-%dT%H:%M:%S")[:6])
+                return datetime.strptime(obj, "%Y-%m-%dT%H:%M:%S")
+            except ValueError:
+                pass
+        if isinstance(obj, six.string_types) and len(obj) > 19:
+            try:
+                return datetime.strptime(obj, "%Y-%m-%dT%H:%M:%S.%f")
             except ValueError:
                 pass
         if isinstance(obj, six.string_types) and len(obj) == 10:
             try:
-                return datetime(*time.strptime(obj, "%Y-%m-%d")[:3])
+                return datetime.strptime(obj, "%Y-%m-%d")
             except ValueError:
                 pass
         return obj
@@ -153,7 +157,12 @@ class ESJsonDecoder(json.JSONDecoder):
             if isinstance(v, six.string_types) and len(v) == 19:
                 # Decode a datetime string to a datetime object
                 try:
-                    d[k] = datetime(*time.strptime(v, "%Y-%m-%dT%H:%M:%S")[:6])
+                    d[k] = datetime.strptime(v, "%Y-%m-%dT%H:%M:%S")
+                except ValueError:
+                    pass
+            elif isinstance(v, six.string_types) and len(v) > 20:
+                try:
+                    d[k] = datetime.strptime(v, "%Y-%m-%dT%H:%M:%S.%f")
                 except ValueError:
                     pass
             elif isinstance(v, list):
@@ -326,7 +335,7 @@ class ES(object):
         Destructor
         """
         # Don't bother getting the lock
-        if self.bulker and self.bulker.bulk_size > 0:
+        if self.bulker and self.bulker.bulk_data:
             # It's not safe to rely on the destructor to flush the queue:
             # the Python documentation explicitly states "It is not guaranteed
             # that __del__() methods are called for objects that still exist "
@@ -404,7 +413,7 @@ class ES(object):
                         try:
                             port = int(tokens[1])
                         except ValueError:
-                            raise RuntimeError("Invalid port: \"%s\"" % port)
+                            raise RuntimeError("Invalid port: \"%s\"" % tokens[1])
 
                         if 9200 <= port <= 9299:
                             _type = "http"
@@ -811,7 +820,7 @@ class ES(object):
         Function helper for fast inserting
 
         :param header: a string with the bulk header must be ended with a newline
-        :param header: a json document string must be ended with a newline
+        :param document: a json document string must be ended with a newline
         """
         self.bulker.add("%s%s" % (header, document))
         return self.flush_bulk()
@@ -1004,7 +1013,7 @@ class ES(object):
             if params:
                 cmd["params"] = params
             if upsert:
-                cmd["upsert"] = params
+                cmd["upsert"] = upsert
         else:
             cmd = {"doc": doc }
         path = make_path(index, doc_type, id, "_update")
@@ -1321,7 +1330,7 @@ class ES(object):
         Execute a "more like this" search query against one or more fields and get back search hits.
         """
         path = make_path(index, doc_type, id, '_mlt')
-        query_params['fields'] = ','.join(fields)
+        query_params['mlt_fields'] = ','.join(fields)
         body = query_params["body"] if "body" in query_params else None
         return self._send_request('GET', path, body=body, params=query_params)
 
@@ -1810,6 +1819,9 @@ class EmptyResultSet(object):
 
     def __next__(self):
         raise StopIteration
+
+    if six.PY2:
+        next = __next__
 
     def __iter__(self):
         return self

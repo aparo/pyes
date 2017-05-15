@@ -88,7 +88,7 @@ You can query ES with :
 
     - a json string
 
-A Query wrapped in a Search it's the more safe and simple way.
+A Query wrapped in a Search is the most safe and simple way.
 
 
 Execute a query

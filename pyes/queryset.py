@@ -188,6 +188,9 @@ class QuerySet(object):
 #            if len(self._result_cache) <= pos:
 #                self._fill_cache()
 
+    def __bool__(self):
+        return self.__nonzero__()
+
     def __nonzero__(self):
         if self._result_cache is not None:
             len(self)
@@ -329,7 +332,7 @@ class QuerySet(object):
         and returning the created object.
         """
         obj = self.model(**kwargs)
-	meta = obj.get_meta()
+        meta = obj.get_meta()
         meta.connection = get_es_connection(self.es_url, self.es_kwargs)
         meta.index=self.index
         meta.type=self.type

@@ -737,6 +737,36 @@ class FilteredQuery(Query):
         }
 
 
+class BoostingQuery(Query):
+    """
+    The boosting query can be used to effectively demote results that match a given query. Unlike the "NOT"
+    clause in bool query, this still selects documents that contain undesirable terms, but reduces their overall score.
+
+    Example:
+
+    t = TermQuery('name', 'john')
+    q = BoostingQuery(MatchAllQuery(), t, negative_boost=0.2)
+    results = conn.search(q)
+    reference :https://github.com/elastic/elasticsearch/blob/148265bd164cd5a614cd020fb480d5974f523d81/core/src/main/java/org/elasticsearch/index/query/BoostingQueryParser.java
+    """
+
+    _internal_name = "boosting"
+
+    def __init__(self, positive, negative, negative_boost=0.0, boost=1.0, **kwargs):
+        super(BoostingQuery, self).__init__(**kwargs)
+        self.positive = positive
+        self.negative = negative
+        self.negative_boost = negative_boost
+        self.boost = boost
+
+    def _serialize(self):
+        return {
+            'positive': self.positive.serialize(),
+            'negative': self.negative.serialize(),
+            'negative_boost': self.negative_boost,
+            'boost': self.boost
+        }
+
 class MoreLikeThisFieldQuery(Query):
 
     _internal_name = "more_like_this_field"
@@ -899,11 +929,14 @@ class MatchAllQuery(Query):
         return filters
 
 
+
+
+
 class MoreLikeThisQuery(Query):
 
     _internal_name = "more_like_this"
 
-    def __init__(self, fields, like_text, percent_terms_to_match=0.3,
+    def __init__(self, fields,ids=[], like_text=None, percent_terms_to_match=0.3,
                  min_term_freq=2, max_query_terms=25, stop_words=None,
                  min_doc_freq=5, max_doc_freq=None, min_word_len=0, max_word_len=0,
                  boost_terms=1, boost=1.0, **kwargs):
@@ -920,9 +953,17 @@ class MoreLikeThisQuery(Query):
         self.max_word_len = max_word_len
         self.boost_terms = boost_terms
         self.boost = boost
+        self.ids=ids
 
     def _serialize(self):
-        filters = {'fields': self.fields, 'like_text': self.like_text}
+        
+        filters={}
+        if self.fields :
+           filters['fields'] = self.fields 
+        if self.like_text:
+           filters["like_text"] = self.like_text
+        if self.ids:
+           filters['ids'] = self.ids
         if self.percent_terms_to_match != 0.3:
             filters["percent_terms_to_match"] = self.percent_terms_to_match
         if self.min_term_freq != 2:
@@ -944,6 +985,7 @@ class MoreLikeThisQuery(Query):
         if self.boost != 1.0:
             filters["boost"] = self.boost
         return filters
+
 
 
 class FilterQuery(Query):
@@ -1775,7 +1817,7 @@ class FunctionScoreQuery(Query):
 
     class RandomFunction(FunctionScoreFunction):
         """Is a random boost based on a seed value"""
-        _internal_name = 'random_Score'
+        _internal_name = 'random_score'
 
         def __init__(self, seed, filter=None):
             self.seed = seed

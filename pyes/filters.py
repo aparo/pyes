@@ -370,7 +370,7 @@ class TermsFilter(Filter):
         if not self._values:
             raise RuntimeError("A least a field/value pair must be added")
         data = self._values.copy()
-        for field, term in data.iteritems():
+        for field, term in six.iteritems(data):
             if isinstance(term, TermsLookup):
                 data[field] = term.serialize()
         if self.execution:

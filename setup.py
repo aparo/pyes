@@ -60,10 +60,10 @@ class QuickRunTests(TestCommand):
         TestCommand.run(self, *args, **kwargs)
 
 
-install_requires = ["urllib3>=1.7", "six>=1.5.2", "elasticsearch>=1.0.0,<2.0.0"]
+install_requires = ["urllib3>=1.7", "six>=1.5.2", "elasticsearch>=5.0.0,<6.0.0"]
 
 #if not sys.platform.startswith("java"):
-#    install_requires += [ "thrift", ]    
+#    install_requires += [ "thrift", ]
 try:
     import importlib
 except ImportError:

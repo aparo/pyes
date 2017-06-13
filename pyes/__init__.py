@@ -4,7 +4,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-VERSION = (0, 99, 7 , 'dev')
+VERSION = (5, 0, 0 , 'dev')
 
 __version__ = ".".join(map(str, VERSION[0:3])) + "".join(VERSION[3:])
 __author__ = "Alberto Paro"
@@ -25,7 +25,6 @@ def version_with_meta():
 
 from .es import ES, file_to_attachment
 from .query import *
-from .rivers import *
 from .filters import *
 #from highlight import HighLighter
 from .utils import *

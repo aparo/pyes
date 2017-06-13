@@ -44,7 +44,7 @@
 #             },
 #             'uuid': {'boost': 1.0,
 #                      'index': 'not_analyzed',
-#                      'store': 'yes',
+#                      'store': 'true',
 #                      'type': u'string'}
 #         }
 #         #        mapping = {

@@ -18,36 +18,36 @@ def get_conn(*args, **kwargs):
 
 DEFAULT_TEST_MAPPING = {
     u'parsedtext': {
-        'store': 'yes',
+        'store': 'true',
         'type': u'text',
         "term_vector": "with_positions_offsets"},
     u'name': {
-        'store': 'yes',
+        'store': 'true',
         'type': u'text',
         "term_vector": "with_positions_offsets"},
     u'title': {
-        'store': 'yes',
+        'store': 'true',
         'type': u'text',
         "term_vector": "with_positions_offsets"},
     u'pos': {
-        'store': 'yes',
+        'store': 'true',
         'type': u'integer'},
     u'position': {
-        'store': 'yes',
+        'store': 'true',
         'type': u'integer'},
     u'doubles': {
-        'store': 'yes',
+        'store': 'true',
         'type': u'double'},
     u'uuid': {
-        'store': 'yes',
+        'store': 'true',
         'type': u'keyword'},
-    u'tag': {'store': 'yes',
+    u'tag': {'store': 'true',
              'type': u'keyword'},
-    u'array': {'store': 'yes',
+    u'array': {'store': 'true',
                'type': u'integer'},
-    u'inserted': {'store': 'yes',
+    u'inserted': {'store': 'true',
                   'type': u'date'},
-    u'date': {'store': 'yes',
+    u'date': {'store': 'true',
               'type': u'date'},
     u'resellers': {
         'type': 'nested',
@@ -118,21 +118,21 @@ class ESTestCase(unittest.TestCase):
         from pyes.mappings import DocumentObjectField
         from pyes.mappings import IntegerField
         from pyes.mappings import NestedObject
-        from pyes.mappings import StringField, DateField
+        from pyes.mappings import TextField, KeywordField, DateField
 
         docmapping = DocumentObjectField(name=self.document_type)
         docmapping.add_property(
-            StringField(name="parsedtext", store=True, term_vector="with_positions_offsets", index="analyzed"))
+            TextField(name="parsedtext", store=True, term_vector="with_positions_offsets"))
         docmapping.add_property(
-            StringField(name="name", store=True, term_vector="with_positions_offsets", index="analyzed"))
+            TextField(name="name", store=True, term_vector="with_positions_offsets"))
         docmapping.add_property(
-            StringField(name="title", store=True, term_vector="with_positions_offsets", index="analyzed"))
+            TextField(name="title", store=True, term_vector="with_positions_offsets"))
         docmapping.add_property(IntegerField(name="position", store=True))
         docmapping.add_property(DateField(name="date", store=True))
-        docmapping.add_property(StringField(name="uuid", store=True, index="not_analyzed"))
+        docmapping.add_property(KeywordField(name="uuid", store=True))
         nested_object = NestedObject(name="nested")
-        nested_object.add_property(StringField(name="name", store=True))
-        nested_object.add_property(StringField(name="value", store=True))
+        nested_object.add_property(TextField(name="name", store=True))
+        nested_object.add_property(TextField(name="value", store=True))
         nested_object.add_property(IntegerField(name="num", store=True))
         docmapping.add_property(nested_object)
         settings.add_mapping(docmapping)

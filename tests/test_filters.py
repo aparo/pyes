@@ -208,9 +208,9 @@ class RangeFilterTestCase(ESTestCase):
 
         super(RangeFilterTestCase, self).setUp()
         mapping = {
-            u'value': {'store': 'yes',
+            u'value': {'store': 'true',
                        'type': u'integer'},
-            u'date': {'store': 'yes',
+            u'date': {'store': 'true',
                       'type': u'date'},
         }
         self.conn.indices.create_index(self.index_name)

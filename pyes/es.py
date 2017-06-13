@@ -217,7 +217,7 @@ class ES(object):
                  document_object_field=None,
                  bulker_class=ListBulker,
                  cert_reqs='CERT_OPTIONAL',
-                 sniff_on_start=True,
+                 sniff_on_start=False,
                  sniff_on_connection_fail=True,
                  sniffer_timeout=60
     ):

@@ -66,6 +66,7 @@ def string_b64encode(s):
 def string_b64decode(s):
     return base64.urlsafe_b64decode(s + '=' * (len(s) % 4))
 
+
 # Characters that are part of Lucene query syntax must be stripped
 # from user input: + - && || ! ( ) { } [ ] ^ " ~ * ? : \
 # See: http://lucene.apache.org/java/3_0_2/queryparsersyntax.html#Escaping
@@ -91,7 +92,6 @@ class EqualityComparableUsingAttributeDictionary(object):
 
 
 class ESRange(EqualityComparableUsingAttributeDictionary):
-
     def __init__(self, field, from_value=None, to_value=None, include_lower=None,
                  include_upper=None, **kwargs):
         self.field = field
@@ -139,7 +139,6 @@ class ESRangeOp(ESRange):
 
 
 class TermsLookup(EqualityComparableUsingAttributeDictionary):
-
     def __init__(self, index, type, id, path, routing=None, cache=None):
 
         self.index = index
@@ -181,9 +180,9 @@ def keys_to_string(data):
                 data[key.encode("utf8", "ignore")] = val
     return data
 
-def get_unicode_string(string):
-  try:
-    return str(string, 'utf8')
-  except TypeError: # python 2.x compatible
-    return unicode(string)
 
+def get_unicode_string(string):
+    try:
+        return str(string, 'utf8')
+    except TypeError:  # python 2.x compatible
+        return unicode(string)

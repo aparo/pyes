@@ -320,7 +320,7 @@ class Indices(object):
         result = self.conn._send_request('POST', path)
         if timesleep:
             time.sleep(timesleep)
-        self.conn.cluster.health(wait_for_status='green', timeout=timeout)
+        self.conn.cluster.health(wait_for_status='yellow', timeout=timeout)
         return result
 
     def optimize(self, indices=None,

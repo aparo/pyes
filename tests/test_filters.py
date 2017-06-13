@@ -35,19 +35,19 @@ class FilterTests(ESTestCase):
     def setUp(self):
         super(FilterTests, self).setUp()
         mapping = {
-            "name": {"type": "string"},
+            "name": {"type": "text"},
             "nested_filter": {
                 "type": "nested",
                 "properties": {
-                    "key_1": {"type": "integer", "index": "not_analyzed"},
-                    "key_2": {"type": "integer", "index": "not_analyzed"}
+                    "key_1": {"type": "integer"},
+                    "key_2": {"type": "integer"}
                 }
             },
             "terms_filter": {
                 "type": "integer"
             },
             "exists_filter": {
-                "type": "string"
+                "type": "text"
             },
 
         }

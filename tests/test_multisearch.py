@@ -22,18 +22,9 @@ else:
 class MultiSearchTestCase(ESTestCase):
     def setUp(self):
         super(MultiSearchTestCase, self).setUp()
-        mapping = {u'name': {'boost': 1.0,
-                             'index': 'analyzed',
-                             'store': 'yes',
-                             'type': u'string',
-                             "term_vector": "with_positions_offsets"},
-                   u'title': {'boost': 1.0,
-                              'index': 'analyzed',
-                              'store': 'yes',
-                              'type': u'string',
-                              "term_vector": "with_positions_offsets"}}
+
         self.conn.indices.create_index(self.index_name)
-        self.conn.indices.put_mapping(self.document_type, {'properties': mapping}, self.index_name)
+        self.conn.indices.put_mapping(self.document_type, {'properties': self.get_default_mapping()}, self.index_name)
         self.conn.index({"name": "Joe Tester", "title": "Joe Testere nice guy"},
             self.index_name, self.document_type, 1)
         self.conn.index({"name": "Bill Baloney", "title": "Bill Testere nice guy"},

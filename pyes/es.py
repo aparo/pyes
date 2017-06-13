@@ -35,15 +35,9 @@ from .managers import Indices, Cluster
 from .mappings import Mapper
 from .models import ElasticSearchModel, DotDict, ListBulker
 from .query import Search, Query
-from .rivers import River
 from .utils import make_path, get_unicode_string
 
-try:
-    from .connection import connect as thrift_connect
-    from .pyesthrift.ttypes import Method, RestRequest
-except ImportError:
-    thrift_connect = None
-    from .fakettypes import Method, RestRequest
+from .fakettypes import Method, RestRequest
 
 import six
 
@@ -356,14 +350,9 @@ class ES(object):
 
 
         def check_format(server):
-            if server.scheme not in ["thrift", "http", "https"]:
+            if server.scheme not in ["http", "https"]:
                 raise RuntimeError("Unable to recognize protocol: \"%s\"" % _type)
 
-            if server.scheme == "thrift":
-                if not thrift_connect:
-                    raise RuntimeError("If you want to use thrift, please install thrift. \"pip install thrift\"")
-                if server.port is None:
-                    raise RuntimeError("If you want to use thrift, please provide a port number")
             port = 9200
             try:
                 port = int(server.netloc.split(":")[1])
@@ -378,9 +367,6 @@ class ES(object):
             if 9200 <= port <= 9299:
                 protocols.add("http")
                 return "http"
-            elif 9500 <= port <= 9599:
-                protocols.add("thrift")
-                return "thrift"
 
         for server in self.servers:
             if isinstance(server, dict):
@@ -395,14 +381,14 @@ class ES(object):
                 if len(list(server)) != 3:
                     raise RuntimeError("Invalid server definition: \"%s\"" % repr(server))
                 _type, host, port = server
-                if _type not in ["thrift", "http", "https", "memcached"]:
+                if _type not in ["http", "https"]:
                     raise RuntimeError("Unable to recognize protocol: \"%s\"" % _type)
                 protocols.add(_type)
                 server = urlparse('%s://%s:%s' % (_type, host, port))
                 check_format(server)
                 new_servers.append({"host": host, "port": port, "scheme": _type})
             elif isinstance(server, six.string_types):
-                if server.startswith(("thrift:", "http:", "https:")):
+                if server.startswith(("http:", "https:")):
                     server = urlparse(server)
                     check_format(server)
                     continue
@@ -417,8 +403,6 @@ class ES(object):
 
                         if 9200 <= port <= 9299:
                             _type = "http"
-                        elif 9500 <= port <= 9599:
-                            _type = "thrift"
                         else:
                             raise RuntimeError("Unable to recognize port-type: \"%s\"" % port)
 
@@ -426,14 +410,12 @@ class ES(object):
                         new_servers.append(check_format(server))
 
         self.servers = new_servers
-        print self.servers
 
     def _init_connection(self):
         """
         Create initial connection pool
         """
         from elasticsearch import Elasticsearch
-        from elasticsearch.connection.thrift import ThriftConnection
         # detect connectiontype
         if not self.servers:
             # we fallback to localhost:9200
@@ -452,15 +434,6 @@ class ES(object):
                                                 sniff_on_connection_fail=self._sniff_on_connection_fail,
                                                 max_retries=self.max_retries, serializer=JSONSerializer())
 
-            elif server.get("scheme", "http") == "thrift":
-                # self.connection = thrift_connect(
-                # [server for server in self.servers if server.scheme == "thrift"],
-                #     timeout=self.timeout, max_retries=self.max_retries, retry_time=self.retry_time)
-                self.connection = Elasticsearch([server for server in self.servers if server.get("scheme", "http") in ["http", "https"]],
-                                                connection_class=ThriftConnection,
-                                                sniff_on_start=self._sniff_on_start, sniffer_timeout=self._sniffer_timeout,
-                                                sniff_on_connection_fail=self._sniff_on_connection_fail,
-                                                max_retries=self.max_retries, serializer=JSONSerializer())
         #monkey patching transport
         self.connection.transport.perform_request=self.__perform_request
 
@@ -998,7 +971,7 @@ class ES(object):
                 self.refresh(index)
 
     def partial_update(self, index, doc_type, id, doc=None, script=None, params=None,
-                       upsert=None, querystring_args=None):
+                       upsert=None, querystring_args=None, lang=None):
         """
         Partially update a document with a script
         """
@@ -1009,9 +982,12 @@ class ES(object):
             raise InvalidQuery("script or doc can not both be None")
 
         if doc is None:
-            cmd = {"script": script}
+            script_doc={"inline":script}
+            if lang:
+                script_doc["lang"] = params
             if params:
-                cmd["params"] = params
+                script_doc["params"] = params
+            cmd = {"script": script_doc}
             if upsert:
                 cmd["upsert"] = upsert
         else:

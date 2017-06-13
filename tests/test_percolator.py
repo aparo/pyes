@@ -8,29 +8,9 @@ import unittest
 class PercolatorTestCase(ESTestCase):
     def setUp(self):
         super(PercolatorTestCase, self).setUp()
-        mapping = { u'parsedtext': {'boost': 1.0,
-                         'index': 'analyzed',
-                         'store': 'yes',
-                         'type': u'string',
-                         "term_vector" : "with_positions_offsets"},
-                 u'name': {'boost': 1.0,
-                            'index': 'analyzed',
-                            'store': 'yes',
-                            'type': u'string',
-                            "term_vector" : "with_positions_offsets"},
-                 u'title': {'boost': 1.0,
-                            'index': 'analyzed',
-                            'store': 'yes',
-                            'type': u'string',
-                            "term_vector" : "with_positions_offsets"},
-                 u'pos': {'store': 'yes',
-                            'type': u'integer'},
-                 u'uuid': {'boost': 1.0,
-                           'index': 'not_analyzed',
-                           'store': 'yes',
-                           'type': u'string'}}
+
         self.conn.indices.create_index(self.index_name)
-        self.conn.indices.put_mapping(self.document_type, {'properties':mapping}, self.index_name)
+        self.conn.indices.put_mapping(self.document_type, {'properties':self.get_default_mapping()}, self.index_name)
         self.conn.create_percolator(
             'test-index',
             'test-perc1',

@@ -93,7 +93,7 @@ class IndexingTestCase(ESTestCase):
 
     def testPutMapping(self):
         result = self.conn.indices.put_mapping(self.document_type,
-                {self.document_type: {"properties": {"name": {"type": "string", "store": "yes"}}}},
+                {self.document_type: {"properties": {"name": {"type": "text", "store": "yes"}}}},
             indices=self.index_name)
         self.assertResultContains(result, {'acknowledged': True})
 

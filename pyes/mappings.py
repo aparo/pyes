@@ -11,6 +11,7 @@ from .models import SortedDict, DotDict
 from datetime import datetime, date
 import six
 from .exceptions import MappedFieldNotFoundException
+import copy
 
 _thread_locals = threading.local()
 #store threadsafe data
@@ -35,10 +36,10 @@ def to_bool(value):
             return True
 
 check_values = {
-    'index': ['no', 'analyzed', 'not_analyzed'],
+    'index': ['true', 'false'],
     'term_vector': ['no', 'yes', 'with_offsets', 'with_positions', 'with_positions_offsets'],
     'type': ['float', 'double', 'byte', 'short', 'integer', 'long'],
-    'store': ['yes', 'no'],
+    'store': ['true', 'false'],
     'index_analyzer': [],
     'search_analyzer': [],
     }
@@ -51,7 +52,7 @@ class AbstractField(object):
                  term_vector_offsets=False,
                  omit_norms=True,
                  tokenize=True, index=True,
-                 type=None, index_name=None,
+                 type=None,
                  index_options=None,
                  path=None,
                  norms=None,
@@ -70,7 +71,6 @@ class AbstractField(object):
         self.index = index
         self.index_options = index_options
         self.omit_norms = omit_norms
-        self.index_name = index_name
         self.type = type
         self.analyzer = analyzer
         self.index_analyzer = index_analyzer
@@ -107,18 +107,18 @@ class AbstractField(object):
 
         if self.index:
             if self.tokenize:
-                result["index"]="analyzed"
+                result["index"]="true"
             else:
-                result["index"]="not_analyzed"
+                result["index"]="false"
         else:
-            result["index"]="no"
+            result["index"]="false"
 
         if self.store != "no":
             if isinstance(self.store, bool):
                 if self.store:
-                    result['store'] = "yes"
+                    result['store'] = "true"
                 else:
-                    result['store'] = "no"
+                    result['store'] = "false"
             else:
                 result['store'] = self.store
         if self.boost != 1.0:
@@ -134,8 +134,6 @@ class AbstractField(object):
 
         if self.omit_norms != True:
             result['omit_norms'] = self.omit_norms
-        if self.index_name:
-            result['index_name'] = self.index_name
         if self.norms:
             result['norms'] = self.norms
         if self.analyzer:
@@ -160,15 +158,44 @@ class AbstractField(object):
         var_name = "prop_"+self.name
         return var_name, var_name+" = "+self.__class__.__name__+"(name=%r, "%self.name+", ".join(["%s=%r"%(k,v) for k,v in list(data.items())])+")"
 
-class StringField(AbstractField):
+    def add_fields(self, fields):
+        if isinstance(fields, list):
+            for field in fields:
+                if isinstance(field, AbstractField):
+                    self.fields[field.name] = field.as_dict()
+                elif isinstance(field, tuple):
+                    name, data = field
+                    self.fields[name] = data
+
+
+    def get_diff(self, other_mapping):
+        """
+        Returns a Multifield with diff fields. If not changes, returns None
+        :param other_mapping:
+        :return: a Multifield or None
+        """
+        result = copy.deepcopy(self)
+        new_fields = set(self.fields.keys())
+
+        old_fields = set(other_mapping.fields.keys())
+        #we propagate new fields
+        added = new_fields - old_fields
+        if added:
+            result.add_fields([(add, self.fields[add]) for add in added])
+            #TODO: raise in field changed
+        if len(result.fields) > 0:
+            return result
+        return None
+
+class TextField(AbstractField):
     def __init__(self, null_value=None, include_in_all=None, *args, **kwargs):
-        super(StringField, self).__init__(*args, **kwargs)
+        super(TextField, self).__init__(*args, **kwargs)
         self.null_value = null_value
         self.include_in_all = include_in_all
-        self.type = "string"
+        self.type = "text"
 
     def as_dict(self):
-        result = super(StringField, self).as_dict()
+        result = super(TextField, self).as_dict()
         if self.null_value is not None:
             result['null_value'] = self.null_value
         if self.include_in_all is not None:
@@ -178,6 +205,22 @@ class StringField(AbstractField):
         if self.term_vector_offsets:
             result['term_vector_offsets'] = self.term_vector_offsets
         return result
+
+class KeywordField(AbstractField):
+    def __init__(self, null_value=None, include_in_all=None, *args, **kwargs):
+        super(KeywordField, self).__init__(*args, **kwargs)
+        self.null_value = null_value
+        self.include_in_all = include_in_all
+        self.type = "keyword"
+
+    def as_dict(self):
+        result = super(KeywordField, self).as_dict()
+        if self.null_value is not None:
+            result['null_value'] = self.null_value
+        if self.include_in_all is not None:
+            result['include_in_all'] = self.include_in_all
+        return result
+
 
 
 class GeoPointField(AbstractField):
@@ -354,94 +397,94 @@ class BinaryField(AbstractField):
         result = super(BinaryField, self).as_dict()
         return result
 
-class MultiField(object):
-    def __init__(self, name, type=None, path=None, fields=None):
-        self.name = name
-        self.type = "multi_field"
-        self.path = path
-        self.fields = {}
-        if fields:
-            if isinstance(fields, dict):
-                self.fields = dict([(name, get_field(name, data)) for name, data in list(fields.items())])
-            elif isinstance(fields, list):
-                for field in fields:
-                    self.fields[field.name] = field.as_dict()
+# class MultiField(object):
+#     def __init__(self, name, type=None, path=None, fields=None):
+#         self.name = name
+#         self.type = "multi_field"
+#         self.path = path
+#         self.fields = {}
+#         if fields:
+#             if isinstance(fields, dict):
+#                 self.fields = dict([(name, get_field(name, data)) for name, data in list(fields.items())])
+#             elif isinstance(fields, list):
+#                 for field in fields:
+#                     self.fields[field.name] = field.as_dict()
+#
+#     def add_fields(self, fields):
+#         if isinstance(fields, list):
+#             for field in fields:
+#                 if isinstance(field, AbstractField):
+#                     self.fields[field.name] = field.as_dict()
+#                 elif isinstance(field, tuple):
+#                     name, data = field
+#                     self.fields[name] = data
+#
+#
+#     def as_dict(self):
+#         result = {"type": self.type,
+#                   "fields": {}}
+#         if self.fields:
+#             for name, value in list(self.fields.items()):
+#                 if isinstance(value, dict):
+#                     result['fields'][name] = value
+#                 else:
+#                     result['fields'][name] = value.as_dict()
+#         if self.path:
+#             result['path'] = self.path
+#         return result
+#     def get_diff(self, other_mapping):
+#         """
+#         Returns a Multifield with diff fields. If not changes, returns None
+#         :param other_mapping:
+#         :return: a Multifield or None
+#         """
+#         result = MultiField(name=self.name)
+#         new_fields = set(self.fields.keys())
+#         if not isinstance(other_mapping, MultiField):
+#             n_mapping = MultiField(name=self.name)
+#             n_mapping.add_fields([other_mapping])
+#             other_mapping = n_mapping
+#
+#         old_fields = set(other_mapping.fields.keys())
+#         #we propagate new fields
+#         added = new_fields - old_fields
+#         if added:
+#             result.add_fields([(add, self.fields[add]) for add in added])
+#             #TODO: raise in field changed
+#         if len(result.fields) > 0:
+#             return result
+#         return None
 
-    def add_fields(self, fields):
-        if isinstance(fields, list):
-            for field in fields:
-                if isinstance(field, AbstractField):
-                    self.fields[field.name] = field.as_dict()
-                elif isinstance(field, tuple):
-                    name, data = field
-                    self.fields[name] = data
 
-
-    def as_dict(self):
-        result = {"type": self.type,
-                  "fields": {}}
-        if self.fields:
-            for name, value in list(self.fields.items()):
-                if isinstance(value, dict):
-                    result['fields'][name] = value
-                else:
-                    result['fields'][name] = value.as_dict()
-        if self.path:
-            result['path'] = self.path
-        return result
-    def get_diff(self, other_mapping):
-        """
-        Returns a Multifield with diff fields. If not changes, returns None
-        :param other_mapping:
-        :return: a Multifield or None
-        """
-        result = MultiField(name=self.name)
-        new_fields = set(self.fields.keys())
-        if not isinstance(other_mapping, MultiField):
-            n_mapping = MultiField(name=self.name)
-            n_mapping.add_fields([other_mapping])
-            other_mapping = n_mapping
-
-        old_fields = set(other_mapping.fields.keys())
-        #we propagate new fields
-        added = new_fields - old_fields
-        if added:
-            result.add_fields([(add, self.fields[add]) for add in added])
-            #TODO: raise in field changed
-        if len(result.fields) > 0:
-            return result
-        return None
-
-
-class AttachmentField(object):
-    """An attachment field.
-
-    Requires the mapper-attachments plugin to be installed to be used.
-
-    """
-
-    def __init__(self, name, type=None, path=None, fields=None):
-        self.name = name
-        self.type = "attachment"
-        self.path = path
-        #        self.fields = dict([(name, get_field(name, data)) for name, data in fields.items()])
-        self.fields = fields
-
-    def as_dict(self):
-    #        result_fields = dict((name, value.as_dict())
-    #                             for (name, value) in self.fields.items())
-        result_fields = self.fields
-        result = dict(type=self.type, fields=result_fields)
-        if self.path:
-            result['path'] = self.path
-        return result
+# class AttachmentField(object):
+#     """An attachment field.
+#
+#     Requires the mapper-attachments plugin to be installed to be used.
+#
+#     """
+#
+#     def __init__(self, name, type=None, path=None, fields=None):
+#         self.name = name
+#         self.type = "attachment"
+#         self.path = path
+#         #        self.fields = dict([(name, get_field(name, data)) for name, data in fields.items()])
+#         self.fields = fields
+#
+#     def as_dict(self):
+#     #        result_fields = dict((name, value.as_dict())
+#     #                             for (name, value) in self.fields.items())
+#         result_fields = self.fields
+#         result = dict(type=self.type, fields=result_fields)
+#         if self.path:
+#             result['path'] = self.path
+#         return result
 
 
 class ObjectField(object):
     def __init__(self, name=None, type=None, path=None, properties=None,
                  dynamic=None, enabled=None, include_in_all=None, dynamic_templates=None,
                  include_in_parent=None, include_in_root=None,
-                 connection=None, index_name=None, *args, **kwargs):
+                 connection=None, *args, **kwargs):
         self.name = name
         self.type = "object"
         self.path = path
@@ -454,7 +497,6 @@ class ObjectField(object):
         self.include_in_parent = include_in_parent
         self.include_in_root = include_in_root
         self.connection = connection
-        self.index_name = index_name
         if properties:
             self.properties = OrderedDict(sorted([(name, get_field(name, data)) for name, data in properties.items()]))
         else:
@@ -516,7 +558,7 @@ class ObjectField(object):
 
         if isinstance(type, str):
             if type == "*":
-                type = set(MAPPING_NAME_TYPE.keys()) - set(["nested", "multi_field", "multifield"])
+                type = set(MAPPING_NAME_TYPE.keys()) - set(["nested"])
             else:
                 type = [type]
         properties = []
@@ -553,12 +595,12 @@ class ObjectField(object):
                 if token in object.properties:
                     object = object.properties[token]
                     continue
-            elif isinstance(object, MultiField):
+            elif isinstance(object, AbstractField):
                 if token in object.fields:
                     object = object.fields[token]
                     continue
             raise MappedFieldNotFoundException(token)
-        if isinstance(object, (AbstractField, MultiField)):
+        if isinstance(object, AbstractField):
             return object
         raise MappedFieldNotFoundException(object)
 
@@ -574,9 +616,8 @@ class ObjectField(object):
                     result.append((k, "date"))
             elif isinstance(v, NumericFieldAbstract):
                 result.append((k, "numeric"))
-            elif isinstance(v, StringField):
-                if not v.tokenize:
-                    result.append((k, "term"))
+            elif isinstance(v, KeywordField):
+                result.append((k, "term"))
             elif isinstance(v, GeoPointField):
                 if not v.tokenize:
                     result.append((k, "geo"))
@@ -644,12 +685,12 @@ class ObjectField(object):
 
         for field in common_fields:
             prop = new_mapping.properties[field]
-            if isinstance(prop, StringField):
-                continue
-            if isinstance(prop, MultiField):
-                diff = prop.get_diff(self.properties[field])
-                if diff:
-                    result.add_property(diff)
+            # if isinstance(prop, TextField):
+            #     continue
+            if isinstance(prop, AbstractField):
+                 diff = prop.get_diff(self.properties[field])
+                 if diff:
+                     result.add_property(diff)
             elif isinstance(prop, ObjectField):
                 diff = self.properties[field].get_diff(prop)
                 if diff:
@@ -775,8 +816,10 @@ def get_field(name, data, default="object", document_object_field=None, is_docum
         return data
     data = keys_to_string(data)
     _type = data.get('type', default)
-    if _type == "string":
-        return StringField(name=name, **data)
+    if _type == "text":
+        return TextField(name=name, **data)
+    elif _type == "keyword":
+        return KeywordField(name=name, **data)
     elif _type == "binary":
         return BinaryField(name=name, **data)
     elif _type == "boolean":
@@ -797,12 +840,10 @@ def get_field(name, data, default="object", document_object_field=None, is_docum
         return IpField(name=name, **data)
     elif _type == "date":
         return DateField(name=name, **data)
-    elif _type == "multi_field":
-        return MultiField(name=name, **data)
     elif _type == "geo_point":
         return GeoPointField(name=name, **data)
-    elif _type == "attachment":
-        return AttachmentField(name=name, **data)
+    # elif _type == "attachment":
+    #     return AttachmentField(name=name, **data)
     elif is_document or _type == "document":
         if document_object_field:
             return document_object_field(name=name, **data)
@@ -919,7 +960,6 @@ class Mapper(object):
 
 
 MAPPING_NAME_TYPE = {
-    "attachment": AttachmentField,
     "boolean": BooleanField,
     "date": DateField,
     "double": DoubleField,
@@ -929,10 +969,10 @@ MAPPING_NAME_TYPE = {
     "int": IntegerField,
     "ip": IpField,
     "long": LongField,
-    "multifield": MultiField,
     "nested": NestedObject,
     "short": ShortField,
-    "string": StringField,
+    "text": TextField,
+    "keyword": KeywordField,
     "binary":BinaryField
 }
 

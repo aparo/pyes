@@ -35,19 +35,19 @@ class FilterTests(ESTestCase):
     def setUp(self):
         super(FilterTests, self).setUp()
         mapping = {
-            "name": {"type": "string"},
+            "name": {"type": "text"},
             "nested_filter": {
                 "type": "nested",
                 "properties": {
-                    "key_1": {"type": "integer", "index": "not_analyzed"},
-                    "key_2": {"type": "integer", "index": "not_analyzed"}
+                    "key_1": {"type": "integer"},
+                    "key_2": {"type": "integer"}
                 }
             },
             "terms_filter": {
                 "type": "integer"
             },
             "exists_filter": {
-                "type": "string"
+                "type": "text"
             },
 
         }
@@ -208,9 +208,9 @@ class RangeFilterTestCase(ESTestCase):
 
         super(RangeFilterTestCase, self).setUp()
         mapping = {
-            u'value': {'store': 'yes',
+            u'value': {'store': 'true',
                        'type': u'integer'},
-            u'date': {'store': 'yes',
+            u'date': {'store': 'true',
                       'type': u'date'},
         }
         self.conn.indices.create_index(self.index_name)

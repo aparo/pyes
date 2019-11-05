@@ -4,7 +4,6 @@ import six
 from .exceptions import InvalidQuery, InvalidParameterQuery, QueryError, \
     ScriptFieldsError
 from .sort import SortFactory
-from .facets import FacetFactory
 from .aggs import AggFactory
 from .filters import ANDFilter, Filter
 from .highlight import HighLighter
@@ -183,7 +182,7 @@ class Search(EqualityComparableUsingAttributeDictionary):
     """
 
     def __init__(self, query=None, filter=None, fields=None, start=None,
-                 size=None, highlight=None, sort=None, explain=False, facet=None, agg=None, rescore=None,
+                 size=None, highlight=None, sort=None, explain=False, agg=None, rescore=None,
                  window_size=None, version=None, track_scores=None, script_fields=None, index_boost=None,
                  min_score=None, stats=None, bulk_read=None, partial_fields=None, _source=None, timeout=None):
         """
@@ -198,7 +197,6 @@ class Search(EqualityComparableUsingAttributeDictionary):
         self._highlight = highlight
         self.sort = sort or SortFactory()
         self.explain = explain
-        self.facet = facet or FacetFactory()
         self.agg = agg or AggFactory()
         self.rescore = rescore
         self.window_size = window_size
@@ -212,12 +210,6 @@ class Search(EqualityComparableUsingAttributeDictionary):
         self.partial_fields = partial_fields
         self._source = _source
         self.timeout = timeout
-
-    def get_facet_factory(self):
-        """
-        Returns the facet factory
-        """
-        return self.facet
 
     def get_agg_factory(self):
         """
@@ -237,8 +229,6 @@ class Search(EqualityComparableUsingAttributeDictionary):
                 raise InvalidQuery("Invalid query")
         if self.filter:
             res['filter'] = self.filter.serialize()
-        if self.facet.facets:
-            res['facets'] = self.facet.serialize()
         if self.agg.aggs:
             res['aggs'] = self.agg.serialize()
         if self.rescore:
@@ -956,10 +946,10 @@ class MoreLikeThisQuery(Query):
         self.ids=ids
 
     def _serialize(self):
-        
+
         filters={}
         if self.fields :
-           filters['fields'] = self.fields 
+           filters['fields'] = self.fields
         if self.like_text:
            filters["like_text"] = self.like_text
         if self.ids:

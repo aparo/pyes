@@ -17,17 +17,17 @@ dataset = shelve.open("samples.shelve")
 
 mapping = {u'description': {'boost': 1.0,
                             'index': 'analyzed',
-                            'store': 'yes',
+                            'store': 'true',
                             'type': u'string',
                             "term_vector": "with_positions_offsets"
 },
            u'name': {'boost': 1.0,
                      'index': 'analyzed',
-                     'store': 'yes',
+                     'store': 'true',
                      'type': u'string',
                      "term_vector": "with_positions_offsets"
            },
-           u'age': {'store': 'yes',
+           u'age': {'store': 'true',
                     'type': u'integer'},
            }
 conn.create_index("test-index")

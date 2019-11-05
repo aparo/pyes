@@ -80,22 +80,15 @@ def ext_process(listname, hostname, url, filepath, msg):
             iconn.create_index(_indexname)
             time.sleep(1)
             status = iconn.status(_indexname)
-            mappings = { u'text': {'boost': 1.0,
-                                     'index': 'analyzed',
-                                     'store': 'yes',
-                                     'type': u'string',
+            mappings = { u'text': {'store': 'true',
+                                     'type': u'text',
                                      "term_vector" : "with_positions_offsets"},
-                             u'url': {'boost': 1.0,
-                                        'index': 'not_analyzed',
-                                        'store': 'yes',
-                                        'type': u'string',
-                                        "term_vector" : "no"},
-                             u'title': {'boost': 1.0,
-                                        'index': 'analyzed',
-                                        'store': 'yes',
-                                        'type': u'string',
+                             u'url': {'store': 'true',
+                                        'type': u'keyword'},
+                             u'title': {'store': 'true',
+                                        'type': u'text',
                                         "term_vector" : "with_positions_offsets"},
-                             u'date': {'store': 'yes',
+                             u'date': {'store': 'true',
                                         'type': u'date'}}
             time.sleep(1)
             status = iconn.put_mapping(_doctype, mappings, _indexname)

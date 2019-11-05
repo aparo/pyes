@@ -10,12 +10,12 @@ class MultifieldTestCase(ESTestCase):
         super(MultifieldTestCase, self).setUp()
         mapping = {u'parsedtext': {'boost': 1.0,
                                    'index': 'analyzed',
-                                   'store': 'yes',
+                                   'store': 'true',
                                    'type': u'string',
                                    "term_vector": "with_positions_offsets"},
                    u'title': {'boost': 1.0,
                               'index': 'analyzed',
-                              'store': 'yes',
+                              'store': 'true',
                               'type': u'string',
                               "term_vector": "with_positions_offsets"},
                    u'name': {"type": "multi_field",
@@ -33,11 +33,11 @@ class MultifieldTestCase(ESTestCase):
 
                    },
 
-                   u'pos': {'store': 'yes',
+                   u'pos': {'store': 'true',
                             'type': u'integer'},
                    u'uuid': {
                        'index': 'not_analyzed',
-                       'store': 'yes',
+                       'store': 'true',
                        'type': u'string'}}
         self.conn.indices.create_index(self.index_name)
         self.conn.indices.put_mapping(self.document_type, {'properties': mapping}, self.index_name)

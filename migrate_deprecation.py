@@ -32,9 +32,6 @@ MIGRATIONS = [
     ("update_settings", "indices.update_settings"),
 
     # ("index_stats", "indices.index_stats"),
-    # ("put_warmer", "indices.put_warmer"),
-    # ("get_warmer", "indices.get_warmer"),
-    # ("delete_warmer", "indices.delete_warmer"),
     # update_mapping_meta
     ("cluster_health", "cluster.health"),
     ("cluster_state", "cluster.state"),

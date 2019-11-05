@@ -1,1 +1,384 @@
-../Changelog
+================
+ Change history
+================
+
+.. contents::
+
+.. _version-0.19.1:
+
+1.0.0
+=====
+
+- Moved (put/get/delete)_warmer in indices manager
+
+0.19.1
+======
+
+News
+----
+
+- Create Manager to manage API action grouped as Elasticsearch.
+
+- This allows to simplify ES object and to move grouped functionality in manager. We are following the ElasticSearch
+- grouping of actions. For now we are adding:
+
+    - Indices Manager: to manage index operation
+
+    - Cluster Manager: to manage index operation
+
+- Renamed field_name in name in ScriptFields
+
+- Got docs building on readthedocs.org (Wraithan - Chris McDonald)
+
+- Added model and scan to search.
+
+- So one can pass custom object to be created
+
+- Added document exists call, to check is a document exists.
+
+Deprecated
+----------
+
+Using manager, a lot of es methods are refactored in the managers. This is the list of moved methods:
+
+- .aliases -> .indices.aliases
+
+- .status -> .indices.status
+
+- .create_index -> .indices.create_index
+
+- .create_index_if_missing -> .indices.create_index_if_missing
+
+- .delete_index -> .indices.delete_index
+
+- .exists_index -> .indices.exists_index
+
+- .delete_index_if_exists -> .indices.delete_index_if_exists
+
+- .get_indices -> .indices.get_indices
+
+- .get_closed_indices -> .indices.get_closed_indices
+
+- .get_alias -> .indices.get_alias
+
+- .change_aliases -> .indices.change_aliases
+
+- .add_alias -> .indices.add_alias
+
+- .delete_alias -> .indices.delete_alias
+
+- .set_alias -> .indices.set_alias
+
+- .close_index -> .indices.close_index
+
+- .open_index -> .indices.open_index
+
+- .flush -> .indices.flush
+
+- .refresh -> .indices.refresh
+
+- .optimize -> .indices.optimize
+
+- .analyze -> .indices.analyze
+
+- .gateway_snapshot -> .indices.gateway_snapshot
+
+- .put_mapping -> .indices.put_mapping
+
+- .get_mapping -> .indices.get_mapping
+
+- .cluster_health -> .cluster.cluster_health
+
+- .cluster_state -> .cluster.state
+
+- .cluster_nodes -> .cluster.nodes_info
+
+- .cluster_stats -> .cluster.node_stats
+
+- .index_stats -> .indices.stats
+
+- .delete_mapping -> .indices.delete_mapping
+
+- .get_settings -> .indices.get_settings
+
+- .update_settings -> .indices.update_settings
+
+
+Fixes
+-----
+
+- Fixed ResultSet slicing.
+
+- Moved tests outside pyes code dir. Update references. Upgraded test elasticsearch to 0.19.9.
+
+- Added documentation links.
+
+- Renamed scroll_timeout in scroll.
+
+- Renamed field_name in name in ScriptFields.
+
+- Added routing to delete document call.
+
+- Removed minimum_number_should_match parameter.It is not supported by ElasticSearch and causes errors when using a BoolFilter. (Jernej Kos)
+
+- Improved speed json conversion of datetime values
+
+- Added boost argument to TextQuery. (Jernej Kos)
+
+- Go back to urllib3 instead of requests. (gsakkis)
+
+- Enhance Twitter River class. (thanks @dendright)
+
+- Add OAuth authentication and filtering abilities to Twitter River. (Jack Riches)
+
+- HasChildFilter expects a Query. (gsakkis)
+
+- Fixed _parent being pulled from _meta rather than the instance itself. (merrellb)
+
+- Add support of all_terms to TermFacet. (mouad)
+
+
+0.19.0
+======
+
+
+- Use default_indices instead of hardcoding ['_all'] (gsakkis)
+
+- Complete rewrite of connection_http (gsakkis)
+
+- Don't collect info on creation of ES object (patricksmith)
+
+- Add interval to histogram facet. (vrachil)
+
+- Improved connection string construction and added more flexibility. (ferhatsb)
+
+- Fixed pickling DotDict.
+
+- Fixed a bug in Decoder.
+
+- Added execution to TermsFilter. Fixed missing _name attribute in serialized object
+
+- Added _cache and _cache_key parameters to filters.
+
+- Added scope, filter and global parameters to facets. closes #119
+
+- Use a single global ConnectionPool instead of initializing it on every execute call. (gsakkis)
+
+- Allow partial_fields to be passed in the Search class. (tehmaze)
+
+- Propagated parameters to bulker.
+
+- Support params for analyze. (akheron)
+
+- Added LimitFilter.
+
+- Fixed support for query as dict in Search object.
+
+- Added ListBulker implementation and create_bulker method.
+
+- Moved imports to absolute ones.
+
+- Removed inused urllib3 files and added timeout to connection_http.
+
+- Add NotFilter as facet filter (junckritter)
+
+- Add terms facet filter
+
+0.18.7-rc1
+==========
+
+
+- Tested against 0.18.7, with all tests passing
+
+- Added support for index_stats
+
+0.17.0
+======
+
+- API BREAKING: Added new searcher iterator API. (To use the old code rename ".search" in ".search_raw")
+
+- API BREAKING: renamed indexes in indices. To be complaint to ES documentation.
+
+- Tests refactory.
+
+- Add model object to objetify a dict.
+
+0.16.0
+======
+
+- Updated documentation.
+
+- Added TextQuery and some clean up of code.
+
+- Added percolator (matterkkila).
+
+- Added date_histogram facet (zebuline).
+
+- Added script fields to Search object, also add "fields" to TermFacet  (aguereca).
+
+- Added analyze_wildcard param to StringQuery (available for ES 0.16.0) (zebuline).
+
+- Add ScriptFields object used as parameter script_fields of Search object (aguereca).
+
+- Add IdsQuery, IdsFilter and delete_by_query (aguereca).
+
+- Bulk delete (acdha).
+
+
+0.15.0
+======
+
+
+- Only require simplejson for python < 2.6 (matterkkila)
+
+- Added basic version support to ES.index and Search (merrellb)
+
+- Added scan method to ES.  This is only supported on ES Master (pre 0.16) (merrellb)
+
+- Added GeoPointField to mapping types (merrellb)
+
+- Disable thrift in setup.py.
+
+- Added missing _routing property in ObjectField
+
+- Added ExistsFilter
+
+- Improved HasChildren
+
+- Add min_similarity and prefix_length to flt.
+
+- Added _scope to HasChildQuery. (andreiz)
+
+- Added parent/child document in test indexing. Added _scope to HasChildFilter.
+
+- Added MissingFilter as a subclass of TermFilter
+
+- Fixed error in checking TermsQuery (merrellb)
+
+- If an analyzer is set on a field, the returned mapping will have an analyzer
+
+- Add a specific error subtype for mapper parsing exceptions (rboulton)
+
+- Add support for Float numeric field mappings (rboulton)
+
+- ES.get() now accepts "fields" as well as other keyword arguments (eg "routing") (rboulton)
+
+- Allow dump_curl to be passed a filehandle (or still a filename), don't for filenames to be in /tmp, and add a basic test of it.
+
+- Add alias handling (rboulton)
+
+- Add ElasticSearchIllegalArgumentException - used for example when writing to an alias which refers to more than one index. (rboulton)
+
+- Handle errors produced by deleting a missing document, and add a test for it. (rboulton)
+
+- Split Query object into a Search object, for the search specific parts, and a Query base class.  Allow ES.search() to take a query or a search object.  Make some of the methods of Query base classes chainable, where that is an obviously reasonable thing to do. (rboulton)
+
+0.14.0
+======
+
+
+- Added delete of mapping type.
+
+- Embedded urllib3 to be buildout safe and for users sake.
+
+- Some code cleanup.
+
+- Added reindex by query (usable only with my elasticsearch git branch).
+
+- Added contrib with mailman indexing.
+
+- Autodetect if django is available and added related functions.
+
+- Code cleanup and PEP8.
+
+- Reactivated the morelikethis query.
+
+- Fixed river support plus unittest. (Tavis Aitken)
+
+- Added autorefresh to sync search and write.
+
+- Added QueryFilter.
+
+- Forced name attribute in multifield declaration.
+
+- Added is_empty to ConstantScoreQuery and fixed some bad behaviour.
+
+- Added CustomScoreQuery.
+
+- Added parent/children indexing.
+
+- Added dump commands in a script file "curl" way.
+
+- Added a lot of fix from Richard Boulton.
+
+0.13.1
+======
+
+- Added jython support (HTTP only for now).
+
+0.13.0
+======
+
+- API Changes: errors -> exceptions.
+
+- Splitting of query/filters.
+
+- Added open/close of index.
+
+- Added the number of retries if server is down.
+
+- Refactory Range query. (Andrei)
+
+- Improved HTTP connection timeout/retries. (Sandymahalo)
+
+- Cleanup some imports. (Sandymahalo)
+
+0.12.1
+======
+
+- Added collecting server info.
+
+- Version 0.12 or above requirement.
+
+- Fixed attachment plugin.
+
+- Updated bulk insert to use new api.
+
+- Added facet support (except geotypes).
+
+- Added river support.
+
+- Cleanup some method.
+
+- Added default_indexes variable.
+
+- Added datetime deserialization.
+
+- Improved performance and memory usage in bulk insert replacing list with StringIO.
+
+- Initial propagation of elasticsearch exception to python.
+
+0.12.0
+======
+
+- Added http transport, added autodetect of transport, updated thrift interface.
+
+0.10.3
+======
+
+- Added bulk insert, explain and facet.
+
+0.10.2
+======
+
+- Added new geo query type.
+
+0.10.1
+======
+
+- Added new connection pool system based on pycassa one.
+
+0.10.0
+======
+
+- Initial working version.

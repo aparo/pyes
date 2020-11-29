@@ -52,7 +52,7 @@ class AbstractField(object):
                  term_vector_offsets=False,
                  omit_norms=True,
                  tokenize=True, index=True,
-                 type=None,
+                 type=None, index_name=None,
                  index_options=None,
                  path=None,
                  norms=None,
@@ -71,6 +71,7 @@ class AbstractField(object):
         self.index = index
         self.index_options = index_options
         self.omit_norms = omit_norms
+        self.index_name = index_name
         self.type = type
         self.analyzer = analyzer
         self.index_analyzer = index_analyzer
@@ -134,6 +135,8 @@ class AbstractField(object):
 
         if self.omit_norms != True:
             result['omit_norms'] = self.omit_norms
+        if self.index_name:
+            result['index_name'] = self.index_name
         if self.norms:
             result['norms'] = self.norms
         if self.analyzer:

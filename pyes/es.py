@@ -894,6 +894,21 @@ class ES(object):
         data = self.get(index, doc_type, id)
         return data['_name'], base64.standard_b64decode(data['content'])
 
+    def templates(self):
+        """
+        Returns all the registered templates
+        :return: 
+        """
+        return self._send_request("GET", "_template")
+
+    def save_templates(self, name, template):
+        """
+        Returns all the registered templates
+        :return:
+        """
+        return self._send_request("PUT", "_template/"+name, template)
+
+
     def update(self, index, doc_type, id, script=None, lang="groovy", params=None, document=None, upsert=None,
                model=None, bulk=False, querystring_args=None, retry_on_conflict=None, routing=None, doc_as_upsert=None):
         if querystring_args is None:
@@ -982,12 +997,9 @@ class ES(object):
             raise InvalidQuery("script or doc can not both be None")
 
         if doc is None:
-            script_doc={"inline":script}
-            if lang:
-                script_doc["lang"] = params
+            cmd = {"script": script}
             if params:
-                script_doc["params"] = params
-            cmd = {"script": script_doc}
+                cmd["params"] = params
             if upsert:
                 cmd["upsert"] = upsert
         else:

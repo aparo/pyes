@@ -71,24 +71,24 @@ def raise_if_error(status, result, request=None):
         error_list = error.split('; nested: ')
         error = error_list[len(error_list) - 1]
 
-    bits = error.split('[', 1)
-    if len(bits) == 2:
-        excClass = exceptions_by_name.get(bits[0], None)
-        if excClass is not None:
-            msg = bits[1]
-            if msg.endswith(']'):
-                msg = msg[:-1]
-            '''
-            if request:
-                msg += ' (' + str(request) + ')'
-            '''
-            raise excClass(msg, status, result, request)
-
-    for pattern, excClass in list(exception_patterns_trailing.items()):
-        if not error.endswith(pattern):
-            continue
-            # For these exceptions, the returned value is the whole descriptive
-        # message.
-        raise excClass(error, status, result, request)
+    # bits = error.split('[', 1)
+    # if len(bits) == 2:
+    #     excClass = exceptions_by_name.get(bits[0], None)
+    #     if excClass is not None:
+    #         msg = bits[1]
+    #         if msg.endswith(']'):
+    #             msg = msg[:-1]
+    #         '''
+    #         if request:
+    #             msg += ' (' + str(request) + ')'
+    #         '''
+    #         raise excClass(msg, status, result, request)
+    #
+    # for pattern, excClass in list(exception_patterns_trailing.items()):
+    #     if not error.endswith(pattern):
+    #         continue
+    #         # For these exceptions, the returned value is the whole descriptive
+    #     # message.
+    #     raise excClass(error, status, result, request)
 
     raise exceptions.ElasticSearchException(error, status, result, request)

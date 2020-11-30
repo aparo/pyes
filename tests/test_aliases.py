@@ -6,13 +6,9 @@ from pyes import exceptions
 class ErrorReportingTestCase(ESTestCase):
     def setUp(self):
         super(ErrorReportingTestCase, self).setUp()
-        #self.conn.indices.set_alias('test-alias', ['_river'])
-        #self.conn.indices.delete_alias('test-alias', ['_river'])
         self.conn.indices.delete_index_if_exists('test-index2')
 
     def tearDown(self):
-        #self.conn.indices.set_alias('test-alias', ['_river'])
-        #self.conn.indices.delete_alias('test-alias', ['_river'])
         self.conn.indices.delete_index_if_exists('test-index2')
 
     def testCreateDeleteAliases(self):

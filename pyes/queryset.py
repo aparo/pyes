@@ -9,18 +9,15 @@ Taken from django one and from django-elasticsearch.
 
 
 import copy
-import six
-
 # The maximum number of items to display in a QuerySet.__repr__
 from .es import ES
 from .filters import ANDFilter, ORFilter, NotFilter, Filter, TermsFilter, TermFilter, RangeFilter, ExistsFilter
-from .facets import Facet, TermFacet
 from .aggs import Agg, TermsAgg
 from .models import ElasticSearchModel
 from .orm.exceptions import DoesNotExist, MultipleObjectsReturned
 from .query import MatchAllQuery, BoolQuery, FilteredQuery, Search
 from .utils import ESRange
-from .utils.compat import integer_types
+
 REPR_OUTPUT_SIZE = 20
 
 
@@ -235,7 +232,7 @@ class QuerySet(object):
         """
         Retrieves an item or slice from the set of results.
         """
-        if not isinstance(k, (slice,) + integer_types):
+        if not isinstance(k, (slice,) + int):
             raise TypeError
         assert ((not isinstance(k, slice) and (k >= 0))
                 or (isinstance(k, slice) and (k.start is None or k.start >= 0)
@@ -662,11 +659,11 @@ class QuerySet(object):
         for arg in args:
             if isinstance(arg, Facet):
                 obj._facets.append(arg)
-            elif isinstance(arg, six.string_types):
+            elif isinstance(arg, str):
                 obj._facets.append(TermFacet(arg.replace("__", ".")))
             elif isinstance(arg, Agg):
                 obj._aggs.append(arg)
-            elif isinstance(arg, six.string_types):
+            elif isinstance(arg, str):
                 obj._facets.append(TermFacet(arg.replace("__", ".")))
             else:
                 raise NotImplementedError("invalid type")

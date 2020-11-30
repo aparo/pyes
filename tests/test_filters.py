@@ -301,11 +301,11 @@ class TypeFilterTestCase(FilterTests):
     def test_type(self):
         f = filters.TypeFilter(type=self.document_type)
         q = Search(filter=f)
-        print self.dump(q.serialize())
+        print(self.dump(q.serialize()))
         result = self.conn.search(query=q, indices=self.index_name,
                                   doc_types=[])
         self.assertEqual(2, len(result.hits))
-        print result.hits
+        print(result.hits)
         self.assertItemsEqual([u'1', u'2'], [item._id for item in result.hits])
 
         f = filters.TypeFilter(type=self.internal_type)

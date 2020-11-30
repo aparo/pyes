@@ -5,7 +5,6 @@ from .exceptions import IndexAlreadyExistsException, IndexMissingException
 from .utils import make_path
 from .filters import Filter
 from .mappings import Mapper
-import six
 
 class Indices(object):
     alias_params = ['filter', 'routing', 'search_routing', 'index_routing']
@@ -603,7 +602,7 @@ class Cluster(object):
             parameters['filter_blocks'] = filter_blocks
 
         if filter_blocks is not None:
-            if isinstance(filter_indices, six.string_types):
+            if isinstance(filter_indices, str):
                 parameters['filter_indices'] = filter_indices
             else:
                 parameters['filter_indices'] = ",".join(filter_indices)

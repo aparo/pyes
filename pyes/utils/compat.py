@@ -18,45 +18,23 @@ from __future__ import absolute_import
 import sys, types
 is_py3k = sys.version_info[0] == 3
 
-try:
-    reload = reload                         # noqa
-except NameError:                           # pragma: no cover
-    from imp import reload                  # noqa
+from importlib import reload                 
+from collections.abc import UserList        
+from collections.abc import UserDict        
 
-try:
-    from UserList import UserList           # noqa
-except ImportError:                         # pragma: no cover
-    from collections import UserList        # noqa
+from io import StringIO, BytesIO
+from .encoding import bytes_to_str
 
-try:
-    from UserDict import UserDict           # noqa
-except ImportError:                         # pragma: no cover
-    from collections import UserDict        # noqa
+class WhateverIO(StringIO):
 
-if is_py3k:                                 # pragma: no cover
-    from io import StringIO, BytesIO
-    from .encoding import bytes_to_str
+    def write(self, data):
+        StringIO.write(self, bytes_to_str(data))
 
-    class WhateverIO(StringIO):
-
-        def write(self, data):
-            StringIO.write(self, bytes_to_str(data))
-else:
-    from StringIO import StringIO           # noqa
-    BytesIO = WhateverIO = StringIO         # noqa
-
-if is_py3k:
-    string_types = str,
-    integer_types = int,
-    class_types = type,
-    text_type = str
-    binary_type = bytes
-else:
-    string_types = basestring,
-    integer_types = int, long
-    class_types = type, types.ClassType
-    text_type = unicode
-    binary_type = str
+string_types = str,
+integer_types = int,
+class_types = type,
+text_type = str
+binary_type = bytes
 
 ############## itertools.zip_longest #######################################
 

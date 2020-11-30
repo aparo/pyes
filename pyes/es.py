@@ -1,15 +1,10 @@
 # -*- coding: utf-8 -*-
 from elasticsearch import SerializationError
 
-import six
-
 from datetime import date, datetime
 from decimal import Decimal
 
-if six.PY2:
-    from six.moves.urllib.parse import urlencode, urlunsplit, urlparse
-else:
-    from urllib.parse import urlencode, urlunsplit, urlparse
+from urllib.parse import urlencode, urlunsplit, urlparse
 # import urllib.request, urllib.parse, urllib.error
 
 
@@ -17,11 +12,7 @@ import base64
 import codecs
 import random
 import weakref
-
-try:
-    import simplejson as json
-except ImportError:
-    import json
+import json
 
 from . import logger
 from . import connection_http
@@ -38,8 +29,6 @@ from .query import Search, Query
 from .utils import make_path, get_unicode_string
 
 from .fakettypes import Method, RestRequest
-
-import six
 
 
 def file_to_attachment(filename, filehandler=None):
@@ -125,17 +114,17 @@ class ESJsonDecoder(json.JSONDecoder):
         """
         Decode a datetime string to a datetime object
         """
-        if isinstance(obj, six.string_types) and len(obj) == 19:
+        if isinstance(obj, str) and len(obj) == 19:
             try:
                 return datetime.strptime(obj, "%Y-%m-%dT%H:%M:%S")
             except ValueError:
                 pass
-        if isinstance(obj, six.string_types) and len(obj) > 19:
+        if isinstance(obj, str) and len(obj) > 19:
             try:
                 return datetime.strptime(obj, "%Y-%m-%dT%H:%M:%S.%f")
             except ValueError:
                 pass
-        if isinstance(obj, six.string_types) and len(obj) == 10:
+        if isinstance(obj, str) and len(obj) == 10:
             try:
                 return datetime.strptime(obj, "%Y-%m-%d")
             except ValueError:
@@ -148,13 +137,13 @@ class ESJsonDecoder(json.JSONDecoder):
         Decode datetime value from string to datetime
         """
         for k, v in list(d.items()):
-            if isinstance(v, six.string_types) and len(v) == 19:
+            if isinstance(v, str) and len(v) == 19:
                 # Decode a datetime string to a datetime object
                 try:
                     d[k] = datetime.strptime(v, "%Y-%m-%dT%H:%M:%S")
                 except ValueError:
                     pass
-            elif isinstance(v, six.string_types) and len(v) > 20:
+            elif isinstance(v, str) and len(v) > 20:
                 try:
                     d[k] = datetime.strptime(v, "%Y-%m-%dT%H:%M:%S.%f")
                 except ValueError:
@@ -180,7 +169,7 @@ class JSONSerializer(object):
 
     def dumps(self, data):
         # don't serialize strings
-        if isinstance(data, six.string_types):
+        if isinstance(data, str):
             return data
 
         try:
@@ -282,7 +271,7 @@ class ES(object):
         self.model = model
         self.log_curl = log_curl
         if dump_curl:
-            if isinstance(dump_curl, six.string_types):
+            if isinstance(dump_curl, str):
                 self.dump_curl = codecs.open(dump_curl, "wb", "utf8")
             elif hasattr(dump_curl, 'write'):
                 self.dump_curl = dump_curl
@@ -306,7 +295,7 @@ class ES(object):
             self.encoder = encoder
         if decoder:
             self.decoder = decoder
-        if isinstance(server, six.string_types):
+        if isinstance(server, str):
             self.servers = [server]
         elif isinstance(server, tuple):
             self.servers = [server]
@@ -387,7 +376,7 @@ class ES(object):
                 server = urlparse('%s://%s:%s' % (_type, host, port))
                 check_format(server)
                 new_servers.append({"host": host, "port": port, "scheme": _type})
-            elif isinstance(server, six.string_types):
+            elif isinstance(server, str):
                 if server.startswith(("http:", "https:")):
                     server = urlparse(server)
                     check_format(server)
@@ -613,9 +602,7 @@ class ES(object):
             return status == 200
 
         # handle the response
-        response_body = data
-        if six.PY3:
-            response_body = response_body.decode(encoding='UTF-8')
+        response_body = data.decode(encoding='UTF-8')
 
         try:
             decoded = json.loads(response_body, cls=self.decoder)
@@ -642,7 +629,7 @@ class ES(object):
                 indices = []
         if doc_types is None:
             doc_types = self.default_types
-        if isinstance(doc_types, six.string_types):
+        if isinstance(doc_types, str):
             doc_types = [doc_types]
         return make_path(','.join(indices), ','.join(doc_types), *components)
 
@@ -654,7 +641,7 @@ class ES(object):
         """
         if indices is None:
             indices = self.default_indices
-        if isinstance(indices, six.string_types):
+        if isinstance(indices, str):
             indices = [indices]
         return indices
 
@@ -668,7 +655,7 @@ class ES(object):
         types = types or self.default_types
         if types is None:
             types = []
-        if isinstance(types, six.string_types):
+        if isinstance(types, str):
             types = [types]
         return types
 
@@ -1461,9 +1448,6 @@ class ResultSetList(object):
         return self.connection.search_raw(self.search, indices=self.indices,
                                           doc_types=self.doc_types, **query_params)
 
-    if six.PY2:
-        next = __next__
-
 
 class ResultSet(object):
     def __init__(self, connection, search, indices=None, doc_types=None, query_params=None,
@@ -1736,9 +1720,6 @@ class ResultSet(object):
         self._current_item += 1
         return self.model(self.connection, res)
 
-    if six.PY2:
-        next = __next__
-
 
     def __iter__(self):
         self.iterpos = 0
@@ -1795,9 +1776,6 @@ class EmptyResultSet(object):
 
     def __next__(self):
         raise StopIteration
-
-    if six.PY2:
-        next = __next__
 
     def __iter__(self):
         return self
@@ -1923,6 +1901,3 @@ class ResultSetMulti(object):
             return res
 
         raise StopIteration
-
-    if six.PY2:
-        next = __next__

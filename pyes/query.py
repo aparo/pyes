@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import six
 from .exceptions import InvalidQuery, InvalidParameterQuery, QueryError, \
     ScriptFieldsError
 from .sort import SortFactory
@@ -1263,7 +1262,7 @@ class QueryStringQuery(Query):
         filters = {}
         if self.default_field:
             filters["default_field"] = self.default_field
-            if not isinstance(self.default_field, six.string_types) and isinstance(self.default_field, list):
+            if not isinstance(self.default_field, str) and isinstance(self.default_field, list):
                 if not self.use_dis_max:
                     filters["use_dis_max"] = self.use_dis_max
                 if self.tie_breaker:
@@ -1286,7 +1285,7 @@ class QueryStringQuery(Query):
         if self.phrase_slop:
             filters["phrase_slop"] = self.phrase_slop
         if self.search_fields:
-            if isinstance(self.search_fields, six.string_types):
+            if isinstance(self.search_fields, str):
                 filters["fields"] = [self.search_fields]
             else:
                 filters["fields"] = self.search_fields
@@ -1356,7 +1355,7 @@ class SimpleQueryStringQuery(Query):
         filters = {}
         if self.default_field:
             filters["default_field"] = self.default_field
-            if not isinstance(self.default_field, six.string_types) and isinstance(self.default_field, list):
+            if not isinstance(self.default_field, str) and isinstance(self.default_field, list):
                 if not self.use_dis_max:
                     filters["use_dis_max"] = self.use_dis_max
                 if self.tie_breaker:
@@ -1379,7 +1378,7 @@ class SimpleQueryStringQuery(Query):
         if self.phrase_slop:
             filters["phrase_slop"] = self.phrase_slop
         if self.search_fields:
-            if isinstance(self.search_fields, six.string_types):
+            if isinstance(self.search_fields, str):
                 filters["fields"] = [self.search_fields]
             else:
                 filters["fields"] = self.search_fields

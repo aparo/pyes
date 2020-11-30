@@ -2,14 +2,9 @@
 
 
 import threading
-try:
-    from collections import OrderedDict
-except ImportError:
-    # python 2.6 or earlier, use backport
-    from ordereddict import OrderedDict
+from collections import OrderedDict
 from .models import SortedDict, DotDict
 from datetime import datetime, date
-import six
 from .exceptions import MappedFieldNotFoundException
 import copy
 
@@ -79,9 +74,9 @@ class AbstractField(object):
         self.path = path
         self.locale = locale
         #back compatibility
-        if isinstance(store, six.string_types):
+        if isinstance(store, str):
             self.store = to_bool(store)
-        if isinstance(index, six.string_types):
+        if isinstance(index, str):
             if index == "no":
                 self.index = False
                 self.tokenize = False
@@ -366,9 +361,9 @@ class DateField(NumericFieldAbstract):
             return date.isoformat()
 
     def to_python(self, value):
-        if isinstance(value, six.string_types) and len(value) == 19:
+        if isinstance(value, str) and len(value) == 19:
             return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S")
-        elif isinstance(value, six.string_types) and len(value) == 10:
+        elif isinstance(value, str) and len(value) == 10:
             return date.strptime(value, "%Y-%m-%d")
 
 class BooleanField(AbstractField):

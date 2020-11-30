@@ -2,11 +2,7 @@
 from __future__ import absolute_import
 import unittest
 from pyes.tests import ESTestCase, get_conn
-import six
-if six.PY2:
-    from io import StringIO
-else:
-    from io import BytesIO as StringIO
+from io import BytesIO as StringIO
 
 class DumpCurlTestCase(ESTestCase):
     def setUp(self):

@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
-from __future__ import with_statement
 
 """
     pyes.utils.imports
@@ -18,7 +16,6 @@ import imp as _imp
 import importlib
 import os
 import sys
-import six
 
 from contextlib import contextmanager
 
@@ -81,7 +78,7 @@ def symbol_by_name(name, aliases={}, imp=None, package=None,
     if imp is None:
         imp = importlib.import_module
 
-    if not isinstance(name, six.string_types):
+    if not isinstance(name, str):
         return name                                 # already a class
 
     name = aliases.get(name) or name

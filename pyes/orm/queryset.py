@@ -7,7 +7,7 @@ The main QuerySet implementation. This provides the public API for the ORM.
 import copy
 from pyes.es import ResultSetList, EmptyResultSet, ResultSet
 from pyes.filters import ANDFilter, ORFilter, NotFilter, Filter, TermsFilter, TermFilter, RangeFilter, ExistsFilter, RegexTermFilter, IdsFilter, PrefixFilter, MissingFilter
-from pyes.facets import Facet, TermFacet, StatisticalFacet, HistogramFacet, DateHistogramFacet, TermStatsFacet
+#from pyes.facets import Facet, TermFacet, StatisticalFacet, HistogramFacet, DateHistogramFacet, TermStatsFacet
 from pyes.query import MatchAllQuery, BoolQuery, FilteredQuery, Search
 from pyes.utils import ESRange, make_id
 from pyes.exceptions import NotFoundException
@@ -16,7 +16,6 @@ try:
 except ImportError:
     class Q:pass
 
-import six
 from pyes_engine import logger
 
 from brainaetic.documental import get_model_from_str
@@ -166,7 +165,7 @@ class QuerySet(object):
 
             if isinstance(field, models.ListField):
                 model = field.item_field.model
-                if isinstance(model, six.string_types):
+                if isinstance(model, str):
                     model = get_model_from_str(model)
                 if isinstance(field.item_field, models.ForeignKey):
                     #data[field.attname] = ModelIteratorResolver(field.item_field.model, data[field.attname])
@@ -176,7 +175,7 @@ class QuerySet(object):
                         data[field.attname] = []
             elif isinstance(field, models.SetField):
                 model = field.item_field.model
-                if isinstance(model, six.string_types):
+                if isinstance(model, str):
                     model = get_model_from_str(model)
                 if isinstance(field.item_field, models.ForeignKey):
                     if data[field.attname]:
@@ -312,7 +311,7 @@ class QuerySet(object):
         """
         Retrieves an item or slice from the set of results.
         """
-        if not isinstance(k, (slice,) + six.integer_types):
+        if not isinstance(k, (slice,) + int):
             raise TypeError
         assert ((not isinstance(k, slice) and (k >= 0))
                 or (isinstance(k, slice) and (k.start is None or k.start >= 0)
@@ -757,7 +756,7 @@ class QuerySet(object):
         """Cook the value"""
         from django.db import models
 
-        if isinstance(value, (six.string_types, int, float)):
+        if isinstance(value, (str, int, float)):
             return value
         elif isinstance(value, SimpleLazyObject):
             return value.pk
@@ -1035,7 +1034,7 @@ class QuerySet(object):
             for arg in args:
                 if isinstance(arg, Facet):
                     obj._facets.append(arg)
-                elif isinstance(arg, six.string_types):
+                elif isinstance(arg, str):
                     modifier = "term"
                     tokens = arg.split("__")
                     if len(tokens)>1 and tokens[-1] in ["term", "stat", "histo", "date"]:
@@ -1222,11 +1221,11 @@ class QuerySet(object):
 
     def _get_hash_id(self, record, uniq_together):
         valid_fields = []
-        if isinstance(uniq_together, six.string_types):
+        if isinstance(uniq_together, str):
             valid_fields.append(uniq_together)
         elif isinstance(uniq_together, (list, tuple)):
             for v in uniq_together:
-                if isinstance(v, six.string_types):
+                if isinstance(v, str):
                     valid_fields.append(v)
                 else:
                     valid_fields.extend(list(v))
@@ -1272,11 +1271,11 @@ class QuerySet(object):
         pk_column = meta.pk.column
         unique_together_name = []
         valid_fields = []
-        if isinstance(meta.unique_together, six.string_types):
+        if isinstance(meta.unique_together, str):
             valid_fields.append(meta.uniq_together)
         elif isinstance(meta.unique_together, (list, tuple)):
             for v in meta.unique_together:
-                if isinstance(v, six.string_types):
+                if isinstance(v, str):
                     valid_fields.append(v)
                 else:
                     valid_fields.extend(list(v))
@@ -1346,7 +1345,7 @@ class QuerySet(object):
     #converting functions
     #TODO: remove
     def convert_value_for_db(self, db_type, value):
-        if db_type == "unicode" and not isinstance(value, six.string_types):
+        if db_type == "unicode" and not isinstance(value, str):
             return unicode(value)
         return value
 

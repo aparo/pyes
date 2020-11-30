@@ -6,7 +6,6 @@ from .exceptions import QueryParameterError
 from .utils import (ESRange, EqualityComparableUsingAttributeDictionary,
                     TermsLookup)
 from .es import json
-import six
 
 class Filter(EqualityComparableUsingAttributeDictionary):
 
@@ -370,7 +369,7 @@ class TermsFilter(Filter):
         if not self._values:
             raise RuntimeError("A least a field/value pair must be added")
         data = self._values.copy()
-        for field, term in six.iteritems(data):
+        for field, term in iter(data):
             if isinstance(term, TermsLookup):
                 data[field] = term.serialize()
         if self.execution:
@@ -589,7 +588,7 @@ class IdsFilter(Filter):
         data = {}
         if self.type:
             data["type"] = self.type
-        if isinstance(self.values, six.string_types):
+        if isinstance(self.values, str):
             data["values"] = [self.values]
         else:
             data["values"] = self.values
@@ -601,7 +600,7 @@ class RawFilter(Filter):
 
     def __init__(self, filter_text_or_dict, **kwargs):
         super(RawFilter, self).__init__(**kwargs)
-        if isinstance(filter_text_or_dict, six.string_types):
+        if isinstance(filter_text_or_dict, str):
             self._filter = json.loads(filter_text_or_dict)
         else:
             self._filter = filter_text_or_dict

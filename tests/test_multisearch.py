@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import
-import six
 import io
 import unittest
 from pyes.tests import ESTestCase
@@ -9,14 +7,9 @@ from pyes.query import *
 from pyes.filters import TermFilter, ANDFilter, ORFilter, RangeFilter, RawFilter, IdsFilter, MatchAllFilter, NotFilter
 from pyes.utils import ESRangeOp
 
-if six.PY2:
-    class UnicodeWriter(io.StringIO):
-        def write(self, ss, *args, **kwargs):
-            super(UnicodeWriter, self).write(unicode(ss), *args, **kwargs)
-else:
-    class UnicodeWriter(io.BytesIO):
-        def write(self, ss, *args, **kwargs):
-            super(UnicodeWriter, self).write(ss, *args, **kwargs)
+class UnicodeWriter(io.BytesIO):
+    def write(self, ss, *args, **kwargs):
+        super(UnicodeWriter, self).write(ss, *args, **kwargs)
 
 
 class MultiSearchTestCase(ESTestCase):
